@@ -14,11 +14,11 @@ export interface ModelOption {
 type ModelMode = "chat" | "images" | "videos" | "files" | "code";
 
 const CHAT_MODELS: ModelOption[] = [
-  { id: "google/gemini-3-flash-preview", name: "Megsy V1", credits: "Free" },
-  { id: "google/gemini-2.5-pro", name: "Gemini 2.5 Pro", credits: "Free" },
-  { id: "openai/gpt-5", name: "GPT-5", credits: "Free" },
-  { id: "x-ai/grok-3", name: "Grok 3", credits: "Free" },
-  { id: "deepseek/deepseek-r1", name: "DeepSeek R1", credits: "Free" },
+  { id: "google/gemini-3-flash-preview", name: "Megsy V1", credits: "" },
+  { id: "google/gemini-2.5-pro", name: "Gemini 2.5 Pro", credits: "" },
+  { id: "openai/gpt-5", name: "GPT-5", credits: "" },
+  { id: "x-ai/grok-3", name: "Grok 3", credits: "" },
+  { id: "deepseek/deepseek-r1", name: "DeepSeek R1", credits: "" },
 ];
 
 export const IMAGE_MODELS: ModelOption[] = [
@@ -33,7 +33,7 @@ export const IMAGE_MODELS: ModelOption[] = [
   { id: "flux-2-pro", name: "FLUX 2 Pro", credits: "5", category: "model" },
   { id: "seedream-4", name: "Seedream 4", credits: "2", category: "model" },
   { id: "imagineart-1.5", name: "ImagineArt 1.5", credits: "2", category: "model" },
-  { id: "fal-hidream-i1", name: "HiDream I1", credits: "3", category: "model" },
+  { id: "fal-hidream-i1", name: "HiDream I1 Full", credits: "3", category: "model" },
   { id: "fal-aura-v2", name: "Aura Flow v2", credits: "2", category: "model" },
   { id: "fal-stable-cascade", name: "Stable Cascade", credits: "3", category: "model" },
   { id: "fal-omnigen2", name: "OmniGen2", credits: "3", category: "model" },
@@ -149,12 +149,15 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, cen
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
             <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
-              className={`absolute top-full mt-2 z-40 glass-panel p-1 min-w-[260px] max-h-[400px] overflow-y-auto ${
-                centerDropdown ? "left-1/2 -translate-x-1/2" : "right-0"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`fixed z-40 glass-panel p-1.5 w-[300px] max-h-[420px] overflow-y-auto ${
+                centerDropdown
+                  ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                  : "absolute top-full mt-2 right-0"
               }`}
+              style={!centerDropdown ? { position: 'absolute' } : {}}
             >
               {showCategories && (
                 <div className="flex gap-1 p-1 mb-1">
@@ -184,9 +187,9 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, cen
                     <span className="text-foreground text-xs font-medium">{m.name}</span>
                     {m.requiresImage && <span className="text-[10px] text-primary">Requires image</span>}
                   </div>
-                  <span className="text-[10px] opacity-60">
-                    {m.credits === "Free" ? "Free" : `${m.credits} cr`}
-                  </span>
+                  {m.credits && (
+                    <span className="text-[10px] opacity-60">{m.credits} cr</span>
+                  )}
                 </button>
               ))}
             </motion.div>

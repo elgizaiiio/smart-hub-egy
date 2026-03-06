@@ -6,14 +6,14 @@ import { useNavigate } from "react-router-dom";
 const plans = [
   {
     name: "Starter",
-    monthlyPrice: 9.99,
-    yearlyPrice: 7.99,
+    monthlyPrice: 9.97,
+    yearlyPrice: 6.97,
     credits: 100,
     featured: false,
     badge: null,
     features: [
       "100 credits / month",
-      "All chat models (Free)",
+      "All chat models",
       "Image generation",
       "File analysis",
       "Standard support",
@@ -21,8 +21,8 @@ const plans = [
   },
   {
     name: "Pro",
-    monthlyPrice: 29.99,
-    yearlyPrice: 19.99,
+    monthlyPrice: 29.97,
+    yearlyPrice: 19.97,
     credits: 500,
     featured: true,
     badge: "Most Popular",
@@ -38,8 +38,8 @@ const plans = [
   },
   {
     name: "Business",
-    monthlyPrice: 79.99,
-    yearlyPrice: 59.99,
+    monthlyPrice: 79.97,
+    yearlyPrice: 54.97,
     credits: 2000,
     featured: false,
     badge: "Best Value",
@@ -86,7 +86,7 @@ const PricingPage = () => {
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
               Yearly
-              <span className="ml-1 text-[10px] bg-success/20 text-success px-1.5 py-0.5 rounded-full" style={{ color: "hsl(142 50% 45%)" }}>-33%</span>
+              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "hsl(142 50% 45% / 0.2)", color: "hsl(142 50% 45%)" }}>-33%</span>
             </button>
           </div>
         </motion.div>

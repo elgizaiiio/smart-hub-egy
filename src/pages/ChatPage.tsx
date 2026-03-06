@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Globe, Paperclip, GraduationCap, ShoppingCart, Layers, Link2, Sparkles } from "lucide-react";
+import { Menu, Plus, Globe, Paperclip, GraduationCap, ShoppingCart, Link2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,14 @@ interface Message {
   id?: string;
 }
 
+type ChatMode = "normal" | "learning" | "shopping";
+
+const MODE_PROMPTS: Record<ChatMode, string> = {
+  normal: "",
+  learning: "You are in Learning Mode. Explain everything step by step with examples, analogies, and clear breakdowns. Make complex topics easy to understand. Use bullet points, numbered steps, and structured format.",
+  shopping: "You are in Shopping Mode. Help the user find the best products, compare prices, suggest alternatives, and provide purchase recommendations. Include pros/cons when comparing items.",
+};
+
 const ChatPage = () => {
   const navigate = useNavigate();
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("chat"));
@@ -31,6 +39,7 @@ const ChatPage = () => {
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [searchEnabled, setSearchEnabled] = useState(false);
+  const [chatMode, setChatMode] = useState<ChatMode>("normal");
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -130,7 +139,9 @@ const ChatPage = () => {
       });
     };
 
+    // Search context
     let searchContext = "";
+    let searchImages: string[] = [];
     if (searchEnabled) {
       try {
         const searchQuery = input.replace(/@\w+\s*/g, "").trim();
@@ -146,13 +157,20 @@ const ChatPage = () => {
         if (searchResp.ok) {
           const searchData = await searchResp.json();
           searchContext = searchData.context || "";
+          searchImages = searchData.images || [];
         }
-      } catch (e) { /* continue without search */ }
+      } catch { /* continue without search */ }
     }
 
     const allMessages = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
+    
+    // Add mode prompt
+    if (chatMode !== "normal" && MODE_PROMPTS[chatMode]) {
+      allMessages.unshift({ role: "user" as const, content: `[System instruction]: ${MODE_PROMPTS[chatMode]}` });
+    }
+
     if (searchContext) {
-      allMessages.push({ role: "user" as const, content: `[Search results]:\n${searchContext}\n\nUse these results to answer accurately.` });
+      allMessages.push({ role: "user" as const, content: `[Search results]:\n${searchContext}\n\nUse these results to answer accurately. Include source links when relevant.` });
     }
 
     await streamChat({
@@ -163,7 +181,7 @@ const ChatPage = () => {
         setIsLoading(false);
         setIsThinking(false);
         if (convId && assistantContent) {
-          await saveMessage(convId, "assistant", assistantContent);
+          await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
         }
       },
@@ -210,7 +228,7 @@ const ChatPage = () => {
         currentMode="chat"
       />
 
-      {/* Header - minimal */}
+      {/* Header - no background, just buttons */}
       <div className="flex items-center justify-between px-4 py-3">
         <button
           onClick={() => setSidebarOpen(true)}
@@ -224,14 +242,9 @@ const ChatPage = () => {
             <motion.div
               initial={{ opacity: 1 }}
               exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
               className="flex items-center gap-2"
             >
-              <button
-                onClick={handleNewChat}
-                className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
               <FancyButton onClick={() => navigate("/pricing")}>
                 Unlock Megsy Pro
               </FancyButton>
@@ -239,14 +252,12 @@ const ChatPage = () => {
           )}
         </AnimatePresence>
 
-        {hasConversation && (
-          <button
-            onClick={handleNewChat}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        )}
+        <button
+          onClick={handleNewChat}
+          className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Messages */}
@@ -297,6 +308,10 @@ const ChatPage = () => {
             {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
               <ThinkingLoader />
             )}
+            {/* Persistent thinking loader during streaming */}
+            {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && (
+              <ThinkingLoader />
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -310,6 +325,16 @@ const ChatPage = () => {
               <Globe className="w-3.5 h-3.5 text-primary" />
               <span className="text-xs text-primary">Web search enabled</span>
               <button onClick={() => setSearchEnabled(false)} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
+                Disable
+              </button>
+            </div>
+          )}
+
+          {chatMode !== "normal" && (
+            <div className="flex items-center gap-2 px-3">
+              {chatMode === "learning" ? <GraduationCap className="w-3.5 h-3.5 text-primary" /> : <ShoppingCart className="w-3.5 h-3.5 text-primary" />}
+              <span className="text-xs text-primary capitalize">{chatMode} mode</span>
+              <button onClick={() => setChatMode("normal")} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
                 Disable
               </button>
             </div>
@@ -381,24 +406,30 @@ const ChatPage = () => {
 
                       <div className="border-t border-border mt-1 pt-1">
                         <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
-                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors">
+                        <button
+                          onClick={() => { setChatMode(chatMode === "learning" ? "normal" : "learning"); setPlusMenuOpen(false); }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}
+                        >
                           <GraduationCap className="w-4 h-4 text-muted-foreground" />
                           <span className="text-sm text-foreground">Learning Mode</span>
+                          {chatMode === "learning" && <span className="ml-auto text-xs text-primary">✓</span>}
                         </button>
-                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors">
+                        <button
+                          onClick={() => { setChatMode(chatMode === "shopping" ? "normal" : "shopping"); setPlusMenuOpen(false); }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}
+                        >
                           <ShoppingCart className="w-4 h-4 text-muted-foreground" />
                           <span className="text-sm text-foreground">Shopping Mode</span>
+                          {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">✓</span>}
                         </button>
                       </div>
 
                       <div className="border-t border-border mt-1 pt-1">
-                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors relative">
+                        <button
+                          onClick={() => { navigate("/settings"); setPlusMenuOpen(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors relative"
+                        >
                           <Link2 className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-foreground">More Models</span>
-                          <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors relative">
-                          <Layers className="w-4 h-4 text-muted-foreground" />
                           <span className="text-sm text-foreground">Integrations</span>
                           <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
                         </button>

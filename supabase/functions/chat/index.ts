@@ -46,7 +46,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are egy, a helpful, creative AI assistant. Respond in the same language and dialect as the user. Format your responses with clear markdown: use **bold** for emphasis, proper headings, bullet points, and code blocks when relevant. Be concise yet thorough."
+            content: "You are Megsy, a helpful, creative AI assistant. Respond in the same language and dialect as the user. Format your responses with clear markdown: use **bold** for emphasis, proper headings, bullet points, and code blocks when relevant. Be concise yet thorough."
           },
           ...messages,
         ],

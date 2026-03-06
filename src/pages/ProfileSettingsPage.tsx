@@ -1,9 +1,38 @@
-import { ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Mail, Lock, Trash2, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const ProfileSettingsPage = () => {
   const navigate = useNavigate();
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [credits, setCredits] = useState(0);
+  const [plan, setPlan] = useState("free");
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "");
+        setUserEmail(user.email || "");
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("credits, plan")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          setCredits(Number(profile.credits) || 0);
+          setPlan(profile.plan || "free");
+        }
+      }
+    };
+    loadUser();
+  }, []);
+
+  const initial = (userName || "U").charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen bg-background">
@@ -16,28 +45,54 @@ const ProfileSettingsPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-4 space-y-6">
+          {/* Avatar */}
           <div className="flex flex-col items-center py-6">
             <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold mb-3">
-              U
+              {initial}
             </div>
-            <button className="text-sm text-primary">Change Photo</button>
+            <p className="text-lg font-semibold text-foreground">{userName}</p>
+            <p className="text-sm text-muted-foreground">{userEmail}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary capitalize">{plan} Plan</span>
+              <span className="text-xs text-muted-foreground">{credits.toFixed(2)} MC</span>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-muted-foreground">Display Name</label>
-              <input className="w-full mt-1 bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary" defaultValue="User" />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Email</label>
-              <input className="w-full mt-1 bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm text-muted-foreground outline-none" defaultValue="user@email.com" disabled />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Bio</label>
-              <textarea className="w-full mt-1 bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary resize-none" rows={3} placeholder="Tell us about yourself..." />
-            </div>
-            <button className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-              Save Changes
+          {/* Sections */}
+          <div className="space-y-2">
+            <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors text-left">
+              <Mail className="w-5 h-5 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Change Email</p>
+                <p className="text-xs text-muted-foreground">{userEmail}</p>
+              </div>
+            </button>
+
+            <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors text-left">
+              <Lock className="w-5 h-5 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Change Password</p>
+                <p className="text-xs text-muted-foreground">Update your password</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate("/pricing")}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+            >
+              <Crown className="w-5 h-5 text-primary" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Upgrade to Premium</p>
+                <p className="text-xs text-muted-foreground">Get more credits and features</p>
+              </div>
+            </button>
+
+            <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-destructive/30 hover:bg-destructive/5 transition-colors text-left mt-4">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">Delete Account</p>
+                <p className="text-xs text-muted-foreground">Permanently delete your account</p>
+              </div>
             </button>
           </div>
         </motion.div>

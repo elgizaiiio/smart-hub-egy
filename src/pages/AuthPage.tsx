@@ -15,20 +15,24 @@ const AuthPage = () => {
   const checkEmailExists = async () => {
     if (!email.trim()) return;
     setIsSubmitting(true);
-    // Try to sign in with a wrong password to check if user exists
-    const { error } = await supabase.auth.signInWithPassword({ email, password: "__check__" });
-    if (error?.message?.includes("Invalid login credentials")) {
-      // User exists
-      setIsSignUp(false);
-      setStep("password");
-    } else if (error?.message?.includes("Email not confirmed") || error?.message?.includes("Invalid login")) {
-      setIsSignUp(false);
-      setStep("password");
-    } else {
-      // User doesn't exist
+    try {
+      // Use signInWithOtp with shouldCreateUser false to check if email exists
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      if (error?.message?.includes("Signups not allowed for otp") || error?.message?.includes("User not found") || error?.message?.includes("user_not_found")) {
+        // User doesn't exist
+        setIsSignUp(true);
+      } else {
+        // User exists (either OTP sent or other message)
+        setIsSignUp(false);
+      }
+    } catch {
+      // Default to sign up flow
       setIsSignUp(true);
-      setStep("password");
     }
+    setStep("password");
     setIsSubmitting(false);
   };
 
@@ -71,12 +75,11 @@ const AuthPage = () => {
       >
         <h1 className="font-display text-4xl font-bold text-white mb-2">Megsy</h1>
         <p className="text-sm text-white/60 mb-10">
-          {step === "email" ? "Enter your email to continue" : isSignUp ? "Create your password" : "Welcome back! Enter your password"}
+          {step === "email" ? "Enter your email to continue" : isSignUp ? "Create a new account" : "Welcome back!"}
         </p>
 
         {step === "email" && (
           <>
-            {/* Google */}
             <button
               onClick={handleGoogleLogin}
               className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 text-white text-sm font-medium hover:bg-white/15 transition-colors mb-3"
