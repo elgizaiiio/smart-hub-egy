@@ -1,27 +1,23 @@
+import { Sparkles } from "lucide-react";
+
 const ThinkingLoader = () => {
   return (
-    <div className="flex items-center gap-3 py-2">
-      <div className="thinking-loader">
-        <svg id="pegtopone" xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-          <g>
-            <path d="M50 15 L65 50 L50 85 L35 50 Z" />
-            <path d="M50 15 L65 50 L50 85 L35 50 Z" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.3" />
-          </g>
+    <div className="flex items-center gap-2.5 py-3">
+      <div className="sparkle-container">
+        <svg className="sparkle-star w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z" />
         </svg>
-        <svg id="pegtoptwo" xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-          <g>
-            <path d="M50 15 L65 50 L50 85 L35 50 Z" />
-            <path d="M50 15 L65 50 L50 85 L35 50 Z" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.3" />
-          </g>
+        <svg className="sparkle-star w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z" />
         </svg>
-        <svg id="pegtopthree" xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-          <g>
-            <path d="M50 15 L65 50 L50 85 L35 50 Z" />
-            <path d="M50 15 L65 50 L50 85 L35 50 Z" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.3" />
-          </g>
+        <svg className="sparkle-star w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z" />
+        </svg>
+        <svg className="sparkle-star w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z" />
         </svg>
       </div>
-      <span className="text-sm text-muted-foreground animate-pulse">يفكر...</span>
+      <span className="text-sm text-muted-foreground animate-pulse">Thinking...</span>
     </div>
   );
 };

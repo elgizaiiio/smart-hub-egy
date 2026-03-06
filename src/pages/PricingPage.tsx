@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const plans = [
@@ -10,9 +10,9 @@ const plans = [
     featured: false,
     features: [
       "500 credits / month",
-      "Chat models (Free)",
-      "Image generation (5 credits each)",
-      "File analysis (3 credits each)",
+      "All chat models (Free)",
+      "Image generation",
+      "File analysis",
       "Standard support",
     ],
   },
@@ -24,10 +24,10 @@ const plans = [
     features: [
       "2,000 credits / month",
       "All AI models access",
-      "Image generation (5 credits)",
-      "Video generation (25 credits)",
+      "Image & Video generation",
       "Code sandbox with GitHub",
       "Priority support",
+      "API access",
     ],
   },
   {
@@ -37,9 +37,8 @@ const plans = [
     featured: false,
     features: [
       "10,000 credits / month",
-      "All AI models (priority)",
-      "Unlimited image generation",
-      "Video generation (25 credits)",
+      "All models (priority)",
+      "Unlimited generations",
       "Full code IDE + deploy",
       "API access",
       "Dedicated support",
@@ -53,7 +52,7 @@ const PricingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="flex items-center gap-3 px-4 py-4 max-w-5xl mx-auto">
-        <button onClick={() => navigate("/chat")} className="text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h1 className="font-display text-lg font-bold text-foreground">Pricing</h1>
@@ -72,10 +71,13 @@ const PricingPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className={`glass-panel p-6 flex flex-col gap-4 ${
-                plan.featured ? "border-primary/30 shadow-lg shadow-primary/5" : ""
+              className={`rounded-2xl border p-6 flex flex-col gap-4 ${
+                plan.featured ? "border-primary shadow-lg shadow-primary/10" : "border-border"
               }`}
             >
+              {plan.featured && (
+                <span className="text-xs font-medium bg-primary text-primary-foreground px-3 py-1 rounded-full self-start">Most Popular</span>
+              )}
               <div>
                 <h3 className="font-display font-semibold text-foreground text-lg">{plan.name}</h3>
                 <p className="text-xs text-muted-foreground">{plan.credits.toLocaleString()} credits</p>
@@ -91,9 +93,10 @@ const PricingPage = () => {
               }`}>
                 Get Started
               </button>
-              <ul className="space-y-3 mt-2">
+              <ul className="space-y-2.5 mt-2">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="text-sm text-muted-foreground">
+                  <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                     {feature}
                   </li>
                 ))}

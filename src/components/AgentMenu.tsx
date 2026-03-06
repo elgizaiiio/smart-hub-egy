@@ -1,31 +1,20 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
-
-const agents = [
-  { id: "deep-research", label: "Deep Research", description: "In-depth web research with citations" },
-  { id: "education", label: "Education", description: "Learning assistant with explanations" },
-  { id: "file-upload", label: "Upload File", description: "Analyze documents and files" },
-  { id: "image-upload", label: "Upload Image", description: "Analyze or edit images" },
-];
-
-const integrations = [
-  "Supabase", "GitHub", "Google Drive", "Slack", "Notion",
-  "Discord", "Figma", "Linear", "Jira", "Trello",
-  "Asana", "Vercel", "Netlify", "AWS", "Firebase",
-  "MongoDB", "Stripe", "Twilio", "SendGrid", "Zapier",
-];
+import { Globe, Paperclip, Search } from "lucide-react";
+import ModelSelector, { getDefaultModel, type ModelOption } from "./ModelSelector";
 
 interface AgentMenuProps {
   open: boolean;
   onClose: () => void;
-  onSelectAgent: (agentId: string) => void;
+  onToggleSearch?: () => void;
+  isSearchEnabled?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement>;
+  mode?: string;
+  selectedModel?: ModelOption;
+  onModelChange?: (m: ModelOption) => void;
 }
 
-const AgentMenu = ({ open, onClose, onSelectAgent, fileInputRef }: AgentMenuProps) => {
-  const [showIntegrations, setShowIntegrations] = useState(false);
-
+const AgentMenu = ({ open, onClose, onToggleSearch, isSearchEnabled, fileInputRef, mode, selectedModel, onModelChange }: AgentMenuProps) => {
   if (!open) return null;
 
   return (
@@ -36,60 +25,50 @@ const AgentMenu = ({ open, onClose, onSelectAgent, fileInputRef }: AgentMenuProp
           initial={{ opacity: 0, y: 10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-          className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-72"
+          className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64"
         >
-          {!showIntegrations ? (
-            <div className="space-y-0.5">
-              {agents.map((agent) => (
-                <button
-                  key={agent.id}
-                  onClick={() => {
-                    if (agent.id === "file-upload" || agent.id === "image-upload") {
-                      fileInputRef.current?.click();
-                    } else {
-                      onSelectAgent(agent.id);
-                    }
-                    onClose();
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors group"
-                >
-                  <div>
-                    <p className="text-sm text-foreground">{agent.label}</p>
-                    <p className="text-xs text-muted-foreground">{agent.description}</p>
-                  </div>
-                </button>
-              ))}
+          <div className="space-y-0.5">
+            {/* Model selector */}
+            {selectedModel && onModelChange && (
+              <div className="px-3 py-2">
+                <p className="text-[10px] text-muted-foreground uppercase mb-2">Model</p>
+                <ModelSelector
+                  mode={(mode as any) || "chat"}
+                  selectedModel={selectedModel}
+                  onModelChange={(m) => { onModelChange(m); }}
+                  showCategories={mode === "images" || mode === "videos"}
+                />
+              </div>
+            )}
+
+            {/* Web search toggle */}
+            {onToggleSearch && (
               <button
-                onClick={() => setShowIntegrations(true)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors group"
+                onClick={() => { onToggleSearch(); onClose(); }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                  isSearchEnabled ? "bg-primary/10 text-primary" : "hover:bg-accent text-foreground"
+                }`}
               >
+                <Globe className="w-4 h-4" />
                 <div>
-                  <p className="text-sm text-foreground">More Integrations</p>
-                  <p className="text-xs text-muted-foreground">Connect with 20+ services</p>
+                  <p className="text-sm">Web Search</p>
+                  <p className="text-[10px] text-muted-foreground">{isSearchEnabled ? "Enabled" : "Search the web for answers"}</p>
                 </div>
               </button>
-            </div>
-          ) : (
-            <div>
-              <div className="flex items-center justify-between px-3 py-2 mb-1">
-                <p className="text-sm font-medium text-foreground">Integrations</p>
-                <button onClick={() => setShowIntegrations(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+            )}
+
+            {/* Attach file */}
+            <button
+              onClick={() => { fileInputRef.current?.click(); onClose(); }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+            >
+              <Paperclip className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-foreground">Attach File</p>
+                <p className="text-[10px] text-muted-foreground">Upload images or documents</p>
               </div>
-              <div className="max-h-60 overflow-y-auto space-y-0.5">
-                {integrations.map((name) => (
-                  <button
-                    key={name}
-                    onClick={() => { onSelectAgent(name.toLowerCase().replace(/\s/g, "-")); onClose(); }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+            </button>
+          </div>
         </motion.div>
       </AnimatePresence>
     </>

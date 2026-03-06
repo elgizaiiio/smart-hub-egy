@@ -1,16 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Plus, ArrowUp, Square } from "lucide-react";
 
-const PLACEHOLDERS = [
-  "اكتب أي شيء يخطر ببالك...",
-  "اسألني عن أي شيء...",
-  "ولّد صورة خيالية...",
-  "ابنِ تطبيق ويب كامل...",
-  "حلل هذا المستند...",
-  "ابحث عن آخر الأخبار...",
-  "اشرح لي الذكاء الاصطناعي...",
-];
-
 interface AnimatedInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -19,9 +9,20 @@ interface AnimatedInputProps {
   onPlusClick: () => void;
   disabled?: boolean;
   isLoading?: boolean;
+  placeholders?: string[];
 }
 
-const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading }: AnimatedInputProps) => {
+const DEFAULT_PLACEHOLDERS = [
+  "Ask me anything...",
+  "Generate a creative story...",
+  "Explain quantum computing...",
+  "Search the latest news...",
+  "Write a poem about space...",
+  "Help me with my code...",
+];
+
+const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders }: AnimatedInputProps) => {
+  const items = placeholders || DEFAULT_PLACEHOLDERS;
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [isTyping, setIsTyping] = useState(true);
@@ -29,7 +30,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
   useEffect(() => {
     if (value) return;
-    const target = PLACEHOLDERS[placeholderIndex];
+    const target = items[placeholderIndex];
     let charIndex = 0;
     setIsTyping(true);
     setDisplayedPlaceholder("");
@@ -42,13 +43,13 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
         clearInterval(typeInterval);
         setIsTyping(false);
         setTimeout(() => {
-          setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length);
+          setPlaceholderIndex((prev) => (prev + 1) % items.length);
         }, 2500);
       }
     }, 50);
 
     return () => clearInterval(typeInterval);
-  }, [placeholderIndex, value]);
+  }, [placeholderIndex, value, items]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -67,8 +68,6 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
   return (
     <div className="relative">
-      <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-transparent via-primary/15 to-transparent opacity-60 blur-sm pointer-events-none" />
-
       <div className="relative flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-xl px-3 py-2">
         <button
           onClick={onPlusClick}
