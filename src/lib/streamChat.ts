@@ -8,12 +8,14 @@ export async function streamChat({
   onDelta,
   onDone,
   onError,
+  signal,
 }: {
   messages: Msg[];
   model?: string;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError?: (error: string) => void;
+  signal?: AbortSignal;
 }) {
   try {
     const resp = await fetch(CHAT_URL, {
@@ -23,6 +25,7 @@ export async function streamChat({
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
       body: JSON.stringify({ messages, model }),
+      signal,
     });
 
     if (resp.status === 429) {
@@ -74,7 +77,6 @@ export async function streamChat({
       }
     }
 
-    // Final flush
     if (textBuffer.trim()) {
       for (let raw of textBuffer.split("\n")) {
         if (!raw) continue;
@@ -92,7 +94,11 @@ export async function streamChat({
     }
 
     onDone();
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.name === "AbortError") {
+      onDone();
+      return;
+    }
     console.error("Stream error:", e);
     onError?.("Connection error. Please check your internet and try again.");
     onDone();

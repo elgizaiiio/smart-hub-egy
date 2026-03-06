@@ -1,19 +1,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search,
-  GraduationCap,
-  FileText,
-  ImageIcon,
-  MoreHorizontal,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 
 const agents = [
-  { id: "deep-research", label: "Deep Research", icon: Search, description: "In-depth web research with citations" },
-  { id: "education", label: "Education", icon: GraduationCap, description: "Learning assistant with explanations" },
-  { id: "file-upload", label: "Upload File", icon: FileText, description: "Analyze documents and files" },
-  { id: "image-upload", label: "Upload Image", icon: ImageIcon, description: "Analyze or edit images" },
+  { id: "deep-research", label: "Deep Research", description: "In-depth web research with citations" },
+  { id: "education", label: "Education", description: "Learning assistant with explanations" },
+  { id: "file-upload", label: "Upload File", description: "Analyze documents and files" },
+  { id: "image-upload", label: "Upload Image", description: "Analyze or edit images" },
 ];
 
 const integrations = [
@@ -60,7 +53,6 @@ const AgentMenu = ({ open, onClose, onSelectAgent, fileInputRef }: AgentMenuProp
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors group"
                 >
-                  <agent.icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
                   <div>
                     <p className="text-sm text-foreground">{agent.label}</p>
                     <p className="text-xs text-muted-foreground">{agent.description}</p>
@@ -71,7 +63,6 @@ const AgentMenu = ({ open, onClose, onSelectAgent, fileInputRef }: AgentMenuProp
                 onClick={() => setShowIntegrations(true)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors group"
               >
-                <MoreHorizontal className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
                 <div>
                   <p className="text-sm text-foreground">More Integrations</p>
                   <p className="text-xs text-muted-foreground">Connect with 20+ services</p>
