@@ -1,23 +1,20 @@
-import { Sparkles } from "lucide-react";
+const PegtopSVG = () => (
+  <svg width="30" height="30" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <g>
+      <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+      <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" opacity="0.3" />
+    </g>
+  </svg>
+);
 
 const ThinkingLoader = () => {
   return (
-    <div className="flex items-center gap-2.5 py-3">
-      <div className="sparkle-container">
-        <svg className="sparkle-star w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z" />
-        </svg>
-        <svg className="sparkle-star w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z" />
-        </svg>
-        <svg className="sparkle-star w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z" />
-        </svg>
-        <svg className="sparkle-star w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z" />
-        </svg>
+    <div className="flex items-center gap-3 py-2">
+      <div className="pegtop-loader" style={{ width: 60, height: 60 }}>
+        <div id="pegtopone"><PegtopSVG /></div>
+        <div id="pegtoptwo"><PegtopSVG /></div>
+        <div id="pegtopthree"><PegtopSVG /></div>
       </div>
-      <span className="text-sm text-muted-foreground animate-pulse">Thinking...</span>
     </div>
   );
 };

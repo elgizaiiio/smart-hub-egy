@@ -1,4 +1,4 @@
-import { ArrowLeft, CreditCard, Download } from "lucide-react";
+import { ArrowLeft, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -16,23 +16,49 @@ const BillingPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-4 space-y-6">
-          {/* Current Plan */}
-          <div className="p-4 rounded-xl border border-border">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-foreground">Free Plan</span>
-              <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">Current</span>
+          {/* Card */}
+          <div className="rounded-2xl p-5 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))" }}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold text-sm">M</div>
+                <span className="text-xs opacity-80 uppercase tracking-wider">MEGSY AI</span>
+              </div>
+              <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded-full">PREMIUM</span>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">0 credits remaining</p>
-            <button onClick={() => navigate("/pricing")} className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
-              Upgrade Plan
-            </button>
+            <p className="text-[10px] opacity-70 uppercase tracking-wider">AVAILABLE BALANCE</p>
+            <p className="text-3xl font-bold mt-1">0.00 <span className="text-sm font-normal opacity-80">MC</span></p>
+            <div className="flex items-center justify-between mt-4">
+              <div className="w-10 h-7 rounded bg-amber-400/80" />
+              <span className="text-sm opacity-80 tracking-widest">MC</span>
+            </div>
           </div>
 
-          {/* Invoices */}
+          {/* Add Credits */}
+          <button
+            onClick={() => navigate("/pricing")}
+            className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+          >
+            + Add Credits
+          </button>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">TOTAL USED</p>
+              <p className="text-xl font-bold text-foreground">0.00</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">GENERATIONS</p>
+              <p className="text-xl font-bold text-foreground">0</p>
+            </div>
+          </div>
+
+          {/* Usage History */}
           <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Invoices</p>
-            <div className="text-sm text-muted-foreground text-center py-8">
-              No invoices yet
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">USAGE HISTORY</p>
+            <div className="text-center py-8">
+              <TrendingUp className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No usage history yet</p>
             </div>
           </div>
         </motion.div>

@@ -33,6 +33,14 @@ export const IMAGE_MODELS: ModelOption[] = [
   { id: "flux-2-pro", name: "FLUX 2 Pro", credits: "5", category: "model" },
   { id: "seedream-4", name: "Seedream 4", credits: "2", category: "model" },
   { id: "imagineart-1.5", name: "ImagineArt 1.5", credits: "2", category: "model" },
+  { id: "fal-hidream-i1", name: "HiDream I1", credits: "3", category: "model" },
+  { id: "fal-aura-v2", name: "Aura Flow v2", credits: "2", category: "model" },
+  { id: "fal-stable-cascade", name: "Stable Cascade", credits: "3", category: "model" },
+  { id: "fal-omnigen2", name: "OmniGen2", credits: "3", category: "model" },
+  { id: "fal-flux-realism", name: "FLUX Realism", credits: "3", category: "model" },
+  { id: "logo-creator", name: "Logo Creator", credits: "2", category: "model" },
+  { id: "sticker-maker", name: "Sticker Maker", credits: "2", category: "model" },
+  { id: "qr-art", name: "QR Art", credits: "2", category: "model" },
   { id: "nano-banana-edit", name: "Nano Banana Edit", credits: "2", category: "tool", requiresImage: true },
   { id: "object-remover", name: "Object Remover", credits: "2", category: "tool", requiresImage: true },
   { id: "watermark-remover", name: "Watermark Remover", credits: "2", category: "tool", requiresImage: true },
@@ -47,15 +55,12 @@ export const IMAGE_MODELS: ModelOption[] = [
   { id: "face-enhancer", name: "Face Enhancer", credits: "1", category: "tool", requiresImage: true },
   { id: "product-photo", name: "Product Photo", credits: "2", category: "tool", requiresImage: true },
   { id: "bg-replacer", name: "Background Replacer", credits: "2", category: "tool", requiresImage: true },
-  { id: "logo-creator", name: "Logo Creator", credits: "2", category: "model" },
   { id: "ai-headshot", name: "AI Headshot", credits: "2", category: "tool", requiresImage: true },
   { id: "creative-upscaler", name: "Creative Upscaler", credits: "2", category: "tool", requiresImage: true },
   { id: "old-photo-restorer", name: "Old Photo Restorer", credits: "2", category: "tool", requiresImage: true },
   { id: "passport-photo", name: "Passport Photo", credits: "2", category: "tool", requiresImage: true },
-  { id: "sticker-maker", name: "Sticker Maker", credits: "2", category: "model" },
   { id: "style-transfer", name: "Style Transfer", credits: "2", category: "tool", requiresImage: true },
   { id: "ai-relighting", name: "AI Relighting", credits: "3", category: "tool", requiresImage: true },
-  { id: "qr-art", name: "QR Art", credits: "2", category: "model" },
 ];
 
 export const VIDEO_MODELS: ModelOption[] = [
@@ -109,9 +114,10 @@ interface ModelSelectorProps {
   selectedModel: ModelOption;
   onModelChange: (model: ModelOption) => void;
   showCategories?: boolean;
+  centerDropdown?: boolean;
 }
 
-const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: ModelSelectorProps) => {
+const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, centerDropdown }: ModelSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"model" | "tool">("model");
   const models = MODELS[mode] || CHAT_MODELS;
@@ -124,10 +130,18 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: M
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        className="fancy-btn !py-1.5 !px-4"
       >
-        <span className="font-medium">{selectedModel.name}</span>
-        <ChevronDown className="w-3 h-3" />
+        <span className="fold" />
+        <div className="points_wrapper">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <span key={i} className="point" />
+          ))}
+        </div>
+        <span className="inner !text-xs !gap-2">
+          {selectedModel.name}
+          <ChevronDown className="w-3 h-3" />
+        </span>
       </button>
 
       <AnimatePresence>
@@ -138,7 +152,9 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: M
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
-              className="absolute top-full mt-2 right-0 z-40 glass-panel p-1 min-w-[240px] max-h-[400px] overflow-y-auto"
+              className={`absolute top-full mt-2 z-40 glass-panel p-1 min-w-[260px] max-h-[400px] overflow-y-auto ${
+                centerDropdown ? "left-1/2 -translate-x-1/2" : "right-0"
+              }`}
             >
               {showCategories && (
                 <div className="flex gap-1 p-1 mb-1">

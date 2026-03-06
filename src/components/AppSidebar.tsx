@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CreditCard, LogOut, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -16,24 +17,52 @@ interface AppSidebarProps {
   onNewChat: () => void;
   onSelectConversation?: (id: string) => void;
   activeConversationId?: string | null;
+  currentMode?: string;
 }
 
-const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId }: AppSidebarProps) => {
+const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [userName, setUserName] = useState("User");
+  const [userEmail, setUserEmail] = useState("");
+  const [credits, setCredits] = useState(0);
 
   useEffect(() => {
-    if (open) loadConversations();
-  }, [open]);
+    if (open) {
+      loadConversations();
+      loadUserInfo();
+    }
+  }, [open, currentMode]);
+
+  const loadUserInfo = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
+      setUserEmail(user.email || "");
+    }
+  };
 
   const loadConversations = async () => {
+    const modeFilter = currentMode === "chat" ? "chat" :
+      currentMode === "images" ? "images" :
+      currentMode === "videos" ? "videos" :
+      currentMode === "files" ? "files" :
+      currentMode === "code" ? "code" : "chat";
+
     const { data } = await supabase
       .from("conversations")
       .select("id, title, updated_at, mode")
+      .eq("mode", modeFilter)
       .order("updated_at", { ascending: false })
-      .limit(50);
+      .limit(30);
     if (data) setConversations(data);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+    onClose();
   };
 
   const services = [
@@ -43,6 +72,8 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
     { path: "/code", label: "Programming" },
     { path: "/files", label: "Files" },
   ];
+
+  const initial = userName.charAt(0).toUpperCase();
 
   return (
     <AnimatePresence>
@@ -65,7 +96,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             {/* New Chat */}
             <div className="p-3">
               <button
-                onClick={() => { onNewChat(); onClose(); navigate("/"); }}
+                onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
                 className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 + New chat
@@ -118,30 +149,57 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
 
             {/* Bottom */}
             <div className="p-3 space-y-2 border-t border-sidebar-border">
-              {/* Credits */}
-              <div className="px-3 py-2">
+              {/* Credits bar */}
+              <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-medium text-sidebar-foreground">Credits</span>
-                  <span className="text-xs text-muted-foreground">0</span>
+                  <span className="text-xs text-muted-foreground">{credits.toFixed(2)} MC</span>
                 </div>
-                <div className="w-full h-1.5 bg-sidebar-accent rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: "0%" }} />
+                <div className="w-full h-2 bg-sidebar-accent rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.min((credits / 100) * 100, 100)}%` }} />
                 </div>
               </div>
 
+              {/* About & Logout */}
+              <div className="flex gap-1">
+                <button
+                  onClick={() => { navigate("/about"); onClose(); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  About
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Logout
+                </button>
+              </div>
+
               {/* User */}
-              <button
-                onClick={() => { navigate("/settings"); onClose(); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-sidebar-accent transition-colors"
-              >
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
-                  U
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-sidebar-foreground truncate">User</p>
-                  <p className="text-[11px] text-muted-foreground truncate">0 credits</p>
-                </div>
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => { navigate("/settings"); onClose(); }}
+                  className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-left hover:bg-sidebar-accent transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
+                    {initial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-sidebar-foreground truncate">{userName}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{userEmail || "Free Plan"}</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => { navigate("/pricing"); onClose(); }}
+                  className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                  title="Upgrade"
+                >
+                  <CreditCard className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </motion.aside>
         </>

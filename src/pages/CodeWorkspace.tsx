@@ -17,7 +17,7 @@ const CodeWorkspace = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} currentMode="code" />
 
       {/* Header with integrations */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border">

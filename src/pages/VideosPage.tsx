@@ -57,13 +57,13 @@ const VideosPage = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} currentMode="videos" />
 
       <div className="flex items-center justify-between px-4 py-3">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories />
+        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories centerDropdown />
         <div className="w-9" />
       </div>
 
@@ -119,6 +119,12 @@ const VideosPage = () => {
                     <Paperclip className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm">Attach Image/Video</span>
                   </button>
+                  <div className="border-t border-border mt-1 pt-1">
+                    <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Publish to</p>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm">Facebook</button>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm">Instagram</button>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm">LinkedIn</button>
+                  </div>
                 </motion.div>
               </>
             )}
