@@ -27,7 +27,7 @@ const FilesPage = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} currentMode="files" />
 
       <div className="flex items-center justify-between px-4 py-3">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">

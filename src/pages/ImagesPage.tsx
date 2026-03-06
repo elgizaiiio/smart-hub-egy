@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, ChevronDown, Plus, Paperclip, ArrowUp, Square, ThumbsUp, ThumbsDown, Download } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Square } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import ModelSelector, { getDefaultModel, IMAGE_MODELS } from "@/components/ModelSelector";
 
@@ -58,18 +58,17 @@ const ImagesPage = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} currentMode="images" />
 
       <div className="flex items-center justify-between px-4 py-3">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories />
+        <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories centerDropdown />
         <div className="w-9" />
       </div>
 
       <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4">
-        {/* Image showcase */}
         <div className="w-full max-w-md aspect-[3/4] relative rounded-2xl overflow-hidden mb-6">
           <AnimatePresence mode="wait">
             <motion.img
@@ -83,7 +82,6 @@ const ImagesPage = () => {
               className="w-full h-full object-cover"
             />
           </AnimatePresence>
-          {/* Dots */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
             {SHOWCASE_IMAGES.map((_, i) => (
               <button
@@ -101,7 +99,6 @@ const ImagesPage = () => {
         )}
       </div>
 
-      {/* Input */}
       <div className="shrink-0 px-4 md:px-6 py-4">
         <div className="max-w-3xl mx-auto">
           <div className="relative flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-xl px-3 py-2">
@@ -119,13 +116,16 @@ const ImagesPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56"
                 >
-                  <button
-                    onClick={() => setMenuOpen(false)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
-                  >
+                  <button onClick={() => setMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
                     <Paperclip className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm">Attach Image</span>
                   </button>
+                  <div className="border-t border-border mt-1 pt-1">
+                    <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Publish to</p>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm">Facebook</button>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm">Instagram</button>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm">LinkedIn</button>
+                  </div>
                 </motion.div>
               </>
             )}

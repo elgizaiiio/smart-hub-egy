@@ -1,35 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, ChevronRight, Globe, Paintbrush, User, CreditCard, Gift, Code, Activity } from "lucide-react";
+import { ArrowLeft, ChevronRight, Globe, Paintbrush, Zap, User, CreditCard, Gift, Code, Activity, Info, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const themes = [
-  { id: "light", label: "Light", preview: "bg-white" },
-  { id: "dark", label: "Dark", preview: "bg-gray-900" },
-  { id: "ocean", label: "Ocean", preview: "bg-blue-900" },
-  { id: "sunset", label: "Sunset", preview: "bg-orange-900" },
-];
-
-const accentColors = [
-  { id: "purple", hsl: "262 60% 55%", label: "Purple" },
-  { id: "blue", hsl: "210 80% 55%", label: "Blue" },
-  { id: "green", hsl: "142 50% 50%", label: "Green" },
-  { id: "orange", hsl: "25 90% 55%", label: "Orange" },
-  { id: "pink", hsl: "330 70% 55%", label: "Pink" },
-  { id: "red", hsl: "0 70% 55%", label: "Red" },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const [currentTheme, setCurrentTheme] = useState(
-    localStorage.getItem("theme") || "dark"
-  );
+  const [userName, setUserName] = useState("User");
+  const [userEmail, setUserEmail] = useState("user@email.com");
 
-  const handleThemeChange = (themeId: string) => {
-    document.documentElement.setAttribute("data-theme", themeId);
-    localStorage.setItem("theme", themeId);
-    setCurrentTheme(themeId);
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
+        setUserEmail(user.email || "");
+      }
+    };
+    loadUser();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
   };
+
+  const initial = userName.charAt(0).toUpperCase();
 
   const sections = [
     {
@@ -40,9 +36,15 @@ const SettingsPage = () => {
       ],
     },
     {
+      title: "AGENT & INTEGRATIONS",
+      items: [
+        { icon: Zap, label: "Agent Connections", path: "" },
+      ],
+    },
+    {
       title: "ACCOUNT & BILLING",
       items: [
-        { icon: User, label: "Profile", path: "/settings/profile" },
+        { icon: User, label: "Account", path: "/settings/profile" },
         { icon: CreditCard, label: "Billing", path: "/settings/billing" },
         { icon: Gift, label: "Referrals", path: "/settings/referrals" },
         { icon: Code, label: "APIs", path: "/settings/apis" },
@@ -52,6 +54,7 @@ const SettingsPage = () => {
       title: "SUPPORT",
       items: [
         { icon: Activity, label: "Status Page", path: "/status" },
+        { icon: Info, label: "About", path: "/about" },
       ],
     },
   ];
@@ -73,11 +76,11 @@ const SettingsPage = () => {
             className="w-full flex items-center gap-3 py-4 border-b border-border"
           >
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-              U
+              {initial}
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-foreground">User</p>
-              <p className="text-xs text-muted-foreground">user@email.com</p>
+              <p className="text-sm font-medium text-foreground">{userName}</p>
+              <p className="text-xs text-muted-foreground">{userEmail}</p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -101,6 +104,15 @@ const SettingsPage = () => {
               })}
             </div>
           ))}
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 py-3.5 text-left hover:bg-destructive/10 rounded-lg transition-colors -mx-2 px-2 mt-2"
+          >
+            <LogOut className="w-5 h-5 text-destructive" />
+            <span className="flex-1 text-sm text-destructive">Log out</span>
+          </button>
         </motion.div>
       </div>
     </div>

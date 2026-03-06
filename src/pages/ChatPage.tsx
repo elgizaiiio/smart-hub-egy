@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Menu, Globe } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, Plus, Globe, Paperclip, GraduationCap, ShoppingCart, Layers, Link2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
-import ModelSelector, { getDefaultModel } from "@/components/ModelSelector";
-import AgentMenu from "@/components/AgentMenu";
+import ModelSelector, { getDefaultModel, type ModelOption } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
+import FancyButton from "@/components/FancyButton";
 import { streamChat } from "@/lib/streamChat";
 
 interface Message {
@@ -20,15 +21,17 @@ interface Message {
 }
 
 const ChatPage = () => {
+  const navigate = useNavigate();
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("chat"));
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [agentMenuOpen, setAgentMenuOpen] = useState(false);
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [searchEnabled, setSearchEnabled] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -97,6 +100,7 @@ const ChatPage = () => {
     const userMsg: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setAttachedFiles([]);
     setIsLoading(true);
     setIsThinking(true);
 
@@ -126,7 +130,6 @@ const ChatPage = () => {
       });
     };
 
-    // Search if enabled
     let searchContext = "";
     if (searchEnabled) {
       try {
@@ -149,7 +152,7 @@ const ChatPage = () => {
 
     const allMessages = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
     if (searchContext) {
-      allMessages.push({ role: "user" as const, content: `[Search results]:\n${searchContext}\n\nUse these results to answer. Include relevant image URLs in markdown.` });
+      allMessages.push({ role: "user" as const, content: `[Search results]:\n${searchContext}\n\nUse these results to answer accurately.` });
     }
 
     await streamChat({
@@ -174,6 +177,7 @@ const ChatPage = () => {
     setConversationId(null);
     setIsLoading(false);
     setIsThinking(false);
+    setAttachedFiles([]);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,14 +185,19 @@ const ChatPage = () => {
     if (!file) return;
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = () => setInput(prev => prev + `\n[Image: ${file.name}]`);
+      reader.onload = () => {
+        setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
+      };
       reader.readAsDataURL(file);
     } else {
       const text = await file.text();
+      setAttachedFiles(prev => [...prev, { name: file.name, type: "file", data: text.slice(0, 5000) }]);
       setInput(prev => prev + `\n\nFile (${file.name}):\n${text.slice(0, 5000)}`);
     }
     e.target.value = "";
   };
+
+  const hasConversation = messages.length > 0;
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -198,9 +207,10 @@ const ChatPage = () => {
         onNewChat={handleNewChat}
         onSelectConversation={loadConversation}
         activeConversationId={conversationId}
+        currentMode="chat"
       />
 
-      {/* Header */}
+      {/* Header - minimal */}
       <div className="flex items-center justify-between px-4 py-3">
         <button
           onClick={() => setSidebarOpen(true)}
@@ -208,8 +218,35 @@ const ChatPage = () => {
         >
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={setSelectedModel} />
-        <div className="w-9" />
+
+        <AnimatePresence>
+          {!hasConversation && (
+            <motion.div
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex items-center gap-2"
+            >
+              <button
+                onClick={handleNewChat}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <FancyButton onClick={() => navigate("/pricing")}>
+                Unlock Megsy Pro
+              </FancyButton>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {hasConversation && (
+          <button
+            onClick={handleNewChat}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -223,9 +260,24 @@ const ChatPage = () => {
               className="text-center max-w-lg"
             >
               <h2 className="font-display text-2xl md:text-3xl font-bold mb-3 text-foreground">
-                What can I help you with?
+                Hey, what's up?
               </h2>
-              <p className="text-muted-foreground text-sm">Chat, search the web, analyze files & more</p>
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+                {[
+                  { label: "Images", path: "/images" },
+                  { label: "Videos", path: "/videos" },
+                  { label: "Files", path: "/files" },
+                  { label: "Code", path: "/code" },
+                ].map(item => (
+                  <button
+                    key={item.label}
+                    onClick={() => navigate(item.path)}
+                    className="px-4 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </motion.div>
           </div>
         ) : (
@@ -262,20 +314,107 @@ const ChatPage = () => {
               </button>
             </div>
           )}
+
+          {/* Attached files preview */}
+          {attachedFiles.length > 0 && (
+            <div className="flex gap-2 px-3 overflow-x-auto pb-1">
+              {attachedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border">
+                  {f.type === "image" ? (
+                    <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" />
+                  ) : (
+                    <Paperclip className="w-3 h-3" />
+                  )}
+                  <span className="truncate max-w-[100px]">{f.name}</span>
+                  <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">×</button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="relative">
-            <AgentMenu
-              open={agentMenuOpen}
-              onClose={() => setAgentMenuOpen(false)}
-              onToggleSearch={() => setSearchEnabled(!searchEnabled)}
-              isSearchEnabled={searchEnabled}
-              fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
-            />
+            {/* Plus Menu */}
+            <AnimatePresence>
+              {plusMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-72"
+                  >
+                    <div className="space-y-0.5">
+                      {/* Model selector */}
+                      <div className="px-3 py-2 border-b border-border mb-1">
+                        <p className="text-[10px] text-muted-foreground uppercase mb-2">Model</p>
+                        <ModelSelector
+                          mode="chat"
+                          selectedModel={selectedModel}
+                          onModelChange={(m) => { setSelectedModel(m); }}
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => { setSearchEnabled(!searchEnabled); setPlusMenuOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                          searchEnabled ? "bg-primary/10 text-primary" : "hover:bg-accent text-foreground"
+                        }`}
+                      >
+                        <Globe className="w-4 h-4" />
+                        <div>
+                          <p className="text-sm">Web Search</p>
+                          <p className="text-[10px] text-muted-foreground">{searchEnabled ? "Enabled" : "Search the web"}</p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+                      >
+                        <Paperclip className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-foreground">Attach File</p>
+                          <p className="text-[10px] text-muted-foreground">Images or documents</p>
+                        </div>
+                      </button>
+
+                      <div className="border-t border-border mt-1 pt-1">
+                        <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
+                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors">
+                          <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground">Learning Mode</span>
+                        </button>
+                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors">
+                          <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground">Shopping Mode</span>
+                        </button>
+                      </div>
+
+                      <div className="border-t border-border mt-1 pt-1">
+                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors relative">
+                          <Link2 className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground">More Models</span>
+                          <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
+                        </button>
+                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors relative">
+                          <Layers className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground">Integrations</span>
+                          <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+
             <AnimatedInput
               value={input}
               onChange={setInput}
               onSend={handleSend}
               onCancel={handleCancel}
-              onPlusClick={() => setAgentMenuOpen(!agentMenuOpen)}
+              onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)}
               disabled={isLoading}
               isLoading={isLoading}
             />
