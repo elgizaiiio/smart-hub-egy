@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CreditCard, LogOut, Info } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -40,6 +40,15 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
     if (user) {
       setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
       setUserEmail(user.email || "");
+      // Load credits from profiles table
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("id", user.id)
+        .single();
+      if (profile) {
+        setCredits(Number(profile.credits) || 0);
+      }
     }
   };
 
@@ -57,12 +66,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
       .order("updated_at", { ascending: false })
       .limit(30);
     if (data) setConversations(data);
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-    onClose();
   };
 
   const services = [
@@ -158,24 +161,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                 <div className="w-full h-2 bg-sidebar-accent rounded-full overflow-hidden">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.min((credits / 100) * 100, 100)}%` }} />
                 </div>
-              </div>
-
-              {/* About & Logout */}
-              <div className="flex gap-1">
-                <button
-                  onClick={() => { navigate("/about"); onClose(); }}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                  About
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Logout
-                </button>
               </div>
 
               {/* User */}

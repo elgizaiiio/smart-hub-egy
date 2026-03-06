@@ -63,6 +63,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, l
             )}
           </div>
 
+          {/* Search result images */}
           {images && images.length > 0 && (
             <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
               {images.map((img, i) => (
@@ -70,7 +71,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, l
                   key={i}
                   src={img}
                   alt=""
-                  className="rounded-lg max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  className="rounded-lg max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() => window.open(img, '_blank')}
                 />
               ))}
