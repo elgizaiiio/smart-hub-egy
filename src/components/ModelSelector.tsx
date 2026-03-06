@@ -127,7 +127,7 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, cen
     : models;
 
   return (
-    <div className="relative">
+    <>
       <button
         onClick={() => setOpen(!open)}
         className="fancy-btn !py-1.5 !px-4"
@@ -147,17 +147,13 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, cen
       <AnimatePresence>
         {open && (
           <>
-            <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+            {/* Full-screen backdrop */}
+            <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setOpen(false)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className={`fixed z-40 glass-panel p-1.5 w-[300px] max-h-[420px] overflow-y-auto ${
-                centerDropdown
-                  ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                  : "absolute top-full mt-2 right-0"
-              }`}
-              style={!centerDropdown ? { position: 'absolute' } : {}}
+              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 glass-panel p-1.5 w-[300px] max-h-[420px] overflow-y-auto"
             >
               {showCategories && (
                 <div className="flex gap-1 p-1 mb-1">
@@ -196,7 +192,7 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, cen
           </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 

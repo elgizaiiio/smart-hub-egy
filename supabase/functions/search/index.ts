@@ -13,36 +13,52 @@ serve(async (req) => {
     const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
     if (!SERPER_API_KEY) throw new Error("SERPER_API_KEY not configured");
 
-    const resp = await fetch("https://google.serper.dev/search", {
-      method: "POST",
-      headers: {
-        "X-API-KEY": SERPER_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ q: query, num: 8 }),
-    });
+    // Parallel: web search + image search
+    const [searchResp, imageResp] = await Promise.all([
+      fetch("https://google.serper.dev/search", {
+        method: "POST",
+        headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ q: query, num: 8 }),
+      }),
+      fetch("https://google.serper.dev/images", {
+        method: "POST",
+        headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ q: query, num: 6 }),
+      }),
+    ]);
 
-    const data = await resp.json();
-    
+    const data = await searchResp.json();
+    const imageData = await imageResp.json();
+
     let context = "";
     const images: string[] = [];
 
     if (data.organic) {
-      context = data.organic.map((r: any, i: number) => 
+      context = data.organic.map((r: any, i: number) =>
         `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`
       ).join("\n\n");
     }
 
-    if (data.images) {
-      data.images.slice(0, 4).forEach((img: any) => {
+    // Get images from dedicated image search
+    if (imageData.images) {
+      imageData.images.slice(0, 4).forEach((img: any) => {
         if (img.imageUrl) images.push(img.imageUrl);
+      });
+    }
+
+    // Fallback: also check inline images from web search
+    if (data.images && images.length < 2) {
+      data.images.forEach((img: any) => {
+        if (img.imageUrl && !images.includes(img.imageUrl) && images.length < 4) {
+          images.push(img.imageUrl);
+        }
       });
     }
 
     if (data.knowledgeGraph) {
       const kg = data.knowledgeGraph;
       context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
-      if (kg.imageUrl) images.unshift(kg.imageUrl);
+      if (kg.imageUrl && !images.includes(kg.imageUrl)) images.unshift(kg.imageUrl);
     }
 
     return new Response(JSON.stringify({ context, images }), {

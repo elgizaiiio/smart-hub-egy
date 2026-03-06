@@ -246,7 +246,7 @@ const ChatPage = () => {
               className="flex items-center gap-2"
             >
               <FancyButton onClick={() => navigate("/pricing")}>
-                Unlock Megsy Pro
+                Unlock Pro
               </FancyButton>
             </motion.div>
           )}

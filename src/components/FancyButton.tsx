@@ -1,5 +1,3 @@
-import { Sparkles } from "lucide-react";
-
 interface FancyButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
@@ -15,7 +13,6 @@ const FancyButton = ({ children, onClick, className = "" }: FancyButtonProps) =>
       ))}
     </div>
     <span className="inner">
-      <Sparkles className="w-4 h-4" />
       {children}
     </span>
   </button>
