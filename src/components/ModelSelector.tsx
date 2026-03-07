@@ -112,9 +112,10 @@ interface ModelSelectorProps {
   onModelChange: (model: ModelOption) => void;
   showCategories?: boolean;
   centerDropdown?: boolean;
+  colorClass?: string;
 }
 
-const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: ModelSelectorProps) => {
+const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, colorClass }: ModelSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"model" | "tool">("model");
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 280 });
