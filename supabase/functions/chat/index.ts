@@ -11,10 +11,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model, mode } = await req.json();
+    const { messages, model, mode, searchEnabled } = await req.json();
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
+    const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
 
     // Determine which gateway to use based on model
     let apiUrl: string;
