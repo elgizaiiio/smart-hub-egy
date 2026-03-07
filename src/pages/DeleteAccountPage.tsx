@@ -86,7 +86,7 @@ const DeleteAccountPage = () => {
         {isDeleting ? (
           <div className="w-4 h-4 border-2 border-destructive-foreground border-t-transparent rounded-full animate-spin" />
         ) : (
-          <Trash2 className="w-4 h-4" />
+          <UserX className="w-4 h-4" />
         )}
         {isDeleting ? "Deleting..." : "Delete My Account"}
       </button>
