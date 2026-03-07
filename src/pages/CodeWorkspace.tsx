@@ -388,16 +388,14 @@ const CodeWorkspace = () => {
             addLog("Installing dependencies...");
             await callSandbox({
               action: "exec",
-              app_name: sb.appName,
-              machine_id: sb.machineId,
+              sprite_name: sb.spriteName,
               command: "cd /app && npm install",
             });
 
             addLog("Starting dev server...");
             await callSandbox({
               action: "exec",
-              app_name: sb.appName,
-              machine_id: sb.machineId,
+              sprite_name: sb.spriteName,
               command: "cd /app && npm run dev &",
             });
 
