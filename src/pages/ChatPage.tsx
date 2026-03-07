@@ -219,22 +219,17 @@ const ChatPage = () => {
       } catch { /* continue without search */ }
     }
 
-    // Build messages for API - support multimodal content
+    // Build messages for API - support multimodal content for all messages with images
     const allMessages: any[] = [...messages, userMsg].map(m => {
-      // For the current user message, build multimodal if images attached
-      if (m === userMsg && imageAttachments.length > 0) {
+      const hasImages = (m === userMsg && imageAttachments.length > 0) || (m.attachedImages && m.attachedImages.length > 0);
+      if (hasImages) {
         const contentParts: any[] = [];
-        // Add images first
-        imageAttachments.forEach(f => {
-          if (f.type === "video") {
-            contentParts.push({ type: "image_url", image_url: { url: f.data } });
-          } else {
-            contentParts.push({ type: "image_url", image_url: { url: f.data } });
-          }
+        const imgs = m === userMsg ? imageAttachments.map(f => f.data) : (m.attachedImages || []);
+        imgs.forEach((imgData: string) => {
+          contentParts.push({ type: "image_url", image_url: { url: imgData } });
         });
-        // Add text
-        if (textParts.join("").trim()) {
-          contentParts.push({ type: "text", text: textParts.join("").trim() });
+        if (m.content?.trim()) {
+          contentParts.push({ type: "text", text: m.content.trim() });
         }
         return { role: m.role, content: contentParts };
       }
