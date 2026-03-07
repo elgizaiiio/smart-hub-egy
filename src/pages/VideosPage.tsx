@@ -259,6 +259,12 @@ const VideosPage = () => {
       return;
     }
 
+    const creditCost = Number(selectedModel.credits) || 1;
+    if (userId && !hasEnoughCredits(creditCost)) {
+      toast.error("رصيد الكريدت غير كافي. يرجى شحن حسابك.");
+      return;
+    }
+
     const userContent = trimmed || `Generate with ${selectedModel.name}`;
     const userMsg: ChatMsg = { role: "user", content: userContent };
     setMessages((prev) => [...prev, userMsg]);
@@ -279,6 +285,8 @@ const VideosPage = () => {
           prompt: userContent,
           model: selectedModel.id,
           image_url: attachedImages[0]?.dataUrl || undefined,
+          user_id: userId,
+          credits_cost: creditCost,
         }),
       });
 
@@ -305,6 +313,7 @@ const VideosPage = () => {
 
     setIsGenerating(false);
     setAttachedImages([]);
+    refreshCredits();
 
     if (convId) {
       await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
