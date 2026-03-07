@@ -1,22 +1,8 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Search, MessageSquare, Image, Wand2, Video, Film, User, Globe, Brain, Cpu, Zap, Sparkles, Palette, Layers, Type, Leaf, PenTool, Star, Flower2, Brush, Moon, Wind, Waves, Shapes, Camera, Hexagon, Smile, QrCode, Edit3, Eraser, Droplets, Maximize2, Sliders, Copy, Scissors, ArrowUpRight, Scan, Clock, Replace, Paintbrush, Sun, Package, UserCircle, Clapperboard, Gauge, Play, Tv, Music, MonitorPlay, Columns, Mic, AudioLines, Terminal } from "lucide-react";
-import { API_MODELS, API_CATEGORIES, type ApiModel } from "@/lib/apiModelsData";
-
-const ICON_MAP: Record<string, React.ElementType> = {
-  MessageSquare, Brain, Cpu, Zap, Search, Sparkles, Image, Palette, Layers, Type, Leaf, PenTool, Star, Flower2, Brush, Moon, Wind, Waves, Shapes, Camera, Hexagon, Smile, QrCode, Edit3, Eraser, Droplets, Maximize2, Sliders, Copy, Scissors, ArrowUpRight, Scan, Clock, Replace, Paintbrush, Sun, Package, UserCircle, Video, Clapperboard, Gauge, Film, Play, Tv, Music, MonitorPlay, Columns, User, Mic, AudioLines, Globe, Terminal, Wand2,
-};
-
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  "chat": MessageSquare,
-  "image-gen": Image,
-  "image-tools": Wand2,
-  "video-gen": Video,
-  "video-i2v": Film,
-  "avatar": User,
-  "services": Globe,
-};
+import { ArrowLeft, Search } from "lucide-react";
+import { API_MODELS, API_CATEGORIES } from "@/lib/apiModelsData";
 
 const ApiModelsPage = () => {
   const [search, setSearch] = useState("");
@@ -32,18 +18,16 @@ const ApiModelsPage = () => {
     return models;
   }, [search, activeCategory]);
 
-  const getIcon = (iconName: string) => ICON_MAP[iconName] || Sparkles;
-
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/api" className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <span className="font-display text-lg font-bold text-foreground">Models & Services</span>
+            <span className="font-display text-lg font-bold text-foreground">Models</span>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/api/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">Docs</Link>
@@ -54,11 +38,11 @@ const ApiModelsPage = () => {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold text-foreground mb-2">Model Catalog</h1>
-          <p className="text-muted-foreground">Browse all {API_MODELS.length}+ AI models available through the Megsy API</p>
+          <p className="text-muted-foreground text-sm">Browse all {API_MODELS.length}+ AI models available through the unified API</p>
         </motion.div>
 
         {/* Search */}
@@ -82,86 +66,75 @@ const ApiModelsPage = () => {
           </button>
           {API_CATEGORIES.map(cat => {
             const count = API_MODELS.filter(m => m.category === cat.id).length;
-            const Icon = CATEGORY_ICONS[cat.id] || Sparkles;
             return (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${activeCategory === cat.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeCategory === cat.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
               >
-                <Icon className="w-3 h-3" />
                 {cat.label} ({count})
               </button>
             );
           })}
         </div>
 
-        {/* Models Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {/* Models Table */}
+        <div className="rounded-xl border border-border overflow-hidden">
+          <div className="grid grid-cols-12 px-4 py-2.5 border-b border-border bg-secondary/30 text-xs font-medium text-muted-foreground">
+            <span className="col-span-3">Model</span>
+            <span className="col-span-5 hidden sm:block">Description</span>
+            <span className="col-span-2 text-center hidden sm:block">Category</span>
+            <span className="col-span-2 sm:col-span-2 text-right">Credits</span>
+          </div>
           {filtered.map((model, i) => {
-            const Icon = getIcon(model.icon);
             const catLabel = API_CATEGORIES.find(c => c.id === model.category)?.label || model.category;
             return (
-              <motion.div
-                key={model.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all group"
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-display text-sm font-semibold text-foreground truncate">{model.name}</h3>
-                    <span className="text-[10px] text-muted-foreground">{catLabel}</span>
-                  </div>
+              <div key={model.id} className={`grid grid-cols-12 px-4 py-3 text-sm items-center ${i > 0 ? "border-t border-border" : ""} hover:bg-secondary/20 transition-colors`}>
+                <div className="col-span-5 sm:col-span-3">
+                  <span className="font-medium text-foreground">{model.name}</span>
+                  <code className="block text-[10px] text-muted-foreground mt-0.5">{model.id}</code>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{model.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-primary">{model.credits} credit{model.credits !== 1 ? "s" : ""}/request</span>
-                  <code className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{model.id}</code>
-                </div>
-              </motion.div>
+                <span className="col-span-5 text-muted-foreground text-xs hidden sm:block line-clamp-1">{model.description}</span>
+                <span className="col-span-2 text-center hidden sm:block">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{catLabel}</span>
+                </span>
+                <span className="col-span-7 sm:col-span-2 text-right text-primary font-medium">{model.credits} cr</span>
+              </div>
             );
           })}
         </div>
 
         {filtered.length === 0 && (
           <div className="text-center py-16">
-            <Search className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">No models found matching "{search}"</p>
           </div>
         )}
 
-        {/* Summary Table */}
-        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="mt-16">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4 text-center">Pricing Summary</h2>
-          <div className="max-w-2xl mx-auto rounded-xl border border-border overflow-hidden">
-            {API_CATEGORIES.map((cat, i) => {
-              const models = API_MODELS.filter(m => m.category === cat.id);
-              const minCredits = Math.min(...models.map(m => m.credits));
-              const maxCredits = Math.max(...models.map(m => m.credits));
-              const CatIcon = CATEGORY_ICONS[cat.id] || Sparkles;
-              return (
-                <div key={cat.id} className={`flex items-center justify-between px-4 py-3 text-sm ${i > 0 ? "border-t border-border" : ""}`}>
-                  <div className="flex items-center gap-2">
-                    <CatIcon className="w-4 h-4 text-primary" />
-                    <span className="font-medium text-foreground">{cat.label}</span>
-                    <span className="text-xs text-muted-foreground">({models.length} models)</span>
-                  </div>
-                  <span className="text-primary font-medium text-sm">
-                    {minCredits === maxCredits ? `${minCredits} credits` : `${minCredits}–${maxCredits} credits`}
-                  </span>
-                </div>
-              );
-            })}
+        {/* Pricing Summary */}
+        <div className="mt-12 rounded-xl border border-border overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-border bg-secondary/30">
+            <span className="text-xs font-medium text-muted-foreground">Pricing Summary</span>
           </div>
-        </motion.div>
+          {API_CATEGORIES.map((cat, i) => {
+            const models = API_MODELS.filter(m => m.category === cat.id);
+            const min = Math.min(...models.map(m => m.credits));
+            const max = Math.max(...models.map(m => m.credits));
+            return (
+              <div key={cat.id} className={`flex items-center justify-between px-4 py-3 text-sm ${i > 0 ? "border-t border-border" : ""}`}>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground">{cat.label}</span>
+                  <span className="text-xs text-muted-foreground">({models.length})</span>
+                </div>
+                <span className="text-primary font-medium">
+                  {min === max ? `${min} credits` : `${min}-${max} credits`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
         {/* CTA */}
-        <div className="mt-12 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 p-8 text-center">
+        <div className="mt-12 rounded-2xl bg-card border border-border p-8 text-center">
           <h2 className="font-display text-xl font-bold text-foreground mb-2">Start Using These Models</h2>
           <p className="text-sm text-muted-foreground mb-4">Get your API key and integrate any model in minutes.</p>
           <div className="flex items-center justify-center gap-3">
