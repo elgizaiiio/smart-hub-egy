@@ -638,6 +638,8 @@ const ImagesPage = () => {
           </div>
 
           <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} multiple />
+
+          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} multiple />
         </div>
       </div>
     </div>
