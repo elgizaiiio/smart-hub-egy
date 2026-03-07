@@ -127,6 +127,33 @@ export type Database = {
           },
         ]
       }
+      model_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_type: string
+          media_url: string
+          model_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url: string
+          model_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+          model_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
