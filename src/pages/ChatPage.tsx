@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Globe, Camera, Image, FileUp, GraduationCap, ShoppingCart, Link2 } from "lucide-react";
+import { Menu, Plus, Globe, Camera, Image, FileUp, ShoppingCart, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +16,6 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   images?: string[];
-  attachedImages?: string[];
   liked?: boolean | null;
   id?: string;
 }
@@ -26,25 +25,7 @@ type ChatMode = "normal" | "learning" | "shopping";
 const MODE_PROMPTS: Record<ChatMode, string> = {
   normal: "",
   learning: "You are in Learning Mode. Explain everything step by step with examples, analogies, and clear breakdowns. Make complex topics easy to understand. Use bullet points, numbered steps, and structured format.",
-  shopping: "You are in Shopping Mode. Help the user find the best products, compare prices, suggest alternatives, and provide purchase recommendations. Include pros/cons when comparing items.",
-};
-
-const DAILY_PHOTO_KEY = "megsy_daily_photos";
-const MAX_DAILY_PHOTOS = 3;
-
-const getDailyPhotoCount = (): number => {
-  const stored = localStorage.getItem(DAILY_PHOTO_KEY);
-  if (!stored) return 0;
-  try {
-    const { date, count } = JSON.parse(stored);
-    if (date === new Date().toDateString()) return count;
-    return 0;
-  } catch { return 0; }
-};
-
-const incrementDailyPhoto = () => {
-  const count = getDailyPhotoCount() + 1;
-  localStorage.setItem(DAILY_PHOTO_KEY, JSON.stringify({ date: new Date().toDateString(), count }));
+  shopping: "You are in Shopping Mode. Help the user find the best products, compare prices, suggest alternatives, and provide purchase recommendations. Include pros/cons when comparing items."
 };
 
 const ChatPage = () => {
@@ -59,11 +40,10 @@ const ChatPage = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
-  const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -74,11 +54,11 @@ const ChatPage = () => {
   const createOrUpdateConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
     const title = firstMessage.slice(0, 50) || "New Chat";
-    const { data } = await supabase
-      .from("conversations")
-      .insert({ title, mode: "chat", model: selectedModel.id })
-      .select("id")
-      .single();
+    const { data } = await supabase.
+    from("conversations").
+    insert({ title, mode: "chat", model: selectedModel.id }).
+    select("id").
+    single();
     if (data) {
       setConversationId(data.id);
       return data.id;
@@ -91,28 +71,28 @@ const ChatPage = () => {
       conversation_id: convId,
       role,
       content,
-      images: images || null,
+      images: images || null
     });
   };
 
   const handleLike = async (index: number, liked: boolean | null) => {
-    setMessages(prev => prev.map((m, i) => i === index ? { ...m, liked } : m));
+    setMessages((prev) => prev.map((m, i) => i === index ? { ...m, liked } : m));
   };
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
-    const { data: msgs } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: true });
+    const { data: msgs } = await supabase.
+    from("messages").
+    select("*").
+    eq("conversation_id", id).
+    order("created_at", { ascending: true });
     if (msgs) {
-      setMessages(msgs.map(m => ({
+      setMessages(msgs.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
         images: m.images || undefined,
         liked: m.liked,
-        id: m.id,
+        id: m.id
       })));
     }
   };
@@ -128,51 +108,34 @@ const ChatPage = () => {
   };
 
   const handleModeChange = (mode: ChatMode) => {
-    setChatMode(prev => prev === mode ? "normal" : mode);
+    setChatMode((prev) => prev === mode ? "normal" : mode);
+    // Disable search when enabling a mode
     if (mode !== "normal") setSearchEnabled(false);
     setPlusMenuOpen(false);
   };
 
   const handleSearchToggle = () => {
     setSearchEnabled(!searchEnabled);
+    // Disable other modes when enabling search
     if (!searchEnabled) setChatMode("normal");
     setPlusMenuOpen(false);
   };
 
   const handleSend = async () => {
-    if (!input.trim() && attachedFiles.length === 0) return;
-    if (isLoading) return;
-
-    // Build multimodal message content
-    const imageAttachments = attachedFiles.filter(f => f.type === "image" || f.type === "video");
-    const textParts: string[] = [];
-    if (input.trim()) textParts.push(input.trim());
-    
-    // Add non-image file contents to text
-    const fileAttachments = attachedFiles.filter(f => f.type === "file");
-    fileAttachments.forEach(f => {
-      textParts.push(`\n\nFile (${f.name}):\n${f.data}`);
-    });
-
-    const displayContent = textParts.join("") || "Sent an image";
-    const userMsg: Message = {
-      role: "user",
-      content: displayContent,
-      attachedImages: imageAttachments.map(f => f.data),
-    };
+    if (!input.trim() || isLoading) return;
+    const userMsg: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    const currentAttachedFiles = [...attachedFiles];
     setAttachedFiles([]);
     setIsLoading(true);
     setIsThinking(true);
 
-    const convId = await createOrUpdateConversation(displayContent);
-    if (convId) await saveMessage(convId, "user", displayContent);
+    const convId = await createOrUpdateConversation(input);
+    if (convId) await saveMessage(convId, "user", input);
 
     if (convId && messages.length === 0) {
       await supabase.from("conversations").update({
-        title: displayContent.slice(0, 50),
+        title: input.slice(0, 50),
         updated_at: new Date().toISOString()
       }).eq("id", convId);
     }
@@ -188,7 +151,7 @@ const ChatPage = () => {
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant") {
-          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantContent } : m));
+          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
         }
         return [...prev, { role: "assistant", content: assistantContent }];
       });
@@ -205,10 +168,10 @@ const ChatPage = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
           },
           body: JSON.stringify({ query: searchQuery }),
-          signal: controller.signal,
+          signal: controller.signal
         });
         if (searchResp.ok) {
           const searchData = await searchResp.json();
@@ -216,26 +179,11 @@ const ChatPage = () => {
           searchImages = searchData.images || [];
         }
         setSearchStatus("Thinking");
-      } catch { /* continue without search */ }
+      } catch {/* continue without search */}
     }
 
-    // Build messages for API - support multimodal content for all messages with images
-    const allMessages: any[] = [...messages, userMsg].map(m => {
-      const hasImages = (m === userMsg && imageAttachments.length > 0) || (m.attachedImages && m.attachedImages.length > 0);
-      if (hasImages) {
-        const contentParts: any[] = [];
-        const imgs = m === userMsg ? imageAttachments.map(f => f.data) : (m.attachedImages || []);
-        imgs.forEach((imgData: string) => {
-          contentParts.push({ type: "image_url", image_url: { url: imgData } });
-        });
-        if (m.content?.trim()) {
-          contentParts.push({ type: "text", text: m.content.trim() });
-        }
-        return { role: m.role, content: contentParts };
-      }
-      return { role: m.role, content: m.content };
-    });
-    
+    const allMessages = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
+
     // Add mode prompt
     if (chatMode !== "normal" && MODE_PROMPTS[chatMode]) {
       allMessages.unshift({ role: "user" as const, content: `[System instruction]: ${MODE_PROMPTS[chatMode]}` });
@@ -243,17 +191,6 @@ const ChatPage = () => {
 
     if (searchContext) {
       allMessages.push({ role: "user" as const, content: `[Search results]:\n${searchContext}\n\nUse these results to answer accurately. Include source links when relevant.` });
-    }
-
-    // Set search images immediately on the assistant message
-    if (searchImages.length > 0) {
-      setMessages(prev => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, images: searchImages } : m);
-        }
-        return [...prev, { role: "assistant", content: "", images: searchImages }];
-      });
     }
 
     await streamChat({
@@ -266,9 +203,9 @@ const ChatPage = () => {
         setSearchStatus("");
         if (convId && assistantContent) {
           await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
-          // Ensure search images are on the final message
+          // Update the last assistant message to include search images
           if (searchImages.length > 0) {
-            setMessages(prev => {
+            setMessages((prev) => {
               const last = prev[prev.length - 1];
               if (last?.role === "assistant") {
                 return prev.map((m, i) => i === prev.length - 1 ? { ...m, images: searchImages } : m);
@@ -279,8 +216,8 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
         }
       },
-      onError: (err) => { toast.error(err); setIsThinking(false); setIsLoading(false); setSearchStatus(""); },
-      signal: controller.signal,
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");},
+      signal: controller.signal
     });
   };
 
@@ -296,15 +233,16 @@ const ChatPage = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+    if (file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = () => {
-        setAttachedFiles(prev => [...prev, { name: file.name, type: file.type.startsWith("video/") ? "video" : "image", data: reader.result as string }]);
+        setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
       };
       reader.readAsDataURL(file);
     } else {
       const text = await file.text();
-      setAttachedFiles(prev => [...prev, { name: file.name, type: "file", data: text.slice(0, 5000) }]);
+      setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: text.slice(0, 5000) }]);
+      setInput((prev) => prev + `\n\nFile (${file.name}):\n${text.slice(0, 5000)}`);
     }
     e.target.value = "";
   };
@@ -314,25 +252,7 @@ const ChatPage = () => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      setAttachedFiles(prev => [...prev, { name: file.name, type: file.type.startsWith("video/") ? "video" : "image", data: reader.result as string }]);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const count = getDailyPhotoCount();
-    if (count >= MAX_DAILY_PHOTOS) {
-      toast.error(`Daily photo limit reached (${MAX_DAILY_PHOTOS}/day). Upgrade for unlimited.`);
-      e.target.value = "";
-      return;
-    }
-    incrementDailyPhoto();
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
+      setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -348,161 +268,148 @@ const ChatPage = () => {
         onNewChat={handleNewChat}
         onSelectConversation={loadConversation}
         activeConversationId={conversationId}
-        currentMode="chat"
-      />
+        currentMode="chat" />
+      
 
-      {/* Header */}
+      {/* Header - transparent, no background */}
       <div className="flex items-center justify-between px-4 py-2">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-        >
+          className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+          
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <AnimatePresence>
-            {!hasConversation && (
-              <motion.div
-                initial={{ opacity: 1 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-              >
-                <FancyButton onClick={() => navigate("/pricing")}>
-                  Unlock Pro
-                </FancyButton>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <AnimatePresence>
+          {!hasConversation &&
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}>
+            
+              <FancyButton onClick={() => navigate("/pricing")}>
+                Unlock Pro
+              </FancyButton>
+            </motion.div>
+          }
+        </AnimatePresence>
 
         <button
           onClick={handleNewChat}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-        >
+          className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+          
           <Plus className="w-4 h-4" />
         </button>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full px-4">
+        {messages.length === 0 ?
+        <div className="flex flex-col items-center justify-center h-full px-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-              className="text-center max-w-lg"
-            >
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-lg">
+            
               <h2 className="font-display text-2xl md:text-3xl font-bold mb-3 text-foreground">
                 Hey, what's up?
               </h2>
               <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
                 {[
-                  { label: "Images", path: "/images" },
-                  { label: "Videos", path: "/videos" },
-                  { label: "Files", path: "/files" },
-                  { label: "Code", path: "/code" },
-                ].map(item => (
-                  <button
-                    key={item.label}
-                    onClick={() => navigate(item.path)}
-                    className="px-4 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
-                  >
+              { label: "Images", path: "/images" },
+              { label: "Videos", path: "/videos" },
+              { label: "Files", path: "/files" },
+              { label: "Code", path: "/code" }].
+              map((item) =>
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                className="px-4 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border">
+                
                     {item.label}
                   </button>
-                ))}
+              )}
               </div>
             </motion.div>
-          </div>
-        ) : (
-          <div className="max-w-3xl mx-auto py-4 px-4 space-y-2">
-            {messages.map((msg, i) => (
-              <ChatMessage
-                key={i}
-                role={msg.role}
-                content={msg.content}
-                images={msg.images}
-                attachedImages={msg.attachedImages}
-                isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
-                isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
-                liked={msg.liked}
-                onLike={(liked) => handleLike(i, liked)}
-              />
-            ))}
-            {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
-              <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
-            )}
-            {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && (
-              <ThinkingLoader />
-            )}
+          </div> :
+
+        <div className="max-w-3xl mx-auto py-4 px-4 space-y-2">
+            {messages.map((msg, i) =>
+          <ChatMessage
+            key={i}
+            role={msg.role}
+            content={msg.content}
+            images={msg.images}
+            isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
+            isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
+            liked={msg.liked}
+            onLike={(liked) => handleLike(i, liked)} />
+
+          )}
+            {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
+          <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
+          }
+            {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content &&
+          <ThinkingLoader />
+          }
             <div ref={messagesEndRef} />
           </div>
-        )}
+        }
       </div>
 
       {/* Input */}
       <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto space-y-1.5">
-          {/* Mode badge above input */}
-          {chatMode !== "normal" && (
-            <div className="flex justify-center">
-              <span className="text-[10px] px-3 py-1 rounded-full bg-primary/15 text-primary backdrop-blur-sm font-medium">
-                {chatMode === "learning" ? "📚 Learning Mode" : "🛒 Shopping Mode"}
-              </span>
-            </div>
-          )}
           {/* Attached files preview */}
-          {attachedFiles.length > 0 && (
-            <div className="flex gap-2 px-2 overflow-x-auto pb-1">
-              {attachedFiles.map((f, i) => (
-                <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border">
-                  {f.type === "image" ? (
-                    <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" />
-                  ) : f.type === "video" ? (
-                    <video src={f.data} className="w-8 h-8 rounded object-cover" />
-                  ) : (
-                    <FileUp className="w-3 h-3" />
-                  )}
+          {attachedFiles.length > 0 &&
+          <div className="flex gap-2 px-2 overflow-x-auto pb-1">
+              {attachedFiles.map((f, i) =>
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border">
+                  {f.type === "image" ?
+              <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" /> :
+
+              <FileUp className="w-3 h-3" />
+              }
                   <span className="truncate max-w-[100px]">{f.name}</span>
-                  <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">×</button>
+                  <button onClick={() => setAttachedFiles((prev) => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">×</button>
                 </div>
-              ))}
+            )}
             </div>
-          )}
+          }
 
           <div className="relative">
             {/* Plus Menu */}
             <AnimatePresence>
-              {plusMenuOpen && (
-                <>
+              {plusMenuOpen &&
+              <>
                   <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72"
-                  >
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72">
+                  
                     {/* Camera / Photos / Files grid */}
                     <div className="grid grid-cols-3 gap-2 mb-3">
                       <button
-                        onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }}
-                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors"
-                      >
+                      onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}}
+                      className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                      
                         <Camera className="w-5 h-5 text-muted-foreground" />
                         <span className="text-[11px] text-foreground">Camera</span>
                       </button>
                       <button
-                        onClick={() => { photoInputRef.current?.click(); setPlusMenuOpen(false); }}
-                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors"
-                      >
+                      onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}}
+                      className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                      
                         <Image className="w-5 h-5 text-muted-foreground" />
                         <span className="text-[11px] text-foreground">Photos</span>
                       </button>
                       <button
-                        onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }}
-                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors"
-                      >
+                      onClick={() => {fileInputRef.current?.click();setPlusMenuOpen(false);}}
+                      className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                      
                         <FileUp className="w-5 h-5 text-muted-foreground" />
                         <span className="text-[11px] text-foreground">Files</span>
                       </button>
@@ -511,9 +418,9 @@ const ChatPage = () => {
                     <div className="border-t border-border pt-2 space-y-1">
                       {/* Web Search toggle */}
                       <button
-                        onClick={handleSearchToggle}
-                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
-                      >
+                      onClick={handleSearchToggle}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
+                      
                         <div className="flex items-center gap-3">
                           <Globe className="w-4 h-4 text-muted-foreground" />
                           <span className="text-sm text-foreground">Web search</span>
@@ -526,27 +433,27 @@ const ChatPage = () => {
                       {/* Model selector */}
                       <div className="px-3 py-2">
                         <ModelSelector
-                          mode="chat"
-                          selectedModel={selectedModel}
-                          onModelChange={(m) => { setSelectedModel(m); }}
-                        />
+                        mode="chat"
+                        selectedModel={selectedModel}
+                        onModelChange={(m) => {setSelectedModel(m);}} />
+                      
                       </div>
                     </div>
 
                     <div className="border-t border-border mt-1 pt-1">
                       <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
                       <button
-                        onClick={() => handleModeChange("learning")}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}
-                      >
-                        <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                      onClick={() => handleModeChange("learning")}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                      
+                        
                         <span className="text-sm text-foreground">Learning Mode</span>
                         {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
                       </button>
                       <button
-                        onClick={() => handleModeChange("shopping")}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}
-                      >
+                      onClick={() => handleModeChange("shopping")}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                      
                         <ShoppingCart className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-foreground">Shopping Mode</span>
                         {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
@@ -555,9 +462,9 @@ const ChatPage = () => {
 
                     <div className="border-t border-border mt-1 pt-1">
                       <button
-                        onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors"
-                      >
+                      onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors">
+                      
                         <Link2 className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-foreground">Integrations</span>
                         <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
@@ -565,7 +472,7 @@ const ChatPage = () => {
                     </div>
                   </motion.div>
                 </>
-              )}
+              }
             </AnimatePresence>
 
             <AnimatedInput
@@ -575,16 +482,15 @@ const ChatPage = () => {
               onCancel={handleCancel}
               onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)}
               disabled={isLoading}
-              isLoading={isLoading}
-            />
+              isLoading={isLoading} />
+            
           </div>
-          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.docx,.xlsx,.xml,.yaml,.toml" />
-          <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*,video/*" capture="environment" />
-          <input ref={photoInputRef} type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" />
+          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
+          <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default ChatPage;
