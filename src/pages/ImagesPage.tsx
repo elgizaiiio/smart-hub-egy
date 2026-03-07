@@ -540,8 +540,8 @@ const ImagesPage = () => {
               </div>
             </div>
 
-            <h2 className="font-display text-lg font-bold text-foreground mb-1">{selectedModel.name}</h2>
-            <p className="text-xs text-muted-foreground mb-3 text-center">{capability.helperText}</p>
+            <h2 className="font-display text-lg font-bold text-foreground mb-1">Create Stunning Images</h2>
+            <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">Turn your imagination into beautiful artwork — just describe what you want to see</p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
