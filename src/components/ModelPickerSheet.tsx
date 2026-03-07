@@ -242,16 +242,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
             /* ═══ LIST VIEW ═══ */
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-5xl mx-auto px-4 py-4 space-y-4">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Search models..."
-                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-secondary text-sm text-foreground placeholder:text-muted-foreground outline-none border border-transparent focus:border-primary/30 transition-colors"
-                  />
-                </div>
 
                 {/* Tabs */}
                 {hasTools && (
