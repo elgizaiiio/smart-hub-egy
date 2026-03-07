@@ -178,8 +178,9 @@ serve(async (req) => {
       stream: true,
     };
 
-    if (composioTools.length > 0) {
-      body.tools = composioTools;
+    const allTools = [...composioTools, ...searchTools];
+    if (allTools.length > 0) {
+      body.tools = allTools;
       body.tool_choice = "auto";
     }
 
