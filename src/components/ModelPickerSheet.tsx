@@ -299,12 +299,8 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                               </div>
                             )}
 
-                            {/* Selected indicator */}
-                            {isSelected && (
-                              <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground" />
-                              </div>
-                            )}
+
+
                           </div>
 
                           {/* Card info - name + credits + ? button */}
