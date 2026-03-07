@@ -24,5 +24,8 @@ verify_jwt = false
 [functions.code-sandbox]
 verify_jwt = false
 
+[functions.sprites-sandbox]
+verify_jwt = false
+
 [functions.github-repo]
 verify_jwt = false

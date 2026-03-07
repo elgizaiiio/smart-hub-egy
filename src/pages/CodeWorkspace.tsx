@@ -20,8 +20,7 @@ interface ChatMsg {
 }
 
 interface SandboxState {
-  appName: string | null;
-  machineId: string | null;
+  spriteName: string | null;
   previewUrl: string | null;
   status: "idle" | "creating" | "ready" | "building" | "error";
 }
@@ -30,7 +29,7 @@ interface SandboxState {
 type FileTree = Record<string, string>;
 
 const callSandbox = async (body: Record<string, unknown>) => {
-  const resp = await fetch(`${SUPABASE_URL}/functions/v1/code-sandbox`, {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/sprites-sandbox`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -113,7 +112,7 @@ const CodeWorkspace = () => {
 
   // Sandbox state
   const [sandbox, setSandbox] = useState<SandboxState>({
-    appName: null, machineId: null, previewUrl: null, status: "idle",
+    spriteName: null, previewUrl: null, status: "idle",
   });
   const [files, setFiles] = useState<FileTree>({});
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -214,25 +213,19 @@ const CodeWorkspace = () => {
   };
 
   const provisionSandbox = async (): Promise<SandboxState> => {
-    const appName = `megsy-${Date.now()}`;
+    const spriteName = `megsy-${Date.now()}`;
     setSandbox((s) => ({ ...s, status: "creating" }));
-    addLog("Creating sandbox environment...");
+    addLog("Creating Sprites sandbox...");
 
     try {
-      // Create app
-      await callSandbox({ action: "create-app", app_name: appName });
-      addLog("Sandbox app created.");
+      const spriteData = await callSandbox({ action: "create", sprite_name: spriteName });
+      const previewUrl = spriteData.url || `https://${spriteName}.sprites.app`;
+      addLog(`Sprite created: ${spriteName}`);
 
-      // Create machine
-      const machine = await callSandbox({ action: "create-machine", app_name: appName });
-      const machineId = machine.id;
-      addLog("Machine provisioned. Waiting for startup...");
+      // Wait for sprite to be ready
+      await new Promise((r) => setTimeout(r, 3000));
 
-      // Wait for machine to be ready
-      await new Promise((r) => setTimeout(r, 5000));
-
-      const previewUrl = `https://${appName}.fly.dev`;
-      const newState: SandboxState = { appName, machineId, previewUrl, status: "ready" };
+      const newState: SandboxState = { spriteName, previewUrl, status: "ready" };
       setSandbox(newState);
       addLog(`Sandbox ready at ${previewUrl}`);
       return newState;
@@ -252,9 +245,8 @@ const CodeWorkspace = () => {
       addLog(`Writing ${filePath}...`);
       await callSandbox({
         action: "write-file",
-        app_name: sb.appName,
-        machine_id: sb.machineId,
-        file_path: filePath,
+        sprite_name: sb.spriteName,
+        file_path: `/app/${filePath}`,
         file_content: content,
       });
     }
@@ -396,16 +388,14 @@ const CodeWorkspace = () => {
             addLog("Installing dependencies...");
             await callSandbox({
               action: "exec",
-              app_name: sb.appName,
-              machine_id: sb.machineId,
+              sprite_name: sb.spriteName,
               command: "cd /app && npm install",
             });
 
             addLog("Starting dev server...");
             await callSandbox({
               action: "exec",
-              app_name: sb.appName,
-              machine_id: sb.machineId,
+              sprite_name: sb.spriteName,
               command: "cd /app && npm run dev &",
             });
 
@@ -416,8 +406,7 @@ const CodeWorkspace = () => {
               await supabase
                 .from("projects")
                 .update({
-                  fly_machine_id: sb.machineId,
-                  fly_app_name: sb.appName,
+                  fly_app_name: sb.spriteName,
                   preview_url: sb.previewUrl,
                   status: "running",
                 })

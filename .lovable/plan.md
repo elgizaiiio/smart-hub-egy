@@ -1,66 +1,41 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-## شرح Sprites.dev
+## ✅ Completed
 
-**Sprites** هي خدمة من Fly.io توفر بيئات Linux معزولة (sandboxes) لتشغيل أي كود بشكل آمن. كل Sprite هو "كمبيوتر صغير" مستمر يحتفظ بالملفات والحالة بين التشغيلات.
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-### المميزات الرئيسية:
-- **بيئة Linux كاملة** مع عزل على مستوى العتاد (Firecracker VMs)
-- **تخزين مستمر** - الملفات تبقى حتى بعد إيقاف الـ Sprite
-- **Checkpoints** - حفظ واستعادة حالة البيئة
-- **رابط HTTP عام** لكل Sprite (يستمع على المنفذ 8080)
-- **REST API بسيط** - إنشاء، تنفيذ أوامر، كتابة ملفات، حذف
-- **$30 رصيد تجريبي مجاني**
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-### API الرئيسي:
-```text
-POST   /v1/sprites              → إنشاء sprite
-POST   /v1/sprites/{name}/exec  → تنفيذ أمر
-PUT    /v1/sprites/{name}/files → كتابة ملفات
-DELETE /v1/sprites/{name}       → حذف sprite
-```
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-كل sprite يحصل على رابط: `https://{sprite-name}.sprites.dev/`
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
----
-
-## المفتاح المطلوب منك
-
-مفتاح واحد فقط: **SPRITES_TOKEN**
-
-للحصول عليه:
-1. اذهب إلى [sprites.dev](https://sprites.dev/)
-2. سجل دخول عبر Fly.io
-3. أنشئ Token جديد من صفحة التوكنات (كما في الصورة التي أرسلتها)
-4. انسخ الـ Token (يظهر مرة واحدة فقط)
-
----
-
-## خطة الدمج - استبدال Fly Machines بـ Sprites
-
-حالياً مشروعك يستخدم `code-sandbox` edge function التي تتصل بـ Fly Machines API مباشرة. سنستبدلها بـ Sprites API الأبسط والأقوى.
-
-### التغييرات المطلوبة:
-
-**1. إضافة Secret جديد**
-- إضافة `SPRITES_TOKEN` كـ Supabase secret
-
-**2. إنشاء Edge Function جديدة `sprites-sandbox/index.ts`**
-- تستبدل `code-sandbox` بالكامل
-- تدعم: `create` (إنشاء sprite)، `exec` (تنفيذ أوامر)، `write-file` (كتابة ملفات)، `destroy` (حذف)، `status` (حالة)
-- كل الطلبات تمر عبر `https://api.sprites.dev/v1/` مع `Authorization: Bearer SPRITES_TOKEN`
-- الـ preview URL يكون `https://{sprite-name}.sprites.dev/`
-
-**3. تحديث `CodeWorkspace.tsx`**
-- تغيير `callSandbox` لاستخدام الـ edge function الجديدة
-- تبسيط منطق الإنشاء (Sprites أبسط من Fly Machines)
-- تحديث الـ preview URL ليستخدم رابط Sprite
-- إزالة منطق Simulation Mode (Sprites أكثر استقراراً)
-
-### الفوائد:
-- API أبسط بكثير من Fly Machines
-- بيئة مستمرة (لا تحتاج إعادة إنشاء)
-- Checkpoints للحفظ والاستعادة
-- رابط عام تلقائي لكل sandbox
-- $30 مجاناً للبداية
-
+### 5. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
