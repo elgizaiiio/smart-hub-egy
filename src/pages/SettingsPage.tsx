@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ChevronRight, Globe, Paintbrush, Zap, User, CreditCard,
-  Gift, Code, Activity, Info, LogOut, Settings, Crown, Sparkles,
+  ArrowLeft, ChevronRight, Languages, Palette, Plug, UserCircle, Wallet,
+  Heart, Terminal, Wifi, HelpCircle, LogOut, Crown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 import { DesktopSettingsHome } from "@/components/DesktopSettingsHome";
+import FancyButton from "@/components/FancyButton";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -59,21 +60,21 @@ const SettingsPage = () => {
   const isPremium = plan !== "free";
 
   const quickActions = [
-    { icon: Paintbrush, label: "Theme", desc: "Colors & style", path: "/settings/customization", color: "bg-pink-500/10 text-pink-500" },
-    { icon: Globe, label: "Language", desc: "App language", path: "/settings/language", color: "bg-sky-500/10 text-sky-500" },
-    { icon: Zap, label: "Connect", desc: "Integrations", path: "/settings/integrations", color: "bg-amber-500/10 text-amber-500" },
+    { icon: Palette, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
+    { icon: Languages, label: "Language", desc: "App language", path: "/settings/language" },
+    { icon: Plug, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
   ];
 
   const menuItems = [
-    { icon: User, label: "Account", desc: "Profile & security", path: "/settings/profile" },
-    { icon: CreditCard, label: "Billing", desc: "Credits & payments", path: "/settings/billing" },
-    { icon: Gift, label: "Referrals", desc: "Invite & earn 20%", path: "/settings/referrals" },
-    { icon: Code, label: "APIs", desc: "Developer access", path: "/settings/apis" },
+    { icon: UserCircle, label: "Account", desc: "Profile & security", path: "/settings/profile" },
+    { icon: Wallet, label: "Billing", desc: "Credits & payments", path: "/settings/billing" },
+    { icon: Heart, label: "Referrals", desc: "Invite & earn 20%", path: "/settings/referrals" },
+    { icon: Terminal, label: "APIs", desc: "Developer access", path: "/settings/apis" },
   ];
 
   const supportItems = [
-    { icon: Activity, label: "System Status", path: "/status" },
-    { icon: Info, label: "About Megsy", path: "/about" },
+    { icon: Wifi, label: "System Status", path: "/status" },
+    { icon: HelpCircle, label: "About Megsy", path: "/about" },
   ];
 
   return (
@@ -84,10 +85,7 @@ const SettingsPage = () => {
           <button onClick={() => navigate("/")} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-muted-foreground" />
-            <h1 className="font-display text-base font-bold text-foreground">Settings</h1>
-          </div>
+          <h1 className="font-display text-base font-bold text-foreground">Settings</h1>
           <div className="w-9" />
         </div>
 
@@ -139,9 +137,7 @@ const SettingsPage = () => {
                   onClick={() => navigate(action.path)}
                   className="flex flex-col items-center gap-2 py-4 rounded-2xl hover:bg-muted/40 transition-all active:scale-95"
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${action.color}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
+                  <Icon className="w-6 h-6 text-muted-foreground" />
                   <div className="text-center">
                     <p className="text-xs font-medium text-foreground">{action.label}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{action.desc}</p>
@@ -151,54 +147,44 @@ const SettingsPage = () => {
             })}
           </div>
 
-          {/* Upgrade Banner */}
+          {/* Upgrade Banner — uses FancyButton */}
           {!isPremium && (
-            <motion.button
+            <motion.div
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
-              onClick={() => navigate("/pricing")}
-              className="w-full mb-8 p-4 rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98]"
-              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))" }}
+              className="mb-8 flex justify-center"
             >
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-white">Upgrade to Premium</p>
-                <p className="text-xs text-white/70">Unlock all AI features & unlimited access</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-white/50 shrink-0" />
-            </motion.button>
+              <FancyButton onClick={() => navigate("/pricing")} className="w-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+                Upgrade to Premium
+              </FancyButton>
+            </motion.div>
           )}
 
           {/* Menu Items */}
           <div className="mb-6">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 px-1">Account & Billing</p>
-            <div className="rounded-2xl overflow-hidden">
-              {menuItems.map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <motion.button
-                    key={item.label}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.15 + i * 0.04 }}
-                    onClick={() => navigate(item.path)}
-                    className="w-full flex items-center gap-3 py-3.5 px-1 text-left hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
-                      <Icon className="w-4.5 h-4.5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{item.label}</p>
-                      <p className="text-[11px] text-muted-foreground">{item.desc}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground/30 shrink-0" />
-                  </motion.button>
-                );
-              })}
-            </div>
+            {menuItems.map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <motion.button
+                  key={item.label}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.15 + i * 0.04 }}
+                  onClick={() => navigate(item.path)}
+                  className="w-full flex items-center gap-3 py-3.5 px-1 text-left hover:bg-muted/30 transition-colors"
+                >
+                  <Icon className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground/30 shrink-0" />
+                </motion.button>
+              );
+            })}
           </div>
 
           {/* Support */}
@@ -212,7 +198,7 @@ const SettingsPage = () => {
                   onClick={() => navigate(item.path)}
                   className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-muted/30 transition-colors"
                 >
-                  <Icon className="w-4.5 h-4.5 text-muted-foreground" />
+                  <Icon className="w-5 h-5 text-muted-foreground" />
                   <span className="flex-1 text-sm text-foreground">{item.label}</span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground/30" />
                 </button>
