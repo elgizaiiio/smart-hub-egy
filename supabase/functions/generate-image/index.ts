@@ -140,27 +140,39 @@ async function generateWithLovableAI(prompt: string) {
   }
 
   const data = await response.json();
+  console.log("Lovable AI response structure:", JSON.stringify(data).slice(0, 500));
   
-  // Extract image from response - Gemini image model returns inline image data
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error("No content in Lovable AI response");
+  // The gateway returns OpenAI-compatible format
+  const message = data.choices?.[0]?.message;
+  if (!message) throw new Error("No message in Lovable AI response");
 
-  // Check for inline_data (base64 image)
-  const parts = data.choices?.[0]?.message?.parts;
-  if (parts) {
-    for (const part of parts) {
+  // Check for content array with image parts (Gemini style via gateway)
+  if (Array.isArray(message.content)) {
+    for (const part of message.content) {
+      if (part.type === "image_url" && part.image_url?.url) {
+        return part.image_url.url;
+      }
       if (part.inline_data?.data) {
-        return `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
+        return `data:${part.inline_data.mime_type || "image/png"};base64,${part.inline_data.data}`;
       }
     }
   }
 
-  // If content is a URL
-  if (typeof content === "string" && (content.startsWith("http") || content.startsWith("data:"))) {
-    return content;
-  }
+  // Check string content for base64 or URL
+  const content = typeof message.content === "string" ? message.content : "";
+  
+  // Look for base64 image data in content
+  const base64Match = content.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+  if (base64Match) return base64Match[0];
+  
+  // Look for image URL in content
+  const urlMatch = content.match(/https?:\/\/[^\s"'<>]+\.(png|jpg|jpeg|gif|webp)[^\s"'<>]*/i);
+  if (urlMatch) return urlMatch[0];
 
-  throw new Error("Could not extract image from Lovable AI response");
+  // If content itself is a URL
+  if (content.startsWith("http") || content.startsWith("data:")) return content;
+
+  throw new Error("Could not extract image from Lovable AI response: " + content.slice(0, 200));
 }
 
 serve(async (req) => {
