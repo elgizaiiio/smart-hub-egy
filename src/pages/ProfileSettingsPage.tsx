@@ -152,7 +152,7 @@ const ProfileSettingsPage = () => {
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 px-1">Security</p>
         <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
-          <Mail className="w-5 h-5 text-muted-foreground" />
+          <AtSign className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">Change Email</p>
             <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
@@ -160,7 +160,7 @@ const ProfileSettingsPage = () => {
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
         <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
-          <Lock className="w-5 h-5 text-muted-foreground" />
+          <KeyRound className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Change Password</p>
             <p className="text-xs text-muted-foreground">Update your password</p>
