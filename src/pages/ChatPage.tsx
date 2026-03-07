@@ -219,22 +219,17 @@ const ChatPage = () => {
       } catch { /* continue without search */ }
     }
 
-    // Build messages for API - support multimodal content
+    // Build messages for API - support multimodal content for all messages with images
     const allMessages: any[] = [...messages, userMsg].map(m => {
-      // For the current user message, build multimodal if images attached
-      if (m === userMsg && imageAttachments.length > 0) {
+      const hasImages = (m === userMsg && imageAttachments.length > 0) || (m.attachedImages && m.attachedImages.length > 0);
+      if (hasImages) {
         const contentParts: any[] = [];
-        // Add images first
-        imageAttachments.forEach(f => {
-          if (f.type === "video") {
-            contentParts.push({ type: "image_url", image_url: { url: f.data } });
-          } else {
-            contentParts.push({ type: "image_url", image_url: { url: f.data } });
-          }
+        const imgs = m === userMsg ? imageAttachments.map(f => f.data) : (m.attachedImages || []);
+        imgs.forEach((imgData: string) => {
+          contentParts.push({ type: "image_url", image_url: { url: imgData } });
         });
-        // Add text
-        if (textParts.join("").trim()) {
-          contentParts.push({ type: "text", text: textParts.join("").trim() });
+        if (m.content?.trim()) {
+          contentParts.push({ type: "text", text: m.content.trim() });
         }
         return { role: m.role, content: contentParts };
       }
@@ -366,12 +361,6 @@ const ChatPage = () => {
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Mode badge */}
-          {chatMode !== "normal" && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary backdrop-blur-sm font-medium">
-              {chatMode === "learning" ? "Learning" : "Shopping"}
-            </span>
-          )}
           <AnimatePresence>
             {!hasConversation && (
               <motion.div
@@ -455,6 +444,14 @@ const ChatPage = () => {
       {/* Input */}
       <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto space-y-1.5">
+          {/* Mode badge above input */}
+          {chatMode !== "normal" && (
+            <div className="flex justify-center">
+              <span className="text-[10px] px-3 py-1 rounded-full bg-primary/15 text-primary backdrop-blur-sm font-medium">
+                {chatMode === "learning" ? "📚 Learning Mode" : "🛒 Shopping Mode"}
+              </span>
+            </div>
+          )}
           {/* Attached files preview */}
           {attachedFiles.length > 0 && (
             <div className="flex gap-2 px-2 overflow-x-auto pb-1">
