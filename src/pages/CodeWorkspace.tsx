@@ -20,8 +20,7 @@ interface ChatMsg {
 }
 
 interface SandboxState {
-  appName: string | null;
-  machineId: string | null;
+  spriteName: string | null;
   previewUrl: string | null;
   status: "idle" | "creating" | "ready" | "building" | "error";
 }
