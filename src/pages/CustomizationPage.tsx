@@ -1,15 +1,15 @@
 import { useState, useCallback } from "react";
-import { ArrowLeft, Sun, Moon, Check, RefreshCw } from "lucide-react";
+import { ArrowLeft, SunMedium, MoonStar, Check, CloudCog } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 
 const realThemes = [
-  { id: "light", label: "Healthy Light", isDark: false },
-  { id: "white", label: "Pure White", isDark: false },
-  { id: "dark", label: "Healthy Dark", isDark: true },
-  { id: "oled", label: "OLED Black", isDark: true },
+  { id: "light", label: "Light", desc: "Bright & clean", isDark: false },
+  { id: "white", label: "Pure White", desc: "Maximum clarity", isDark: false },
+  { id: "dark", label: "Dark", desc: "Easy on eyes", isDark: true },
+  { id: "oled", label: "OLED Black", desc: "True black", isDark: true },
 ];
 
 const messageColors = [
@@ -47,82 +47,84 @@ const CustomizationPage = () => {
 
   const content = (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
-      {isMobile && (
-        <div className="text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground mb-2">Make it yours</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Personalize your experience with themes, colors, and backgrounds
-          </p>
-        </div>
-      )}
-
       {/* Theme Selection */}
       <div>
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">THEME</p>
-        <div className="grid grid-cols-2 gap-3">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Appearance</p>
+        <div className="space-y-2">
           {realThemes.map(t => {
             const isSelected = currentTheme === t.id;
             return (
               <button
                 key={t.id}
                 onClick={() => handleThemeChange(t.id)}
-                className={`relative flex flex-col items-center justify-center py-7 rounded-2xl border transition-all ${
+                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all ${
                   isSelected
-                    ? "border-primary ring-2 ring-primary"
-                    : "border-border hover:border-muted-foreground/30"
+                    ? "bg-primary/10 ring-1 ring-primary/30"
+                    : "hover:bg-muted/40"
                 }`}
               >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  t.isDark ? "bg-[#0a0a0f]" : "bg-amber-50"
+                }`}>
+                  {t.isDark ? (
+                    <MoonStar className="w-5 h-5 text-indigo-400" />
+                  ) : (
+                    <SunMedium className="w-5 h-5 text-amber-500" />
+                  )}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-foreground">{t.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{t.desc}</p>
+                </div>
                 {isSelected && (
-                  <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
                     <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
                 )}
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
-                  t.isDark ? "bg-[#1a1a2e]" : "bg-muted"
-                }`}>
-                  {t.isDark ? (
-                    <Moon className="w-6 h-6 text-primary" />
-                  ) : (
-                    <Sun className="w-6 h-6 text-amber-500" />
-                  )}
-                </div>
-                <span className="text-sm font-medium text-foreground">{t.label}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Message Color */}
+      {/* Accent Color */}
       <div>
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">MESSAGE COLOR</p>
-        <div className="rounded-2xl overflow-hidden mb-5" style={{ background: `hsl(${currentAccent})` }}>
-          <p className="text-white text-sm font-medium px-5 py-4">This is how your messages will look</p>
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Accent Color</p>
+        
+        {/* Preview bubble */}
+        <div className="flex gap-3 mb-5">
+          <div className="rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[70%]" style={{ background: `hsl(${currentAccent})` }}>
+            <p className="text-white text-sm">This is how your messages look</p>
+          </div>
+          <div className="rounded-2xl rounded-br-md px-4 py-2.5 bg-muted">
+            <p className="text-sm text-foreground">And this is a reply</p>
+          </div>
         </div>
-        <div className="flex flex-wrap justify-center gap-3">
+
+        <div className="flex flex-wrap gap-2.5 justify-center">
           {messageColors.map(c => {
             const isSelected = currentAccent === c.hsl;
             return (
               <button
                 key={c.hex}
                 onClick={() => handleAccentChange(c.hsl)}
-                className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-110"
-                style={{ background: c.hex }}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
+                  isSelected ? "ring-2 ring-offset-2 ring-offset-background" : ""
+                }`}
+                style={{ background: c.hex, ...(isSelected ? { ringColor: c.hex } : {}) }}
               >
-                {isSelected && <Check className="w-4 h-4 text-white" />}
+                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="flex flex-col items-center gap-2 py-4">
-        <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center">
-          <RefreshCw className="w-4 h-4 text-muted-foreground" />
-        </div>
-        <p className="text-sm text-muted-foreground text-center">
-          Your preferences are saved automatically and synced across all your devices
+      {/* Sync info */}
+      <div className="flex items-center gap-3 py-3 px-1">
+        <CloudCog className="w-5 h-5 text-muted-foreground/50 shrink-0" />
+        <p className="text-xs text-muted-foreground">
+          Preferences sync automatically across all your devices
         </p>
       </div>
     </motion.div>
