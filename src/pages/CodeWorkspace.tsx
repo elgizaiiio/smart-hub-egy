@@ -33,9 +33,9 @@ const callSandbox = async (body: Record<string, unknown>) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Authorization: `Bearer ${SUPABASE_KEY}`
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body)
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: "Unknown error" }));
@@ -49,9 +49,9 @@ const callGithub = async (body: Record<string, unknown>) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Authorization: `Bearer ${SUPABASE_KEY}`
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body)
   });
   return resp.json();
 };
@@ -66,18 +66,18 @@ const VITE_TEMPLATE: FileTree = {
     scripts: {
       dev: "vite --host 0.0.0.0",
       build: "vite build",
-      preview: "vite preview",
+      preview: "vite preview"
     },
     dependencies: {
       react: "^18.3.1",
-      "react-dom": "^18.3.1",
+      "react-dom": "^18.3.1"
     },
     devDependencies: {
       "@types/react": "^18.3.1",
       "@types/react-dom": "^18.3.1",
       "@vitejs/plugin-react": "^4.3.1",
-      vite: "^5.4.0",
-    },
+      vite: "^5.4.0"
+    }
   }, null, 2),
   "vite.config.js": `import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -93,7 +93,7 @@ import App from './App'
 import './index.css'
 ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)`,
   "src/App.jsx": `export default function App() { return <div style={{padding:'2rem',fontFamily:'sans-serif'}}><h1>Hello from Megsy!</h1><p>Your project is ready.</p></div> }`,
-  "src/index.css": `* { margin:0; padding:0; box-sizing:border-box; } body { font-family: system-ui, sans-serif; }`,
+  "src/index.css": `* { margin:0; padding:0; box-sizing:border-box; } body { font-family: system-ui, sans-serif; }`
 };
 
 const CodeWorkspace = () => {
@@ -112,7 +112,7 @@ const CodeWorkspace = () => {
 
   // Sandbox state
   const [sandbox, setSandbox] = useState<SandboxState>({
-    spriteName: null, previewUrl: null, status: "idle",
+    spriteName: null, previewUrl: null, status: "idle"
   });
   const [files, setFiles] = useState<FileTree>({});
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -138,11 +138,11 @@ const CodeWorkspace = () => {
   const createOrGetConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
     const title = firstMessage.slice(0, 50) || "Code Project";
-    const { data } = await supabase
-      .from("conversations")
-      .insert({ title, mode: "code", model: "grok-3" })
-      .select("id")
-      .single();
+    const { data } = await supabase.
+    from("conversations").
+    insert({ title, mode: "code", model: "grok-3" }).
+    select("id").
+    single();
     if (data) {
       setConversationId(data.id);
       return data.id;
@@ -167,14 +167,14 @@ const CodeWorkspace = () => {
 
     let assistantContent = "";
     const systemPrompt =
-      mode === "plan"
-        ? `You are Megsy Code, a coding assistant. The user wants to build something. Analyze their request, explain what you understand, outline a plan (files, features, tech stack), and ask if they want to proceed. Be conversational. Do not use emoji. Respond in the user's language. Keep it concise.`
-        : `You are Megsy Code in build mode. Generate a complete React+Vite project. Output ONLY a JSON object with this exact format: {"files":{"src/App.jsx":"code here","src/components/Header.jsx":"code here"}}. Include ALL necessary files. Do NOT include package.json, vite.config.js, index.html, src/main.jsx, src/index.css unless you need to modify them. Do not wrap in markdown code blocks.`;
+    mode === "plan" ?
+    `You are Megsy Code, a coding assistant. The user wants to build something. Analyze their request, explain what you understand, outline a plan (files, features, tech stack), and ask if they want to proceed. Be conversational. Do not use emoji. Respond in the user's language. Keep it concise.` :
+    `You are Megsy Code in build mode. Generate a complete React+Vite project. Output ONLY a JSON object with this exact format: {"files":{"src/App.jsx":"code here","src/components/Header.jsx":"code here"}}. Include ALL necessary files. Do NOT include package.json, vite.config.js, index.html, src/main.jsx, src/index.css unless you need to modify them. Do not wrap in markdown code blocks.`;
 
-    const allMessages = messages
-      .filter((m) => m.role !== "system")
-      .concat(userMsg)
-      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    const allMessages = messages.
+    filter((m) => m.role !== "system").
+    concat(userMsg).
+    map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
     allMessages.unshift({ role: "user" as const, content: `[System]: ${systemPrompt}` });
 
     await streamChat({
@@ -187,7 +187,7 @@ const CodeWorkspace = () => {
           const last = prev[prev.length - 1];
           if (last?.role === "assistant" && last.type !== "log") {
             return prev.map((m, i) =>
-              i === prev.length - 1 ? { ...m, content: assistantContent } : m
+            i === prev.length - 1 ? { ...m, content: assistantContent } : m
             );
           }
           return [...prev, { role: "assistant", content: assistantContent, type: mode }];
@@ -198,9 +198,9 @@ const CodeWorkspace = () => {
         setIsThinking(false);
         if (convId) {
           supabase.from("messages").insert([
-            { conversation_id: convId, role: "user", content: msgText },
-            { conversation_id: convId, role: "assistant", content: assistantContent },
-          ]);
+          { conversation_id: convId, role: "user", content: msgText },
+          { conversation_id: convId, role: "assistant", content: assistantContent }]
+          );
         }
       },
       onError: (err) => {
@@ -208,7 +208,7 @@ const CodeWorkspace = () => {
         setIsLoading(false);
         setIsThinking(false);
       },
-      signal: controller.signal,
+      signal: controller.signal
     });
   };
 
@@ -238,16 +238,16 @@ const CodeWorkspace = () => {
   };
 
   const writeFilesToSandbox = async (
-    sb: SandboxState,
-    filesToWrite: FileTree
-  ) => {
+  sb: SandboxState,
+  filesToWrite: FileTree) =>
+  {
     for (const [filePath, content] of Object.entries(filesToWrite)) {
       addLog(`Writing ${filePath}...`);
       await callSandbox({
         action: "write-file",
         sprite_name: sb.spriteName,
         file_path: `/app/${filePath}`,
-        file_content: content,
+        file_content: content
       });
     }
   };
@@ -269,14 +269,14 @@ const CodeWorkspace = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Authorization: `Bearer ${SUPABASE_KEY}`
         },
         body: JSON.stringify({
           user_id: userId,
           amount: BUILD_CREDIT_COST,
           action_type: "code_build",
-          description: "Code workspace build",
-        }),
+          description: "Code workspace build"
+        })
       });
       const deductData = await deductResp.json();
       if (!deductData.success) {
@@ -296,9 +296,9 @@ const CodeWorkspace = () => {
 
     const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete React+Vite project. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. Include all source files needed. Do NOT include package.json, vite.config.js, index.html, src/main.jsx unless you need to modify the defaults. Output raw JSON only, no markdown.`;
 
-    const allMessages = messages
-      .filter((m) => m.role !== "system")
-      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    const allMessages = messages.
+    filter((m) => m.role !== "system").
+    map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
     allMessages.unshift({ role: "user" as const, content: `[System]: ${buildPrompt}` });
     allMessages.push({ role: "user" as const, content: "Build the project now. Output only JSON." });
 
@@ -315,12 +315,12 @@ const CodeWorkspace = () => {
 
         try {
           // Parse AI output as JSON
-          let parsed: { files: FileTree };
+          let parsed: {files: FileTree;};
           // Try to extract JSON from potential markdown wrapping
-          let cleaned = assistantContent
-            .replace(/```json\s*/gi, "")
-            .replace(/```\s*/g, "")
-            .trim();
+          let cleaned = assistantContent.
+          replace(/```json\s*/gi, "").
+          replace(/```\s*/g, "").
+          trim();
           const jsonStart = cleaned.search(/[\{\[]/);
           const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === '[' ? ']' : '}');
           if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found in AI response");
@@ -329,10 +329,10 @@ const CodeWorkspace = () => {
             parsed = JSON.parse(cleaned);
           } catch {
             // Fix control characters and trailing commas
-            cleaned = cleaned
-              .replace(/,\s*}/g, "}")
-              .replace(/,\s*]/g, "]")
-              .replace(/[\x00-\x1F\x7F]/g, "");
+            cleaned = cleaned.
+            replace(/,\s*}/g, "}").
+            replace(/,\s*]/g, "]").
+            replace(/[\x00-\x1F\x7F]/g, "");
             parsed = JSON.parse(cleaned);
           }
 
@@ -347,28 +347,28 @@ const CodeWorkspace = () => {
 
           // Show what was generated
           setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: `Project built with ${Object.keys(parsed.files).length} files:\n${Object.keys(parsed.files).map((f) => `• ${f}`).join("\n")}`,
-              type: "build",
-            },
-          ]);
+          ...prev,
+          {
+            role: "assistant",
+            content: `Project built with ${Object.keys(parsed.files).length} files:\n${Object.keys(parsed.files).map((f) => `• ${f}`).join("\n")}`,
+            type: "build"
+          }]
+          );
 
           // Save project to Supabase immediately (before sandbox)
           let savedProjectId: string | null = null;
           if (userId) {
-            const { data: proj } = await supabase
-              .from("projects")
-              .insert({
-                user_id: userId,
-                name: prompt.slice(0, 50) || "Untitled Project",
-                status: "created",
-                files_snapshot: allFiles as any,
-                conversation_id: conversationId,
-              })
-              .select("id")
-              .single();
+            const { data: proj } = await supabase.
+            from("projects").
+            insert({
+              user_id: userId,
+              name: prompt.slice(0, 50) || "Untitled Project",
+              status: "created",
+              files_snapshot: allFiles as any,
+              conversation_id: conversationId
+            }).
+            select("id").
+            single();
             if (proj) {
               savedProjectId = proj.id;
               setProjectId(proj.id);
@@ -389,28 +389,28 @@ const CodeWorkspace = () => {
             await callSandbox({
               action: "exec",
               sprite_name: sb.spriteName,
-              command: "cd /app && npm install",
+              command: "cd /app && npm install"
             });
 
             addLog("Starting dev server...");
             await callSandbox({
               action: "exec",
               sprite_name: sb.spriteName,
-              command: "cd /app && npm run dev &",
+              command: "cd /app && npm run dev &"
             });
 
             addLog("Build complete! Switch to Preview tab to see your project.");
 
             // Update project with sandbox info
             if (savedProjectId) {
-              await supabase
-                .from("projects")
-                .update({
-                  fly_app_name: sb.spriteName,
-                  preview_url: sb.previewUrl,
-                  status: "running",
-                })
-                .eq("id", savedProjectId);
+              await supabase.
+              from("projects").
+              update({
+                fly_app_name: sb.spriteName,
+                preview_url: sb.previewUrl,
+                status: "running"
+              }).
+              eq("id", savedProjectId);
             }
 
             setActiveTab("preview");
@@ -419,19 +419,19 @@ const CodeWorkspace = () => {
             addLog(`Sandbox failed: ${sandboxErrMsg}. Project files are still saved.`);
             // Update project status to reflect sandbox failure
             if (savedProjectId) {
-              await supabase
-                .from("projects")
-                .update({ status: "ready" })
-                .eq("id", savedProjectId);
+              await supabase.
+              from("projects").
+              update({ status: "ready" }).
+              eq("id", savedProjectId);
             }
           }
         } catch (e) {
           const errMsg = e instanceof Error ? e.message : "Unknown error";
           addLog(`Build failed: ${errMsg}`);
           setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: `Build error: ${errMsg}. Please try again.` },
-          ]);
+          ...prev,
+          { role: "assistant", content: `Build error: ${errMsg}. Please try again.` }]
+          );
         }
 
         setIsLoading(false);
@@ -441,7 +441,7 @@ const CodeWorkspace = () => {
         setIsLoading(false);
         setIsThinking(false);
       },
-      signal: controller.signal,
+      signal: controller.signal
     });
   };
 
@@ -465,7 +465,7 @@ const CodeWorkspace = () => {
     const createResult = await callGithub({
       action: "create-repo",
       repo_name: repoName,
-      description: `Created by Megsy Code: ${prompt.slice(0, 100)}`,
+      description: `Created by Megsy Code: ${prompt.slice(0, 100)}`
     });
 
     if (createResult.error) {
@@ -481,9 +481,9 @@ const CodeWorkspace = () => {
     const repoUrl = createResult.data?.execution_output?.data?.html_url || `https://github.com/${repoName}`;
     addLog(`Repository created: ${repoUrl}`);
     setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: `GitHub repository created successfully!\n\n[${repoName}](${repoUrl})`, type: "status" },
-    ]);
+    ...prev,
+    { role: "assistant", content: `GitHub repository created successfully!\n\n[${repoName}](${repoUrl})`, type: "status" }]
+    );
     toast.success("Repository created on GitHub!");
   };
 
@@ -493,154 +493,154 @@ const CodeWorkspace = () => {
   };
 
   const lastAssistantIsPlan =
-    messages.length > 0 &&
-    messages[messages.length - 1]?.role === "assistant" &&
-    mode === "plan" &&
-    !isLoading;
+  messages.length > 0 &&
+  messages[messages.length - 1]?.role === "assistant" &&
+  mode === "plan" &&
+  !isLoading;
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
       {/* Header */}
-      {activeTab === "chat" && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+      {activeTab === "chat" &&
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
           <button
-            onClick={() => navigate("/code")}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-          >
+          onClick={() => navigate("/code")}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+          
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
               {mode === "plan" ? "Chat Mode" : "Build Mode"}
             </span>
-            {sandbox.status === "ready" && (
-              <span className="w-2 h-2 rounded-full bg-green-500" title="Sandbox running" />
-            )}
+            {sandbox.status === "ready" &&
+          <span className="w-2 h-2 rounded-full bg-green-500" title="Sandbox running" />
+          }
           </div>
           <div className="w-8" />
         </div>
-      )}
+      }
 
       {/* Content */}
       <div className="flex-1 overflow-hidden min-h-0">
-        {activeTab === "chat" ? (
-          <div className="h-full flex flex-col">
+        {activeTab === "chat" ?
+        <div className="h-full flex flex-col">
             <div className="flex-1 overflow-y-auto px-4 py-4 max-w-3xl mx-auto w-full space-y-4">
-              {messages.map((msg, i) => (
-                <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>
-                  {msg.role === "user" ? (
-                    <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm">
+              {messages.map((msg, i) =>
+            <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>
+                  {msg.role === "user" ?
+              <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm">
                       {msg.content}
-                    </div>
-                  ) : msg.type === "log" ? (
-                    <div className="text-xs text-muted-foreground font-mono py-1 flex items-center gap-2">
+                    </div> :
+              msg.type === "log" ?
+              <div className="text-xs text-muted-foreground font-mono py-1 flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin" />
                       {msg.content}
-                    </div>
-                  ) : (
-                    <div className="prose-chat text-foreground text-sm" dir="auto">
+                    </div> :
+
+              <div className="prose-chat text-foreground text-sm" dir="auto">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
-                  )}
+              }
                 </div>
-              ))}
-              {isThinking &&
-                (messages.length === 0 ||
-                  messages[messages.length - 1]?.role === "user") && (
-                  <ThinkingLoader />
-                )}
+            )}
+              {isThinking && (
+            messages.length === 0 ||
+            messages[messages.length - 1]?.role === "user") &&
+            <ThinkingLoader />
+            }
               {isLoading &&
-                messages.length > 0 &&
-                messages[messages.length - 1]?.role === "assistant" && (
-                  <ThinkingLoader />
-                )}
+            messages.length > 0 &&
+            messages[messages.length - 1]?.role === "assistant" &&
+            <ThinkingLoader />
+            }
               {/* Approve plan button */}
-              {lastAssistantIsPlan && (
-                <button
-                  onClick={handleApprove}
-                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
+              {lastAssistantIsPlan &&
+            <button
+              onClick={handleApprove}
+              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+              
                   Approve Plan ({BUILD_CREDIT_COST} credits)
                 </button>
-              )}
+            }
               <div ref={messagesEndRef} />
             </div>
             <div className="shrink-0 px-4 py-3 max-w-3xl mx-auto w-full">
               <div className="relative">
                 <AnimatedPlusMenu
-                  open={menuOpen}
-                  onToggle={() => setMenuOpen(!menuOpen)}
-                  onClose={() => setMenuOpen(false)}
-                  mode={mode}
-                  onModeChange={(m) => {
-                    setMode(m);
-                    setMenuOpen(false);
-                  }}
-                  onGitHub={handleGitHubPush}
-                  onSupabase={handleSupabaseConnect}
-                  hasFiles={Object.keys(files).length > 0}
-                />
+                open={menuOpen}
+                onToggle={() => setMenuOpen(!menuOpen)}
+                onClose={() => setMenuOpen(false)}
+                mode={mode}
+                onModeChange={(m) => {
+                  setMode(m);
+                  setMenuOpen(false);
+                }}
+                onGitHub={handleGitHubPush}
+                onSupabase={handleSupabaseConnect}
+                hasFiles={Object.keys(files).length > 0} />
+              
                 <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
                   <button
-                    onClick={() => setMenuOpen(!menuOpen)}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                  
                     <Plus className="w-5 h-5" />
                   </button>
                   <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder="Ask about your project..."
-                    rows={1}
-                    className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
-                    style={{ minHeight: "32px" }}
-                  />
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Ask about your project..."
+                  rows={1}
+                  className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
+                  style={{ minHeight: "32px" }} />
+                
                   <button
-                    onClick={() => handleSend()}
-                    disabled={!input.trim() || isLoading}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ArrowUp className="w-4 h-4" />
-                    )}
+                  onClick={() => handleSend()}
+                  disabled={!input.trim() || isLoading}
+                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20">
+                  
+                    {isLoading ?
+                  <Loader2 className="w-4 h-4 animate-spin" /> :
+
+                  <ArrowUp className="w-4 h-4" />
+                  }
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="h-full">
-            {sandbox.previewUrl ? (
-              <iframe
-                src={sandbox.previewUrl}
-                className="w-full h-full border-none"
-                title="Project Preview"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center bg-secondary">
+          </div> :
+
+        <div className="h-full">
+            {sandbox.previewUrl ?
+          <iframe
+            src={sandbox.previewUrl}
+            className="w-full h-full border-none"
+            title="Project Preview"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups" /> :
+
+
+          <div className="h-full flex items-center justify-center bg-secondary">
                 <div className="text-center">
                   <p className="text-muted-foreground text-sm">Preview will appear here</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {sandbox.status === "creating"
-                      ? "Creating sandbox..."
-                      : sandbox.status === "building"
-                        ? "Building project..."
-                        : "Approve the plan to start building"}
+                    {sandbox.status === "creating" ?
+                "Creating sandbox..." :
+                sandbox.status === "building" ?
+                "Building project..." :
+                "Approve the plan to start building"}
                   </p>
                 </div>
               </div>
-            )}
+          }
           </div>
-        )}
+        }
       </div>
 
       {/* Bottom tabs */}
@@ -648,29 +648,29 @@ const CodeWorkspace = () => {
         <button
           onClick={() => setActiveTab("chat")}
           className={`flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors ${
-            activeTab === "chat"
-              ? "text-primary border-t-2 border-primary"
-              : "text-muted-foreground"
-          }`}
-        >
+          activeTab === "chat" ?
+          "text-primary border-t-2 border-primary" :
+          "text-muted-foreground"}`
+          }>
+          
           Chat
         </button>
         <button
           onClick={() => setActiveTab("preview")}
           className={`flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors ${
-            activeTab === "preview"
-              ? "text-primary border-t-2 border-primary"
-              : "text-muted-foreground"
-          }`}
-        >
+          activeTab === "preview" ?
+          "text-primary border-t-2 border-primary" :
+          "text-muted-foreground"}`
+          }>
+          
           Preview
-          {sandbox.status === "ready" && (
-            <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-green-500" />
-          )}
+          {sandbox.status === "ready"
+
+          }
         </button>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 // Plus menu for code workspace
@@ -682,33 +682,33 @@ const AnimatedPlusMenu = ({
   onModeChange,
   onGitHub,
   onSupabase,
-  hasFiles,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  onClose: () => void;
-  mode: "plan" | "build";
-  onModeChange: (m: "plan" | "build") => void;
-  onGitHub: () => void;
-  onSupabase: () => void;
-  hasFiles: boolean;
-}) => (
-  <AnimatePresence>
-    {open && (
-      <>
+  hasFiles
+
+
+
+
+
+
+
+
+
+}: {open: boolean;onToggle: () => void;onClose: () => void;mode: "plan" | "build";onModeChange: (m: "plan" | "build") => void;onGitHub: () => void;onSupabase: () => void;hasFiles: boolean;}) =>
+<AnimatePresence>
+    {open &&
+  <>
         <div className="fixed inset-0 z-30" onClick={onClose} />
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56"
-        >
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56">
+      
           <button
-            onClick={() => onModeChange("plan")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-              mode === "plan" ? "bg-primary/10 text-primary" : "hover:bg-accent"
-            }`}
-          >
+        onClick={() => onModeChange("plan")}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+        mode === "plan" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`
+        }>
+        
             <MessageSquare className="w-4 h-4 text-muted-foreground" />
             <div>
               <p className="text-sm">Chat Mode</p>
@@ -721,33 +721,33 @@ const AnimatedPlusMenu = ({
               Connect
             </p>
             <button
-              onClick={() => {
-                onClose();
-                onGitHub();
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
-                hasFiles
-                  ? "text-foreground hover:bg-accent"
-                  : "text-muted-foreground cursor-not-allowed opacity-50"
-              }`}
-              disabled={!hasFiles}
-            >
+          onClick={() => {
+            onClose();
+            onGitHub();
+          }}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
+          hasFiles ?
+          "text-foreground hover:bg-accent" :
+          "text-muted-foreground cursor-not-allowed opacity-50"}`
+          }
+          disabled={!hasFiles}>
+          
               <Github className="w-4 h-4 text-muted-foreground" /> Push to GitHub
             </button>
             <button
-              onClick={() => {
-                onClose();
-                onSupabase();
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground"
-            >
+          onClick={() => {
+            onClose();
+            onSupabase();
+          }}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
+          
               <Database className="w-4 h-4 text-muted-foreground" /> Supabase
             </button>
           </div>
         </motion.div>
       </>
-    )}
-  </AnimatePresence>
-);
+  }
+  </AnimatePresence>;
+
 
 export default CodeWorkspace;
