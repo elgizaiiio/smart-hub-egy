@@ -34,25 +34,26 @@ const ReferralsPage = () => {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
       {/* Hero */}
       <div className="flex flex-col items-center py-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-          <Gift className="w-8 h-8 text-primary" />
+        <div className="w-16 h-16 rounded-full bg-[#FFD700]/10 flex items-center justify-center mb-4">
+          <Gift className="w-8 h-8 text-[#FFD700]" />
         </div>
         <h2 className="font-display text-2xl font-bold text-foreground mb-2">Invite & Earn</h2>
+        <p className="text-lg font-bold text-[#FFD700] mb-1">20% Forever — No Limits — No Expiry</p>
         <p className="text-sm text-muted-foreground max-w-xs">
-          Share Megsy with friends and earn <span className="text-primary font-semibold">20% commission</span> on every payment they make
+          Every subscriber you refer = <span className="text-[#FFD700] font-semibold">20% every month — Forever</span>
         </p>
       </div>
 
       {/* Stats */}
-      <div className="flex items-center">
-        <div className="flex-1 py-3 text-center">
-          <Users className="w-5 h-5 text-muted-foreground mx-auto mb-2" />
+      <div className="flex items-center rounded-2xl border border-[#FFD700]/20 bg-[#FFD700]/5">
+        <div className="flex-1 py-4 text-center">
+          <Users className="w-5 h-5 text-[#FFD700]/60 mx-auto mb-2" />
           <p className="text-2xl font-bold text-foreground">0</p>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Referrals</p>
         </div>
-        <div className="w-px h-12 bg-border" />
-        <div className="flex-1 py-3 text-center">
-          <DollarSign className="w-5 h-5 text-muted-foreground mx-auto mb-2" />
+        <div className="w-px h-12 bg-[#FFD700]/20" />
+        <div className="flex-1 py-4 text-center">
+          <DollarSign className="w-5 h-5 text-[#FFD700]/60 mx-auto mb-2" />
           <p className="text-2xl font-bold text-foreground">$0.00</p>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Earned</p>
         </div>
@@ -67,14 +68,14 @@ const ReferralsPage = () => {
           </div>
           <button
             onClick={handleCopy}
-            className="p-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+            className="p-3 rounded-xl bg-[#FFD700] text-[#1A1A2E] hover:bg-[#FFA500] transition-colors shrink-0"
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
         <button
           onClick={handleShare}
-          className="w-full mt-3 py-3 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-accent/30 transition-colors flex items-center justify-center gap-2"
+          className="w-full mt-3 py-3 rounded-xl border border-[#FFD700]/30 text-sm font-medium text-foreground hover:bg-[#FFD700]/5 transition-colors flex items-center justify-center gap-2"
         >
           <Share2 className="w-4 h-4" /> Share Link
         </button>
@@ -87,10 +88,10 @@ const ReferralsPage = () => {
           {[
             { step: "1", title: "Share your link", desc: "Send your referral link to friends" },
             { step: "2", title: "They sign up", desc: "Your friend creates an account & makes a purchase" },
-            { step: "3", title: "You earn", desc: "Get 20% of every payment they make" },
+            { step: "3", title: "You earn", desc: "Get 20% of every payment they make — forever" },
           ].map(item => (
             <div key={item.step} className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#FFD700]/10 flex items-center justify-center text-sm font-bold text-[#FFD700] shrink-0">
                 {item.step}
               </div>
               <div>

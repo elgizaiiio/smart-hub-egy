@@ -100,59 +100,10 @@ const SHOWCASE_IMAGES = [
 ];
 
 const PLACEHOLDERS = [
-  "A futuristic city at sunset...",
-  "Portrait of a warrior in armor...",
-  "Cute cat wearing a tiny hat...",
-  "Abstract art with vibrant colors...",
-  "A magical forest with glowing mushrooms...",
-  "Cyberpunk girl with neon hair...",
-  "Ancient temple covered in vines...",
-  "A dragon flying over a volcano...",
-  "Underwater city with bioluminescent lights...",
-  "Steampunk airship in the clouds...",
-  "A crystal palace in the mountains...",
-  "Astronaut walking on Mars...",
-  "Medieval castle at dawn...",
-  "A phoenix rising from flames...",
-  "Japanese garden in autumn...",
-  "Robot playing chess with a human...",
-  "Surreal melting clock landscape...",
-  "A wolf howling at the northern lights...",
-  "Floating islands in the sky...",
-  "A samurai in a cherry blossom field...",
-  "Gothic cathedral with stained glass...",
-  "A mermaid in a coral reef...",
-  "Retro synthwave sunset...",
-  "A wizard casting a spell...",
-  "Victorian mansion at night...",
-  "A tiger in a bamboo forest...",
-  "Space station orbiting Earth...",
-  "A fairy village in a flower garden...",
-  "Egyptian pharaoh in golden armor...",
-  "A cozy cabin in a snowy forest...",
-  "Cybernetic eye close-up...",
-  "A lighthouse in a storm...",
-  "Enchanted library with floating books...",
-  "A warrior princess with a flaming sword...",
-  "Ruins of an ancient civilization...",
-  "A neon-lit ramen shop at night...",
-  "Giant robot in a destroyed city...",
-  "A peaceful lake at sunrise...",
-  "Steampunk clockwork heart...",
-  "A pirate ship on stormy seas...",
-  "Northern lights over a frozen lake...",
-  "A cyberpunk market alley...",
-  "Mystical owl with glowing eyes...",
-  "A candy-colored fantasy kingdom...",
-  "Renaissance portrait in oil paint...",
-  "A futuristic car on a highway...",
-  "Alien landscape with two moons...",
-  "A majestic eagle soaring high...",
-  "Neon city reflections in rain...",
-  "A haunted mansion at midnight...",
-  "Desert oasis with palm trees...",
-  "A geisha in traditional attire...",
-  "Sci-fi spaceship interior...",
+  "Describe your image...",
+  "Logo design...",
+  "Anime character...",
+  "A sunset landscape...",
 ];
 
 const PUBLISH_OPTIONS: { platform: PublishPlatform; label: string; Icon: () => JSX.Element }[] = [
@@ -509,7 +460,7 @@ const ImagesPage = () => {
         currentMode="images"
       />
 
-      <div className={`flex items-center justify-between px-4 py-2 transition-opacity ${sidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+      <div className={`sticky top-0 z-20 flex items-center justify-between px-4 py-2 bg-background/80 backdrop-blur-md transition-opacity ${sidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
@@ -606,7 +557,7 @@ const ImagesPage = () => {
             </div>
           )}
 
-          <div className="relative flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-xl px-3 py-2">
+          <div className="relative flex items-end gap-2 rounded-2xl border border-border/30 bg-transparent backdrop-blur-md px-3 py-2">
             <div ref={menuRef} className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                 <Plus className="w-5 h-5" />

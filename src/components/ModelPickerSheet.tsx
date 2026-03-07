@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Zap, Crown, Clock, CheckCircle2, ImagePlus, HelpCircle, Star, Play } from "lucide-react";
+import { ArrowLeft, Zap, Crown, Clock, CheckCircle2, ImagePlus, HelpCircle, Play } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ALL_MODEL_DETAILS, type ModelDetail, type ModelType } from "@/lib/modelDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -342,7 +342,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                     {filtered.map(model => {
                       const isSelected = selectedModelId === model.id;
                       const media = mediaMap[model.id];
-                      const rating = model.quality === "ultra" ? 5.0 : model.quality === "high" ? 4.5 : 0.0;
 
                       return (
                         <motion.div
@@ -412,15 +411,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                                 {model.credits > 0 ? `${model.credits} Credit` : "Free"}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-1">
-                              <p className="text-[11px] text-muted-foreground truncate">{model.description}</p>
-                              {rating > 0 && (
-                                <span className="shrink-0 flex items-center gap-0.5 text-[11px] font-semibold text-primary">
-                                  <Star className="w-3 h-3 fill-primary text-primary" />
-                                  {rating.toFixed(1)}
-                                </span>
-                              )}
-                            </div>
+                            <p className="text-[11px] text-muted-foreground truncate">{model.description}</p>
                           </div>
                         </motion.div>
                       );

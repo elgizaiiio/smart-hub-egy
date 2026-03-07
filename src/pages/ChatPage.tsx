@@ -261,27 +261,45 @@ const ChatPage = () => {
         currentMode="chat" />
       
 
-      {/* Header - fully transparent, scrolls behind */}
-      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2">
+      {/* Header */}
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 bg-background/80 backdrop-blur-md">
         <button
           onClick={() => setSidebarOpen(true)}
           className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
 
-        <AnimatePresence>
-          {!hasConversation &&
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}>
-              <FancyButton onClick={() => navigate("/pricing")}>
-                
-                Unlock Pro
-              </FancyButton>
+        <div className="flex items-center gap-2">
+          {/* Selected model chip */}
+          {hasConversation && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-xs font-medium text-foreground"
+            >
+              <span>{selectedModel.name}</span>
+              <button
+                onClick={() => setSelectedModel(getDefaultModel("chat"))}
+                className="w-3.5 h-3.5 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-muted-foreground/40 transition-colors"
+              >
+                <span className="text-[9px] leading-none">×</span>
+              </button>
             </motion.div>
-          }
-        </AnimatePresence>
+          )}
+
+          <AnimatePresence>
+            {!hasConversation &&
+            <motion.div
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}>
+                <FancyButton onClick={() => navigate("/pricing")}>
+                  Unlock Pro
+                </FancyButton>
+              </motion.div>
+            }
+          </AnimatePresence>
+        </div>
 
         <div className="w-9" />
       </div>
@@ -341,8 +359,8 @@ const ChatPage = () => {
         }
       </div>
 
-      {/* Input */}
-      <div className="shrink-0 px-3 pb-3 pt-1">
+      {/* Input - sticky bottom */}
+      <div className="sticky bottom-0 z-20 shrink-0 px-3 pb-3 pt-1 bg-background/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto space-y-1.5">
           {/* Attached files preview */}
           {attachedFiles.length > 0 &&
