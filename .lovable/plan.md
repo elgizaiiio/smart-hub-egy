@@ -1,88 +1,82 @@
 
 
-# Megsy Platform - Comprehensive Fixes & Improvements
+# Fix Plan: Model Selector, Image Generation, Video Endpoints, BiDi
 
-## Issues to Fix
+## Issues
 
-### 1. Chat Page - "Unlock Pro" text change
-- Change "Unlock Megsy Pro" → "Unlock Pro" and remove the Sparkles icon from FancyButton
+1. **Image generation infinite loading** - The `generate-image` edge function uses wrong fal.ai endpoints AND a broken upload URL (`fal-ai/workflows/upload` returns 404). Status polling returns 405 because the endpoint paths are incorrect.
+2. **Video generation wrong endpoints** - Same issue with `generate-video`.
+3. **ModelSelector not opening** - The dropdown uses `createPortal` but likely has z-index conflicts with the plus menu backdrop (`fixed inset-0 z-30`). When ModelSelector is inside the plus menu, clicking the button hits the backdrop first.
+4. **Images not sent to AI model in chat** - `handleSend` in ChatPage ignores `attachedFiles` entirely - it only sends `{ role, content }` text, never includes image data in the API call.
+5. **BiDi on Index page** - User wants it removed (Index page is just a placeholder, likely referring to ChatPage main page).
+6. **Plus menu doesn't close on outside click (Images/Videos pages)** - Already has backdrop handler but may need verification.
 
-### 2. Images/Videos/Files Pages - Chat-like conversation flow
-Currently these pages show a static generate → result flow. Need to convert them to a chat-like interface where:
-- User message appears as a bubble (like ChatPage)
-- ThinkingLoader animation shows while generating
-- Result appears inline in the conversation (image/video/file preview)
-- Users can continue the conversation to iterate
+## Plan
 
-### 3. Files Page - PDF as primary download format
-- Change primary download from HTML to PDF (using browser print-to-PDF or html2pdf approach)
-- Keep HTML preview but offer PDF download button prominently
+### 1. Fix `generate-image` Edge Function
+Update `MODEL_MAP` with correct fal.ai endpoints from user's table:
+- `megsy-v1-img` → `fal-ai/nano-banana-pro`
+- `gpt-image` → `fal-ai/gpt-image-1.5`
+- `flux-kontext` → `fal-ai/flux-pro/kontext/max/text-to-image`
+- `ideogram-3` → `fal-ai/ideogram/v3`
+- `recraft-v4` → `fal-ai/recraft/v4/pro/text-to-image`
+- `flux-2-pro` → `fal-ai/flux-2-pro`
+- `nano-banana-2` → `fal-ai/nano-banana-pro`
+- (all others per user's table)
 
-### 4. Images/Videos - Model selector positioning
-Currently the ModelSelector dropdown uses `centerDropdown` which positions it as `fixed top-1/2 left-1/2` but it doesn't appear properly. Fix: ensure the dropdown renders as a modal overlay properly centered with a backdrop.
+Fix upload: Replace broken `fal-ai/workflows/upload` with `https://fal.upload.fal.ai/files/upload/` (correct fal storage endpoint), or better yet, pass base64 data URIs directly since fal.ai supports them natively.
 
-### 5. Social media icons - Replace emoji with real SVG icons
-Replace 📘 📸 💼 emojis in "Publish to" sections with actual Facebook, Instagram, LinkedIn SVG icons from lucide-react (or inline SVGs).
+Use **synchronous API** (`https://fal.run/${endpoint}`) instead of queue+poll pattern to avoid the 405 status polling issue. This simplifies the code significantly.
 
-### 6. RTL/BiDi text mixing fix
-Arabic text mixed with English breaks layout. Add `dir="auto"` to message containers and use CSS `unicode-bidi: plaintext` on prose content.
+### 2. Fix `generate-video` Edge Function
+Update `VIDEO_MODEL_MAP` with correct endpoints:
+- `megsy-video` → `fal-ai/minimax/hailuo-2.3/pro/text-to-video`
+- `kling-3-pro` → `fal-ai/kling-video/v3/pro/text-to-video`
+- `openai-sora` → `fal-ai/sora-2/text-to-video`
+- `pika-2.2` → `fal-ai/pika/v2.2/text-to-video`
+- `luma-dream` → `fal-ai/luma-dream-machine/ray-2`
+- (all others per user's table)
 
-### 7. Web Search - Force 2 images
-Update search edge function to request images from Serper API explicitly, and ensure at least 2 images are always returned. Update ChatMessage to always display images when search is enabled.
+Also add missing models: `veo-3.1`, `kling-o1`, new I2V models.
 
-### 8. Verify fal.ai model endpoints
-Review `generate-image` and `generate-video` edge functions to ensure all model IDs map correctly to real fal.ai endpoints.
+Keep queue+poll for videos (they take longer), but fix the endpoint paths.
 
----
+### 3. Update `ModelSelector.tsx` Model Lists
+Update `IMAGE_MODELS` and `VIDEO_MODELS` arrays to match the correct model IDs and add missing models (Veo 3.1, Kling O1, etc.) with correct credit costs.
 
-## Technical Plan
+### 4. Fix ModelSelector Inside Plus Menu
+The issue: when ModelSelector is inside the plus menu, the `fixed inset-0 z-30` backdrop intercepts clicks. The ModelSelector button is at z-40 (inside the menu), but when clicked, the ModelSelector's own portal backdrop is z-[9998]. The problem is the button's `onClick` fires, but the dropdown appears behind the plus menu's backdrop.
 
-### Files to Edit:
+**Fix**: Give the ModelSelector button `position: relative; z-index: 50` to ensure it's above the plus menu backdrop. Also ensure the ModelSelector portal renders above everything.
 
-**`src/components/FancyButton.tsx`** - Remove Sparkles icon
-
-**`src/pages/ChatPage.tsx`** - Change "Unlock Megsy Pro" → "Unlock Pro"
-
-**`src/pages/ImagesPage.tsx`** - Convert to chat-like conversation flow with messages array, ThinkingLoader, and inline image results. Fix model selector to render as centered modal. Replace emoji social icons with real SVGs.
-
-**`src/pages/VideosPage.tsx`** - Same chat-like conversion. Fix model selector. Replace emoji icons.
-
-**`src/pages/FilesPage.tsx`** - Convert to chat-like flow with ThinkingLoader. Add PDF download as primary format. Show file preview inline in conversation.
-
-**`src/components/ModelSelector.tsx`** - Fix centerDropdown positioning to use a proper modal overlay with backdrop
-
-**`src/components/ChatMessage.tsx`** - Add `dir="auto"` and `unicode-bidi: plaintext` for BiDi text support
-
-**`src/index.css`** - Add BiDi CSS rules for prose-chat
-
-**`supabase/functions/search/index.ts`** - Add `gl` and `type: "images"` params to ensure images are returned. Make a separate images API call to Serper.
-
-**`supabase/functions/generate-image/index.ts`** - Verify all fal.ai endpoint mappings are correct
-
-**`supabase/functions/generate-video/index.ts`** - Verify all fal.ai endpoint mappings are correct
-
-### Key Architecture Changes:
-
-**Images/Videos/Files → Chat-like flow:**
-```text
-State: messages[] array (like ChatPage)
-User sends prompt → user message bubble appears
-→ ThinkingLoader shows
-→ API call (fal.ai for images/videos, Lovable AI for files)
-→ Result appears as assistant message with embedded media
-→ User can send follow-up messages
+### 5. Fix Images Not Sent to Chat AI
+In `ChatPage.tsx` `handleSend`, build multimodal content when `attachedFiles` contains images:
+```typescript
+const allMessages = [...messages, userMsg].map(m => {
+  // For the current user message, include attached images
+  if (m === userMsg && imageAttachments.length > 0) {
+    return {
+      role: m.role,
+      content: [
+        ...imageAttachments.map(f => ({ type: "image_url", image_url: { url: f.data } })),
+        { type: "text", text: m.content }
+      ]
+    };
+  }
+  return { role: m.role, content: m.content };
+});
 ```
 
-**ModelSelector center fix:**
-```text
-Current: fixed positioning but doesn't show properly
-Fix: Use a Dialog/modal pattern with proper z-index and backdrop
-```
+### 6. Remove BiDi from Chat Main Page
+Check `index.css` for any global BiDi styles applied broadly and scope them to only chat message content.
 
-**Search images fix:**
-```text
-Current: Serper returns images but they may be empty
-Fix: Make separate /images API call to Serper
-Always attach at least 2 images to search results
-```
+## Files to Change
+
+| File | Change |
+|------|--------|
+| `supabase/functions/generate-image/index.ts` | Fix MODEL_MAP endpoints, use sync API, fix upload |
+| `supabase/functions/generate-video/index.ts` | Fix VIDEO_MODEL_MAP endpoints |
+| `src/components/ModelSelector.tsx` | Update IMAGE_MODELS/VIDEO_MODELS lists, fix z-index |
+| `src/pages/ChatPage.tsx` | Send images as multimodal content to AI |
+| `src/index.css` | Scope BiDi styles to `.prose-chat` only |
 
