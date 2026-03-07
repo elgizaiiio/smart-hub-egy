@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.composio]
 verify_jwt = false
+
+[functions.deduct-credits]
+verify_jwt = false
+
+[functions.code-sandbox]
+verify_jwt = false
+
+[functions.github-repo]
+verify_jwt = false
