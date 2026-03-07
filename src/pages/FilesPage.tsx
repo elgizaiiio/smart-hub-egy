@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileSpreadsheet, FileText, Presentation, Table } from "lucide-react";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
 import ThinkingLoader from "@/components/ThinkingLoader";
@@ -307,7 +307,8 @@ const FilesPage = () => {
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-60">
+                  {/* Toggle: Web Search */}
                   <button
                     onClick={() => { setSearchEnabled(!searchEnabled); setMenuOpen(false); }}
                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
@@ -321,13 +322,36 @@ const FilesPage = () => {
                     </div>
                   </button>
 
+                  <div className="border-t border-border my-1.5" />
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Attach</p>
+
                   <button onClick={() => { imageInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
                     <Image className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">Attach Image</span>
+                    <span className="text-sm text-foreground">Image</span>
                   </button>
                   <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
                     <Paperclip className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">Attach Document</span>
+                    <span className="text-sm text-foreground">Document</span>
+                  </button>
+
+                  <div className="border-t border-border my-1.5" />
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Generate</p>
+
+                  <button onClick={() => { setInput("Create a professional Word document about "); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">Word Document</span>
+                  </button>
+                  <button onClick={() => { setInput("Create a spreadsheet with "); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                    <Table className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">Spreadsheet</span>
+                  </button>
+                  <button onClick={() => { setInput("Create a presentation about "); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                    <Presentation className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">Presentation</span>
+                  </button>
+                  <button onClick={() => { setInput("Create a PDF report about "); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                    <FileSpreadsheet className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">PDF Report</span>
                   </button>
                 </motion.div>
               </>
