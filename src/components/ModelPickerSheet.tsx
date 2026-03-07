@@ -411,15 +411,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                                 {model.credits > 0 ? `${model.credits} Credit` : "Free"}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-1">
-                              <p className="text-[11px] text-muted-foreground truncate">{model.description}</p>
-                              {rating > 0 && (
-                                <span className="shrink-0 flex items-center gap-0.5 text-[11px] font-semibold text-primary">
-                                  <Star className="w-3 h-3 fill-primary text-primary" />
-                                  {rating.toFixed(1)}
-                                </span>
-                              )}
-                            </div>
+                            <p className="text-[11px] text-muted-foreground truncate">{model.description}</p>
                           </div>
                         </motion.div>
                       );
