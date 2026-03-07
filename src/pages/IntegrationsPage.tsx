@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Check, Loader2, Github, Mail, BookOpen, MessageSquare, Database, Youtube, Figma, Users, Video, Camera, Facebook, Linkedin, MessageCircle } from "lucide-react";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,23 +55,106 @@ const HubSpotIcon = () => (
   </svg>
 );
 
+const GitHubIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+  </svg>
+);
+
+const GmailIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+    <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/>
+  </svg>
+);
+
+const NotionIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+    <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L18.29 2.16c-.42-.326-.98-.7-2.055-.607L3.572 2.573c-.467.047-.56.28-.374.466l1.261 1.17zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.84-.046.933-.56.933-1.167V6.354c0-.606-.233-.933-.746-.886l-15.177.887c-.56.046-.747.326-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.747 0-.933-.234-1.495-.933l-4.577-7.186v6.952l1.448.327s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.513.28-.886.747-.933l3.222-.186zM2.332 1.2L16.744.02c1.775-.14 2.24.14 2.988.7l4.11 2.895c.56.42.747.933.747 1.54v16.452c0 .98-.374 1.54-1.681 1.633L6.834 24c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.84.374-1.54 1.382-1.54v.073z"/>
+  </svg>
+);
+
+const YouTubeIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#FF0000">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.546 12 3.546 12 3.546s-7.505 0-9.377.504A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.504 9.376.504 9.376.504s7.505 0 9.377-.504a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
+
+const FigmaIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+    <path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z" fill="#F24E1E"/>
+    <path d="M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z" fill="#FF7262"/>
+    <path d="M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 1 1-7 0z" fill="#1ABCFE"/>
+    <path d="M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z" fill="#0ACF83"/>
+    <path d="M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z" fill="#A259FF"/>
+  </svg>
+);
+
+const TeamsIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+    <path d="M20.625 8.25h-5.25v7.5c0 1.657 1.343 3 3 3h.75c1.657 0 3-1.343 3-3v-5.25a2.25 2.25 0 0 0-2.25-2.25z" fill="#5059C9"/>
+    <path d="M19.5 6.75a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5z" fill="#5059C9"/>
+    <path d="M13.5 6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" fill="#7B83EB"/>
+    <path d="M17.25 8.25H8.625A2.625 2.625 0 0 0 6 10.875V17.25a5.25 5.25 0 0 0 10.5 0v-8.25a.75.75 0 0 0-.75-.75z" fill="#7B83EB"/>
+  </svg>
+);
+
+const ZoomIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#2D8CFF">
+    <path d="M24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12zm-5.2-2.4l-3.6 2.4V9.6a1.2 1.2 0 0 0-1.2-1.2H6a1.2 1.2 0 0 0-1.2 1.2v4.8a1.2 1.2 0 0 0 1.2 1.2h8a1.2 1.2 0 0 0 1.2-1.2V12l3.6 2.4V9.6z"/>
+  </svg>
+);
+
+const InstagramIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+    <defs>
+      <linearGradient id="ig" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#FFDC80"/>
+        <stop offset="25%" stopColor="#F77737"/>
+        <stop offset="50%" stopColor="#E1306C"/>
+        <stop offset="75%" stopColor="#C13584"/>
+        <stop offset="100%" stopColor="#833AB4"/>
+      </linearGradient>
+    </defs>
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" fill="url(#ig)"/>
+  </svg>
+);
+
+const FacebookIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#1877F2">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+  </svg>
+);
+
+const LinkedInIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#0A66C2">
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+);
+
 const integrations = [
-  { id: "github", name: "GitHub", description: "Connect repositories & create issues", icon: Github, category: "Development", app: "github" },
-  { id: "gmail", name: "Gmail", description: "Send and manage emails", icon: Mail, category: "Communication", app: "gmail" },
+  { id: "github", name: "GitHub", description: "Connect repositories & create issues", icon: GitHubIcon, category: "Development", app: "github", isSvg: true },
+  { id: "gmail", name: "Gmail", description: "Send and manage emails", icon: GmailIcon, category: "Communication", app: "gmail", isSvg: true },
   { id: "gdrive", name: "Google Drive", description: "Upload and manage files", icon: GoogleDriveIcon, category: "Storage", app: "googledrive", isSvg: true },
   { id: "gcalendar", name: "Google Calendar", description: "Create events & manage schedule", icon: GoogleCalendarIcon, category: "Productivity", app: "googlecalendar", isSvg: true },
-  { id: "notion", name: "Notion", description: "Create pages & manage workspace", icon: BookOpen, category: "Productivity", app: "notion" },
+  { id: "notion", name: "Notion", description: "Create pages & manage workspace", icon: NotionIcon, category: "Productivity", app: "notion", isSvg: true },
   { id: "slack", name: "Slack", description: "Send messages to channels", icon: SlackIcon, category: "Communication", app: "slack", isSvg: true },
-  { id: "supabase", name: "Supabase", description: "Backend & database management", icon: Database, category: "Development", app: "supabase" },
+  { id: "supabase", name: "Supabase", description: "Backend & database management", icon: () => (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+      <path d="M13.73 21.766c-.28.354-.857.157-.857-.29V13.5h8.464c.736 0 1.137.852.673 1.432l-8.28 6.834z" fill="#3ECF8E"/>
+      <path d="M13.73 21.766c-.28.354-.857.157-.857-.29V13.5h8.464c.736 0 1.137.852.673 1.432l-8.28 6.834z" fill="url(#sb1)" fillOpacity=".2"/>
+      <path d="M10.27 2.234c.28-.354.857-.157.857.29V10.5H2.663c-.736 0-1.137-.852-.673-1.432l8.28-6.834z" fill="#3ECF8E"/>
+      <defs><linearGradient id="sb1" x1="12.87" y1="15.3" x2="18.17" y2="19.07" gradientUnits="userSpaceOnUse"><stop stopColor="#249361"/><stop offset="1" stopColor="#3ECF8E"/></linearGradient></defs>
+    </svg>
+  ), category: "Development", app: "supabase", isSvg: true },
   { id: "hubspot", name: "HubSpot", description: "CRM & marketing automation", icon: HubSpotIcon, category: "Business", app: "hubspot", isSvg: true },
-  { id: "youtube", name: "YouTube", description: "Search & manage video content", icon: Youtube, category: "Social", app: "youtube" },
+  { id: "youtube", name: "YouTube", description: "Search & manage video content", icon: YouTubeIcon, category: "Social", app: "youtube", isSvg: true },
   { id: "outlook", name: "Outlook", description: "Email & calendar management", icon: OutlookIcon, category: "Communication", app: "outlook", isSvg: true },
-  { id: "figma", name: "Figma", description: "Design collaboration & assets", icon: Figma, category: "Development", app: "figma" },
-  { id: "teams", name: "Microsoft Teams", description: "Team communication & meetings", icon: Users, category: "Communication", app: "microsoftteams" },
-  { id: "zoom", name: "Zoom", description: "Video meetings & webinars", icon: Video, category: "Communication", app: "zoom" },
-  { id: "instagram", name: "Instagram", description: "Share images and stories", icon: Camera, category: "Social", app: "instagram" },
-  { id: "facebook", name: "Facebook", description: "Publish content to Facebook", icon: Facebook, category: "Social", app: "facebook" },
-  { id: "linkedin", name: "LinkedIn", description: "Share professional content", icon: Linkedin, category: "Social", app: "linkedin" },
+  { id: "figma", name: "Figma", description: "Design collaboration & assets", icon: FigmaIcon, category: "Development", app: "figma", isSvg: true },
+  { id: "teams", name: "Microsoft Teams", description: "Team communication & meetings", icon: TeamsIcon, category: "Communication", app: "microsoftteams", isSvg: true },
+  { id: "zoom", name: "Zoom", description: "Video meetings & webinars", icon: ZoomIcon, category: "Communication", app: "zoom", isSvg: true },
+  { id: "instagram", name: "Instagram", description: "Share images and stories", icon: InstagramIcon, category: "Social", app: "instagram", isSvg: true },
+  { id: "facebook", name: "Facebook", description: "Publish content to Facebook", icon: FacebookIcon, category: "Social", app: "facebook", isSvg: true },
+  { id: "linkedin", name: "LinkedIn", description: "Share professional content", icon: LinkedInIcon, category: "Social", app: "linkedin", isSvg: true },
   { id: "discord", name: "Discord", description: "Send messages & manage servers", icon: DiscordIcon, category: "Communication", app: "discord", isSvg: true },
 ];
 
@@ -150,11 +233,10 @@ const IntegrationsPage = () => {
             <div className="space-y-2">
               {integrations.filter(i => i.category === cat).map(integration => {
                 const Icon = integration.icon;
-                const isSvgIcon = (integration as any).isSvg;
                 return (
                   <div key={integration.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/30 transition-colors">
                     <div className="w-9 h-9 rounded-xl bg-muted/60 flex items-center justify-center shrink-0">
-                      {isSvgIcon ? <Icon /> : <Icon className="w-5 h-5 text-foreground" />}
+                      <Icon />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">{integration.name}</p>

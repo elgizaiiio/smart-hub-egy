@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Zap, Crown, Clock, CheckCircle2, ImagePlus, HelpCircle, Star, Play } from "lucide-react";
+import { ArrowLeft, Zap, Crown, Clock, CheckCircle2, ImagePlus, HelpCircle, Play } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ALL_MODEL_DETAILS, type ModelDetail, type ModelType } from "@/lib/modelDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,20 +22,6 @@ const MODE_TYPES: Record<PickerMode, { models: ModelType[]; tools: ModelType[]; 
   chat: { models: ["chat"], tools: [], modelLabel: "Models", toolLabel: "" },
 };
 
-// Sub-categories for image models
-const IMAGE_SUBCATEGORIES = [
-  { key: "generate", label: "Generate", filter: (m: ModelDetail) => !m.requiresImage && !m.type.includes("tool") },
-  { key: "edit", label: "Edit", filter: (m: ModelDetail) => m.type === "image-tool" && (m.id.includes("edit") || m.id.includes("variation") || m.id.includes("extender")) },
-  { key: "enhance", label: "Enhance", filter: (m: ModelDetail) => m.type === "image-tool" && (m.id.includes("upscal") || m.id.includes("enhancer") || m.id.includes("restor") || m.id.includes("coloriz") || m.id.includes("relight")) },
-  { key: "templates", label: "Templates", filter: (m: ModelDetail) => m.type === "image-tool" && (m.id.includes("logo") || m.id.includes("sticker") || m.id.includes("qr") || m.id.includes("headshot") || m.id.includes("product") || m.id.includes("cartoon") || m.id.includes("style") || m.id.includes("bg-re")) },
-];
-
-const VIDEO_SUBCATEGORIES = [
-  { key: "t2v", label: "Text to Video", filter: (m: ModelDetail) => m.type === "video" },
-  { key: "i2v", label: "Image to Video", filter: (m: ModelDetail) => m.type === "video-i2v" },
-  { key: "avatar", label: "Avatar", filter: (m: ModelDetail) => m.type === "video-avatar" },
-];
-
 const QUALITY_BADGE: Record<string, { label: string; className: string }> = {
   standard: { label: "Standard", className: "bg-secondary text-muted-foreground" },
   high: { label: "High", className: "bg-primary/10 text-primary" },
@@ -50,23 +36,12 @@ interface ModelMediaRecord {
 
 const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: ModelPickerSheetProps) => {
   const [tab, setTab] = useState<"models" | "tools">("models");
-  const [subCategory, setSubCategory] = useState<string>("generate");
   const [detailModel, setDetailModel] = useState<ModelDetail | null>(null);
   const [mediaMap, setMediaMap] = useState<Record<string, ModelMediaRecord>>({});
 
   const types = MODE_TYPES[mode];
   const hasTools = types.tools.length > 0;
 
-  // Reset sub-category when tab changes
-  useEffect(() => {
-    if (mode === "images") {
-      setSubCategory(tab === "models" ? "generate" : "edit");
-    } else if (mode === "videos") {
-      setSubCategory(tab === "models" ? "t2v" : "i2v");
-    }
-  }, [tab, mode]);
-
-  // Load media from Supabase
   useEffect(() => {
     if (!open) return;
     const load = async () => {
@@ -84,25 +59,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     const typeList = tab === "models" ? types.models : types.tools;
     return ALL_MODEL_DETAILS.filter(m => typeList.includes(m.type));
   }, [tab, types]);
-
-  // Get subcategories based on mode and tab
-  const subcategories = useMemo(() => {
-    if (mode === "images") {
-      if (tab === "models") return [IMAGE_SUBCATEGORIES[0]];
-      return IMAGE_SUBCATEGORIES.slice(1);
-    }
-    if (mode === "videos") {
-      if (tab === "models") return [VIDEO_SUBCATEGORIES[0]];
-      return VIDEO_SUBCATEGORIES.slice(1);
-    }
-    return [];
-  }, [mode, tab]);
-
-  const filtered = useMemo(() => {
-    const sub = subcategories.find(s => s.key === subCategory);
-    if (sub) return allModels.filter(sub.filter);
-    return allModels;
-  }, [allModels, subCategory, subcategories]);
 
   const handleSelect = (model: ModelDetail) => {
     onSelect({
@@ -127,17 +83,11 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 bg-background flex flex-col"
         >
-          {/* ═══ Top Bar ═══ */}
+          {/* Top Bar */}
           <div className="shrink-0 bg-background sticky top-0 z-10">
             <div className="max-w-5xl mx-auto px-4 pt-3 pb-2 flex items-center gap-3">
               <button
-                onClick={() => {
-                  if (detailModel) {
-                    setDetailModel(null);
-                  } else {
-                    onClose();
-                  }
-                }}
+                onClick={() => { if (detailModel) setDetailModel(null); else onClose(); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -149,9 +99,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                     <button
                       onClick={() => setTab("models")}
                       className={`flex-1 py-2 px-5 rounded-full text-sm font-semibold transition-all ${
-                        tab === "models"
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
+                        tab === "models" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {types.modelLabel}
@@ -159,9 +107,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                     <button
                       onClick={() => setTab("tools")}
                       className={`flex-1 py-2 px-5 rounded-full text-sm font-semibold transition-all ${
-                        tab === "tools"
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
+                        tab === "tools" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {types.toolLabel}
@@ -188,92 +134,58 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                 </>
               )}
             </div>
-
-            {/* Sub-category pills */}
-            {!detailModel && subcategories.length > 1 && (
-              <div className="max-w-5xl mx-auto px-4 pb-3">
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                  {subcategories.map(sc => (
-                    <button
-                      key={sc.key}
-                      onClick={() => setSubCategory(sc.key)}
-                      className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
-                        subCategory === sc.key
-                          ? "bg-foreground text-background border-foreground"
-                          : "bg-transparent text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground"
-                      }`}
-                    >
-                      {sc.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {detailModel ? (
-            /* ═══ DETAIL VIEW ═══ */
+            /* DETAIL VIEW */
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-                {/* Media preview */}
+              <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+                {/* Media */}
                 {mediaMap[detailModel.id] && (
                   <div className="rounded-2xl overflow-hidden aspect-video bg-secondary">
                     {mediaMap[detailModel.id].media_type === "video" ? (
-                      <video
-                        src={mediaMap[detailModel.id].media_url}
-                        className="w-full h-full object-cover"
-                        autoPlay muted loop playsInline
-                      />
+                      <video src={mediaMap[detailModel.id].media_url} className="w-full h-full object-cover" autoPlay muted loop playsInline />
                     ) : (
-                      <img
-                        src={mediaMap[detailModel.id].media_url}
-                        alt={detailModel.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={mediaMap[detailModel.id].media_url} alt={detailModel.name} className="w-full h-full object-cover" />
                     )}
                   </div>
                 )}
 
                 {/* Header */}
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <h2 className="font-display text-2xl font-bold text-foreground">{detailModel.name}</h2>
-                      <p className="text-sm text-muted-foreground">{detailModel.description}</p>
-                    </div>
-                    <div className="shrink-0">
-                      {detailModel.credits > 0 ? (
-                        <div className="text-right">
-                          <span className="text-2xl font-bold text-primary">{detailModel.credits}</span>
-                          <span className="text-xs text-muted-foreground ml-1">credits</span>
-                        </div>
-                      ) : (
-                        <span className="px-3 py-1.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-semibold">Free</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2">
-                    {detailModel.speed && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-xs font-medium text-foreground">
-                        {detailModel.speed === "fast" ? <Zap className="w-3 h-3 text-amber-500" /> : <Clock className="w-3 h-3 text-muted-foreground" />}
-                        {detailModel.speed === "fast" ? "Fast" : detailModel.speed === "slow" ? "Slow" : "Standard"}
-                      </span>
+                <div className="flex items-start justify-between gap-4">
+                  <h2 className="font-display text-2xl font-bold text-foreground">{detailModel.name}</h2>
+                  <div className="shrink-0">
+                    {detailModel.credits > 0 ? (
+                      <div className="text-right">
+                        <span className="text-2xl font-bold text-primary">{detailModel.credits}</span>
+                        <span className="text-xs text-muted-foreground ml-1">credits</span>
+                      </div>
+                    ) : (
+                      <span className="px-3 py-1.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-semibold">Free</span>
                     )}
-                    {detailModel.quality && (
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${QUALITY_BADGE[detailModel.quality].className}`}>
-                        {detailModel.quality === "ultra" ? <Crown className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
-                        {QUALITY_BADGE[detailModel.quality].label}
-                      </span>
-                    )}
-                    {detailModel.modes.map(m => (
-                      <span key={m} className="px-3 py-1.5 rounded-full bg-accent text-xs text-accent-foreground font-medium">{m}</span>
-                    ))}
                   </div>
                 </div>
 
-                {/* Description */}
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2">
+                  {detailModel.speed && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-xs font-medium text-foreground">
+                      {detailModel.speed === "fast" ? <Zap className="w-3 h-3 text-amber-500" /> : <Clock className="w-3 h-3 text-muted-foreground" />}
+                      {detailModel.speed === "fast" ? "Fast" : detailModel.speed === "slow" ? "Slow" : "Standard"}
+                    </span>
+                  )}
+                  {detailModel.quality && (
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${QUALITY_BADGE[detailModel.quality].className}`}>
+                      {detailModel.quality === "ultra" ? <Crown className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                      {QUALITY_BADGE[detailModel.quality].label}
+                    </span>
+                  )}
+                  {detailModel.modes.map(m => (
+                    <span key={m} className="px-3 py-1.5 rounded-full bg-accent text-xs text-accent-foreground font-medium">{m}</span>
+                  ))}
+                </div>
+
+                {/* About */}
                 <div className="p-4 rounded-2xl bg-card border border-border space-y-2">
                   <h3 className="text-sm font-semibold text-foreground">About</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{detailModel.longDescription}</p>
@@ -330,19 +242,18 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
               </div>
             </div>
           ) : (
-            /* ═══ LIST VIEW ═══ */
+            /* LIST VIEW */
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-5xl mx-auto px-4 py-3">
-                {filtered.length === 0 ? (
+                {allModels.length === 0 ? (
                   <div className="text-center py-16">
                     <p className="text-muted-foreground text-sm">No models found.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {filtered.map(model => {
+                    {allModels.map(model => {
                       const isSelected = selectedModelId === model.id;
                       const media = mediaMap[model.id];
-                      const rating = model.quality === "ultra" ? 5.0 : model.quality === "high" ? 4.5 : 0.0;
 
                       return (
                         <motion.div
@@ -356,8 +267,8 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                           }`}
                           onClick={() => handleSelect(model)}
                         >
-                          {/* Media thumbnail */}
-                          <div className="aspect-[4/5] bg-secondary relative overflow-hidden">
+                          {/* Square media thumbnail */}
+                          <div className="aspect-square bg-secondary relative overflow-hidden">
                             {media ? (
                               media.media_type === "video" ? (
                                 <>
@@ -388,14 +299,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                               </div>
                             )}
 
-                            {/* Info button - top left */}
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setDetailModel(model); }}
-                              className="absolute top-2.5 left-2.5 w-7 h-7 rounded-full bg-foreground/60 backdrop-blur-sm flex items-center justify-center hover:bg-foreground/80 transition-colors"
-                            >
-                              <HelpCircle className="w-4 h-4 text-background" />
-                            </button>
-
                             {/* Selected indicator */}
                             {isSelected && (
                               <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
@@ -404,23 +307,20 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                             )}
                           </div>
 
-                          {/* Card info */}
-                          <div className="p-3 space-y-1">
-                            <div className="flex items-center justify-between gap-1">
+                          {/* Card info - name + credits + ? button */}
+                          <div className="p-2.5 flex items-center justify-between gap-1">
+                            <div className="min-w-0">
                               <h3 className="text-sm font-bold text-foreground truncate">{model.name}</h3>
-                              <span className="shrink-0 text-xs text-muted-foreground font-medium">
-                                {model.credits > 0 ? `${model.credits} Credit` : "Free"}
+                              <span className="text-[11px] text-muted-foreground font-medium">
+                                {model.credits > 0 ? `${model.credits} Credits` : "Free"}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-1">
-                              <p className="text-[11px] text-muted-foreground truncate">{model.description}</p>
-                              {rating > 0 && (
-                                <span className="shrink-0 flex items-center gap-0.5 text-[11px] font-semibold text-primary">
-                                  <Star className="w-3 h-3 fill-primary text-primary" />
-                                  {rating.toFixed(1)}
-                                </span>
-                              )}
-                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDetailModel(model); }}
+                              className="shrink-0 w-7 h-7 rounded-full bg-secondary hover:bg-accent flex items-center justify-center transition-colors"
+                            >
+                              <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                            </button>
                           </div>
                         </motion.div>
                       );
