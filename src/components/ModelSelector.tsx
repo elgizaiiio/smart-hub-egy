@@ -145,7 +145,7 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, col
       <button
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-colors ${colorClass || "bg-primary text-primary-foreground hover:bg-primary/90"}`}
       >
         {selectedModel.name}
         <ChevronDown className="w-3 h-3" />
