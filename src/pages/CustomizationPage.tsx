@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ArrowLeft, Sun, Moon, Check, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -30,29 +30,28 @@ const messageColors = [
 const CustomizationPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem("theme") || "dark");
-  const [currentAccent, setCurrentAccent] = useState(localStorage.getItem("accent") || "262 60% 55%");
+  const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("theme") || "dark");
+  const [currentAccent, setCurrentAccent] = useState(() => localStorage.getItem("accent") || "262 60% 55%");
 
-  const handleThemeChange = (id: string) => {
+  const handleThemeChange = useCallback((id: string) => {
     document.documentElement.setAttribute("data-theme", id);
     localStorage.setItem("theme", id);
     setCurrentTheme(id);
-  };
+  }, []);
 
-  const handleAccentChange = (hsl: string) => {
+  const handleAccentChange = useCallback((hsl: string) => {
     document.documentElement.style.setProperty("--primary", hsl);
     localStorage.setItem("accent", hsl);
     setCurrentAccent(hsl);
-  };
+  }, []);
 
-  const CustomizationContent = () => (
+  const content = (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
-      {/* Header - mobile only */}
       {isMobile && (
         <div className="text-center">
           <h1 className="font-display text-2xl font-bold text-foreground mb-2">Make it yours</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Personalize your experience{"\n"}with themes, colors, and{"\n"}backgrounds
+            Personalize your experience with themes, colors, and backgrounds
           </p>
         </div>
       )}
@@ -123,7 +122,7 @@ const CustomizationPage = () => {
           <RefreshCw className="w-4 h-4 text-muted-foreground" />
         </div>
         <p className="text-sm text-muted-foreground text-center">
-          Your preferences are saved{"\n"}automatically and synced across all{"\n"}your devices
+          Your preferences are saved automatically and synced across all your devices
         </p>
       </div>
     </motion.div>
@@ -132,7 +131,7 @@ const CustomizationPage = () => {
   if (!isMobile) {
     return (
       <DesktopSettingsLayout title="Customization" subtitle="Personalize your experience with themes and colors">
-        <CustomizationContent />
+        {content}
       </DesktopSettingsLayout>
     );
   }
@@ -146,9 +145,7 @@ const CustomizationPage = () => {
           </button>
           <h1 className="font-display text-lg font-bold text-foreground">Customization</h1>
         </div>
-        <div className="px-4">
-          <CustomizationContent />
-        </div>
+        <div className="px-4">{content}</div>
       </div>
     </div>
   );
