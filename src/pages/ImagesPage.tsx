@@ -322,6 +322,7 @@ const ImagesPage = () => {
 
     setIsGenerating(false);
     setAttachedImages([]);
+    refreshCredits();
 
     if (convId) {
       await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
