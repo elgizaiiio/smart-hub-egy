@@ -123,21 +123,21 @@ const VideosPage = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-[100dvh] flex flex-col bg-background">
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); }} currentMode="videos" />
 
-      <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+      <div className="flex items-center justify-between px-4 py-2">
+        <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories centerDropdown />
+        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories />
         <div className="w-9" />
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4">
-            <div className="w-full max-w-md aspect-[9/16] max-h-[60vh] relative rounded-2xl overflow-hidden mb-6 bg-secondary">
+            <div className="w-full max-w-xs aspect-[9/16] max-h-[50vh] relative rounded-2xl overflow-hidden mb-4 bg-secondary">
               <AnimatePresence mode="wait">
                 <motion.video
                   key={currentVideo}
@@ -151,22 +151,22 @@ const VideosPage = () => {
                 />
               </AnimatePresence>
             </div>
-            <h2 className="font-display text-xl font-bold text-foreground mb-1">Create amazing videos</h2>
-            <p className="text-sm text-muted-foreground mb-4">From text to video with AI</p>
+            <h2 className="font-display text-lg font-bold text-foreground mb-1">Create amazing videos</h2>
+            <p className="text-xs text-muted-foreground mb-4">From text to video with AI</p>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto py-6 px-4 space-y-4">
+          <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
             {messages.map((msg, i) => (
-              <div key={i} dir="auto">
+              <div key={i}>
                 {msg.role === "user" ? (
                   <div className="flex justify-end mb-4">
-                    <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
+                    <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm leading-relaxed">
                       {msg.content}
                     </div>
                   </div>
                 ) : (
                   <div className="mb-4">
-                    <p className="text-sm text-foreground mb-2" style={{ unicodeBidi: "plaintext" }}>{msg.content}</p>
+                    <p className="text-sm text-foreground mb-2">{msg.content}</p>
                     {msg.videoUrl && (
                       <div>
                         <video src={msg.videoUrl} controls autoPlay className="w-full max-w-md rounded-2xl" />
@@ -190,7 +190,7 @@ const VideosPage = () => {
         )}
       </div>
 
-      <div className="shrink-0 px-4 md:px-6 py-4">
+      <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto">
           {attachedImage && (
             <div className="flex items-center gap-2 px-3 pb-2">

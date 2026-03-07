@@ -6,7 +6,6 @@ import AppSidebar from "@/components/AppSidebar";
 import ModelSelector, { getDefaultModel } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
 
-// Social SVG icons
 const FacebookIcon = () => (
   <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
 );
@@ -126,21 +125,21 @@ const ImagesPage = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-[100dvh] flex flex-col bg-background">
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); }} currentMode="images" />
 
-      <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+      <div className="flex items-center justify-between px-4 py-2">
+        <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories centerDropdown />
+        <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories />
         <div className="w-9" />
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4">
-            <div className="w-full max-w-md aspect-[3/4] relative rounded-2xl overflow-hidden mb-6">
+            <div className="w-full max-w-xs aspect-[3/4] max-h-[50vh] relative rounded-2xl overflow-hidden mb-4">
               <AnimatePresence mode="wait">
                 <motion.img
                   key={currentImage}
@@ -159,22 +158,22 @@ const ImagesPage = () => {
                 ))}
               </div>
             </div>
-            <h2 className="font-display text-xl font-bold text-foreground mb-1">Create stunning images</h2>
-            <p className="text-sm text-muted-foreground mb-4">Powered by the latest AI models</p>
+            <h2 className="font-display text-lg font-bold text-foreground mb-1">Create stunning images</h2>
+            <p className="text-xs text-muted-foreground mb-4">Powered by the latest AI models</p>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto py-6 px-4 space-y-4">
+          <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
             {messages.map((msg, i) => (
-              <div key={i} dir="auto">
+              <div key={i}>
                 {msg.role === "user" ? (
                   <div className="flex justify-end mb-4">
-                    <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
+                    <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm leading-relaxed">
                       {msg.content}
                     </div>
                   </div>
                 ) : (
                   <div className="mb-4">
-                    <p className="text-sm text-foreground mb-2" style={{ unicodeBidi: "plaintext" }}>{msg.content}</p>
+                    <p className="text-sm text-foreground mb-2">{msg.content}</p>
                     {msg.imageUrl && (
                       <div className="relative group">
                         <img src={msg.imageUrl} alt="Generated" className="w-full max-w-md rounded-2xl" />
@@ -198,7 +197,7 @@ const ImagesPage = () => {
         )}
       </div>
 
-      <div className="shrink-0 px-4 md:px-6 py-4">
+      <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto">
           {attachedImage && (
             <div className="flex items-center gap-2 px-3 pb-2">

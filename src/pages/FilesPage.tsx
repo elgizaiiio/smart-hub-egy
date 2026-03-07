@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, Mail, HardDrive } from "lucide-react";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
 import ThinkingLoader from "@/components/ThinkingLoader";
+import ReactMarkdown from "react-markdown";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -12,10 +13,10 @@ interface ChatMsg {
 }
 
 const SUGGESTIONS = [
-  { title: "Write a professional report", icon: "📄" },
-  { title: "Create a presentation", icon: "📊" },
-  { title: "Summarize this document", icon: "📝" },
-  { title: "Convert image to PDF", icon: "🖼️" },
+  { title: "Write a professional report" },
+  { title: "Create a presentation" },
+  { title: "Summarize this document" },
+  { title: "Convert image to PDF" },
 ];
 
 const FILE_PLACEHOLDERS = [
@@ -32,9 +33,11 @@ const FilesPage = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [searchEnabled, setSearchEnabled] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,10 +60,12 @@ const FilesPage = () => {
     if (!input.trim()) return;
     const userMsg: ChatMsg = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
+    const userInput = input;
     setInput("");
     setIsGenerating(true);
 
     try {
+      // First generate the HTML document
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: {
@@ -68,8 +73,9 @@ const FilesPage = () => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: [{ role: "user", content: `Generate a complete, well-formatted HTML document for the following request. Include proper styling with CSS. Output ONLY the HTML code, no explanations:\n\n${userMsg.content}` }],
+          messages: [{ role: "user", content: `Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished. Output ONLY the HTML code, no explanations:\n\n${userInput}` }],
           model: "google/gemini-3-flash-preview",
+          mode: "files",
         }),
       });
 
@@ -108,7 +114,43 @@ const FilesPage = () => {
       const htmlMatch = content.match(/```html\n([\s\S]*?)```/);
       if (htmlMatch) html = htmlMatch[1];
 
-      setMessages(prev => [...prev, { role: "assistant", content: "Your file is ready! Click Preview to view or Download to save as PDF.", htmlContent: html }]);
+      // Now generate AI description
+      const descResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML document for them. Write a brief, friendly description of what was created and suggest 2-3 improvements. Keep it conversational, 2-3 sentences max. Do not use emoji. Respond in the same language as the user's request.` }],
+          model: "google/gemini-3-flash-preview",
+        }),
+      });
+
+      let description = "Your document is ready. Click Preview to view it.";
+      if (descResp.ok && descResp.body) {
+        const descReader = descResp.body.getReader();
+        let descContent = "";
+        let descBuffer = "";
+        while (true) {
+          const { done, value } = await descReader.read();
+          if (done) break;
+          descBuffer += decoder.decode(value, { stream: true });
+          let ni: number;
+          while ((ni = descBuffer.indexOf("\n")) !== -1) {
+            let ln = descBuffer.slice(0, ni);
+            descBuffer = descBuffer.slice(ni + 1);
+            if (ln.endsWith("\r")) ln = ln.slice(0, -1);
+            if (!ln.startsWith("data: ")) continue;
+            const js = ln.slice(6).trim();
+            if (js === "[DONE]") break;
+            try { const p = JSON.parse(js); const c = p.choices?.[0]?.delta?.content; if (c) descContent += c; } catch {}
+          }
+        }
+        if (descContent.trim()) description = descContent.trim();
+      }
+
+      setMessages(prev => [...prev, { role: "assistant", content: description, htmlContent: html }]);
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]);
     }
@@ -123,18 +165,10 @@ const FilesPage = () => {
     setTimeout(() => { printWindow.print(); }, 500);
   };
 
-  const handleDownloadHtml = (html: string) => {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "document.html"; a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-[100dvh] flex flex-col bg-background">
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); }} currentMode="files" />
 
       {/* Preview Modal */}
@@ -145,7 +179,6 @@ const FilesPage = () => {
               <p className="text-sm font-medium text-foreground">Preview</p>
               <div className="flex gap-2">
                 <button onClick={() => handleDownloadPdf(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">PDF</button>
-                <button onClick={() => handleDownloadHtml(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-secondary text-foreground hover:bg-accent">.HTML</button>
                 <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground">
                   <X className="w-4 h-4" />
                 </button>
@@ -156,22 +189,22 @@ const FilesPage = () => {
         )}
       </AnimatePresence>
 
-      <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+      <div className="flex items-center justify-between px-4 py-2">
+        <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
         <div className="w-9" />
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md">
-              <h2 className="font-display text-2xl font-bold text-foreground mb-2">Create anything with files</h2>
-              <p className="text-sm text-muted-foreground mb-8">Generate documents, analyze files, create presentations and more</p>
+              <h2 className="font-display text-xl font-bold text-foreground mb-2">Create anything with files</h2>
+              <p className="text-sm text-muted-foreground mb-6">Generate documents, analyze files, create presentations and more</p>
               <div className="grid grid-cols-2 gap-3">
                 {SUGGESTIONS.map((s, i) => (
-                  <motion.button key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} onClick={() => setInput(s.title)} className="p-4 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/50 transition-all text-left">
+                  <motion.button key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} onClick={() => setInput(s.title)} className="p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/50 transition-all text-left">
                     <p className="text-sm text-foreground">{s.title}</p>
                   </motion.button>
                 ))}
@@ -179,18 +212,20 @@ const FilesPage = () => {
             </motion.div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto py-6 px-4 space-y-4">
+          <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
             {messages.map((msg, i) => (
-              <div key={i} dir="auto">
+              <div key={i}>
                 {msg.role === "user" ? (
                   <div className="flex justify-end mb-4">
-                    <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
+                    <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm leading-relaxed">
                       {msg.content}
                     </div>
                   </div>
                 ) : (
                   <div className="mb-4">
-                    <p className="text-sm text-foreground mb-3" style={{ unicodeBidi: "plaintext" }}>{msg.content}</p>
+                    <div className="prose-chat text-foreground text-sm mb-3">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
                     {msg.htmlContent && (
                       <div className="flex gap-2">
                         <button onClick={() => setPreviewHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-foreground text-sm hover:bg-accent transition-colors">
@@ -211,17 +246,47 @@ const FilesPage = () => {
         )}
       </div>
 
-      <div className="shrink-0 px-4 md:px-6 py-4">
+      <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto relative">
           <AnimatePresence>
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64">
+                  {/* Web Search toggle */}
+                  <button
+                    onClick={() => { setSearchEnabled(!searchEnabled); setMenuOpen(false); }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">Web search</span>
+                    </div>
+                    <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+                      <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+                    </div>
+                  </button>
+
+                  <button onClick={() => { imageInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                    <Image className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">Attach Image</span>
+                  </button>
                   <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
                     <Paperclip className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm">Attach Document</span>
                   </button>
+
+                  <div className="border-t border-border mt-1 pt-1">
+                    <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Agents</p>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
+                      <Mail className="w-4 h-4 text-muted-foreground" /> Email
+                      <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">PRO</span>
+                    </button>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
+                      <HardDrive className="w-4 h-4 text-muted-foreground" /> Google Drive
+                      <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">PRO</span>
+                    </button>
+                  </div>
                 </motion.div>
               </>
             )}
@@ -244,6 +309,7 @@ const FilesPage = () => {
             </button>
           </div>
           <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.txt,.md,.csv,.json,.docx,.xlsx" />
+          <input ref={imageInputRef} type="file" className="hidden" accept="image/*" />
         </div>
       </div>
     </div>

@@ -43,9 +43,9 @@ const CustomizationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-[100dvh] bg-background overflow-y-auto">
       <div className="max-w-lg mx-auto pb-12">
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
           <button onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -67,8 +67,8 @@ const CustomizationPage = () => {
                   <button
                     key={t.id}
                     onClick={() => handleThemeChange(t.id)}
-                    className={`relative flex flex-col items-center justify-center py-6 rounded-xl border-2 transition-all ${
-                      isSelected ? "border-primary" : "border-border"
+                    className={`relative flex flex-col items-center justify-center py-6 rounded-xl transition-all ${
+                      isSelected ? "ring-2 ring-primary" : "hover:bg-accent/30"
                     }`}
                   >
                     {isSelected && (
@@ -107,7 +107,7 @@ const CustomizationPage = () => {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border p-4 text-center">
+          <div className="text-center">
             <p className="text-sm text-muted-foreground">Your preferences are saved automatically</p>
           </div>
         </motion.div>

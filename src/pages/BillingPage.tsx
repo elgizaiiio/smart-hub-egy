@@ -24,9 +24,9 @@ const BillingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-[100dvh] bg-background overflow-y-auto">
       <div className="max-w-lg mx-auto">
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
           <button onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -34,22 +34,20 @@ const BillingPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-4 space-y-6">
-          {/* Card */}
-          <div className="rounded-2xl p-5 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))" }}>
-            <div className="flex items-center justify-between mb-6">
+          {/* Balance Card */}
+          <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))" }}>
+            <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold text-sm" style={{ background: "linear-gradient(135deg, #c0c0c0, #e8e8e8, #a0a0a0)", color: "#333", WebkitBackgroundClip: "text" }}>
-                  <span className="text-lg font-black" style={{ background: "linear-gradient(135deg, #c0c0c0, #ffffff, #a0a0a0)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
-                </div>
-                <span className="text-xs opacity-80 uppercase tracking-wider">MEGSY AI</span>
+                <span className="text-lg font-black opacity-80">M</span>
+                <span className="text-xs opacity-60 uppercase tracking-wider">MEGSY AI</span>
               </div>
               <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded-full">PREMIUM</span>
             </div>
-            <p className="text-[10px] opacity-70 uppercase tracking-wider">AVAILABLE BALANCE</p>
-            <p className="text-3xl font-bold mt-1">{credits.toFixed(2)} <span className="text-sm font-normal opacity-80">MC</span></p>
-            <div className="flex items-center justify-between mt-4">
+            <p className="text-[10px] opacity-60 uppercase tracking-wider">AVAILABLE BALANCE</p>
+            <p className="text-3xl font-bold mt-1">{credits.toFixed(2)} <span className="text-sm font-normal opacity-60">credits</span></p>
+            <div className="flex items-center justify-between mt-6">
               <div className="w-10 h-7 rounded bg-gradient-to-r from-amber-300 to-amber-500" />
-              <span className="text-sm opacity-80 tracking-widest">MC</span>
+              <span className="text-[10px] opacity-50">1 credit = $0.10</span>
             </div>
           </div>
 
@@ -71,7 +69,7 @@ const BillingPage = () => {
             ) : (
               <div className="space-y-2">
                 {mockHistory.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-border">
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/30 transition-colors">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.type === "add" ? "bg-green-500/10" : "bg-red-500/10"}`}>
                       {item.type === "add" ? <TrendingUp className="w-4 h-4 text-green-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
                     </div>
@@ -80,7 +78,7 @@ const BillingPage = () => {
                       <p className="text-xs text-muted-foreground">{item.date}</p>
                     </div>
                     <span className={`text-sm font-medium ${item.type === "add" ? "text-green-500" : "text-red-500"}`}>
-                      {item.type === "add" ? "+" : "-"}{item.amount} MC
+                      {item.type === "add" ? "+" : "-"}{item.amount} credits
                     </span>
                   </div>
                 ))}

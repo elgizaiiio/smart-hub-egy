@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Globe, Paperclip, GraduationCap, ShoppingCart, Link2, Sparkles } from "lucide-react";
+import { Menu, Plus, Globe, Camera, Image, FileUp, GraduationCap, ShoppingCart, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +41,9 @@ const ChatPage = () => {
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
+  const [searchStatus, setSearchStatus] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -102,6 +104,21 @@ const ChatPage = () => {
     }
     setIsLoading(false);
     setIsThinking(false);
+    setSearchStatus("");
+  };
+
+  const handleModeChange = (mode: ChatMode) => {
+    setChatMode(prev => prev === mode ? "normal" : mode);
+    // Disable search when enabling a mode
+    if (mode !== "normal") setSearchEnabled(false);
+    setPlusMenuOpen(false);
+  };
+
+  const handleSearchToggle = () => {
+    setSearchEnabled(!searchEnabled);
+    // Disable other modes when enabling search
+    if (!searchEnabled) setChatMode("normal");
+    setPlusMenuOpen(false);
   };
 
   const handleSend = async () => {
@@ -129,6 +146,7 @@ const ChatPage = () => {
 
     const updateAssistant = (chunk: string) => {
       setIsThinking(false);
+      setSearchStatus("");
       assistantContent += chunk;
       setMessages((prev) => {
         const last = prev[prev.length - 1];
@@ -145,6 +163,7 @@ const ChatPage = () => {
     if (searchEnabled) {
       try {
         const searchQuery = input.replace(/@\w+\s*/g, "").trim();
+        setSearchStatus(`Searching for "${searchQuery}"`);
         const searchResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search`, {
           method: "POST",
           headers: {
@@ -159,6 +178,7 @@ const ChatPage = () => {
           searchContext = searchData.context || "";
           searchImages = searchData.images || [];
         }
+        setSearchStatus("Thinking");
       } catch { /* continue without search */ }
     }
 
@@ -180,12 +200,23 @@ const ChatPage = () => {
       onDone: async () => {
         setIsLoading(false);
         setIsThinking(false);
+        setSearchStatus("");
         if (convId && assistantContent) {
           await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
+          // Update the last assistant message to include search images
+          if (searchImages.length > 0) {
+            setMessages(prev => {
+              const last = prev[prev.length - 1];
+              if (last?.role === "assistant") {
+                return prev.map((m, i) => i === prev.length - 1 ? { ...m, images: searchImages } : m);
+              }
+              return prev;
+            });
+          }
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
         }
       },
-      onError: (err) => { toast.error(err); setIsThinking(false); setIsLoading(false); },
+      onError: (err) => { toast.error(err); setIsThinking(false); setIsLoading(false); setSearchStatus(""); },
       signal: controller.signal,
     });
   };
@@ -196,6 +227,7 @@ const ChatPage = () => {
     setIsLoading(false);
     setIsThinking(false);
     setAttachedFiles([]);
+    setSearchStatus("");
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,10 +247,21 @@ const ChatPage = () => {
     e.target.value = "";
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
   const hasConversation = messages.length > 0;
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-[100dvh] flex flex-col bg-background">
       <AppSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -228,11 +271,11 @@ const ChatPage = () => {
         currentMode="chat"
       />
 
-      {/* Header - no background, just buttons */}
-      <div className="flex items-center justify-between px-4 py-3">
+      {/* Header - transparent, no background */}
+      <div className="flex items-center justify-between px-4 py-2">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -243,7 +286,6 @@ const ChatPage = () => {
               initial={{ opacity: 1 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
-              className="flex items-center gap-2"
             >
               <FancyButton onClick={() => navigate("/pricing")}>
                 Unlock Pro
@@ -254,14 +296,14 @@ const ChatPage = () => {
 
         <button
           onClick={handleNewChat}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
         >
           <Plus className="w-4 h-4" />
         </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4">
             <motion.div
@@ -292,7 +334,7 @@ const ChatPage = () => {
             </motion.div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto py-6 px-4 space-y-2">
+          <div className="max-w-3xl mx-auto py-4 px-4 space-y-2">
             {messages.map((msg, i) => (
               <ChatMessage
                 key={i}
@@ -306,9 +348,8 @@ const ChatPage = () => {
               />
             ))}
             {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
-              <ThinkingLoader />
+              <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
             )}
-            {/* Persistent thinking loader during streaming */}
             {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && (
               <ThinkingLoader />
             )}
@@ -318,37 +359,17 @@ const ChatPage = () => {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 px-4 md:px-6 py-4">
-        <div className="max-w-3xl mx-auto space-y-2">
-          {searchEnabled && (
-            <div className="flex items-center gap-2 px-3">
-              <Globe className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs text-primary">Web search enabled</span>
-              <button onClick={() => setSearchEnabled(false)} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
-                Disable
-              </button>
-            </div>
-          )}
-
-          {chatMode !== "normal" && (
-            <div className="flex items-center gap-2 px-3">
-              {chatMode === "learning" ? <GraduationCap className="w-3.5 h-3.5 text-primary" /> : <ShoppingCart className="w-3.5 h-3.5 text-primary" />}
-              <span className="text-xs text-primary capitalize">{chatMode} mode</span>
-              <button onClick={() => setChatMode("normal")} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
-                Disable
-              </button>
-            </div>
-          )}
-
+      <div className="shrink-0 px-3 pb-3 pt-1">
+        <div className="max-w-3xl mx-auto space-y-1.5">
           {/* Attached files preview */}
           {attachedFiles.length > 0 && (
-            <div className="flex gap-2 px-3 overflow-x-auto pb-1">
+            <div className="flex gap-2 px-2 overflow-x-auto pb-1">
               {attachedFiles.map((f, i) => (
                 <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border">
                   {f.type === "image" ? (
                     <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" />
                   ) : (
-                    <Paperclip className="w-3 h-3" />
+                    <FileUp className="w-3 h-3" />
                   )}
                   <span className="truncate max-w-[100px]">{f.name}</span>
                   <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">×</button>
@@ -367,73 +388,87 @@ const ChatPage = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-72"
+                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72"
                   >
-                    <div className="space-y-0.5">
+                    {/* Camera / Photos / Files grid */}
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      <button
+                        onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }}
+                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors"
+                      >
+                        <Camera className="w-5 h-5 text-muted-foreground" />
+                        <span className="text-[11px] text-foreground">Camera</span>
+                      </button>
+                      <button
+                        onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }}
+                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors"
+                      >
+                        <Image className="w-5 h-5 text-muted-foreground" />
+                        <span className="text-[11px] text-foreground">Photos</span>
+                      </button>
+                      <button
+                        onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }}
+                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors"
+                      >
+                        <FileUp className="w-5 h-5 text-muted-foreground" />
+                        <span className="text-[11px] text-foreground">Files</span>
+                      </button>
+                    </div>
+
+                    <div className="border-t border-border pt-2 space-y-1">
+                      {/* Web Search toggle */}
+                      <button
+                        onClick={handleSearchToggle}
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Globe className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground">Web search</span>
+                        </div>
+                        <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+                          <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+                        </div>
+                      </button>
+
                       {/* Model selector */}
-                      <div className="px-3 py-2 border-b border-border mb-1">
-                        <p className="text-[10px] text-muted-foreground uppercase mb-2">Model</p>
+                      <div className="px-3 py-2">
                         <ModelSelector
                           mode="chat"
                           selectedModel={selectedModel}
                           onModelChange={(m) => { setSelectedModel(m); }}
                         />
                       </div>
+                    </div>
 
+                    <div className="border-t border-border mt-1 pt-1">
+                      <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
                       <button
-                        onClick={() => { setSearchEnabled(!searchEnabled); setPlusMenuOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                          searchEnabled ? "bg-primary/10 text-primary" : "hover:bg-accent text-foreground"
-                        }`}
+                        onClick={() => handleModeChange("learning")}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}
                       >
-                        <Globe className="w-4 h-4" />
-                        <div>
-                          <p className="text-sm">Web Search</p>
-                          <p className="text-[10px] text-muted-foreground">{searchEnabled ? "Enabled" : "Search the web"}</p>
-                        </div>
+                        <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Learning Mode</span>
+                        {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
                       </button>
-
                       <button
-                        onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+                        onClick={() => handleModeChange("shopping")}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}
                       >
-                        <Paperclip className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-foreground">Attach File</p>
-                          <p className="text-[10px] text-muted-foreground">Images or documents</p>
-                        </div>
+                        <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Shopping Mode</span>
+                        {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                       </button>
+                    </div>
 
-                      <div className="border-t border-border mt-1 pt-1">
-                        <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
-                        <button
-                          onClick={() => { setChatMode(chatMode === "learning" ? "normal" : "learning"); setPlusMenuOpen(false); }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}
-                        >
-                          <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-foreground">Learning Mode</span>
-                          {chatMode === "learning" && <span className="ml-auto text-xs text-primary">✓</span>}
-                        </button>
-                        <button
-                          onClick={() => { setChatMode(chatMode === "shopping" ? "normal" : "shopping"); setPlusMenuOpen(false); }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}
-                        >
-                          <ShoppingCart className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-foreground">Shopping Mode</span>
-                          {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">✓</span>}
-                        </button>
-                      </div>
-
-                      <div className="border-t border-border mt-1 pt-1">
-                        <button
-                          onClick={() => { navigate("/settings"); setPlusMenuOpen(false); }}
-                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors relative"
-                        >
-                          <Link2 className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-foreground">Integrations</span>
-                          <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
-                        </button>
-                      </div>
+                    <div className="border-t border-border mt-1 pt-1">
+                      <button
+                        onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors"
+                      >
+                        <Link2 className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Integrations</span>
+                        <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
+                      </button>
                     </div>
                   </motion.div>
                 </>
@@ -450,7 +485,8 @@ const ChatPage = () => {
               isLoading={isLoading}
             />
           </div>
-          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
+          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
+          <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
         </div>
       </div>
     </div>
