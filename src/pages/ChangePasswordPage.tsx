@@ -105,9 +105,7 @@ const ChangePasswordPage = () => {
       >
         {loading ? (
           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <ShieldCheck className="w-4 h-4" />
-        )}
+        ) : null}
         {loading ? "Updating..." : "Update Password"}
       </button>
       <button
