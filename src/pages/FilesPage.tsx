@@ -92,15 +92,42 @@ const FilesPage = () => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const createOrGetConversation = async (firstMessage: string) => {
+    if (conversationId) return conversationId;
+    const title = firstMessage.slice(0, 50) || "File Generation";
+    const { data } = await supabase
+      .from("conversations")
+      .insert({ title, mode: "files" })
+      .select("id")
+      .single();
+    if (data) {
+      setConversationId(data.id);
+      return data.id;
+    }
+    return null;
+  };
+
+  const saveMessage = async (convId: string, role: string, content: string) => {
+    await supabase.from("messages").insert({
+      conversation_id: convId,
+      role,
+      content,
+    });
+  };
+
   const handleGenerate = async () => {
     if (!input.trim() && attachedFiles.length === 0) return;
-    const userMsg: ChatMsg = { role: "user", content: input || `[Attached ${attachedFiles.length} file(s)]` };
+    const userContent = input || `[Attached ${attachedFiles.length} file(s)]`;
+    const userMsg: ChatMsg = { role: "user", content: userContent };
     setMessages(prev => [...prev, userMsg]);
     const userInput = input;
     setInput("");
     const files = [...attachedFiles];
     setAttachedFiles([]);
     setIsGenerating(true);
+
+    const convId = await createOrGetConversation(userContent);
+    if (convId) await saveMessage(convId, "user", userContent);
 
     try {
       let prompt = `Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished. Output ONLY the HTML code, no explanations:\n\n${userInput}`;
