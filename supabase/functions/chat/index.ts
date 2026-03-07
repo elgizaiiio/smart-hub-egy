@@ -137,6 +137,18 @@ serve(async (req) => {
       },
     ] : [];
 
+    // Build search tool if search is enabled
+    const searchTools = (searchEnabled && SERPER_API_KEY) ? [
+      {
+        type: "function",
+        function: {
+          name: "WEB_SEARCH",
+          description: "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data. Do NOT search for casual greetings or simple conversational messages.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results. Set true for visual topics like places, products, people, food. Set false for abstract questions, code, definitions." } }, required: ["query"] },
+        },
+      },
+    ] : [];
+
     // System prompt
     let systemPrompt: string;
     if (mode === "files") {
@@ -152,6 +164,9 @@ serve(async (req) => {
 - When the user greets you casually, respond casually and briefly.
 - IMPORTANT: Always end your response with a brief, engaging follow-up question related to the topic to keep the conversation active and the user engaged. Make it natural, not forced.
 - You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). When the user asks to perform actions with these services, use the appropriate tool. If a tool call fails because the user hasn't connected the service, tell them to connect it from Settings > Integrations.`;
+      if (searchEnabled) {
+        systemPrompt += `\n- You have access to a WEB_SEARCH tool. Use it ONLY when the question genuinely needs current or factual information from the internet. For casual conversation, greetings, opinions, or things you already know well, do NOT search. Be smart about when to search. When you do search, synthesize the results naturally and cite sources with links.`;
+      }
     }
 
     const body: any = {
