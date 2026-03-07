@@ -8,11 +8,9 @@ const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<"email" | "password">("email");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
 
   const handleContinueWithEmail = () => {
     if (!email.trim()) return;
@@ -23,14 +21,22 @@ const AuthPage = () => {
     if (!password.trim()) return;
     setIsSubmitting(true);
     try {
-      if (isSignUp) {
+      if (authMode === "signup") {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) { toast.error(error.message); setIsSubmitting(false); return; }
         toast.success("Account created! Check your email.");
         navigate("/");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) { toast.error(error.message); setIsSubmitting(false); return; }
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast.error("Invalid email or password");
+          } else {
+            toast.error(error.message);
+          }
+          setIsSubmitting(false);
+          return;
+        }
         navigate("/");
       }
     } catch {
@@ -58,7 +64,7 @@ const AuthPage = () => {
       >
         <h1 className="font-display text-4xl font-bold text-white mb-2">Megsy</h1>
         <p className="text-sm text-white/60 mb-10">
-          {step === "email" ? "Enter your email to continue" : isSignUp ? "Create a new account" : "Welcome back!"}
+          {step === "email" ? "Enter your email to continue" : authMode === "signup" ? "Create a new account" : "Welcome back!"}
         </p>
 
         {step === "email" && (
@@ -88,11 +94,11 @@ const AuthPage = () => {
                 placeholder="email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && checkEmailExists()}
+                onKeyDown={(e) => e.key === "Enter" && handleContinueWithEmail()}
                 className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/30 transition-colors"
               />
               <button
-                onClick={checkEmailExists}
+                onClick={handleContinueWithEmail}
                 disabled={isSubmitting || !email.trim()}
                 className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
@@ -106,9 +112,26 @@ const AuthPage = () => {
           {step === "password" && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
               <p className="text-xs text-white/50 mb-2">{email}</p>
+
+              {/* Toggle between Sign In / Sign Up */}
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => setAuthMode("signin")}
+                  className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${authMode === "signin" ? "bg-white/20 text-white" : "bg-white/5 text-white/40 hover:text-white/60"}`}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setAuthMode("signup")}
+                  className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${authMode === "signup" ? "bg-white/20 text-white" : "bg-white/5 text-white/40 hover:text-white/60"}`}
+                >
+                  Sign Up
+                </button>
+              </div>
+
               <input
                 type="password"
-                placeholder={isSignUp ? "Create a password" : "Enter your password"}
+                placeholder={authMode === "signup" ? "Create a password" : "Enter your password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAuth()}
@@ -120,7 +143,7 @@ const AuthPage = () => {
                 disabled={isSubmitting || !password.trim()}
                 className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
-                {isSignUp ? "Create Account" : "Sign In"}
+                {authMode === "signup" ? "Create Account" : "Sign In"}
               </button>
               <button onClick={() => { setStep("email"); setPassword(""); }} className="text-xs text-white/40 hover:text-white/60">
                 Back
