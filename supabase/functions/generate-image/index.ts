@@ -142,37 +142,25 @@ async function generateWithLovableAI(prompt: string) {
   const data = await response.json();
   console.log("Lovable AI response structure:", JSON.stringify(data).slice(0, 500));
   
-  // The gateway returns OpenAI-compatible format
+  // The gateway returns: message.images[{type:"image_url", image_url:{url:"data:..."}}]
   const message = data.choices?.[0]?.message;
   if (!message) throw new Error("No message in Lovable AI response");
 
-  // Check for content array with image parts (Gemini style via gateway)
-  if (Array.isArray(message.content)) {
-    for (const part of message.content) {
-      if (part.type === "image_url" && part.image_url?.url) {
-        return part.image_url.url;
-      }
-      if (part.inline_data?.data) {
-        return `data:${part.inline_data.mime_type || "image/png"};base64,${part.inline_data.data}`;
-      }
+  // Check message.images array (Gemini image model via Lovable gateway)
+  if (Array.isArray(message.images)) {
+    for (const img of message.images) {
+      if (img.image_url?.url) return img.image_url.url;
     }
   }
 
-  // Check string content for base64 or URL
-  const content = typeof message.content === "string" ? message.content : "";
-  
-  // Look for base64 image data in content
-  const base64Match = content.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
-  if (base64Match) return base64Match[0];
-  
-  // Look for image URL in content
-  const urlMatch = content.match(/https?:\/\/[^\s"'<>]+\.(png|jpg|jpeg|gif|webp)[^\s"'<>]*/i);
-  if (urlMatch) return urlMatch[0];
+  // Check content array
+  if (Array.isArray(message.content)) {
+    for (const part of message.content) {
+      if (part.type === "image_url" && part.image_url?.url) return part.image_url.url;
+    }
+  }
 
-  // If content itself is a URL
-  if (content.startsWith("http") || content.startsWith("data:")) return content;
-
-  throw new Error("Could not extract image from Lovable AI response: " + content.slice(0, 200));
+  throw new Error("Could not extract image from Lovable AI response");
 }
 
 serve(async (req) => {
