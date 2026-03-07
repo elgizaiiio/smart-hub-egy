@@ -455,6 +455,14 @@ const ChatPage = () => {
       {/* Input */}
       <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto space-y-1.5">
+          {/* Mode badge above input */}
+          {chatMode !== "normal" && (
+            <div className="flex justify-center">
+              <span className="text-[10px] px-3 py-1 rounded-full bg-primary/15 text-primary backdrop-blur-sm font-medium">
+                {chatMode === "learning" ? "📚 Learning Mode" : "🛒 Shopping Mode"}
+              </span>
+            </div>
+          )}
           {/* Attached files preview */}
           {attachedFiles.length > 0 && (
             <div className="flex gap-2 px-2 overflow-x-auto pb-1">

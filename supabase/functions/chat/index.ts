@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -12,13 +14,13 @@ serve(async (req) => {
     const { messages, model, mode } = await req.json();
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
 
     // Determine which gateway to use based on model
     let apiUrl: string;
     let apiKey: string;
     let modelId: string;
 
-    // Route models to appropriate providers
     const lovableModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3-flash-preview"];
     const requestedModel = model || "openai/gpt-5";
 
@@ -34,10 +36,110 @@ serve(async (req) => {
       modelId = requestedModel;
     }
 
-    // System prompt based on mode
+    // Build Composio tools for function calling
+    const composioTools = COMPOSIO_API_KEY ? [
+      {
+        type: "function",
+        function: {
+          name: "GMAIL_SEND_EMAIL",
+          description: "Send an email using Gmail",
+          parameters: { type: "object", properties: { to: { type: "string", description: "Recipient email" }, subject: { type: "string" }, body: { type: "string", description: "Email body (HTML supported)" } }, required: ["to", "subject", "body"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GMAIL_LIST_EMAILS",
+          description: "List recent emails from Gmail inbox",
+          parameters: { type: "object", properties: { max_results: { type: "number", description: "Max emails to return", default: 5 }, query: { type: "string", description: "Search query" } } },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GITHUB_CREATE_ISSUE",
+          description: "Create a GitHub issue",
+          parameters: { type: "object", properties: { owner: { type: "string" }, repo: { type: "string" }, title: { type: "string" }, body: { type: "string" } }, required: ["owner", "repo", "title"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GITHUB_LIST_REPOS",
+          description: "List user's GitHub repositories",
+          parameters: { type: "object", properties: { per_page: { type: "number", default: 10 } } },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "SLACK_SEND_MESSAGE",
+          description: "Send a message to a Slack channel",
+          parameters: { type: "object", properties: { channel: { type: "string", description: "Channel name or ID" }, text: { type: "string" } }, required: ["channel", "text"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GOOGLE_CALENDAR_CREATE_EVENT",
+          description: "Create a Google Calendar event",
+          parameters: { type: "object", properties: { title: { type: "string" }, start_time: { type: "string", description: "ISO 8601 start time" }, end_time: { type: "string", description: "ISO 8601 end time" }, description: { type: "string" } }, required: ["title", "start_time", "end_time"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GOOGLE_CALENDAR_LIST_EVENTS",
+          description: "List upcoming Google Calendar events",
+          parameters: { type: "object", properties: { max_results: { type: "number", default: 10 } } },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GOOGLE_DRIVE_LIST_FILES",
+          description: "List files in Google Drive",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, max_results: { type: "number", default: 10 } } },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "NOTION_CREATE_PAGE",
+          description: "Create a page in Notion",
+          parameters: { type: "object", properties: { title: { type: "string" }, content: { type: "string" }, parent_page_id: { type: "string" } }, required: ["title", "content"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "DISCORD_SEND_MESSAGE",
+          description: "Send a message to a Discord channel",
+          parameters: { type: "object", properties: { channel_id: { type: "string" }, content: { type: "string" } }, required: ["channel_id", "content"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "LINKEDIN_CREATE_POST",
+          description: "Create a LinkedIn post",
+          parameters: { type: "object", properties: { text: { type: "string", description: "Post content" } }, required: ["text"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "YOUTUBE_LIST_VIDEOS",
+          description: "List videos from a YouTube channel",
+          parameters: { type: "object", properties: { query: { type: "string" }, max_results: { type: "number", default: 5 } } },
+        },
+      },
+    ] : [];
+
+    // System prompt
     let systemPrompt: string;
     if (mode === "files") {
-      systemPrompt = "You are Megsy, a document creation assistant. Create comprehensive, detailed, well-structured documents. When asked to generate HTML documents, make them professional, thorough, and visually polished with proper CSS styling. Include all relevant sections, details, and content. Never create abbreviated or shortened documents. Output complete, production-quality work.";
+      systemPrompt = "You are Megsy, a document creation assistant. Create comprehensive, detailed, well-structured documents. When asked to generate HTML documents, make them professional, thorough, and visually polished with proper CSS styling. Include all relevant sections, details, and content. Never create abbreviated or shortened documents. Output complete, production-quality work. Always end your response with a brief, engaging follow-up question to keep the conversation going.";
     } else {
       systemPrompt = `You are Megsy, a friendly AI assistant and the user's buddy. Rules:
 - Match the user's language and dialect exactly. If they write in Egyptian Arabic, respond in Egyptian Arabic. If English, respond in English.
@@ -46,7 +148,23 @@ serve(async (req) => {
 - Never use emoji in your responses. Not a single one.
 - Use markdown formatting when it helps: bold for emphasis, code blocks for code, bullet points for lists.
 - Be direct and honest. Don't over-explain simple things.
-- When the user greets you casually, respond casually and briefly.`;
+- When the user greets you casually, respond casually and briefly.
+- IMPORTANT: Always end your response with a brief, engaging follow-up question related to the topic to keep the conversation active and the user engaged. Make it natural, not forced.
+- You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). When the user asks to perform actions with these services, use the appropriate tool. If a tool call fails because the user hasn't connected the service, tell them to connect it from Settings > Integrations.`;
+    }
+
+    const body: any = {
+      model: modelId,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      stream: true,
+    };
+
+    if (composioTools.length > 0) {
+      body.tools = composioTools;
+      body.tool_choice = "auto";
     }
 
     const response = await fetch(apiUrl, {
@@ -56,14 +174,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
         ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://egy.app", "X-Title": "egy" } : {}),
       },
-      body: JSON.stringify({
-        model: modelId,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -85,7 +196,112 @@ serve(async (req) => {
       });
     }
 
-    return new Response(response.body, {
+    // Handle streaming with potential tool calls
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("No response body");
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    let toolCalls: any[] = [];
+    let accumulatedContent = "";
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") {
+              // If we have tool calls, execute them
+              if (toolCalls.length > 0 && COMPOSIO_API_KEY) {
+                for (const tc of toolCalls) {
+                  try {
+                    const toolName = tc.function?.name;
+                    const toolArgs = JSON.parse(tc.function?.arguments || "{}");
+
+                    // Get connected account
+                    const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
+                      headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
+                    });
+                    const connData = await connResp.json();
+                    const accounts = connData.items || connData || [];
+                    
+                    // Find matching connected account for the tool
+                    const appName = toolName.split("_")[0].toLowerCase();
+                    const account = accounts.find((a: any) => 
+                      (a.appName || "").toLowerCase().includes(appName) || 
+                      (a.appUniqueId || "").toLowerCase().includes(appName)
+                    );
+
+                    if (!account) {
+                      const msg = `\n\n---\n**Tool: ${toolName}** - Service not connected. Please connect it from Settings > Integrations first.`;
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: msg } }] })}\n\n`));
+                      continue;
+                    }
+
+                    // Execute the tool
+                    const execResp = await fetch(`${COMPOSIO_BASE}/actions/${encodeURIComponent(toolName)}/execute`, {
+                      method: "POST",
+                      headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
+                      body: JSON.stringify({ connectedAccountId: account.id, input: toolArgs }),
+                    });
+                    const execData = await execResp.json();
+
+                    const resultText = execResp.ok
+                      ? `\n\n---\n**${toolName}** executed successfully.\n\`\`\`json\n${JSON.stringify(execData.data || execData, null, 2).slice(0, 1500)}\n\`\`\``
+                      : `\n\n---\n**${toolName}** failed: ${JSON.stringify(execData).slice(0, 500)}`;
+
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
+                  } catch (toolErr) {
+                    console.error("Tool execution error:", toolErr);
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: `\n\nTool error: ${toolErr}` } }] })}\n\n`));
+                  }
+                }
+              }
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta;
+              
+              // Accumulate tool calls
+              if (delta?.tool_calls) {
+                for (const tc of delta.tool_calls) {
+                  const idx = tc.index ?? 0;
+                  if (!toolCalls[idx]) toolCalls[idx] = { function: { name: "", arguments: "" } };
+                  if (tc.function?.name) toolCalls[idx].function.name += tc.function.name;
+                  if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
+                }
+                continue; // Don't forward tool call deltas to client
+              }
+
+              // Forward regular content
+              if (delta?.content) {
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              }
+            } catch { /* skip malformed */ }
+          }
+        }
+
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
