@@ -5,11 +5,11 @@ import { useNavigate } from "react-router-dom";
 import AppSidebar from "@/components/AppSidebar";
 
 const TEMPLATES = [
-  { label: "Personal website", icon: Globe },
-  { label: "E-commerce", icon: Globe },
-  { label: "Dashboard", icon: Globe },
-  { label: "Mobile app", icon: Globe },
-];
+{ label: "Personal website", icon: Globe },
+{ label: "E-commerce", icon: Globe },
+{ label: "Dashboard", icon: Globe },
+{ label: "Mobile app", icon: Globe }];
+
 
 const ProgrammingPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -37,8 +37,8 @@ const ProgrammingPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-lg w-full"
-        >
+          className="text-center max-w-lg w-full">
+          
           <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">What do you want to build?</h2>
           <p className="text-sm text-muted-foreground mb-8">Describe your idea and AI will create it for you</p>
 
@@ -47,40 +47,40 @@ const ProgrammingPage = () => {
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                onKeyDown={(e) => {if (e.key === "Enter" && !e.shiftKey) {e.preventDefault();handleSend();}}}
                 placeholder="What do you want to build?"
                 rows={3}
-                className="w-full bg-secondary border border-border rounded-xl px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none"
-              />
+                className="w-full bg-secondary border border-border rounded-xl px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none" />
+              
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20"
-              >
+                className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20">
+                
                 <ArrowUp className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-3 mt-6">
-            {TEMPLATES.map((t, i) => (
-              <motion.button
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                onClick={() => setInput(t.label)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
-              >
-                <t.icon className="w-4 h-4" />
+            {TEMPLATES.map((t, i) =>
+            <motion.button
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              onClick={() => setInput(t.label)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all">
+              
+                
                 {t.label}
               </motion.button>
-            ))}
+            )}
           </div>
         </motion.div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default ProgrammingPage;
