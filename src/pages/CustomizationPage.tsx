@@ -1,30 +1,30 @@
 import { useState, useCallback } from "react";
-import { ArrowLeft, SunMedium, MoonStar, Check, CloudCog } from "lucide-react";
+import { ArrowLeft, Sun, Moon, Monitor, Zap, Check, Palette, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 
-const realThemes = [
-  { id: "light", label: "Light", desc: "Bright & clean", isDark: false },
-  { id: "white", label: "Pure White", desc: "Maximum clarity", isDark: false },
-  { id: "dark", label: "Dark", desc: "Easy on eyes", isDark: true },
-  { id: "oled", label: "OLED Black", desc: "True black", isDark: true },
+const themes = [
+  { id: "light", label: "Light", icon: Sun, preview: "bg-white border border-border" },
+  { id: "white", label: "Pure White", icon: Monitor, preview: "bg-[#fafafa] border border-border" },
+  { id: "dark", label: "Dark", icon: Moon, preview: "bg-[#1a1a2e]" },
+  { id: "oled", label: "OLED", icon: Zap, preview: "bg-black" },
 ];
 
-const messageColors = [
-  { hsl: "262 60% 55%", hex: "#7c5cfc" },
-  { hsl: "210 80% 55%", hex: "#3b82f6" },
-  { hsl: "142 50% 50%", hex: "#22c55e" },
-  { hsl: "330 70% 55%", hex: "#ec4899" },
-  { hsl: "25 90% 55%", hex: "#f97316" },
-  { hsl: "160 60% 45%", hex: "#14b8a6" },
-  { hsl: "0 70% 55%", hex: "#ef4444" },
-  { hsl: "270 60% 55%", hex: "#8b5cf6" },
-  { hsl: "180 60% 45%", hex: "#06b6d4" },
-  { hsl: "45 90% 50%", hex: "#eab308" },
-  { hsl: "150 60% 40%", hex: "#10b981" },
-  { hsl: "340 80% 55%", hex: "#f43f5e" },
+const accentColors = [
+  { hsl: "262 60% 55%", hex: "#7c5cfc", name: "Violet" },
+  { hsl: "210 80% 55%", hex: "#3b82f6", name: "Blue" },
+  { hsl: "142 50% 50%", hex: "#22c55e", name: "Green" },
+  { hsl: "330 70% 55%", hex: "#ec4899", name: "Pink" },
+  { hsl: "25 90% 55%", hex: "#f97316", name: "Orange" },
+  { hsl: "160 60% 45%", hex: "#14b8a6", name: "Teal" },
+  { hsl: "0 70% 55%", hex: "#ef4444", name: "Red" },
+  { hsl: "270 60% 55%", hex: "#8b5cf6", name: "Purple" },
+  { hsl: "180 60% 45%", hex: "#06b6d4", name: "Cyan" },
+  { hsl: "45 90% 50%", hex: "#eab308", name: "Gold" },
+  { hsl: "150 60% 40%", hex: "#10b981", name: "Emerald" },
+  { hsl: "340 80% 55%", hex: "#f43f5e", name: "Rose" },
 ];
 
 const CustomizationPage = () => {
@@ -47,39 +47,37 @@ const CustomizationPage = () => {
 
   const content = (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
-      {/* Theme Selection */}
+      {/* Theme Grid */}
       <div>
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Appearance</p>
-        <div className="space-y-2">
-          {realThemes.map(t => {
+        <div className="flex items-center gap-2 mb-4">
+          <Palette className="w-4 h-4 text-muted-foreground" />
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Theme</p>
+        </div>
+        <div className="grid grid-cols-4 gap-2.5">
+          {themes.map(t => {
             const isSelected = currentTheme === t.id;
+            const Icon = t.icon;
             return (
               <button
                 key={t.id}
                 onClick={() => handleThemeChange(t.id)}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all ${
+                className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl transition-all ${
                   isSelected
-                    ? "bg-primary/10 ring-1 ring-primary/30"
+                    ? "bg-primary/10 ring-1.5 ring-primary/40"
                     : "hover:bg-muted/40"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  t.isDark ? "bg-[#0a0a0f]" : "bg-amber-50"
-                }`}>
-                  {t.isDark ? (
-                    <MoonStar className="w-5 h-5 text-indigo-400" />
-                  ) : (
-                    <SunMedium className="w-5 h-5 text-amber-500" />
-                  )}
+                <div className={`w-12 h-12 rounded-xl ${t.preview} flex items-center justify-center transition-transform ${isSelected ? "scale-105" : ""}`}>
+                  <Icon className={`w-5 h-5 ${t.id === "dark" || t.id === "oled" ? "text-white/70" : "text-neutral-600"}`} />
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-foreground">{t.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{t.desc}</p>
-                </div>
+                <span className="text-[11px] font-medium text-foreground">{t.label}</span>
                 {isSelected && (
-                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                  <motion.div
+                    layoutId="theme-check"
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
+                  >
                     <Check className="w-3 h-3 text-primary-foreground" />
-                  </div>
+                  </motion.div>
                 )}
               </button>
             );
@@ -87,45 +85,54 @@ const CustomizationPage = () => {
         </div>
       </div>
 
-      {/* Accent Color */}
+      {/* Chat Preview */}
       <div>
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Accent Color</p>
-        
-        {/* Preview bubble */}
-        <div className="flex gap-3 mb-5">
-          <div className="rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[70%]" style={{ background: `hsl(${currentAccent})` }}>
-            <p className="text-white text-sm">This is how your messages look</p>
+        <div className="flex items-center gap-2 mb-4">
+          <MessageCircle className="w-4 h-4 text-muted-foreground" />
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Preview</p>
+        </div>
+        <div className="rounded-2xl bg-muted/30 p-4 space-y-3">
+          <div className="flex justify-end">
+            <div className="rounded-2xl rounded-br-md px-4 py-2.5 max-w-[75%]" style={{ background: `hsl(${currentAccent})` }}>
+              <p className="text-white text-[13px]">Hey, how does this look? ✨</p>
+            </div>
           </div>
-          <div className="rounded-2xl rounded-br-md px-4 py-2.5 bg-muted">
-            <p className="text-sm text-foreground">And this is a reply</p>
+          <div className="flex justify-start">
+            <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-muted max-w-[75%]">
+              <p className="text-[13px] text-foreground">Looking great! Love the color.</p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-wrap gap-2.5 justify-center">
-          {messageColors.map(c => {
+      {/* Accent Colors */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-4 h-4 rounded-full" style={{ background: `hsl(${currentAccent})` }} />
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Accent Color</p>
+        </div>
+        <div className="grid grid-cols-6 gap-3 justify-items-center">
+          {accentColors.map(c => {
             const isSelected = currentAccent === c.hsl;
             return (
               <button
                 key={c.hex}
                 onClick={() => handleAccentChange(c.hsl)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 ${
-                  isSelected ? "ring-2 ring-offset-2 ring-offset-background" : ""
-                }`}
-                style={{ background: c.hex, ...(isSelected ? { ringColor: c.hex } : {}) }}
+                className="group flex flex-col items-center gap-1.5"
               >
-                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all group-hover:scale-110 ${
+                    isSelected ? "ring-2 ring-offset-2 ring-offset-background" : ""
+                  }`}
+                  style={{ background: c.hex, ...(isSelected ? { boxShadow: `0 0 12px ${c.hex}60` } : {}) }}
+                >
+                  {isSelected && <Check className="w-4 h-4 text-white drop-shadow" />}
+                </div>
+                <span className="text-[9px] text-muted-foreground">{c.name}</span>
               </button>
             );
           })}
         </div>
-      </div>
-
-      {/* Sync info */}
-      <div className="flex items-center gap-3 py-3 px-1">
-        <CloudCog className="w-5 h-5 text-muted-foreground/50 shrink-0" />
-        <p className="text-xs text-muted-foreground">
-          Preferences sync automatically across all your devices
-        </p>
       </div>
     </motion.div>
   );
