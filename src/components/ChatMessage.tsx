@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Copy, ThumbsUp, ThumbsDown, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import ThinkingLoader from "./ThinkingLoader";
@@ -9,11 +9,12 @@ interface ChatMessageProps {
   isStreaming?: boolean;
   isThinking?: boolean;
   images?: string[];
+  attachedImages?: string[];
   onLike?: (liked: boolean | null) => void;
   liked?: boolean | null;
 }
 
-const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, liked }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, onLike, liked }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -33,11 +34,26 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, l
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
+  const handleLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    window.open(href, "_blank", "width=800,height=600,scrollbars=yes,resizable=yes");
+  }, []);
+
   if (role === "user") {
     return (
       <div className="flex justify-end mb-4">
-        <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
-          {content}
+        <div className="max-w-[80%]">
+          {/* Attached images above text */}
+          {attachedImages && attachedImages.length > 0 && (
+            <div className="flex gap-2 mb-2 justify-end">
+              {attachedImages.map((img, i) => (
+                <img key={i} src={img} alt="" className="rounded-xl max-h-32 object-cover" />
+              ))}
+            </div>
+          )}
+          <div className="bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
+            {content}
+          </div>
         </div>
       </div>
     );
@@ -56,16 +72,9 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, l
         <ThinkingLoader />
       ) : (
         <>
-          <div className="prose-chat text-foreground">
-            <ReactMarkdown>{content}</ReactMarkdown>
-            {isStreaming && (
-              <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
-            )}
-          </div>
-
-          {/* Search result images */}
+          {/* Search result images ABOVE text */}
           {images && images.length > 0 && (
-            <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+            <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
               {images.map((img, i) => (
                 <img
                   key={i}
@@ -77,6 +86,27 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, l
               ))}
             </div>
           )}
+
+          <div className="prose-chat text-foreground">
+            <ReactMarkdown
+              components={{
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    onClick={(e) => href && handleLinkClick(e, href)}
+                    className="text-primary underline underline-offset-2 cursor-pointer hover:opacity-80"
+                  >
+                    {children}
+                  </a>
+                ),
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+            {isStreaming && (
+              <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
+            )}
+          </div>
 
           {!isStreaming && content && (
             <div className="flex items-center gap-1 mt-2">

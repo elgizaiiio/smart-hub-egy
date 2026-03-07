@@ -16,6 +16,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   images?: string[];
+  attachedImages?: string[];
   liked?: boolean | null;
   id?: string;
 }
@@ -26,6 +27,24 @@ const MODE_PROMPTS: Record<ChatMode, string> = {
   normal: "",
   learning: "You are in Learning Mode. Explain everything step by step with examples, analogies, and clear breakdowns. Make complex topics easy to understand. Use bullet points, numbered steps, and structured format.",
   shopping: "You are in Shopping Mode. Help the user find the best products, compare prices, suggest alternatives, and provide purchase recommendations. Include pros/cons when comparing items.",
+};
+
+const DAILY_PHOTO_KEY = "megsy_daily_photos";
+const MAX_DAILY_PHOTOS = 3;
+
+const getDailyPhotoCount = (): number => {
+  const stored = localStorage.getItem(DAILY_PHOTO_KEY);
+  if (!stored) return 0;
+  try {
+    const { date, count } = JSON.parse(stored);
+    if (date === new Date().toDateString()) return count;
+    return 0;
+  } catch { return 0; }
+};
+
+const incrementDailyPhoto = () => {
+  const count = getDailyPhotoCount() + 1;
+  localStorage.setItem(DAILY_PHOTO_KEY, JSON.stringify({ date: new Date().toDateString(), count }));
 };
 
 const ChatPage = () => {
@@ -44,6 +63,7 @@ const ChatPage = () => {
   const [searchStatus, setSearchStatus] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -109,33 +129,50 @@ const ChatPage = () => {
 
   const handleModeChange = (mode: ChatMode) => {
     setChatMode(prev => prev === mode ? "normal" : mode);
-    // Disable search when enabling a mode
     if (mode !== "normal") setSearchEnabled(false);
     setPlusMenuOpen(false);
   };
 
   const handleSearchToggle = () => {
     setSearchEnabled(!searchEnabled);
-    // Disable other modes when enabling search
     if (!searchEnabled) setChatMode("normal");
     setPlusMenuOpen(false);
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMsg: Message = { role: "user", content: input };
+    if (!input.trim() && attachedFiles.length === 0) return;
+    if (isLoading) return;
+
+    // Build multimodal message content
+    const imageAttachments = attachedFiles.filter(f => f.type === "image" || f.type === "video");
+    const textParts: string[] = [];
+    if (input.trim()) textParts.push(input.trim());
+    
+    // Add non-image file contents to text
+    const fileAttachments = attachedFiles.filter(f => f.type === "file");
+    fileAttachments.forEach(f => {
+      textParts.push(`\n\nFile (${f.name}):\n${f.data}`);
+    });
+
+    const displayContent = textParts.join("") || "Sent an image";
+    const userMsg: Message = {
+      role: "user",
+      content: displayContent,
+      attachedImages: imageAttachments.map(f => f.data),
+    };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    const currentAttachedFiles = [...attachedFiles];
     setAttachedFiles([]);
     setIsLoading(true);
     setIsThinking(true);
 
-    const convId = await createOrUpdateConversation(input);
-    if (convId) await saveMessage(convId, "user", input);
+    const convId = await createOrUpdateConversation(displayContent);
+    if (convId) await saveMessage(convId, "user", displayContent);
 
     if (convId && messages.length === 0) {
       await supabase.from("conversations").update({
-        title: input.slice(0, 50),
+        title: displayContent.slice(0, 50),
         updated_at: new Date().toISOString()
       }).eq("id", convId);
     }
@@ -182,7 +219,27 @@ const ChatPage = () => {
       } catch { /* continue without search */ }
     }
 
-    const allMessages = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
+    // Build messages for API - support multimodal content
+    const allMessages: any[] = [...messages, userMsg].map(m => {
+      // For the current user message, build multimodal if images attached
+      if (m === userMsg && imageAttachments.length > 0) {
+        const contentParts: any[] = [];
+        // Add images first
+        imageAttachments.forEach(f => {
+          if (f.type === "video") {
+            contentParts.push({ type: "image_url", image_url: { url: f.data } });
+          } else {
+            contentParts.push({ type: "image_url", image_url: { url: f.data } });
+          }
+        });
+        // Add text
+        if (textParts.join("").trim()) {
+          contentParts.push({ type: "text", text: textParts.join("").trim() });
+        }
+        return { role: m.role, content: contentParts };
+      }
+      return { role: m.role, content: m.content };
+    });
     
     // Add mode prompt
     if (chatMode !== "normal" && MODE_PROMPTS[chatMode]) {
@@ -191,6 +248,17 @@ const ChatPage = () => {
 
     if (searchContext) {
       allMessages.push({ role: "user" as const, content: `[Search results]:\n${searchContext}\n\nUse these results to answer accurately. Include source links when relevant.` });
+    }
+
+    // Set search images immediately on the assistant message
+    if (searchImages.length > 0) {
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => i === prev.length - 1 ? { ...m, images: searchImages } : m);
+        }
+        return [...prev, { role: "assistant", content: "", images: searchImages }];
+      });
     }
 
     await streamChat({
@@ -203,7 +271,7 @@ const ChatPage = () => {
         setSearchStatus("");
         if (convId && assistantContent) {
           await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
-          // Update the last assistant message to include search images
+          // Ensure search images are on the final message
           if (searchImages.length > 0) {
             setMessages(prev => {
               const last = prev[prev.length - 1];
@@ -233,16 +301,15 @@ const ChatPage = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.type.startsWith("image/")) {
+    if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
       const reader = new FileReader();
       reader.onload = () => {
-        setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
+        setAttachedFiles(prev => [...prev, { name: file.name, type: file.type.startsWith("video/") ? "video" : "image", data: reader.result as string }]);
       };
       reader.readAsDataURL(file);
     } else {
       const text = await file.text();
       setAttachedFiles(prev => [...prev, { name: file.name, type: "file", data: text.slice(0, 5000) }]);
-      setInput(prev => prev + `\n\nFile (${file.name}):\n${text.slice(0, 5000)}`);
     }
     e.target.value = "";
   };
@@ -250,6 +317,24 @@ const ChatPage = () => {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachedFiles(prev => [...prev, { name: file.name, type: file.type.startsWith("video/") ? "video" : "image", data: reader.result as string }]);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const count = getDailyPhotoCount();
+    if (count >= MAX_DAILY_PHOTOS) {
+      toast.error(`Daily photo limit reached (${MAX_DAILY_PHOTOS}/day). Upgrade for unlimited.`);
+      e.target.value = "";
+      return;
+    }
+    incrementDailyPhoto();
     const reader = new FileReader();
     reader.onload = () => {
       setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
@@ -271,7 +356,7 @@ const ChatPage = () => {
         currentMode="chat"
       />
 
-      {/* Header - transparent, no background */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2">
         <button
           onClick={() => setSidebarOpen(true)}
@@ -280,19 +365,27 @@ const ChatPage = () => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <AnimatePresence>
-          {!hasConversation && (
-            <motion.div
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <FancyButton onClick={() => navigate("/pricing")}>
-                Unlock Pro
-              </FancyButton>
-            </motion.div>
+        <div className="flex items-center gap-2">
+          {/* Mode badge */}
+          {chatMode !== "normal" && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary backdrop-blur-sm font-medium">
+              {chatMode === "learning" ? "Learning" : "Shopping"}
+            </span>
           )}
-        </AnimatePresence>
+          <AnimatePresence>
+            {!hasConversation && (
+              <motion.div
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <FancyButton onClick={() => navigate("/pricing")}>
+                  Unlock Pro
+                </FancyButton>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         <button
           onClick={handleNewChat}
@@ -341,6 +434,7 @@ const ChatPage = () => {
                 role={msg.role}
                 content={msg.content}
                 images={msg.images}
+                attachedImages={msg.attachedImages}
                 isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
                 isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
                 liked={msg.liked}
@@ -368,6 +462,8 @@ const ChatPage = () => {
                 <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border">
                   {f.type === "image" ? (
                     <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" />
+                  ) : f.type === "video" ? (
+                    <video src={f.data} className="w-8 h-8 rounded object-cover" />
                   ) : (
                     <FileUp className="w-3 h-3" />
                   )}
@@ -400,7 +496,7 @@ const ChatPage = () => {
                         <span className="text-[11px] text-foreground">Camera</span>
                       </button>
                       <button
-                        onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }}
+                        onClick={() => { photoInputRef.current?.click(); setPlusMenuOpen(false); }}
                         className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors"
                       >
                         <Image className="w-5 h-5 text-muted-foreground" />
@@ -485,8 +581,9 @@ const ChatPage = () => {
               isLoading={isLoading}
             />
           </div>
-          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
-          <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
+          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.docx,.xlsx,.xml,.yaml,.toml" />
+          <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*,video/*" capture="environment" />
+          <input ref={photoInputRef} type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" />
         </div>
       </div>
     </div>

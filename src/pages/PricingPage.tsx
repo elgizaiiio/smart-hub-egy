@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const plans = [
   {
     name: "Starter",
-    monthlyPrice: 9.97,
-    yearlyPrice: 6.97,
+    monthlyPrice: 25,
+    yearlyPrice: 199,
     credits: 100,
     featured: false,
     badge: null,
@@ -21,8 +21,8 @@ const plans = [
   },
   {
     name: "Pro",
-    monthlyPrice: 29.97,
-    yearlyPrice: 19.97,
+    monthlyPrice: 49,
+    yearlyPrice: 499,
     credits: 500,
     featured: true,
     badge: "Most Popular",
@@ -38,8 +38,8 @@ const plans = [
   },
   {
     name: "Business",
-    monthlyPrice: 79.97,
-    yearlyPrice: 54.97,
+    monthlyPrice: 149,
+    yearlyPrice: 1299,
     credits: 2000,
     featured: false,
     badge: "Best Value",
@@ -73,7 +73,6 @@ const PricingPage = () => {
           <h2 className="font-display text-3xl font-bold mb-3 text-foreground">Choose your plan</h2>
           <p className="text-muted-foreground text-sm mb-6">Scale your AI usage with flexible credit-based pricing</p>
 
-          {/* Toggle */}
           <div className="inline-flex items-center gap-3 bg-secondary rounded-full p-1">
             <button
               onClick={() => setIsYearly(false)}
@@ -86,7 +85,7 @@ const PricingPage = () => {
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
               Yearly
-              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "hsl(142 50% 45% / 0.2)", color: "hsl(142 50% 45%)" }}>-33%</span>
+              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "hsl(142 50% 45% / 0.2)", color: "hsl(142 50% 45%)" }}>Save</span>
             </button>
           </div>
         </motion.div>
@@ -117,7 +116,7 @@ const PricingPage = () => {
                 <span className="font-display text-3xl font-bold text-foreground">
                   ${isYearly ? plan.yearlyPrice : plan.monthlyPrice}
                 </span>
-                <span className="text-sm text-muted-foreground">/month</span>
+                <span className="text-sm text-muted-foreground">/{isYearly ? "year" : "month"}</span>
               </div>
               <button className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 plan.featured

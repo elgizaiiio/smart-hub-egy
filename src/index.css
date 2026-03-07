@@ -7,7 +7,7 @@
 @layer base {
   :root,
   [data-theme="light"] {
-    --background: 40 20% 98%;
+    --background: 0 0% 100%;
     --foreground: 0 0% 9%;
     --card: 40 15% 96%;
     --card-foreground: 0 0% 9%;
