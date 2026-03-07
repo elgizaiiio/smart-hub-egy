@@ -342,7 +342,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                     {filtered.map(model => {
                       const isSelected = selectedModelId === model.id;
                       const media = mediaMap[model.id];
-                      const rating = model.quality === "ultra" ? 5.0 : model.quality === "high" ? 4.5 : 0.0;
 
                       return (
                         <motion.div
