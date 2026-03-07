@@ -516,8 +516,8 @@ const VideosPage = () => {
               </AnimatePresence>
             </div>
 
-            <h2 className="font-display text-lg font-bold text-foreground mb-1">{selectedModel.name}</h2>
-            <p className="text-xs text-muted-foreground mb-3 text-center">{capability.helperText}</p>
+            <h2 className="font-display text-lg font-bold text-foreground mb-1">Create Amazing Videos</h2>
+            <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">Describe your idea and let AI bring it to life as a stunning video in seconds</p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
