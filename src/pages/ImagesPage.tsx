@@ -1,11 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Download, Share2, Loader2 } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Download, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import ModelSelector, { getDefaultModel } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
+import {
+  getImageModelCapability,
+  PUBLISH_PLATFORM_TO_APP,
+  type PublishPlatform,
+} from "@/lib/imageModelCapabilities";
 
 const FacebookIcon = () => (
   <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
@@ -76,6 +82,13 @@ interface ChatMsg {
   imageUrl?: string;
 }
 
+interface AttachedImage {
+  id: string;
+  dataUrl: string;
+  mimeType: string;
+  name: string;
+}
+
 const SHOWCASE_IMAGES = [
   "https://e.top4top.io/p_3717n95ku1.jpg",
   "https://f.top4top.io/p_3717d6lc82.jpg",
@@ -92,9 +105,24 @@ const PLACEHOLDERS = [
   "Abstract art with vibrant colors...",
 ];
 
+const PUBLISH_OPTIONS: { platform: PublishPlatform; label: string; Icon: () => JSX.Element }[] = [
+  { platform: "facebook", label: "Facebook", Icon: FacebookIcon },
+  { platform: "instagram", label: "Instagram", Icon: InstagramIcon },
+  { platform: "linkedin", label: "LinkedIn", Icon: LinkedInIcon },
+];
+
 const getRandomPhrase = () => IMAGE_PHRASES[Math.floor(Math.random() * IMAGE_PHRASES.length)];
 
+const readFileAsDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read image"));
+    reader.readAsDataURL(file);
+  });
+
 const ImagesPage = () => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("images"));
   const [currentImage, setCurrentImage] = useState(0);
@@ -104,14 +132,18 @@ const ImagesPage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [connectedApps, setConnectedApps] = useState<Record<string, string>>({});
+  const [isLoadingConnections, setIsLoadingConnections] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const capability = useMemo(() => getImageModelCapability(selectedModel.id), [selectedModel.id]);
+
   useEffect(() => {
-    const interval = setInterval(() => setCurrentImage(p => (p + 1) % SHOWCASE_IMAGES.length), 4000);
+    const interval = setInterval(() => setCurrentImage((p) => (p + 1) % SHOWCASE_IMAGES.length), 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -125,13 +157,17 @@ const ImagesPage = () => {
     let i = 0;
     setDisplayedPlaceholder("");
     const t = setInterval(() => {
-      if (i < target.length) { setDisplayedPlaceholder(target.slice(0, i + 1)); i++; }
-      else { clearInterval(t); setTimeout(() => setPlaceholderIdx(p => (p + 1) % PLACEHOLDERS.length), 2500); }
+      if (i < target.length) {
+        setDisplayedPlaceholder(target.slice(0, i + 1));
+        i += 1;
+      } else {
+        clearInterval(t);
+        setTimeout(() => setPlaceholderIdx((p) => (p + 1) % PLACEHOLDERS.length), 2500);
+      }
     }, 50);
     return () => clearInterval(t);
   }, [placeholderIdx, input]);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -143,18 +179,66 @@ const ImagesPage = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const loadConnections = async () => {
+      setIsLoadingConnections(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("composio", {
+          body: { action: "list-connections", userId: "default" },
+        });
+        if (error) throw error;
+
+        const items = data?.items || data || [];
+        const connected: Record<string, string> = {};
+        if (Array.isArray(items)) {
+          items.forEach((item: any) => {
+            const appName = (item.appName || item.appUniqueId || "").toLowerCase();
+            if (appName && item.status === "ACTIVE") {
+              connected[appName] = item.id;
+            }
+          });
+        }
+        setConnectedApps(connected);
+      } catch {
+        toast.error("Failed to load integrations status");
+      } finally {
+        setIsLoadingConnections(false);
+      }
+    };
+
+    void loadConnections();
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!capability.acceptsImages && attachedImages.length > 0) {
+      setAttachedImages([]);
+      toast.info(`${selectedModel.name} يعمل بالنص فقط، تم حذف الصور المرفقة.`);
+      return;
+    }
+
+    if (capability.acceptsImages && attachedImages.length > capability.maxImages) {
+      setAttachedImages((prev) => prev.slice(0, capability.maxImages));
+      toast.info(`${selectedModel.name} يدعم حتى ${capability.maxImages} صورة فقط.`);
+    }
+  }, [capability.acceptsImages, capability.maxImages, selectedModel.name, attachedImages.length]);
+
   const createOrGetConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
+
     const title = firstMessage.slice(0, 50) || "Image Generation";
     const { data } = await supabase
       .from("conversations")
       .insert({ title, mode: "images", model: selectedModel.id })
       .select("id")
       .single();
+
     if (data) {
       setConversationId(data.id);
       return data.id;
     }
+
     return null;
   };
 
@@ -168,15 +252,22 @@ const ImagesPage = () => {
   };
 
   const handleGenerate = async () => {
-    if (!input.trim() && !attachedImage) return;
-    if (selectedModel.requiresImage && !attachedImage) {
-      toast.error("This model requires an image upload");
+    const trimmed = input.trim();
+    if (!trimmed && attachedImages.length === 0) return;
+
+    if (capability.requiresImage && attachedImages.length === 0) {
+      toast.error(`${selectedModel.name} يتطلب صورة واحدة على الأقل.`);
       return;
     }
 
-    const userContent = input || "Generate image";
+    if (!capability.acceptsImages && attachedImages.length > 0) {
+      toast.error(`${selectedModel.name} لا يقبل إدخال صور.`);
+      return;
+    }
+
+    const userContent = trimmed || `Generate with ${selectedModel.name}`;
     const userMsg: ChatMsg = { role: "user", content: userContent };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsGenerating(true);
 
@@ -193,66 +284,103 @@ const ImagesPage = () => {
         body: JSON.stringify({
           prompt: userContent,
           model: selectedModel.id,
-          image_url: attachedImage || undefined,
+          image_url: attachedImages[0]?.dataUrl,
+          image_urls: attachedImages.map((img) => img.dataUrl),
         }),
       });
+
       const data = await resp.json();
+
       if (data.error) {
         const errMsg = `Error: ${data.error}`;
-        setMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: errMsg }]);
         if (convId) await saveMessage(convId, "assistant", errMsg);
       } else if (data.image_url) {
         const phrase = getRandomPhrase();
-        setMessages(prev => [...prev, { role: "assistant", content: phrase, imageUrl: data.image_url }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: phrase, imageUrl: data.image_url }]);
         if (convId) await saveMessage(convId, "assistant", phrase, [data.image_url]);
       } else {
         const noImg = "No image was returned. Please try again.";
-        setMessages(prev => [...prev, { role: "assistant", content: noImg }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: noImg }]);
         if (convId) await saveMessage(convId, "assistant", noImg);
       }
     } catch {
       const failMsg = "Generation failed. Please try again.";
-      setMessages(prev => [...prev, { role: "assistant", content: failMsg }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: failMsg }]);
       if (convId) await saveMessage(convId, "assistant", failMsg);
     }
+
     setIsGenerating(false);
-    setAttachedImage(null);
-    // Update conversation timestamp
+    setAttachedImages([]);
+
     if (convId) {
       await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
     }
   };
 
-  const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setAttachedImage(reader.result as string);
-    reader.readAsDataURL(file);
+  const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    if (!capability.acceptsImages) {
+      toast.error(`${selectedModel.name} لا يقبل إدخال الصور.`);
+      e.target.value = "";
+      return;
+    }
+
+    const remainingSlots = Math.max(capability.maxImages - attachedImages.length, 0);
+    if (remainingSlots === 0) {
+      toast.error(`${selectedModel.name} يدعم حتى ${capability.maxImages} صورة فقط.`);
+      e.target.value = "";
+      return;
+    }
+
+    const filesToUse = files.slice(0, remainingSlots);
+
+    try {
+      const loadedImages = await Promise.all(
+        filesToUse.map(async (file) => ({
+          id: crypto.randomUUID(),
+          dataUrl: await readFileAsDataUrl(file),
+          mimeType: file.type || "image/jpeg",
+          name: file.name,
+        })),
+      );
+
+      setAttachedImages((prev) => [...prev, ...loadedImages]);
+
+      if (files.length > filesToUse.length) {
+        toast.info(`تم إرفاق ${filesToUse.length} صورة فقط لأن ${selectedModel.name} يدعم حتى ${capability.maxImages} صورة.`);
+      }
+    } catch {
+      toast.error("Failed to read attached image");
+    }
+
     e.target.value = "";
   };
 
-  const handleShare = (platform: string, imageUrl?: string) => {
-    if (!imageUrl) {
-      // Find the last image in messages
-      const lastImg = [...messages].reverse().find(m => m.imageUrl);
-      imageUrl = lastImg?.imageUrl;
+  const handleShare = (platform: PublishPlatform, imageUrl?: string) => {
+    let targetImageUrl = imageUrl;
+    if (!targetImageUrl) {
+      const lastImg = [...messages].reverse().find((m) => m.imageUrl);
+      targetImageUrl = lastImg?.imageUrl;
     }
-    if (!imageUrl) {
+
+    if (!targetImageUrl) {
       toast.error("No image to share");
       setMenuOpen(false);
       return;
     }
-    const encodedUrl = encodeURIComponent(imageUrl);
-    const text = encodeURIComponent("Check out this AI-generated image!");
+
+    const encodedUrl = encodeURIComponent(targetImageUrl);
     let shareUrl = "";
+
     switch (platform) {
       case "facebook":
         shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
         break;
       case "instagram":
-        // Instagram doesn't have a direct share URL, copy link instead
-        navigator.clipboard.writeText(imageUrl);
+        navigator.clipboard.writeText(targetImageUrl);
         toast.success("Image link copied! Open Instagram and paste it.");
         setMenuOpen(false);
         return;
@@ -260,15 +388,32 @@ const ImagesPage = () => {
         shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
         break;
     }
+
     if (shareUrl) window.open(shareUrl, "_blank", "width=600,height=400");
     setMenuOpen(false);
+  };
+
+  const handlePublish = (platform: PublishPlatform, imageUrl?: string) => {
+    const app = PUBLISH_PLATFORM_TO_APP[platform];
+    if (!connectedApps[app]) {
+      toast.info(`Connect ${app} first from Integrations`);
+      setMenuOpen(false);
+      navigate("/settings/integrations");
+      return;
+    }
+
+    handleShare(platform, imageUrl);
   };
 
   const handleNewChat = () => {
     setMessages([]);
     setConversationId(null);
     setInput("");
-    setAttachedImage(null);
+    setAttachedImages([]);
+  };
+
+  const removeAttachedImage = (id: string) => {
+    setAttachedImages((prev) => prev.filter((item) => item.id !== id));
   };
 
   const loadConversation = async (id: string) => {
@@ -278,6 +423,7 @@ const ImagesPage = () => {
       .select("*")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
+
     if (msgs) {
       setMessages(msgs.map((m) => ({
         role: m.role as "user" | "assistant",
@@ -288,6 +434,9 @@ const ImagesPage = () => {
   };
 
   const hasMessages = messages.length > 0;
+  const capabilityMimeText = capability.acceptedMimeTypes.length
+    ? capability.acceptedMimeTypes.map((mime) => mime.replace("image/", "").toUpperCase()).join(", ")
+    : "None";
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
@@ -300,7 +449,7 @@ const ImagesPage = () => {
         currentMode="images"
       />
 
-      <div className="flex items-center justify-between px-4 py-2">
+      <div className={`flex items-center justify-between px-4 py-2 transition-opacity ${sidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
@@ -326,12 +475,23 @@ const ImagesPage = () => {
               </AnimatePresence>
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                 {SHOWCASE_IMAGES.map((_, i) => (
-                  <button key={i} onClick={() => setCurrentImage(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImage ? "bg-white w-4" : "bg-white/40"}`} />
+                  <button key={i} onClick={() => setCurrentImage(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImage ? "bg-primary w-4" : "bg-primary/40"}`} />
                 ))}
               </div>
             </div>
-            <h2 className="font-display text-lg font-bold text-foreground mb-1">Create stunning images</h2>
-            <p className="text-xs text-muted-foreground mb-4">Powered by the latest AI models</p>
+
+            <h2 className="font-display text-lg font-bold text-foreground mb-1">{selectedModel.name}</h2>
+            <p className="text-xs text-muted-foreground mb-3 text-center">{capability.helperText}</p>
+
+            <div className="w-full max-w-xs rounded-xl border border-border/70 bg-secondary/40 p-3 space-y-1.5">
+              <p className="text-xs text-foreground">Image input: <span className="text-muted-foreground">{capability.acceptsImages ? "Supported" : "Not supported"}</span></p>
+              <p className="text-xs text-foreground">Image required: <span className="text-muted-foreground">{capability.requiresImage ? "Yes" : "No"}</span></p>
+              <p className="text-xs text-foreground">Max images: <span className="text-muted-foreground">{capability.maxImages}</span></p>
+              <p className="text-xs text-foreground">Formats: <span className="text-muted-foreground">{capabilityMimeText}</span></p>
+              {!capability.acceptsImages && (
+                <p className="text-[11px] text-primary mt-1">{selectedModel.name} يعمل بالنص فقط، ولن يستخدم أي صورة مرفقة.</p>
+              )}
+            </div>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
@@ -353,15 +513,16 @@ const ImagesPage = () => {
                           <button onClick={() => window.open(msg.imageUrl, "_blank")} className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors">
                             <Download className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleShare("facebook", msg.imageUrl)} className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors" title="Share to Facebook">
-                            <FacebookIcon />
-                          </button>
-                          <button onClick={() => handleShare("instagram", msg.imageUrl)} className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors" title="Share to Instagram">
-                            <InstagramIcon />
-                          </button>
-                          <button onClick={() => handleShare("linkedin", msg.imageUrl)} className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors" title="Share to LinkedIn">
-                            <LinkedInIcon />
-                          </button>
+                          {PUBLISH_OPTIONS.map(({ platform, Icon, label }) => (
+                            <button
+                              key={platform}
+                              onClick={() => handlePublish(platform, msg.imageUrl)}
+                              className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors"
+                              title={`Publish to ${label}`}
+                            >
+                              <Icon />
+                            </button>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -377,59 +538,105 @@ const ImagesPage = () => {
 
       <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto">
-          {attachedImage && (
-            <div className="flex items-center gap-2 px-3 pb-2">
-              <img src={attachedImage} alt="" className="w-10 h-10 rounded-lg object-cover" />
-              <span className="text-xs text-muted-foreground">Image attached</span>
-              <button onClick={() => setAttachedImage(null)} className="text-xs text-muted-foreground hover:text-foreground ml-auto">×</button>
+          {attachedImages.length > 0 && (
+            <div className="flex items-center gap-2 px-3 pb-2 overflow-x-auto">
+              {attachedImages.map((img) => (
+                <div key={img.id} className="relative shrink-0">
+                  <img src={img.dataUrl} alt={img.name} className="w-10 h-10 rounded-lg object-cover" />
+                  <button
+                    onClick={() => removeAttachedImage(img.id)}
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-secondary text-foreground text-[10px]"
+                    aria-label="Remove attached image"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <span className="text-xs text-muted-foreground ml-1">{attachedImages.length}/{capability.maxImages}</span>
             </div>
           )}
+
           <div className="relative flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-xl px-3 py-2">
             <div ref={menuRef} className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                 <Plus className="w-5 h-5" />
               </button>
+
               <AnimatePresence>
                 {menuOpen && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56">
-                    <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-60">
+                    <button
+                      onClick={() => {
+                        if (!capability.acceptsImages) {
+                          toast.info(`${selectedModel.name} لا يدعم إدخال الصور.`);
+                          setMenuOpen(false);
+                          return;
+                        }
+                        fileInputRef.current?.click();
+                        setMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+                    >
                       <Paperclip className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">Attach Image</span>
+                      <span className="text-sm">
+                        {capability.acceptsImages
+                          ? `Attach Image (${capability.maxImages} max)`
+                          : `${selectedModel.name} (Text-only)`}
+                      </span>
                     </button>
+
                     <div className="border-t border-border mt-1 pt-1">
                       <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Publish to</p>
-                      <button onClick={() => handleShare("facebook")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
-                        <FacebookIcon /> Facebook
-                      </button>
-                      <button onClick={() => handleShare("instagram")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
-                        <InstagramIcon /> Instagram
-                      </button>
-                      <button onClick={() => handleShare("linkedin")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
-                        <LinkedInIcon /> LinkedIn
-                      </button>
+
+                      {PUBLISH_OPTIONS.map(({ platform, Icon, label }) => {
+                        const app = PUBLISH_PLATFORM_TO_APP[platform];
+                        const isConnected = Boolean(connectedApps[app]);
+
+                        return (
+                          <button
+                            key={platform}
+                            onClick={() => handlePublish(platform)}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground"
+                          >
+                            <Icon />
+                            <span>{label}</span>
+                            <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${isConnected ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
+                              {isLoadingConnections ? "..." : isConnected ? "Connected" : "Connect"}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
+
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleGenerate();
+                }
+              }}
               placeholder={displayedPlaceholder + "│"}
               rows={1}
               className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
               style={{ minHeight: "32px" }}
             />
+
             <button
               onClick={handleGenerate}
-              disabled={(!input.trim() && !attachedImage) || isGenerating}
+              disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
               className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20"
             >
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
             </button>
           </div>
-          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} />
+
+          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} multiple />
         </div>
       </div>
     </div>

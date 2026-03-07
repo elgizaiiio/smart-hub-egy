@@ -5,7 +5,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const MODEL_MAP: Record<string, { endpoint: string; inputKey?: string }> = {
+type ModelConfig = {
+  endpoint: string;
+  inputKey?: string;
+  multiInputKey?: string;
+  maxImages?: number;
+  requiresImage?: boolean;
+};
+
+const MODEL_MAP: Record<string, ModelConfig> = {
   // Text-to-Image
   "megsy-v1-img": { endpoint: "fal-ai/nano-banana-pro" },
   "gpt-image": { endpoint: "fal-ai/gpt-image-1.5" },
@@ -27,51 +35,123 @@ const MODEL_MAP: Record<string, { endpoint: string; inputKey?: string }> = {
   "logo-creator": { endpoint: "fal-ai/recraft/v3/text-to-image" },
   "sticker-maker": { endpoint: "fal-ai/nano-banana-pro" },
   "qr-art": { endpoint: "fal-ai/nano-banana-pro" },
-  "product-photo": { endpoint: "fal-ai/image-apps-v2/product-photography", inputKey: "image_url" },
-  "ai-headshot": { endpoint: "fal-ai/image-apps-v2/headshot-photo", inputKey: "image_url" },
-  "passport-photo": { endpoint: "fal-ai/birefnet" },
+  "product-photo": { endpoint: "fal-ai/image-apps-v2/product-photography", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "ai-headshot": { endpoint: "fal-ai/image-apps-v2/headshot-photo", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "passport-photo": { endpoint: "fal-ai/birefnet", inputKey: "image_url", maxImages: 1, requiresImage: true },
   // Image Editing (require image)
-  "nano-banana-edit": { endpoint: "fal-ai/nano-banana-pro/edit", inputKey: "image_url" },
-  "object-remover": { endpoint: "fal-ai/image-editing/object-removal", inputKey: "image_url" },
-  "watermark-remover": { endpoint: "fal-ai/image-apps-v2/object-removal", inputKey: "image_url" },
-  "image-extender": { endpoint: "fal-ai/image-apps-v2/outpaint", inputKey: "image_url" },
-  "flux-pro-editor": { endpoint: "fal-ai/flux-2-pro/edit", inputKey: "image_url" },
-  "image-variations": { endpoint: "fal-ai/flux-pro/v1.1/redux", inputKey: "image_url" },
+  "nano-banana-edit": { endpoint: "fal-ai/nano-banana-pro/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, requiresImage: true },
+  "object-remover": { endpoint: "fal-ai/image-editing/object-removal", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "watermark-remover": { endpoint: "fal-ai/image-apps-v2/object-removal", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "image-extender": { endpoint: "fal-ai/image-apps-v2/outpaint", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "flux-pro-editor": { endpoint: "fal-ai/flux-2-pro/edit", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "image-variations": { endpoint: "fal-ai/flux-pro/v1.1/redux", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, requiresImage: true },
   // Enhancement (require image)
-  "photo-colorizer": { endpoint: "fal-ai/flux/dev/image-to-image", inputKey: "image_url" },
-  "bg-remover": { endpoint: "fal-ai/birefnet", inputKey: "image_url" },
-  "bg-replacer": { endpoint: "fal-ai/birefnet", inputKey: "image_url" },
-  "4k-upscaler": { endpoint: "fal-ai/clarity-upscaler", inputKey: "image_url" },
-  "face-enhancer": { endpoint: "fal-ai/codeformer", inputKey: "image_url" },
-  "creative-upscaler": { endpoint: "fal-ai/bria/upscale/creative", inputKey: "image_url" },
-  "old-photo-restorer": { endpoint: "fal-ai/codeformer", inputKey: "image_url" },
-  "photo-to-cartoon": { endpoint: "fal-ai/cartoonify", inputKey: "image_url" },
-  "style-transfer": { endpoint: "fal-ai/flux/dev/image-to-image", inputKey: "image_url" },
-  "ai-relighting": { endpoint: "fal-ai/ic-light", inputKey: "image_url" },
+  "photo-colorizer": { endpoint: "fal-ai/flux/dev/image-to-image", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "bg-remover": { endpoint: "fal-ai/birefnet", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "bg-replacer": { endpoint: "fal-ai/birefnet", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 2, requiresImage: true },
+  "4k-upscaler": { endpoint: "fal-ai/clarity-upscaler", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "face-enhancer": { endpoint: "fal-ai/codeformer", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "creative-upscaler": { endpoint: "fal-ai/bria/upscale/creative", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "old-photo-restorer": { endpoint: "fal-ai/codeformer", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "photo-to-cartoon": { endpoint: "fal-ai/cartoonify", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  "style-transfer": { endpoint: "fal-ai/flux/dev/image-to-image", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 2, requiresImage: true },
+  "ai-relighting": { endpoint: "fal-ai/ic-light", inputKey: "image_url", maxImages: 1, requiresImage: true },
 };
+
+const DATA_URI_REGEX = /^data:([^;]+);base64,(.+)$/;
+
+function cleanBase64(base64String: string): string {
+  const cleaned = base64String.trim().replace(/\s/g, "");
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cleaned)) {
+    throw new Error("Invalid base64 image payload");
+  }
+  return cleaned;
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function uploadDataUriToFalStorage(dataUri: string, apiKey: string): Promise<string> {
+  const match = dataUri.match(DATA_URI_REGEX);
+  if (!match) return dataUri;
+
+  const mimeType = match[1] || "application/octet-stream";
+  const base64Payload = cleanBase64(match[2] || "");
+  const bytes = base64ToBytes(base64Payload);
+
+  const uploadResp = await fetch("https://fal.run/fal-ai/storage/upload", {
+    method: "POST",
+    headers: {
+      Authorization: `Key ${apiKey}`,
+      "Content-Type": mimeType,
+    },
+    body: bytes,
+  });
+
+  if (!uploadResp.ok) {
+    const uploadErr = await uploadResp.text();
+    throw new Error(`fal storage upload failed: ${uploadResp.status} - ${uploadErr.slice(0, 200)}`);
+  }
+
+  const uploadResult = await uploadResp.json();
+  const uploadedUrl = uploadResult?.url || uploadResult?.file?.url || uploadResult?.data?.url;
+
+  if (!uploadedUrl) throw new Error("fal storage upload returned no URL");
+  return uploadedUrl;
+}
+
+async function normalizeImageInput(imageValue: string, apiKey: string): Promise<string> {
+  if (!imageValue) return imageValue;
+  if (imageValue.startsWith("data:")) {
+    return uploadDataUriToFalStorage(imageValue, apiKey);
+  }
+  return imageValue;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, model, image_url } = await req.json();
+    const { prompt, model, image_url, image_urls } = await req.json();
     const FAL_API_KEY = Deno.env.get("FAL_API_KEY");
     if (!FAL_API_KEY) throw new Error("FAL_API_KEY not configured");
 
     const modelConfig = MODEL_MAP[model] || MODEL_MAP["megsy-v1-img"];
     const endpoint = modelConfig.endpoint;
 
-    const input: Record<string, any> = { prompt: prompt || "A beautiful image" };
+    const input: Record<string, unknown> = { prompt: prompt || "A beautiful image" };
 
-    // Pass image_url directly (fal.ai accepts both URLs and data URIs)
-    if (image_url) {
-      const key = modelConfig.inputKey || "image_url";
-      input[key] = image_url;
+    const rawImages = [
+      ...(Array.isArray(image_urls) ? image_urls : []),
+      ...(image_url ? [image_url] : []),
+    ]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map((value) => value.trim());
+
+    const uniqueImages = [...new Set(rawImages)].slice(0, modelConfig.maxImages || 1);
+    const processedImages = await Promise.all(uniqueImages.map((img) => normalizeImageInput(img, FAL_API_KEY)));
+
+    if (modelConfig.requiresImage && processedImages.length === 0) {
+      throw new Error(`${model || "Selected model"} requires at least one image input`);
     }
 
-    console.log(`Generating image with model: ${model}, endpoint: ${endpoint}`);
+    if (processedImages.length > 0) {
+      const singleKey = modelConfig.inputKey || "image_url";
+      input[singleKey] = processedImages[0];
 
-    // Use synchronous API to avoid polling issues
+      if (modelConfig.multiInputKey && processedImages.length > 1) {
+        input[modelConfig.multiInputKey] = processedImages;
+      }
+    }
+
+    console.log(`Generating image with model: ${model}, endpoint: ${endpoint}, images: ${processedImages.length}`);
+
     const resp = await fetch(`https://fal.run/${endpoint}`, {
       method: "POST",
       headers: {
