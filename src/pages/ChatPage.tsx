@@ -375,17 +375,6 @@ const ChatPage = () => {
             )}
           </AnimatePresence>
         </div>
-                initial={{ opacity: 1 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-              >
-                <FancyButton onClick={() => navigate("/pricing")}>
-                  Unlock Pro
-                </FancyButton>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
 
         <button
           onClick={handleNewChat}
