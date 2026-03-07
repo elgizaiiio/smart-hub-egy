@@ -152,7 +152,7 @@ const ProfileSettingsPage = () => {
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1 px-1">Security</p>
         <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
-          <AtSign className="w-5 h-5 text-muted-foreground" />
+          <MailCheck className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">Change Email</p>
             <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
@@ -160,7 +160,7 @@ const ProfileSettingsPage = () => {
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
         <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
-          <KeyRound className="w-5 h-5 text-muted-foreground" />
+          <ShieldEllipsis className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Change Password</p>
             <p className="text-xs text-muted-foreground">Update your password</p>
@@ -169,7 +169,7 @@ const ProfileSettingsPage = () => {
         </button>
         {plan === "free" && (
           <button onClick={() => navigate("/pricing")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
-            <Sparkles className="w-5 h-5 text-primary" />
+            <Gem className="w-5 h-5 text-primary" />
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">Upgrade to Premium</p>
               <p className="text-xs text-muted-foreground">Get unlimited access to all features</p>
@@ -178,7 +178,7 @@ const ProfileSettingsPage = () => {
           </button>
         )}
         <button onClick={() => navigate("/settings/delete-account")} className="w-full flex items-center gap-3 py-3 px-1 text-left mt-2">
-          <Trash2 className="w-5 h-5 text-destructive/60" />
+          <UserRoundX className="w-5 h-5 text-destructive/60" />
           <p className="text-sm font-medium text-destructive/60">Delete Account</p>
         </button>
       </div>
