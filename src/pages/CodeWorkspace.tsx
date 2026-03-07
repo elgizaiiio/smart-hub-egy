@@ -29,7 +29,7 @@ interface SandboxState {
 type FileTree = Record<string, string>;
 
 const callSandbox = async (body: Record<string, unknown>) => {
-  const resp = await fetch(`${SUPABASE_URL}/functions/v1/code-sandbox`, {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/sprites-sandbox`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
