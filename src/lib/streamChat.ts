@@ -73,6 +73,10 @@ export async function streamChat({
 
         try {
           const parsed = JSON.parse(jsonStr);
+          // Check for images from search
+          if (parsed.images && Array.isArray(parsed.images)) {
+            onImages?.(parsed.images);
+          }
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) onDelta(content);
         } catch {
