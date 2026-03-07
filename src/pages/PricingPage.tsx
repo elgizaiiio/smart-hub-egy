@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import FancyButton from "@/components/FancyButton";
 
 const plans = [
   {
@@ -59,30 +58,21 @@ const plans = [
   },
 ];
 
-const tierStyles = {
+const tierCardStyles = {
   starter: {
-    bg: "bg-[#1A1A2E]/80",
-    border: "border-[#333355]",
+    card: "pricing-card-starter",
     badge: "",
-    btnClass: "bg-[#2A2A4A] hover:bg-[#3A3A5A] text-white",
-    checkColor: "text-muted-foreground",
-    scale: "",
+    checkColor: "text-emerald-400",
   },
   pro: {
-    bg: "bg-[#7C3AED]/10",
-    border: "border-[#7C3AED]",
-    badge: "bg-[#7C3AED] text-white",
-    btnClass: "bg-[#7C3AED] hover:bg-[#6D28D9] text-white",
-    checkColor: "text-[#7C3AED]",
-    scale: "md:scale-105 z-10",
+    card: "pricing-card-pro",
+    badge: "bg-white/20 text-white backdrop-blur-sm",
+    checkColor: "text-purple-300",
   },
   elite: {
-    bg: "bg-[#FFD700]/10",
-    border: "border-[#FFD700]",
-    badge: "bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black",
-    btnClass: "bg-gradient-to-r from-[#FFD700] to-[#FFA500] hover:from-[#FFC800] hover:to-[#FF9500] text-black font-semibold",
-    checkColor: "text-[#FFD700]",
-    scale: "",
+    card: "pricing-card-elite",
+    badge: "bg-white/20 text-white backdrop-blur-sm",
+    checkColor: "text-amber-300",
   },
 };
 
@@ -123,7 +113,7 @@ const PricingPage = () => {
 
         <div className="grid md:grid-cols-3 gap-6 items-center">
           {plans.map((plan, i) => {
-            const style = tierStyles[plan.tier];
+            const style = tierCardStyles[plan.tier];
             const credits = isYearly ? plan.yearlyCredits : plan.monthlyCredits;
             const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
 
@@ -133,29 +123,38 @@ const PricingPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className={`rounded-2xl border p-6 flex flex-col gap-4 ${style.bg} ${style.border} ${style.scale} transition-transform`}
+                className={`${style.card} rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden ${plan.featured ? "md:scale-105 z-10" : ""}`}
               >
+                {/* Animated particles */}
+                <div className="pricing-points-wrapper">
+                  {Array.from({ length: 10 }).map((_, j) => (
+                    <span key={j} className="pricing-point" />
+                  ))}
+                </div>
+
                 {plan.badge && (
                   <span className={`text-xs font-bold px-3 py-1 rounded-full self-start uppercase tracking-wider ${style.badge}`}>
                     {plan.badge}
                   </span>
                 )}
                 <div>
-                  <h3 className="font-display font-semibold text-foreground text-lg">{plan.name}</h3>
-                  <p className="text-xs text-muted-foreground">{credits.toLocaleString()} credits / {isYearly ? "year" : "month"}</p>
+                  <h3 className="font-display font-semibold text-white text-lg">{plan.name}</h3>
+                  <p className="text-xs text-white/60">{credits.toLocaleString()} credits / {isYearly ? "year" : "month"}</p>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-3xl font-bold text-foreground">
+                  <span className="font-display text-3xl font-bold text-white">
                     ${price}
                   </span>
-                  <span className="text-sm text-muted-foreground">/{isYearly ? "year" : "month"}</span>
+                  <span className="text-sm text-white/60">/{isYearly ? "year" : "month"}</span>
                 </div>
 
-                <FancyButton className="w-full">Get Started</FancyButton>
+                <button className="w-full py-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium text-sm transition-all border border-white/10">
+                  Get Started
+                </button>
 
                 <ul className="space-y-2.5 mt-2">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <li key={feature} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className={`w-3.5 h-3.5 shrink-0 ${style.checkColor}`} />
                       {feature}
                     </li>

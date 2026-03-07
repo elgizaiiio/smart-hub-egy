@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CreditCard, MessageSquare, Image, Film, Code, FileText } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -21,11 +21,11 @@ interface AppSidebarProps {
 }
 
 const serviceItems = [
-  { path: "/", label: "Chat", icon: MessageSquare },
-  { path: "/images", label: "Images", icon: Image },
-  { path: "/videos", label: "Videos", icon: Film },
-  { path: "/code", label: "Programming", icon: Code },
-  { path: "/files", label: "Files", icon: FileText },
+  { path: "/", label: "Chat" },
+  { path: "/images", label: "Images" },
+  { path: "/videos", label: "Videos" },
+  { path: "/code", label: "Programming" },
+  { path: "/files", label: "Files" },
 ];
 
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
@@ -109,23 +109,19 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             <div className="px-3">
               <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Services</p>
               <div className="space-y-0.5">
-                {serviceItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => { navigate(item.path); onClose(); }}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-3 ${
-                        location.pathname === item.path
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.label}
-                    </button>
-                  );
-                })}
+                {serviceItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => { navigate(item.path); onClose(); }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      location.pathname === item.path
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
             </div>
 
