@@ -6,10 +6,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 
 const themes = [
-  { id: "light", label: "Light", colors: ["#ffffff", "#f5f5f5", "#e5e5e5"] },
-  { id: "white", label: "Pure White", colors: ["#fafafa", "#f0f0f0", "#e0e0e0"] },
-  { id: "dark", label: "Dark", colors: ["#1a1a2e", "#16213e", "#0f3460"] },
-  { id: "oled", label: "OLED", colors: ["#000000", "#0a0a0a", "#111111"] },
+  { id: "dark", label: "Pitch Black", desc: "True black", colors: ["#000000", "#0d0d0d", "#1a1a1a"] },
+  { id: "ocean", label: "Midnight Blue", desc: "Deep navy", colors: ["#0d1117", "#151d2b", "#1c2636"] },
+  { id: "light", label: "Light", desc: "Clean & bright", colors: ["#f7f7f7", "#eeeeee", "#e0e0e0"] },
+  { id: "sunset", label: "Warm Sand", desc: "Earthy tones", colors: ["#f2ede8", "#e8e0d6", "#ddd4c8"] },
 ];
 
 const accentColors = [
