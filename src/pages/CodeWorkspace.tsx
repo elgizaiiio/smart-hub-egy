@@ -363,52 +363,79 @@ const CodeWorkspace = () => {
             },
           ]);
 
-          // Provision sandbox and deploy
-          addLog("Provisioning cloud sandbox...");
-          const sb = await provisionSandbox();
-
-          // Write all files
-          await writeFilesToSandbox(sb, allFiles);
-
-          // Install deps and start dev server
-          addLog("Installing dependencies...");
-          await callSandbox({
-            action: "exec",
-            app_name: sb.appName,
-            machine_id: sb.machineId,
-            command: "cd /app && npm install",
-          });
-
-          addLog("Starting dev server...");
-          await callSandbox({
-            action: "exec",
-            app_name: sb.appName,
-            machine_id: sb.machineId,
-            command: "cd /app && npm run dev &",
-          });
-
-          addLog("Build complete! Switch to Preview tab to see your project.");
-
-          // Save project to Supabase
+          // Save project to Supabase immediately (before sandbox)
+          let savedProjectId: string | null = null;
           if (userId) {
             const { data: proj } = await supabase
               .from("projects")
               .insert({
                 user_id: userId,
                 name: prompt.slice(0, 50) || "Untitled Project",
-                fly_machine_id: sb.machineId,
-                fly_app_name: sb.appName,
-                preview_url: sb.previewUrl,
-                status: "running",
+                status: "created",
                 files_snapshot: allFiles as any,
                 conversation_id: conversationId,
               })
               .select("id")
               .single();
-            if (proj) setProjectId(proj.id);
+            if (proj) {
+              savedProjectId = proj.id;
+              setProjectId(proj.id);
+              addLog("Project saved.");
+            }
           }
 
-          setActiveTab("preview");
+          // Provision sandbox and deploy
+          try {
+            addLog("Provisioning cloud sandbox...");
+            const sb = await provisionSandbox();
+
+            // Write all files
+            await writeFilesToSandbox(sb, allFiles);
+
+            // Install deps and start dev server
+            addLog("Installing dependencies...");
+            await callSandbox({
+              action: "exec",
+              app_name: sb.appName,
+              machine_id: sb.machineId,
+              command: "cd /app && npm install",
+            });
+
+            addLog("Starting dev server...");
+            await callSandbox({
+              action: "exec",
+              app_name: sb.appName,
+              machine_id: sb.machineId,
+              command: "cd /app && npm run dev &",
+            });
+
+            addLog("Build complete! Switch to Preview tab to see your project.");
+
+            // Update project with sandbox info
+            if (savedProjectId) {
+              await supabase
+                .from("projects")
+                .update({
+                  fly_machine_id: sb.machineId,
+                  fly_app_name: sb.appName,
+                  preview_url: sb.previewUrl,
+                  status: "running",
+                })
+                .eq("id", savedProjectId);
+            }
+
+            setActiveTab("preview");
+          } catch (sandboxErr) {
+            const sandboxErrMsg = sandboxErr instanceof Error ? sandboxErr.message : "Sandbox error";
+            addLog(`Sandbox failed: ${sandboxErrMsg}. Project files are still saved.`);
+            // Update project status to reflect sandbox failure
+            if (savedProjectId) {
+              await supabase
+                .from("projects")
+                .update({ status: "ready" })
+                .eq("id", savedProjectId);
+            }
+          }
         } catch (e) {
           const errMsg = e instanceof Error ? e.message : "Unknown error";
           addLog(`Build failed: ${errMsg}`);
