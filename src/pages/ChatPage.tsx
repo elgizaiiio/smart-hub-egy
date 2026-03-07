@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Globe, Camera, Image, FileUp, ShoppingCart, Link2 } from "lucide-react";
+import { Menu, Plus, Globe, Camera, Image, FileUp, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -454,7 +454,7 @@ const ChatPage = () => {
                       onClick={() => handleModeChange("shopping")}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
                       
-                        <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                        
                         <span className="text-sm text-foreground">Shopping Mode</span>
                         {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                       </button>
