@@ -27,10 +27,10 @@ const SUGGESTIONS = [
 ];
 
 const FILE_PLACEHOLDERS = [
-  "Write a professional report...",
-  "Create a presentation outline...",
-  "Summarize a document...",
-  "Analyze data from a CSV...",
+  "Write a professional business proposal...",
+  "Create a detailed report about...",
+  "Create a structured presentation about...",
+  "Summarize this document for me...",
 ];
 
 const FilesPage = () => {
