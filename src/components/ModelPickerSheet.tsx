@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Zap, Crown, Clock, CheckCircle2, ImagePlus, HelpCircle, Star, Play } from "lucide-react";
+import { ArrowLeft, Zap, Crown, Clock, CheckCircle2, ImagePlus, HelpCircle, Play } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ALL_MODEL_DETAILS, type ModelDetail, type ModelType } from "@/lib/modelDetails";
 import { supabase } from "@/integrations/supabase/client";
