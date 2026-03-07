@@ -4,6 +4,7 @@ import { Menu, Plus, Paperclip, ArrowUp, Loader2, Download } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useCredits } from "@/hooks/useCredits";
 import AppSidebar from "@/components/AppSidebar";
 import ModelSelector, { getDefaultModel } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
