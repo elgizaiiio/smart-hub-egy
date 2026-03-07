@@ -102,6 +102,55 @@ const PLACEHOLDERS = [
   "Person walking through neon streets...",
   "Time-lapse of a flower blooming...",
   "Slow motion water splash...",
+  "A cat playing with a butterfly...",
+  "Sunset over the ocean waves...",
+  "A dancer performing in the rain...",
+  "Birds flying in slow motion...",
+  "A car driving through a desert highway...",
+  "Snow falling in a quiet forest...",
+  "A rocket launching into space...",
+  "Waves crashing on rocky cliffs...",
+  "A chef cooking in slow motion...",
+  "Fireworks exploding in the night sky...",
+  "A horse galloping on the beach...",
+  "City traffic time-lapse at night...",
+  "A butterfly emerging from a cocoon...",
+  "Aurora borealis over snowy mountains...",
+  "Rain drops hitting a puddle...",
+  "A surfer riding a giant wave...",
+  "Candle flame flickering in darkness...",
+  "A hot air balloon floating over fields...",
+  "Underwater coral reef with fish...",
+  "A train passing through countryside...",
+  "Clouds forming and dissolving...",
+  "A gymnast performing flips...",
+  "Lava flowing from a volcano...",
+  "A dog running through a meadow...",
+  "Lightning striking in slow motion...",
+  "A couple dancing under the stars...",
+  "Waterfall in a tropical jungle...",
+  "A pianist playing passionately...",
+  "Autumn leaves falling from trees...",
+  "A drone shot of a winding river...",
+  "Ink dropping into water...",
+  "A skateboarder doing tricks...",
+  "Sunrise through morning fog...",
+  "A jellyfish swimming gracefully...",
+  "Wind blowing through wheat fields...",
+  "A bonfire burning at night...",
+  "Aerial view of a coral island...",
+  "A ballerina spinning on stage...",
+  "Ice crystals forming on glass...",
+  "A wolf running through snow...",
+  "Meteor shower across the sky...",
+  "A samurai drawing his sword...",
+  "Cherry blossoms falling in wind...",
+  "A robot walking in a futuristic city...",
+  "Dolphins jumping out of water...",
+  "A painter creating a masterpiece...",
+  "Sand dunes shifting in the wind...",
+  "A spaceship landing on an alien planet...",
+  "Hummingbird hovering near a flower...",
 ];
 
 const PUBLISH_OPTIONS: { platform: PublishPlatform; label: string; Icon: () => JSX.Element }[] = [
@@ -445,7 +494,7 @@ const VideosPage = () => {
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories />
+        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-violet-500 text-white hover:bg-violet-600" />
         <div className="w-9" />
       </div>
 
@@ -469,16 +518,6 @@ const VideosPage = () => {
 
             <h2 className="font-display text-lg font-bold text-foreground mb-1">{selectedModel.name}</h2>
             <p className="text-xs text-muted-foreground mb-3 text-center">{capability.helperText}</p>
-
-            <div className="w-full max-w-xs rounded-xl border border-border/70 bg-secondary/40 p-3 space-y-1.5">
-              <p className="text-xs text-foreground">Image input: <span className="text-muted-foreground">{capability.acceptsImages ? "Supported" : "Not supported"}</span></p>
-              <p className="text-xs text-foreground">Image required: <span className="text-muted-foreground">{capability.requiresImage ? "Yes" : "No"}</span></p>
-              <p className="text-xs text-foreground">Max images: <span className="text-muted-foreground">{capability.maxImages}</span></p>
-              <p className="text-xs text-foreground">Formats: <span className="text-muted-foreground">{capabilityMimeText}</span></p>
-              {!capability.acceptsImages && (
-                <p className="text-[11px] text-primary mt-1">{selectedModel.name} يعمل بالنص فقط، ولن يستخدم أي صورة مرفقة.</p>
-              )}
-            </div>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">

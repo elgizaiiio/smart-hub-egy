@@ -104,6 +104,55 @@ const PLACEHOLDERS = [
   "Portrait of a warrior in armor...",
   "Cute cat wearing a tiny hat...",
   "Abstract art with vibrant colors...",
+  "A magical forest with glowing mushrooms...",
+  "Cyberpunk girl with neon hair...",
+  "Ancient temple covered in vines...",
+  "A dragon flying over a volcano...",
+  "Underwater city with bioluminescent lights...",
+  "Steampunk airship in the clouds...",
+  "A crystal palace in the mountains...",
+  "Astronaut walking on Mars...",
+  "Medieval castle at dawn...",
+  "A phoenix rising from flames...",
+  "Japanese garden in autumn...",
+  "Robot playing chess with a human...",
+  "Surreal melting clock landscape...",
+  "A wolf howling at the northern lights...",
+  "Floating islands in the sky...",
+  "A samurai in a cherry blossom field...",
+  "Gothic cathedral with stained glass...",
+  "A mermaid in a coral reef...",
+  "Retro synthwave sunset...",
+  "A wizard casting a spell...",
+  "Victorian mansion at night...",
+  "A tiger in a bamboo forest...",
+  "Space station orbiting Earth...",
+  "A fairy village in a flower garden...",
+  "Egyptian pharaoh in golden armor...",
+  "A cozy cabin in a snowy forest...",
+  "Cybernetic eye close-up...",
+  "A lighthouse in a storm...",
+  "Enchanted library with floating books...",
+  "A warrior princess with a flaming sword...",
+  "Ruins of an ancient civilization...",
+  "A neon-lit ramen shop at night...",
+  "Giant robot in a destroyed city...",
+  "A peaceful lake at sunrise...",
+  "Steampunk clockwork heart...",
+  "A pirate ship on stormy seas...",
+  "Northern lights over a frozen lake...",
+  "A cyberpunk market alley...",
+  "Mystical owl with glowing eyes...",
+  "A candy-colored fantasy kingdom...",
+  "Renaissance portrait in oil paint...",
+  "A futuristic car on a highway...",
+  "Alien landscape with two moons...",
+  "A majestic eagle soaring high...",
+  "Neon city reflections in rain...",
+  "A haunted mansion at midnight...",
+  "Desert oasis with palm trees...",
+  "A geisha in traditional attire...",
+  "Sci-fi spaceship interior...",
 ];
 
 const PUBLISH_OPTIONS: { platform: PublishPlatform; label: string; Icon: () => JSX.Element }[] = [
@@ -464,7 +513,7 @@ const ImagesPage = () => {
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories />
+        <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-pink-500 text-white hover:bg-pink-600" />
         <div className="w-9" />
       </div>
 
@@ -493,16 +542,6 @@ const ImagesPage = () => {
 
             <h2 className="font-display text-lg font-bold text-foreground mb-1">{selectedModel.name}</h2>
             <p className="text-xs text-muted-foreground mb-3 text-center">{capability.helperText}</p>
-
-            <div className="w-full max-w-xs rounded-xl border border-border/70 bg-secondary/40 p-3 space-y-1.5">
-              <p className="text-xs text-foreground">Image input: <span className="text-muted-foreground">{capability.acceptsImages ? "Supported" : "Not supported"}</span></p>
-              <p className="text-xs text-foreground">Image required: <span className="text-muted-foreground">{capability.requiresImage ? "Yes" : "No"}</span></p>
-              <p className="text-xs text-foreground">Max images: <span className="text-muted-foreground">{capability.maxImages}</span></p>
-              <p className="text-xs text-foreground">Formats: <span className="text-muted-foreground">{capabilityMimeText}</span></p>
-              {!capability.acceptsImages && (
-                <p className="text-[11px] text-primary mt-1">{selectedModel.name} يعمل بالنص فقط، ولن يستخدم أي صورة مرفقة.</p>
-              )}
-            </div>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">

@@ -112,9 +112,10 @@ interface ModelSelectorProps {
   onModelChange: (model: ModelOption) => void;
   showCategories?: boolean;
   centerDropdown?: boolean;
+  colorClass?: string;
 }
 
-const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: ModelSelectorProps) => {
+const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, colorClass }: ModelSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"model" | "tool">("model");
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 280 });
@@ -144,7 +145,7 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: M
       <button
         ref={buttonRef}
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-colors ${colorClass || "bg-primary text-primary-foreground hover:bg-primary/90"}`}
       >
         {selectedModel.name}
         <ChevronDown className="w-3 h-3" />
