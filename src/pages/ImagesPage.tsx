@@ -294,6 +294,8 @@ const ImagesPage = () => {
           model: selectedModel.id,
           image_url: attachedImages[0]?.dataUrl,
           image_urls: attachedImages.map((img) => img.dataUrl),
+          user_id: userId,
+          credits_cost: Number(selectedModel.credits) || 1,
         }),
       });
 
