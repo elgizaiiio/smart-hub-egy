@@ -213,25 +213,19 @@ const CodeWorkspace = () => {
   };
 
   const provisionSandbox = async (): Promise<SandboxState> => {
-    const appName = `megsy-${Date.now()}`;
+    const spriteName = `megsy-${Date.now()}`;
     setSandbox((s) => ({ ...s, status: "creating" }));
-    addLog("Creating sandbox environment...");
+    addLog("Creating Sprites sandbox...");
 
     try {
-      // Create app
-      await callSandbox({ action: "create-app", app_name: appName });
-      addLog("Sandbox app created.");
+      const spriteData = await callSandbox({ action: "create", sprite_name: spriteName });
+      const previewUrl = spriteData.url || `https://${spriteName}.sprites.app`;
+      addLog(`Sprite created: ${spriteName}`);
 
-      // Create machine
-      const machine = await callSandbox({ action: "create-machine", app_name: appName });
-      const machineId = machine.id;
-      addLog("Machine provisioned. Waiting for startup...");
+      // Wait for sprite to be ready
+      await new Promise((r) => setTimeout(r, 3000));
 
-      // Wait for machine to be ready
-      await new Promise((r) => setTimeout(r, 5000));
-
-      const previewUrl = `https://${appName}.fly.dev`;
-      const newState: SandboxState = { appName, machineId, previewUrl, status: "ready" };
+      const newState: SandboxState = { spriteName, previewUrl, status: "ready" };
       setSandbox(newState);
       addLog(`Sandbox ready at ${previewUrl}`);
       return newState;
