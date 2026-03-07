@@ -220,8 +220,11 @@ const FilesPage = () => {
       }
 
       setMessages(prev => [...prev, { role: "assistant", content: description, htmlContent: html }]);
+      if (convId) await saveMessage(convId, "assistant", description);
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]);
+      const failMsg = "Generation failed. Please try again.";
+      setMessages(prev => [...prev, { role: "assistant", content: failMsg }]);
+      if (convId) await saveMessage(convId, "assistant", failMsg);
     }
     setIsGenerating(false);
   };
