@@ -542,16 +542,6 @@ const ImagesPage = () => {
 
             <h2 className="font-display text-lg font-bold text-foreground mb-1">{selectedModel.name}</h2>
             <p className="text-xs text-muted-foreground mb-3 text-center">{capability.helperText}</p>
-
-            <div className="w-full max-w-xs rounded-xl border border-border/70 bg-secondary/40 p-3 space-y-1.5">
-              <p className="text-xs text-foreground">Image input: <span className="text-muted-foreground">{capability.acceptsImages ? "Supported" : "Not supported"}</span></p>
-              <p className="text-xs text-foreground">Image required: <span className="text-muted-foreground">{capability.requiresImage ? "Yes" : "No"}</span></p>
-              <p className="text-xs text-foreground">Max images: <span className="text-muted-foreground">{capability.maxImages}</span></p>
-              <p className="text-xs text-foreground">Formats: <span className="text-muted-foreground">{capabilityMimeText}</span></p>
-              {!capability.acceptsImages && (
-                <p className="text-[11px] text-primary mt-1">{selectedModel.name} يعمل بالنص فقط، ولن يستخدم أي صورة مرفقة.</p>
-              )}
-            </div>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
