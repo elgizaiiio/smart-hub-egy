@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Mail, Lock, Trash2, Crown, Camera, ChevronRight, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, AtSign, KeyRound, Trash2, Sparkles, Camera, ChevronRight, Pencil, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
