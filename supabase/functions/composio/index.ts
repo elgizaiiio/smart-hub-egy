@@ -7,6 +7,59 @@ const corsHeaders = {
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 
+async function getOrCreateIntegration(app: string, headers: Record<string, string>) {
+  // 1. Try to find existing integration
+  const intResp = await fetch(`${COMPOSIO_BASE}/integrations?appName=${encodeURIComponent(app)}`, { headers });
+  if (intResp.ok) {
+    const intData = await intResp.json();
+    const items = intData.items || intData;
+    if (Array.isArray(items) && items.length > 0) {
+      return items[0];
+    }
+  } else {
+    const t = await intResp.text();
+    console.log(`Get integrations response [${intResp.status}]: ${t}`);
+  }
+
+  // 2. No integration found — get the app ID first
+  console.log(`No integration found for ${app}, creating one...`);
+  const appsResp = await fetch(`${COMPOSIO_BASE}/apps?name=${encodeURIComponent(app)}`, { headers });
+  if (!appsResp.ok) {
+    const t = await appsResp.text();
+    throw new Error(`Failed to get app info for ${app} [${appsResp.status}]: ${t}`);
+  }
+  const appsData = await appsResp.json();
+  const appsList = appsData.items || appsData;
+  const appInfo = Array.isArray(appsList) ? appsList.find((a: any) => 
+    (a.name || "").toLowerCase() === app.toLowerCase() || 
+    (a.key || "").toLowerCase() === app.toLowerCase()
+  ) || appsList[0] : null;
+
+  if (!appInfo) {
+    throw new Error(`App '${app}' not found in Composio. Make sure the app name is correct.`);
+  }
+
+  // 3. Create integration with Composio's default auth
+  const createResp = await fetch(`${COMPOSIO_BASE}/integrations`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      appId: appInfo.appId || appInfo.id,
+      name: `${app}_default`,
+      useComposioAuth: true,
+    }),
+  });
+
+  if (!createResp.ok) {
+    const t = await createResp.text();
+    throw new Error(`Failed to create integration for ${app} [${createResp.status}]: ${t}`);
+  }
+
+  const integration = await createResp.json();
+  console.log(`Created integration for ${app}: ${integration.id}`);
+  return integration;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -37,18 +90,8 @@ serve(async (req) => {
     // Initiate a new connection
     if (action === "connect") {
       if (!app) throw new Error("app is required for connect action");
-      
-      // Get integration ID for the app
-      const intResp = await fetch(`${COMPOSIO_BASE}/integrations?appName=${encodeURIComponent(app)}`, { headers });
-      if (!intResp.ok) {
-        const t = await intResp.text();
-        throw new Error(`Composio get-integrations failed [${intResp.status}]: ${t}`);
-      }
-      const intData = await intResp.json();
-      const integrations = intData.items || intData;
-      const integration = Array.isArray(integrations) && integrations.length > 0 ? integrations[0] : null;
-      
-      if (!integration) throw new Error(`No integration found for app: ${app}`);
+
+      const integration = await getOrCreateIntegration(app, headers);
 
       // Initiate connection
       const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts`, {
