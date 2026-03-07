@@ -58,7 +58,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   };
 
   const loadConversations = async () => {
-    const modeFilter = currentMode === "code" ? "code" : currentMode === "images" ? "images" : "chat";
+    const modeFilter = currentMode === "code" ? "code" : currentMode === "images" ? "images" : currentMode === "videos" ? "videos" : "chat";
     const { data } = await supabase
       .from("conversations")
       .select("id, title, updated_at, mode")
