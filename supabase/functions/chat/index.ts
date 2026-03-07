@@ -11,10 +11,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model, mode } = await req.json();
+    const { messages, model, mode, searchEnabled } = await req.json();
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
+    const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
 
     // Determine which gateway to use based on model
     let apiUrl: string;
@@ -136,6 +137,18 @@ serve(async (req) => {
       },
     ] : [];
 
+    // Build search tool if search is enabled
+    const searchTools = (searchEnabled && SERPER_API_KEY) ? [
+      {
+        type: "function",
+        function: {
+          name: "WEB_SEARCH",
+          description: "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data. Do NOT search for casual greetings or simple conversational messages.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results. Set true for visual topics like places, products, people, food. Set false for abstract questions, code, definitions." } }, required: ["query"] },
+        },
+      },
+    ] : [];
+
     // System prompt
     let systemPrompt: string;
     if (mode === "files") {
@@ -151,6 +164,9 @@ serve(async (req) => {
 - When the user greets you casually, respond casually and briefly.
 - IMPORTANT: Always end your response with a brief, engaging follow-up question related to the topic to keep the conversation active and the user engaged. Make it natural, not forced.
 - You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). When the user asks to perform actions with these services, use the appropriate tool. If a tool call fails because the user hasn't connected the service, tell them to connect it from Settings > Integrations.`;
+      if (searchEnabled) {
+        systemPrompt += `\n- You have access to a WEB_SEARCH tool. Use it ONLY when the question genuinely needs current or factual information from the internet. For casual conversation, greetings, opinions, or things you already know well, do NOT search. Be smart about when to search. When you do search, synthesize the results naturally and cite sources with links.`;
+      }
     }
 
     const body: any = {
@@ -162,8 +178,9 @@ serve(async (req) => {
       stream: true,
     };
 
-    if (composioTools.length > 0) {
-      body.tools = composioTools;
+    const allTools = [...composioTools, ...searchTools];
+    if (allTools.length > 0) {
+      body.tools = allTools;
       body.tool_choice = "auto";
     }
 
@@ -223,11 +240,107 @@ serve(async (req) => {
             const data = line.slice(6).trim();
             if (data === "[DONE]") {
               // If we have tool calls, execute them
-              if (toolCalls.length > 0 && COMPOSIO_API_KEY) {
+              if (toolCalls.length > 0) {
                 for (const tc of toolCalls) {
                   try {
                     const toolName = tc.function?.name;
                     const toolArgs = JSON.parse(tc.function?.arguments || "{}");
+
+                    // Handle WEB_SEARCH tool
+                    if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
+                      const searchQuery = toolArgs.query || "";
+                      const includeImages = toolArgs.include_images ?? false;
+                      
+                      const fetches: Promise<Response>[] = [
+                        fetch("https://google.serper.dev/search", {
+                          method: "POST",
+                          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+                          body: JSON.stringify({ q: searchQuery, num: 8 }),
+                        }),
+                      ];
+                      if (includeImages) {
+                        fetches.push(fetch("https://google.serper.dev/images", {
+                          method: "POST",
+                          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+                          body: JSON.stringify({ q: searchQuery, num: 4 }),
+                        }));
+                      }
+
+                      const responses = await Promise.all(fetches);
+                      const searchData = await responses[0].json();
+                      const imageData = includeImages && responses[1] ? await responses[1].json() : null;
+
+                      let context = "";
+                      const images: string[] = [];
+
+                      if (searchData.organic) {
+                        context = searchData.organic.map((r: any, i: number) =>
+                          `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`
+                        ).join("\n\n");
+                      }
+                      if (searchData.knowledgeGraph) {
+                        const kg = searchData.knowledgeGraph;
+                        context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
+                        if (kg.imageUrl) images.push(kg.imageUrl);
+                      }
+                      if (imageData?.images) {
+                        imageData.images.slice(0, 4).forEach((img: any) => {
+                          if (img.imageUrl) images.push(img.imageUrl);
+                        });
+                      }
+
+                      // Now make a second AI call with search results to generate the final answer
+                      const searchMessages = [
+                        ...body.messages,
+                        { role: "assistant", content: null, tool_calls: [{ id: "search_0", type: "function", function: { name: "WEB_SEARCH", arguments: tc.function.arguments } }] },
+                        { role: "tool", tool_call_id: "search_0", content: context || "No results found." },
+                      ];
+
+                      const secondBody: any = { model: modelId, messages: searchMessages, stream: true };
+
+                      const secondResp = await fetch(apiUrl, {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${apiKey}`,
+                          "Content-Type": "application/json",
+                          ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://egy.app", "X-Title": "egy" } : {}),
+                        },
+                        body: JSON.stringify(secondBody),
+                      });
+
+                      if (secondResp.ok && secondResp.body) {
+                        const secondReader = secondResp.body.getReader();
+                        let buf2 = "";
+                        while (true) {
+                          const { done: d2, value: v2 } = await secondReader.read();
+                          if (d2) break;
+                          buf2 += decoder.decode(v2, { stream: true });
+                          const lines2 = buf2.split("\n");
+                          buf2 = lines2.pop() || "";
+                          for (const l2 of lines2) {
+                            if (!l2.startsWith("data: ")) continue;
+                            const d = l2.slice(6).trim();
+                            if (d === "[DONE]") continue;
+                            try {
+                              const p = JSON.parse(d);
+                              if (p.choices?.[0]?.delta?.content) {
+                                controller.enqueue(encoder.encode(`data: ${d}\n\n`));
+                              }
+                            } catch {}
+                          }
+                        }
+                      }
+
+                      // Send images as a special event if any
+                      if (images.length > 0) {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "" } }], images })}\n\n`));
+                      }
+
+                      continue;
+                    }
+
+                    // Handle Composio tools
+                    if (!COMPOSIO_API_KEY) continue;
 
                     // Get connected account
                     const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
@@ -236,7 +349,6 @@ serve(async (req) => {
                     const connData = await connResp.json();
                     const accounts = connData.items || connData || [];
                     
-                    // Find matching connected account for the tool
                     const appName = toolName.split("_")[0].toLowerCase();
                     const account = accounts.find((a: any) => 
                       (a.appName || "").toLowerCase().includes(appName) || 
@@ -249,7 +361,6 @@ serve(async (req) => {
                       continue;
                     }
 
-                    // Execute the tool
                     const execResp = await fetch(`${COMPOSIO_BASE}/actions/${encodeURIComponent(toolName)}/execute`, {
                       method: "POST",
                       headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },

@@ -143,6 +143,7 @@ const ChatPage = () => {
     let assistantContent = "";
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    let searchImages: string[] = [];
 
     const updateAssistant = (chunk: string) => {
       setIsThinking(false);
@@ -156,31 +157,6 @@ const ChatPage = () => {
         return [...prev, { role: "assistant", content: assistantContent }];
       });
     };
-
-    // Search context
-    let searchContext = "";
-    let searchImages: string[] = [];
-    if (searchEnabled) {
-      try {
-        const searchQuery = input.replace(/@\w+\s*/g, "").trim();
-        setSearchStatus(`Searching for "${searchQuery}"`);
-        const searchResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-          },
-          body: JSON.stringify({ query: searchQuery }),
-          signal: controller.signal
-        });
-        if (searchResp.ok) {
-          const searchData = await searchResp.json();
-          searchContext = searchData.context || "";
-          searchImages = searchData.images || [];
-        }
-        setSearchStatus("Thinking");
-      } catch {/* continue without search */}
-    }
 
     // Build messages, including attached images as multimodal content
     const imageAttachments = attachedFiles.filter(f => f.type === "image");
@@ -202,21 +178,22 @@ const ChatPage = () => {
       allMessages.unshift({ role: "user" as const, content: `[System instruction]: ${MODE_PROMPTS[chatMode]}` });
     }
 
-    if (searchContext) {
-      allMessages.push({ role: "user" as const, content: `[Search results]:\n${searchContext}\n\nUse these results to answer accurately. Include source links when relevant.` });
+    if (searchEnabled) {
+      setSearchStatus("Agent is thinking...");
     }
 
     await streamChat({
       messages: allMessages,
       model: selectedModel.id,
+      searchEnabled,
       onDelta: updateAssistant,
+      onImages: (imgs) => { searchImages = imgs; },
       onDone: async () => {
         setIsLoading(false);
         setIsThinking(false);
         setSearchStatus("");
         if (convId && assistantContent) {
           await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
-          // Update the last assistant message to include search images
           if (searchImages.length > 0) {
             setMessages((prev) => {
               const last = prev[prev.length - 1];
