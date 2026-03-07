@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, KeyRound, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
@@ -35,74 +33,96 @@ const ChangePasswordPage = () => {
     }
   };
 
-  const strengthLabel = newPassword.length >= 16 ? "Very Strong" : newPassword.length >= 12 ? "Strong" : newPassword.length >= 8 ? "Medium" : "Weak";
-  const strengthColor = newPassword.length >= 16 ? "bg-green-500" : newPassword.length >= 12 ? "bg-yellow-500" : newPassword.length >= 8 ? "bg-orange-500" : "bg-red-500";
-  const strengthWidth = newPassword.length >= 16 ? "w-full" : newPassword.length >= 12 ? "w-3/4" : newPassword.length >= 8 ? "w-1/2" : "w-1/4";
+  const strength = newPassword.length >= 16 ? 4 : newPassword.length >= 12 ? 3 : newPassword.length >= 8 ? 2 : newPassword.length > 0 ? 1 : 0;
+  const strengthLabels = ["", "Weak", "Medium", "Strong", "Very Strong"];
+  const strengthColors = ["", "bg-red-500", "bg-amber-500", "bg-emerald-400", "bg-emerald-500"];
 
-  const Content = () => (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-md space-y-6">
-      <p className="text-sm text-muted-foreground">Create a strong password with at least 8 characters</p>
+  const content = (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-md mx-auto">
+      {/* Hero */}
+      <div className="flex flex-col items-center py-8">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <KeyRound className="w-7 h-7 text-primary" />
+        </div>
+        <p className="text-sm text-muted-foreground text-center max-w-xs">
+          Create a strong password with at least 8 characters
+        </p>
+      </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">New Password</label>
+      {/* Password fields */}
+      <div className="space-y-4 mb-4">
+        <div>
+          <label className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 block">New Password</label>
           <div className="relative">
-            <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <input
               type={showNew ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••"
-              className="pl-9 pr-10"
+              className="w-full px-4 py-3 rounded-xl bg-muted/50 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30 transition-all pr-10"
             />
-            <button onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
               {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Confirm Password</label>
+        <div>
+          <label className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 block">Confirm Password</label>
           <div className="relative">
-            <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <input
               type={showConfirm ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleChangePassword()}
               placeholder="••••••••"
-              className="pl-9 pr-10"
+              className="w-full px-4 py-3 rounded-xl bg-muted/50 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/30 transition-all pr-10"
             />
-            <button onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
               {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
+        {/* Strength meter */}
         {newPassword && (
-          <div className="space-y-1">
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${strengthColor} ${strengthWidth}`} />
+          <div className="space-y-1.5">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= strength ? strengthColors[strength] : "bg-muted"}`} />
+              ))}
             </div>
-            <p className="text-xs text-muted-foreground">{strengthLabel}</p>
+            <p className="text-xs text-muted-foreground">{strengthLabels[strength]}</p>
           </div>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Button onClick={handleChangePassword} disabled={loading} className="w-full rounded-xl">
-          {loading ? "Updating..." : "Update Password"}
-        </Button>
-        <Button onClick={() => navigate("/settings/profile")} variant="outline" className="w-full rounded-xl">
-          Cancel
-        </Button>
-      </div>
+      {/* Actions */}
+      <button
+        onClick={handleChangePassword}
+        disabled={loading || !newPassword || !confirmPassword}
+        className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mb-3"
+      >
+        {loading ? (
+          <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <ShieldCheck className="w-4 h-4" />
+        )}
+        {loading ? "Updating..." : "Update Password"}
+      </button>
+      <button
+        onClick={() => navigate("/settings/profile")}
+        className="w-full py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+      >
+        Cancel
+      </button>
     </motion.div>
   );
 
   if (!isMobile) {
     return (
       <DesktopSettingsLayout title="Change Password" subtitle="Update your account password">
-        <Content />
+        {content}
       </DesktopSettingsLayout>
     );
   }
@@ -116,9 +136,7 @@ const ChangePasswordPage = () => {
           </button>
           <h1 className="font-display text-lg font-bold text-foreground">Change Password</h1>
         </div>
-        <div className="px-4">
-          <Content />
-        </div>
+        <div className="px-4">{content}</div>
       </div>
     </div>
   );

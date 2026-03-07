@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, TriangleAlert, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
@@ -22,7 +20,6 @@ const DeleteAccountPage = () => {
     }
     setIsDeleting(true);
     try {
-      // Sign out the user (actual deletion requires a server-side function)
       toast.success("Account deletion requested. You will be signed out.");
       await supabase.auth.signOut();
       navigate("/auth");
@@ -33,61 +30,79 @@ const DeleteAccountPage = () => {
     }
   };
 
-  const Content = () => (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-md space-y-6">
-      <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-medium text-destructive">Warning</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            This action is permanent and cannot be undone. All your data will be deleted forever.
-          </p>
+  const deletedItems = [
+    "Profile Information",
+    "All Conversations",
+    "Generated Images & Videos",
+    "Credits & Subscription",
+  ];
+
+  const content = (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-md mx-auto">
+      {/* Warning hero */}
+      <div className="flex flex-col items-center py-8">
+        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+          <TriangleAlert className="w-7 h-7 text-destructive" />
         </div>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Delete your account?</h2>
+        <p className="text-sm text-muted-foreground text-center max-w-xs">
+          This action is permanent and cannot be undone
+        </p>
       </div>
 
-      <div>
-        <p className="text-sm font-medium text-foreground mb-3">What will be deleted</p>
-        <div className="space-y-2">
-          {["Profile Information", "All Conversations", "Generated Content", "Credits & Subscription"].map((item) => (
-            <div key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
-              {item}
+      {/* What will be deleted */}
+      <div className="mb-6">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">What will be deleted</p>
+        <div className="space-y-2.5">
+          {deletedItems.map((item) => (
+            <div key={item} className="flex items-center gap-3 py-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+              <p className="text-sm text-foreground">{item}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">
+      {/* Confirm input */}
+      <div className="mb-6">
+        <label className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 block">
           Type <span className="font-bold text-destructive">DELETE</span> to confirm
         </label>
-        <Input
+        <input
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleDeleteAccount()}
           placeholder="DELETE"
+          className="w-full px-4 py-3 rounded-xl bg-muted/50 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-destructive/30 transition-all"
         />
       </div>
 
-      <div className="space-y-2">
-        <Button
-          onClick={handleDeleteAccount}
-          disabled={isDeleting || confirmText !== "DELETE"}
-          variant="destructive"
-          className="w-full rounded-xl"
-        >
-          {isDeleting ? "Deleting..." : "Delete My Account"}
-        </Button>
-        <Button onClick={() => navigate("/settings/profile")} variant="outline" className="w-full rounded-xl">
-          Cancel
-        </Button>
-      </div>
+      {/* Actions */}
+      <button
+        onClick={handleDeleteAccount}
+        disabled={isDeleting || confirmText !== "DELETE"}
+        className="w-full py-3 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 mb-3"
+      >
+        {isDeleting ? (
+          <div className="w-4 h-4 border-2 border-destructive-foreground border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Trash2 className="w-4 h-4" />
+        )}
+        {isDeleting ? "Deleting..." : "Delete My Account"}
+      </button>
+      <button
+        onClick={() => navigate("/settings/profile")}
+        className="w-full py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+      >
+        Cancel
+      </button>
     </motion.div>
   );
 
   if (!isMobile) {
     return (
       <DesktopSettingsLayout title="Delete Account" subtitle="Permanently delete your account and data">
-        <Content />
+        {content}
       </DesktopSettingsLayout>
     );
   }
@@ -101,9 +116,7 @@ const DeleteAccountPage = () => {
           </button>
           <h1 className="font-display text-lg font-bold text-foreground">Delete Account</h1>
         </div>
-        <div className="px-4">
-          <Content />
-        </div>
+        <div className="px-4">{content}</div>
       </div>
     </div>
   );

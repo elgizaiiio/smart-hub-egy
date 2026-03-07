@@ -148,10 +148,10 @@ const ProfileSettingsPage = () => {
         </button>
       </div>
 
-      {/* Security */}
+      {/* Security + Upgrade + Delete — compact list */}
       <div>
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 px-1">Security</p>
-        <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1 px-1">Security</p>
+        <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
           <AtSign className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">Change Email</p>
@@ -159,7 +159,7 @@ const ProfileSettingsPage = () => {
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
-        <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
+        <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
           <KeyRound className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Change Password</p>
@@ -167,12 +167,8 @@ const ProfileSettingsPage = () => {
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
-      </div>
-
-      {/* Upgrade */}
-      {plan === "free" && (
-        <div className="mt-4">
-          <button onClick={() => navigate("/pricing")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
+        {plan === "free" && (
+          <button onClick={() => navigate("/pricing")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
             <Sparkles className="w-5 h-5 text-primary" />
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">Upgrade to Premium</p>
@@ -180,16 +176,14 @@ const ProfileSettingsPage = () => {
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
           </button>
-        </div>
-      )}
-
-      {/* Delete */}
-      <div className="mt-6 mb-8">
-        <button onClick={() => navigate("/settings/delete-account")} className="flex items-center gap-3 py-3 px-1 text-left">
+        )}
+        <button onClick={() => navigate("/settings/delete-account")} className="w-full flex items-center gap-3 py-3 px-1 text-left mt-2">
           <Trash2 className="w-5 h-5 text-destructive/60" />
           <p className="text-sm font-medium text-destructive/60">Delete Account</p>
         </button>
       </div>
+
+      <div className="mb-8" />
 
       <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
     </motion.div>
