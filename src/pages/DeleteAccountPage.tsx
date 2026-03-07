@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, TriangleAlert, Trash2 } from "lucide-react";
+import { ArrowLeft, OctagonAlert, UserX } from "lucide-react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
@@ -42,7 +42,7 @@ const DeleteAccountPage = () => {
       {/* Warning hero */}
       <div className="flex flex-col items-center py-8">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-          <TriangleAlert className="w-7 h-7 text-destructive" />
+          <OctagonAlert className="w-7 h-7 text-destructive" />
         </div>
         <h2 className="text-lg font-semibold text-foreground mb-1">Delete your account?</h2>
         <p className="text-sm text-muted-foreground text-center max-w-xs">
@@ -86,7 +86,7 @@ const DeleteAccountPage = () => {
         {isDeleting ? (
           <div className="w-4 h-4 border-2 border-destructive-foreground border-t-transparent rounded-full animate-spin" />
         ) : (
-          <Trash2 className="w-4 h-4" />
+          <UserX className="w-4 h-4" />
         )}
         {isDeleting ? "Deleting..." : "Delete My Account"}
       </button>

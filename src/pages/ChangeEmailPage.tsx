@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, AtSign, Send } from "lucide-react";
+import { ArrowLeft, MailPlus, SendHorizonal } from "lucide-react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
@@ -42,7 +42,7 @@ const ChangeEmailPage = () => {
       {/* Current email display */}
       <div className="flex flex-col items-center py-8">
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-          <AtSign className="w-7 h-7 text-primary" />
+          <MailPlus className="w-7 h-7 text-primary" />
         </div>
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Current Email</p>
         <p className="text-sm font-medium text-foreground">{currentEmail}</p>
@@ -74,7 +74,7 @@ const ChangeEmailPage = () => {
         {loading ? (
           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
         ) : (
-          <Send className="w-4 h-4" />
+          <SendHorizonal className="w-4 h-4" />
         )}
         {loading ? "Sending..." : "Update Email"}
       </button>

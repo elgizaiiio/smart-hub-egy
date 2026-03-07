@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, KeyRound, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { ArrowLeft, LockKeyhole, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
@@ -42,7 +42,7 @@ const ChangePasswordPage = () => {
       {/* Hero */}
       <div className="flex flex-col items-center py-8">
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-          <KeyRound className="w-7 h-7 text-primary" />
+          <LockKeyhole className="w-7 h-7 text-primary" />
         </div>
         <p className="text-sm text-muted-foreground text-center max-w-xs">
           Create a strong password with at least 8 characters
