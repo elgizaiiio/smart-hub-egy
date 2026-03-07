@@ -21,6 +21,8 @@ import ApisPage from "./pages/ApisPage";
 import StatusPage from "./pages/StatusPage";
 import AboutPage from "./pages/AboutPage";
 import LegalPage from "./pages/LegalPage";
+import LanguagePage from "./pages/LanguagePage";
+import IntegrationsPage from "./pages/IntegrationsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +57,8 @@ const App = () => {
             <Route path="/settings/billing" element={<BillingPage />} />
             <Route path="/settings/referrals" element={<ReferralsPage />} />
             <Route path="/settings/apis" element={<ApisPage />} />
+            <Route path="/settings/language" element={<LanguagePage />} />
+            <Route path="/settings/integrations" element={<IntegrationsPage />} />
             <Route path="/status" element={<StatusPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/terms" element={<LegalPage />} />

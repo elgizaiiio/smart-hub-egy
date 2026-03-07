@@ -35,8 +35,8 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, l
 
   if (role === "user") {
     return (
-      <div className="flex justify-end mb-4" dir="auto">
-        <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed" style={{ unicodeBidi: "plaintext" }}>
+      <div className="flex justify-end mb-4">
+        <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
           {content}
         </div>
       </div>
@@ -46,7 +46,6 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, l
   return (
     <div
       className="mb-6 relative"
-      dir="auto"
       onMouseDown={handleLongPressStart}
       onMouseUp={handleLongPressEnd}
       onMouseLeave={handleLongPressEnd}
@@ -57,7 +56,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, onLike, l
         <ThinkingLoader />
       ) : (
         <>
-          <div className="prose-chat text-foreground" style={{ unicodeBidi: "plaintext" }}>
+          <div className="prose-chat text-foreground">
             <ReactMarkdown>{content}</ReactMarkdown>
             {isStreaming && (
               <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />

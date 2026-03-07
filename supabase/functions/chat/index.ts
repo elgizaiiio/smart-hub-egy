@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model } = await req.json();
+    const { messages, model, mode } = await req.json();
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -34,6 +34,21 @@ serve(async (req) => {
       modelId = requestedModel;
     }
 
+    // System prompt based on mode
+    let systemPrompt: string;
+    if (mode === "files") {
+      systemPrompt = "You are Megsy, a document creation assistant. Create comprehensive, detailed, well-structured documents. When asked to generate HTML documents, make them professional, thorough, and visually polished with proper CSS styling. Include all relevant sections, details, and content. Never create abbreviated or shortened documents. Output complete, production-quality work.";
+    } else {
+      systemPrompt = `You are Megsy, a friendly AI assistant and the user's buddy. Rules:
+- Match the user's language and dialect exactly. If they write in Egyptian Arabic, respond in Egyptian Arabic. If English, respond in English.
+- Be concise for simple questions (1-3 sentences). Be detailed and thorough for complex questions, coding help, or when the user clearly needs depth.
+- Adapt to the user's mood - be supportive when they're frustrated, enthusiastic when they're excited, casual when they're relaxed.
+- Never use emoji in your responses. Not a single one.
+- Use markdown formatting when it helps: bold for emphasis, code blocks for code, bullet points for lists.
+- Be direct and honest. Don't over-explain simple things.
+- When the user greets you casually, respond casually and briefly.`;
+    }
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -44,10 +59,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: modelId,
         messages: [
-          {
-            role: "system",
-            content: "You are Megsy, a helpful, creative AI assistant. Respond in the same language and dialect as the user. Format your responses with clear markdown: use **bold** for emphasis, proper headings, bullet points, and code blocks when relevant. Be concise yet thorough."
-          },
+          { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,

@@ -8,13 +8,25 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@email.com");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
+        const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+        setUserName(displayName);
         setUserEmail(user.email || "");
+        // Load profile
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          if (profile.display_name) setUserName(profile.display_name);
+          setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
+        }
       }
     };
     loadUser();
@@ -31,14 +43,14 @@ const SettingsPage = () => {
     {
       title: "PREFERENCES",
       items: [
-        { icon: Globe, label: "Language", path: "" },
+        { icon: Globe, label: "Language", path: "/settings/language" },
         { icon: Paintbrush, label: "Customization", path: "/settings/customization" },
       ],
     },
     {
       title: "AGENT & INTEGRATIONS",
       items: [
-        { icon: Zap, label: "Agent Connections", path: "" },
+        { icon: Zap, label: "Integrations", path: "/settings/integrations" },
       ],
     },
     {
@@ -60,9 +72,9 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-[100dvh] bg-background overflow-y-auto">
       <div className="max-w-lg mx-auto">
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
           <button onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -73,11 +85,15 @@ const SettingsPage = () => {
           {/* User */}
           <button
             onClick={() => navigate("/settings/profile")}
-            className="w-full flex items-center gap-3 py-4 border-b border-border"
+            className="w-full flex items-center gap-3 py-3 border-b border-border"
           >
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-              {initial}
-            </div>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+                {initial}
+              </div>
+            )}
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-foreground">{userName}</p>
               <p className="text-xs text-muted-foreground">{userEmail}</p>
@@ -86,7 +102,7 @@ const SettingsPage = () => {
           </button>
 
           {sections.map((section) => (
-            <div key={section.title} className="py-3">
+            <div key={section.title} className="py-2">
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider py-2">{section.title}</p>
               {section.items.map((item) => {
                 const Icon = item.icon;
@@ -94,7 +110,7 @@ const SettingsPage = () => {
                   <button
                     key={item.label}
                     onClick={() => item.path && navigate(item.path)}
-                    className="w-full flex items-center gap-3 py-3.5 text-left hover:bg-accent/50 rounded-lg transition-colors -mx-2 px-2"
+                    className="w-full flex items-center gap-3 py-3 text-left hover:bg-accent/50 rounded-lg transition-colors -mx-2 px-2"
                   >
                     <Icon className="w-5 h-5 text-muted-foreground" />
                     <span className="flex-1 text-sm text-foreground">{item.label}</span>
@@ -108,7 +124,7 @@ const SettingsPage = () => {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 py-3.5 text-left hover:bg-destructive/10 rounded-lg transition-colors -mx-2 px-2 mt-2"
+            className="w-full flex items-center gap-3 py-3 text-left hover:bg-destructive/10 rounded-lg transition-colors -mx-2 px-2 mt-2 mb-6"
           >
             <LogOut className="w-5 h-5 text-destructive" />
             <span className="flex-1 text-sm text-destructive">Log out</span>

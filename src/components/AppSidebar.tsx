@@ -24,8 +24,9 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const navigate = useNavigate();
   const location = useLocation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [userName, setUserName] = useState("User");
+  const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
 
   useEffect(() => {
@@ -38,16 +39,19 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const loadUserInfo = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
+      const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+      setUserName(displayName);
       setUserEmail(user.email || "");
-      // Load credits from profiles table
+      // Load profile data
       const { data: profile } = await supabase
         .from("profiles")
-        .select("credits")
+        .select("credits, avatar_url, display_name")
         .eq("id", user.id)
         .single();
       if (profile) {
         setCredits(Number(profile.credits) || 0);
+        setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
+        if (profile.display_name) setUserName(profile.display_name);
       }
     }
   };
@@ -76,7 +80,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
     { path: "/files", label: "Files" },
   ];
 
-  const initial = userName.charAt(0).toUpperCase();
+  const initial = userName.charAt(0).toUpperCase() || "U";
 
   return (
     <AnimatePresence>
@@ -156,7 +160,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-medium text-sidebar-foreground">Credits</span>
-                  <span className="text-xs text-muted-foreground">{credits.toFixed(2)} MC</span>
+                  <span className="text-xs text-muted-foreground">{credits.toFixed(2)}</span>
                 </div>
                 <div className="w-full h-2 bg-sidebar-accent rounded-full overflow-hidden">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.min((credits / 100) * 100, 100)}%` }} />
@@ -169,9 +173,13 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                   onClick={() => { navigate("/settings"); onClose(); }}
                   className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-left hover:bg-sidebar-accent transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
-                    {initial}
-                  </div>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
+                      {initial}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-sidebar-foreground truncate">{userName}</p>
                     <p className="text-[11px] text-muted-foreground truncate">{userEmail || "Free Plan"}</p>

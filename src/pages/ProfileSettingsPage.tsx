@@ -3,7 +3,6 @@ import { ArrowLeft, Mail, Lock, Trash2, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 const ProfileSettingsPage = () => {
   const navigate = useNavigate();
@@ -11,6 +10,7 @@ const ProfileSettingsPage = () => {
   const [userEmail, setUserEmail] = useState("");
   const [credits, setCredits] = useState(0);
   const [plan, setPlan] = useState("free");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -20,12 +20,14 @@ const ProfileSettingsPage = () => {
         setUserEmail(user.email || "");
         const { data: profile } = await supabase
           .from("profiles")
-          .select("credits, plan")
+          .select("credits, plan, display_name, avatar_url")
           .eq("id", user.id)
           .single();
         if (profile) {
           setCredits(Number(profile.credits) || 0);
           setPlan(profile.plan || "free");
+          if (profile.display_name) setUserName(profile.display_name);
+          setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
         }
       }
     };
@@ -35,9 +37,9 @@ const ProfileSettingsPage = () => {
   const initial = (userName || "U").charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-[100dvh] bg-background overflow-y-auto">
       <div className="max-w-lg mx-auto">
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
           <button onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -46,21 +48,25 @@ const ProfileSettingsPage = () => {
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-4 space-y-6">
           {/* Avatar */}
-          <div className="flex flex-col items-center py-6">
-            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold mb-3">
-              {initial}
-            </div>
+          <div className="flex flex-col items-center py-4">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover mb-3" />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold mb-3">
+                {initial}
+              </div>
+            )}
             <p className="text-lg font-semibold text-foreground">{userName}</p>
             <p className="text-sm text-muted-foreground">{userEmail}</p>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary capitalize">{plan} Plan</span>
-              <span className="text-xs text-muted-foreground">{credits.toFixed(2)} MC</span>
+              <span className="text-xs text-muted-foreground">{credits.toFixed(2)} credits</span>
             </div>
           </div>
 
-          {/* Sections */}
+          {/* Sections - borderless */}
           <div className="space-y-2">
-            <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors text-left">
+            <button className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-accent/50 transition-colors text-left">
               <Mail className="w-5 h-5 text-muted-foreground" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">Change Email</p>
@@ -68,7 +74,7 @@ const ProfileSettingsPage = () => {
               </div>
             </button>
 
-            <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors text-left">
+            <button className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-accent/50 transition-colors text-left">
               <Lock className="w-5 h-5 text-muted-foreground" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">Change Password</p>
@@ -78,7 +84,7 @@ const ProfileSettingsPage = () => {
 
             <button
               onClick={() => navigate("/pricing")}
-              className="w-full flex items-center gap-3 p-4 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+              className="w-full flex items-center gap-3 p-4 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors text-left"
             >
               <Crown className="w-5 h-5 text-primary" />
               <div className="flex-1">
@@ -87,7 +93,7 @@ const ProfileSettingsPage = () => {
               </div>
             </button>
 
-            <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-destructive/30 hover:bg-destructive/5 transition-colors text-left mt-4">
+            <button className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-destructive/5 transition-colors text-left mt-4">
               <Trash2 className="w-5 h-5 text-destructive" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-destructive">Delete Account</p>
