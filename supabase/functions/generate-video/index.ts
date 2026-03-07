@@ -6,37 +6,39 @@ const corsHeaders = {
 };
 
 const VIDEO_MODEL_MAP: Record<string, { endpoint: string }> = {
-  "megsy-video": { endpoint: "fal-ai/minimax/video-01" },
-  "veo-3.1": { endpoint: "fal-ai/veo2" },
-  "veo-3.1-fast": { endpoint: "fal-ai/veo2" },
-  "kling-3-pro": { endpoint: "fal-ai/kling-video/v2/master" },
-  "openai-sora": { endpoint: "fal-ai/minimax/video-01" },
-  "pika-2.2": { endpoint: "fal-ai/minimax/video-01" },
-  "luma-dream": { endpoint: "fal-ai/luma-dream-machine" },
-  "seedance-pro": { endpoint: "fal-ai/minimax/video-01" },
-  "kling-o1": { endpoint: "fal-ai/kling-video/v2/master" },
-  "pixverse-5.5": { endpoint: "fal-ai/minimax/video-01" },
-  "wan-2.6": { endpoint: "fal-ai/wan/v2.1" },
-  // I2V models
-  "megsy-video-i2v": { endpoint: "fal-ai/minimax/video-01/image-to-video" },
-  "kling-3-pro-i2v": { endpoint: "fal-ai/kling-video/v2/master/image-to-video" },
-  "veo-3.1-fast-i2v": { endpoint: "fal-ai/veo2" },
-  "openai-sora-i2v": { endpoint: "fal-ai/minimax/video-01/image-to-video" },
-  "kling-o1-i2v": { endpoint: "fal-ai/kling-video/v2/master/image-to-video" },
-  "pixverse-5.5-i2v": { endpoint: "fal-ai/minimax/video-01/image-to-video" },
-  "wan-2.6-i2v": { endpoint: "fal-ai/wan/v2.1/image-to-video" },
-  "wan-flf": { endpoint: "fal-ai/wan/v2.1/first-last-frame" },
-  // Avatar/lip sync
-  "kling-avatar-pro": { endpoint: "fal-ai/kling-video/v2/master/image-to-video" },
-  "kling-avatar-std": { endpoint: "fal-ai/kling-video/v2/master/image-to-video" },
+  // Text-to-Video
+  "megsy-video": { endpoint: "fal-ai/minimax/hailuo-2.3/pro/text-to-video" },
+  "veo-3.1": { endpoint: "fal-ai/veo3.1" },
+  "veo-3.1-fast": { endpoint: "fal-ai/veo3.1/fast" },
+  "kling-3-pro": { endpoint: "fal-ai/kling-video/v3/pro/text-to-video" },
+  "kling-o1": { endpoint: "fal-ai/kling-video/o1/standard/text-to-video" },
+  "openai-sora": { endpoint: "fal-ai/sora-2/text-to-video" },
+  "pika-2.2": { endpoint: "fal-ai/pika/v2.2/text-to-video" },
+  "luma-dream": { endpoint: "fal-ai/luma-dream-machine/ray-2" },
+  "seedance-pro": { endpoint: "fal-ai/bytedance/seedance/v1.5/pro/text-to-video" },
+  "pixverse-5.5": { endpoint: "fal-ai/pixverse/v5.5/text-to-video" },
+  "wan-2.6": { endpoint: "fal-ai/wan/v2.6/text-to-video" },
+  // Image-to-Video
+  "megsy-video-i2v": { endpoint: "fal-ai/minimax/hailuo-2.3/pro/image-to-video" },
+  "kling-3-pro-i2v": { endpoint: "fal-ai/kling-video/v3/pro/image-to-video" },
+  "kling-o1-i2v": { endpoint: "fal-ai/kling-video/o1/standard/image-to-video" },
+  "veo-3.1-fast-i2v": { endpoint: "fal-ai/veo3.1/fast/image-to-video" },
+  "openai-sora-i2v": { endpoint: "fal-ai/sora-2/image-to-video" },
+  "pixverse-5.5-i2v": { endpoint: "fal-ai/pixverse/v5.5/image-to-video" },
+  "wan-2.6-i2v": { endpoint: "fal-ai/wan/v2.6/image-to-video" },
+  "wan-flf": { endpoint: "fal-ai/wan-flf2v" },
+  // Avatar
+  "kling-avatar-pro": { endpoint: "fal-ai/kling-video/ai-avatar/v2/pro" },
+  "kling-avatar-std": { endpoint: "fal-ai/kling-video/ai-avatar/v2/standard" },
   "sadtalker": { endpoint: "fal-ai/sadtalker" },
-  "sync-lipsync": { endpoint: "fal-ai/sync-lipsync" },
-  // Effects
-  "pika-magic": { endpoint: "fal-ai/minimax/video-01" },
-  "luma-modify": { endpoint: "fal-ai/luma-dream-machine" },
-  "pixverse-effects": { endpoint: "fal-ai/minimax/video-01" },
-  "perf-capture": { endpoint: "fal-ai/minimax/video-01" },
-  "dreamactor-v2": { endpoint: "fal-ai/minimax/video-01/image-to-video" },
+  "sync-lipsync": { endpoint: "fal-ai/sync-lipsync/v2" },
+  // Premium effects
+  "luma-modify": { endpoint: "fal-ai/luma-dream-machine/ray-2/modify" },
+  "pika-magic": { endpoint: "fal-ai/pika/v1.5/pikaffects" },
+  "pixverse-effects": { endpoint: "fal-ai/pixverse/v5.5/effects" },
+  // Motion
+  "dreamactor-v2": { endpoint: "fal-ai/bytedance/dreamactor/v2" },
+  "perf-capture": { endpoint: "fal-ai/live-portrait" },
 };
 
 serve(async (req) => {
@@ -52,6 +54,8 @@ serve(async (req) => {
 
     const input: Record<string, any> = { prompt: prompt || "A cinematic video" };
     if (image_url) input.image_url = image_url;
+
+    console.log(`Generating video with model: ${model}, endpoint: ${endpoint}`);
 
     // Submit to queue
     const submitResp = await fetch(`https://queue.fal.run/${endpoint}`, {
@@ -71,7 +75,7 @@ serve(async (req) => {
 
     const { request_id } = await submitResp.json();
 
-    // Poll for result (videos take longer)
+    // Poll for result
     let result = null;
     for (let i = 0; i < 120; i++) {
       await new Promise(r => setTimeout(r, 3000));
@@ -79,6 +83,12 @@ serve(async (req) => {
       const statusResp = await fetch(`https://queue.fal.run/${endpoint}/requests/${request_id}/status`, {
         headers: { Authorization: `Key ${FAL_API_KEY}` },
       });
+      
+      if (!statusResp.ok) {
+        console.error("fal status error:", statusResp.status, await statusResp.text());
+        continue;
+      }
+
       const status = await statusResp.json();
       
       if (status.status === "COMPLETED") {
@@ -96,11 +106,8 @@ serve(async (req) => {
     if (!result) throw new Error("Generation timed out");
 
     let videoUrl = "";
-    if (result.video?.url) {
-      videoUrl = result.video.url;
-    } else if (result.output?.url) {
-      videoUrl = result.output.url;
-    }
+    if (result.video?.url) videoUrl = result.video.url;
+    else if (result.output?.url) videoUrl = result.output.url;
 
     return new Response(JSON.stringify({ video_url: videoUrl, result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

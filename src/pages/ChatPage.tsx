@@ -182,7 +182,20 @@ const ChatPage = () => {
       } catch {/* continue without search */}
     }
 
-    const allMessages = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
+    // Build messages, including attached images as multimodal content
+    const imageAttachments = attachedFiles.filter(f => f.type === "image");
+    const allMessages = [...messages, userMsg].map((m) => {
+      if (m === userMsg && imageAttachments.length > 0) {
+        return {
+          role: m.role,
+          content: [
+            ...imageAttachments.map(f => ({ type: "image_url" as const, image_url: { url: f.data } })),
+            { type: "text" as const, text: m.content }
+          ]
+        };
+      }
+      return { role: m.role, content: m.content };
+    });
 
     // Add mode prompt
     if (chatMode !== "normal" && MODE_PROMPTS[chatMode]) {
