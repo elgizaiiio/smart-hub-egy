@@ -1,117 +1,88 @@
 
 
-# خطة: نظام البرمجة الحقيقي + الكريدت + التكاملات
+# Megsy Platform - Comprehensive Fixes & Improvements
 
-## ملخص المشروع
-تحويل صفحة البرمجة من شات بسيط إلى نظام بناء حقيقي باستخدام Fly.io Machines، مع نظام كريدت شامل وتكامل GitHub و Supabase حقيقي.
+## Issues to Fix
 
----
+### 1. Chat Page - "Unlock Pro" text change
+- Change "Unlock Megsy Pro" → "Unlock Pro" and remove the Sparkles icon from FancyButton
 
-## 1. نظام الكريدت الشامل
+### 2. Images/Videos/Files Pages - Chat-like conversation flow
+Currently these pages show a static generate → result flow. Need to convert them to a chat-like interface where:
+- User message appears as a bubble (like ChatPage)
+- ThinkingLoader animation shows while generating
+- Result appears inline in the conversation (image/video/file preview)
+- Users can continue the conversation to iterate
 
-**الوضع الحالي:** عمود `credits` موجود في جدول `profiles` لكن لا يتم خصم منه فعليا.
+### 3. Files Page - PDF as primary download format
+- Change primary download from HTML to PDF (using browser print-to-PDF or html2pdf approach)
+- Keep HTML preview but offer PDF download button prominently
 
-**التغييرات:**
-- إنشاء edge function `deduct-credits` تقبل `user_id` و `amount` و `action_type`
-- إنشاء جدول `credit_transactions` لتتبع كل عملية خصم (نوع العملية، المبلغ، التاريخ)
-- تعديل `generate-image/index.ts` لخصم الكريدت قبل التوليد حسب النموذج
-- تعديل `generate-video/index.ts` لخصم الكريدت قبل التوليد حسب النموذج  
-- تعديل صفحات الصور والفيديو لإرسال `user_id` والتحقق من الرصيد قبل الإرسال
-- الشات مجاني (لا خصم)
-- الكود يخصم كريدت عند البناء (build mode)
+### 4. Images/Videos - Model selector positioning
+Currently the ModelSelector dropdown uses `centerDropdown` which positions it as `fixed top-1/2 left-1/2` but it doesn't appear properly. Fix: ensure the dropdown renders as a modal overlay properly centered with a backdrop.
 
-**تسعير مقترح:**
-- صور: حسب النموذج (1-5 كريدت كما هو معرف في ModelSelector)
-- فيديو: حسب النموذج (محدد في ModelSelector)
-- كود/بناء: 5 كريدت لكل عملية build
+### 5. Social media icons - Replace emoji with real SVG icons
+Replace 📘 📸 💼 emojis in "Publish to" sections with actual Facebook, Instagram, LinkedIn SVG icons from lucide-react (or inline SVGs).
 
----
+### 6. RTL/BiDi text mixing fix
+Arabic text mixed with English breaks layout. Add `dir="auto"` to message containers and use CSS `unicode-bidi: plaintext` on prose content.
 
-## 2. نظام البرمجة الحقيقي (Fly.io Machines)
+### 7. Web Search - Force 2 images
+Update search edge function to request images from Serper API explicitly, and ensure at least 2 images are always returned. Update ChatMessage to always display images when search is enabled.
 
-**المكونات:**
-
-### Edge Function: `code-sandbox`
-- `action: "create"` - إنشاء Fly Machine جديدة بـ Node.js + Vite template
-- `action: "write-file"` - كتابة ملف في الـ machine
-- `action: "read-file"` - قراءة ملف
-- `action: "exec"` - تنفيذ أمر (npm install, npm run dev)
-- `action: "destroy"` - إيقاف وحذف الـ machine
-- تحتاج secret: `FLY_API_TOKEN`
-
-### تدفق العمل:
-1. المستخدم يكتب وصف المشروع → AI يخطط (plan mode - مجاني)
-2. المستخدم يوافق → يتم خصم كريدت
-3. إنشاء Fly Machine → AI يولد الكود ملف بملف
-4. كل ملف يُكتب فعليا في الـ machine عبر الـ edge function
-5. تشغيل `npm install && npm run dev` 
-6. عرض البريفيو في تاب Preview عبر iframe يشير لعنوان الـ machine
-
-### شجرة الملفات الخفية:
-- State داخلي في `CodeWorkspace` يتتبع قائمة الملفات (`files: Map<string, string>`)
-- لا يظهر للمستخدم أي واجهة لشجرة الملفات
-- AI يرى الملفات ويعدلها، المستخدم يرى فقط سجل الأعمال في الشات
-
-### تعديل `CodeWorkspace.tsx`:
-- إضافة state للـ sandbox (machine ID, preview URL, files map)
-- في build mode: إرسال prompts خاصة لـ AI تطلب منه إنتاج JSON لكل ملف
-- تحليل رد AI واستخراج الملفات وكتابتها في الـ machine
-- عرض "Writing src/App.tsx..." و "Installing dependencies..." في الشات
-- تاب Preview يعرض iframe بعنوان الـ machine
+### 8. Verify fal.ai model endpoints
+Review `generate-image` and `generate-video` edge functions to ensure all model IDs map correctly to real fal.ai endpoints.
 
 ---
 
-## 3. تكامل GitHub الحقيقي
+## Technical Plan
 
-**عند الضغط على زر GitHub في القائمة:**
-1. التحقق من اتصال GitHub عبر Composio
-2. إذا غير متصل → توجيه لـ `/settings/integrations`
-3. إذا متصل → إنشاء ريبو جديد باسم المشروع
-4. رفع كل الملفات من شجرة الملفات الخفية إلى الريبو
-5. عرض رابط الريبو في الشات
+### Files to Edit:
 
-**يستخدم Composio actions:**
-- `GITHUB_CREATE_REPO` (يحتاج إضافته للأدوات)
-- `GITHUB_CREATE_FILE` أو GitHub API مباشرة عبر Composio
+**`src/components/FancyButton.tsx`** - Remove Sparkles icon
 
----
+**`src/pages/ChatPage.tsx`** - Change "Unlock Megsy Pro" → "Unlock Pro"
 
-## 4. تكامل Supabase الحقيقي
+**`src/pages/ImagesPage.tsx`** - Convert to chat-like conversation flow with messages array, ThinkingLoader, and inline image results. Fix model selector to render as centered modal. Replace emoji social icons with real SVGs.
 
-**عند الضغط على زر Supabase:**
-1. التحقق من اتصال Supabase عبر Composio
-2. إذا غير متصل → توجيه لـ `/settings/integrations`
-3. إذا متصل → إضافة Supabase client إلى المشروع المبني
-4. AI يمكنه إنشاء جداول وكتابة كود يتعامل مع Supabase
+**`src/pages/VideosPage.tsx`** - Same chat-like conversion. Fix model selector. Replace emoji icons.
 
----
+**`src/pages/FilesPage.tsx`** - Convert to chat-like flow with ThinkingLoader. Add PDF download as primary format. Show file preview inline in conversation.
 
-## 5. جدول المشاريع
+**`src/components/ModelSelector.tsx`** - Fix centerDropdown positioning to use a proper modal overlay with backdrop
 
-- إنشاء جدول `projects` في Supabase (إذا غير موجود):
-  - `id`, `user_id`, `name`, `fly_machine_id`, `fly_app_name`, `preview_url`, `status`, `files_snapshot` (JSONB), `created_at`, `updated_at`
-- كل مشروع يُحفظ تلقائيا مع snapshot للملفات
-- يظهر في القائمة الجانبية تحت المشاريع
+**`src/components/ChatMessage.tsx`** - Add `dir="auto"` and `unicode-bidi: plaintext` for BiDi text support
 
----
+**`src/index.css`** - Add BiDi CSS rules for prose-chat
 
-## الترتيب التنفيذي
+**`supabase/functions/search/index.ts`** - Add `gl` and `type: "images"` params to ensure images are returned. Make a separate images API call to Serper.
 
-1. إنشاء جدول `credit_transactions` + function `deduct_credits`
-2. تعديل `generate-image` و `generate-video` لخصم الكريدت
-3. تعديل صفحات الصور والفيديو للتحقق من الرصيد
-4. طلب `FLY_API_TOKEN` secret من المستخدم
-5. إنشاء edge function `code-sandbox`
-6. إعادة بناء `CodeWorkspace.tsx` بالكامل مع شجرة الملفات الخفية والـ sandbox
-7. تكامل GitHub عبر Composio
-8. تكامل Supabase
+**`supabase/functions/generate-image/index.ts`** - Verify all fal.ai endpoint mappings are correct
 
----
+**`supabase/functions/generate-video/index.ts`** - Verify all fal.ai endpoint mappings are correct
 
-## ملاحظات تقنية
+### Key Architecture Changes:
 
-- **Fly.io API**: يحتاج `FLY_API_TOKEN` كـ Supabase secret
-- **Docker Image**: سنستخدم image جاهزة مثل `node:20-slim` مع Vite مثبت مسبقا
-- **الأمان**: كل عملية خصم كريدت تمر عبر edge function (server-side) لمنع التلاعب
-- **حفظ المشاريع**: الملفات تُحفظ كـ JSONB في Supabase لاسترجاعها لاحقا
+**Images/Videos/Files → Chat-like flow:**
+```text
+State: messages[] array (like ChatPage)
+User sends prompt → user message bubble appears
+→ ThinkingLoader shows
+→ API call (fal.ai for images/videos, Lovable AI for files)
+→ Result appears as assistant message with embedded media
+→ User can send follow-up messages
+```
+
+**ModelSelector center fix:**
+```text
+Current: fixed positioning but doesn't show properly
+Fix: Use a Dialog/modal pattern with proper z-index and backdrop
+```
+
+**Search images fix:**
+```text
+Current: Serper returns images but they may be empty
+Fix: Make separate /images API call to Serper
+Always attach at least 2 images to search results
+```
 
