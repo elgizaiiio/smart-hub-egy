@@ -1,88 +1,102 @@
 
 
-# Megsy Platform - Comprehensive Fixes & Improvements
+# Comprehensive Chat Page Fixes + Composio Integration
 
-## Issues to Fix
+## Issues Identified
 
-### 1. Chat Page - "Unlock Pro" text change
-- Change "Unlock Megsy Pro" → "Unlock Pro" and remove the Sparkles icon from FancyButton
+1. **ModelSelector button doesn't open**: The `fancy-btn` CSS has `overflow: hidden` which clips the portal content, but the real issue is likely z-index conflicts or the click being swallowed by inner elements (`.fold`, `.points_wrapper`). The button inside the plus menu works differently than standalone. Need to verify the click handler fires.
 
-### 2. Images/Videos/Files Pages - Chat-like conversation flow
-Currently these pages show a static generate → result flow. Need to convert them to a chat-like interface where:
-- User message appears as a bubble (like ChatPage)
-- ThinkingLoader animation shows while generating
-- Result appears inline in the conversation (image/video/file preview)
-- Users can continue the conversation to iterate
+2. **Images sent incorrectly to AI**: The multimodal content array construction looks correct structurally, but video content is sent as `image_url` type instead of proper handling. Also, large base64 images may exceed API limits.
 
-### 3. Files Page - PDF as primary download format
-- Change primary download from HTML to PDF (using browser print-to-PDF or html2pdf approach)
-- Keep HTML preview but offer PDF download button prominently
+3. **Arabic BiDi text issues**: Mixed Arabic/English text breaks layout. Need to add `dir="auto"` to message containers and prose-chat.
 
-### 4. Images/Videos - Model selector positioning
-Currently the ModelSelector dropdown uses `centerDropdown` which positions it as `fixed top-1/2 left-1/2` but it doesn't appear properly. Fix: ensure the dropdown renders as a modal overlay properly centered with a backdrop.
+4. **Mode badge positioning**: Currently in header, user wants it above the input box.
 
-### 5. Social media icons - Replace emoji with real SVG icons
-Replace 📘 📸 💼 emojis in "Publish to" sections with actual Facebook, Instagram, LinkedIn SVG icons from lucide-react (or inline SVGs).
+5. **System prompt needs follow-up question**: Update to ask engaging follow-up at end of responses.
 
-### 6. RTL/BiDi text mixing fix
-Arabic text mixed with English breaks layout. Add `dir="auto"` to message containers and use CSS `unicode-bidi: plaintext` on prose content.
-
-### 7. Web Search - Force 2 images
-Update search edge function to request images from Serper API explicitly, and ensure at least 2 images are always returned. Update ChatMessage to always display images when search is enabled.
-
-### 8. Verify fal.ai model endpoints
-Review `generate-image` and `generate-video` edge functions to ensure all model IDs map correctly to real fal.ai endpoints.
+6. **Composio integrations**: Need a real edge function that calls Composio's REST API to initiate connections and execute tools for 17 services.
 
 ---
 
-## Technical Plan
+## Plan
 
-### Files to Edit:
+### 1. Fix ModelSelector Button (ModelSelector.tsx + ChatPage.tsx)
 
-**`src/components/FancyButton.tsx`** - Remove Sparkles icon
+The `fancy-btn` with `overflow: hidden` clips internal content. But since we use `createPortal`, the dropdown renders outside. The real problem may be that inside the plus menu, the ModelSelector's button click is being intercepted by the plus menu's backdrop overlay (the `fixed inset-0 z-30` div). The ModelSelector button is at z-index lower than the backdrop.
 
-**`src/pages/ChatPage.tsx`** - Change "Unlock Megsy Pro" → "Unlock Pro"
+**Fix**: Change the ModelSelector in the plus menu to use a simple styled button instead of `fancy-btn`. Or ensure the ModelSelector's button has `z-index` above the backdrop. Actually, the plus menu itself is z-40, so the button inside should work. Let me check - the backdrop is `z-30`, the menu is `z-40`, the ModelSelector portal overlay is `z-[9998]`. This should work. The issue might be that the `fancy-btn` inner elements (`.inner` with `z-index: 2`, `.fold` with `z-index: 1`) intercept clicks. Add `pointer-events: none` to `.fold`.
 
-**`src/pages/ImagesPage.tsx`** - Convert to chat-like conversation flow with messages array, ThinkingLoader, and inline image results. Fix model selector to render as centered modal. Replace emoji social icons with real SVGs.
+**Simpler approach**: Replace `fancy-btn` in ModelSelector with a regular styled button to eliminate all CSS complexity issues.
 
-**`src/pages/VideosPage.tsx`** - Same chat-like conversion. Fix model selector. Replace emoji icons.
+### 2. Fix Image Sending to AI (ChatPage.tsx)
 
-**`src/pages/FilesPage.tsx`** - Convert to chat-like flow with ThinkingLoader. Add PDF download as primary format. Show file preview inline in conversation.
+- Images are already sent as base64 `image_url` parts - this should work with OpenRouter/Gemini
+- Ensure `attachedImages` from previous messages in history are also sent as multimodal content (currently only current message gets multimodal treatment)
+- Fix: when reconstructing `allMessages`, check if any message has `attachedImages` and build multimodal content for those too
 
-**`src/components/ModelSelector.tsx`** - Fix centerDropdown positioning to use a proper modal overlay with backdrop
+### 3. Add BiDi Support (ChatMessage.tsx, index.css)
 
-**`src/components/ChatMessage.tsx`** - Add `dir="auto"` and `unicode-bidi: plaintext` for BiDi text support
+- Add `dir="auto"` to the prose-chat div and user message div
+- Add CSS `unicode-bidi: plaintext` to prose-chat paragraphs
 
-**`src/index.css`** - Add BiDi CSS rules for prose-chat
+### 4. Move Mode Badge Above Input (ChatPage.tsx)
 
-**`supabase/functions/search/index.ts`** - Add `gl` and `type: "images"` params to ensure images are returned. Make a separate images API call to Serper.
+- Move the mode badge from the header to just above the input area
+- Show it as a small pill with blur effect
 
-**`supabase/functions/generate-image/index.ts`** - Verify all fal.ai endpoint mappings are correct
+### 5. Update System Prompt (chat/index.ts)
 
-**`supabase/functions/generate-video/index.ts`** - Verify all fal.ai endpoint mappings are correct
+- Add instruction: "At the end of each response, ask the user a brief, relevant follow-up question to keep the conversation going"
+- Redeploy edge function
 
-### Key Architecture Changes:
+### 6. Composio Integration (New Edge Function + IntegrationsPage.tsx)
 
-**Images/Videos/Files → Chat-like flow:**
-```text
-State: messages[] array (like ChatPage)
-User sends prompt → user message bubble appears
-→ ThinkingLoader shows
-→ API call (fal.ai for images/videos, Lovable AI for files)
-→ Result appears as assistant message with embedded media
-→ User can send follow-up messages
-```
+**Architecture**: Create `supabase/functions/composio/index.ts` that:
+- `POST /composio` with `{ action: "connect", app: "github", userId: "..." }` - initiates OAuth connection via Composio API
+- `POST /composio` with `{ action: "execute", tool: "GMAIL_SEND_EMAIL", args: {...}, connectedAccountId: "..." }` - executes a tool
+- `POST /composio` with `{ action: "list-connections", userId: "..." }` - lists user's connected accounts
 
-**ModelSelector center fix:**
-```text
-Current: fixed positioning but doesn't show properly
-Fix: Use a Dialog/modal pattern with proper z-index and backdrop
-```
+**Composio REST API endpoints used**:
+- `POST https://backend.composio.dev/api/v3/connectedAccounts` - initiate connection
+- `GET https://backend.composio.dev/api/v3/connectedAccounts?user_id=...` - list connections
+- `POST https://backend.composio.dev/api/v3/tools/execute/:tool_slug` - execute tool
 
-**Search images fix:**
-```text
-Current: Serper returns images but they may be empty
-Fix: Make separate /images API call to Serper
-Always attach at least 2 images to search results
-```
+**IntegrationsPage.tsx updates**:
+- Add all 17 services (GitHub, Google Drive, Google Calendar, Notion, Gmail, Slack, Supabase, HubSpot, YouTube, Outlook, Figma, Microsoft Teams, Zoom, Instagram, Facebook, LinkedIn, Discord)
+- Connect button calls the composio edge function to initiate OAuth
+- Show connection status (connected/disconnected) per service
+- Store connected account IDs in user's profile or a new table
+
+**Chat integration**: When the AI determines it needs to use a tool (e.g., send email), the system prompt will include available integrations. The edge function will handle tool execution.
+
+### 7. Chat Edge Function - Tool Calling Support (chat/index.ts)
+
+- Add Composio tools as OpenRouter/Gemini function calling tools
+- When model returns a tool call, execute via Composio API and return result
+- This enables "send email via Gmail", "create GitHub issue", etc. from chat
+
+---
+
+## Files to Change
+
+| File | Changes |
+|------|---------|
+| `src/components/ModelSelector.tsx` | Replace `fancy-btn` with simple button styling |
+| `src/pages/ChatPage.tsx` | Move mode badge above input, fix multimodal message history, improve file handling |
+| `src/components/ChatMessage.tsx` | Add `dir="auto"` for BiDi support |
+| `src/index.css` | Add BiDi CSS rules to prose-chat |
+| `supabase/functions/chat/index.ts` | Update system prompt with follow-up question instruction, add tool calling for Composio |
+| `supabase/functions/composio/index.ts` | **New** - Composio proxy for connections + tool execution |
+| `src/pages/IntegrationsPage.tsx` | Add all 17 services, real connect/disconnect with status |
+| `supabase/config.toml` | Add composio function config |
+
+## Implementation Order
+
+1. Fix ModelSelector button (quick CSS fix)
+2. Fix BiDi + mode badge positioning
+3. Fix image sending in chat history
+4. Update system prompt + redeploy chat function
+5. Create Composio edge function
+6. Update IntegrationsPage with real connections
+7. Wire Composio tools into chat for tool calling
 
