@@ -130,18 +130,10 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: M
       <button
         ref={buttonRef}
         onClick={() => setOpen(!open)}
-        className="fancy-btn !py-1.5 !px-4"
+        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
       >
-        <span className="fold" />
-        <div className="points_wrapper">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <span key={i} className="point" />
-          ))}
-        </div>
-        <span className="inner !text-xs !gap-2">
-          {selectedModel.name}
-          <ChevronDown className="w-3 h-3" />
-        </span>
+        {selectedModel.name}
+        <ChevronDown className="w-3 h-3" />
       </button>
 
       <AnimatePresence>
