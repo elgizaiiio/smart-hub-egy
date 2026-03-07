@@ -63,10 +63,10 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
   return (
     <div className="relative">
-      <div className="relative flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-xl px-3 py-2">
+      <div className="relative flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-2">
         <button
           onClick={onPlusClick}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground transition-colors"
         >
           <Plus className="w-5 h-5" />
         </button>
@@ -76,9 +76,9 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           value={value}
           onChange={(e) => { onChange(e.target.value); autoResize(); }}
           onKeyDown={handleKeyDown}
-          placeholder={displayedPlaceholder + (isTyping && !value ? "│" : "")}
+          placeholder={displayedPlaceholder}
           rows={1}
-          className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
+          className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50 py-1.5 max-h-32"
           style={{ minHeight: "32px" }}
         />
 
@@ -93,7 +93,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           <button
             onClick={onSend}
             disabled={!value.trim() || disabled}
-            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-muted-foreground/20 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
           >
             <ArrowUp className="w-4 h-4" />
           </button>

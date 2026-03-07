@@ -326,7 +326,7 @@
   height: 0.75rem; width: 0.75rem;
   display: inline-block;
   transition: all 0.5s ease-in-out;
-  background: radial-gradient(100% 75% at 55%, rgba(223,113,255,0.8) 0%, rgba(223,113,255,0) 100%);
+  background: linear-gradient(135deg, rgba(249,115,22,0.8), rgba(234,179,8,0.5));
   box-shadow: 0 0 3px rgba(0,0,0,0.3);
   border-bottom-left-radius: 0.4rem;
   border-top-right-radius: var(--round);
