@@ -13,12 +13,7 @@ interface AnimatedInputProps {
 }
 
 const DEFAULT_PLACEHOLDERS = [
-  "Ask me anything...",
-  "Generate a creative story...",
-  "Explain quantum computing...",
-  "Search the latest news...",
-  "Write a poem about space...",
-  "Help me with my code...",
+  "What's on your mind?",
 ];
 
 const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders }: AnimatedInputProps) => {
