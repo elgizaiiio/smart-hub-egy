@@ -421,3 +421,57 @@
 .animate-pulse-slow {
   animation: slow-pulse 3s ease-in-out infinite;
 }
+
+/* Pricing Cards - Animated Gradient Cards */
+.pricing-card-starter {
+  background: linear-gradient(135deg, #0f766e, #065f46, #064e3b);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  box-shadow: 0 8px 32px rgba(13, 148, 136, 0.15);
+}
+.pricing-card-pro {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9, #5b21b6);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.25);
+}
+.pricing-card-elite {
+  background: linear-gradient(135deg, #d97706, #b45309, #92400e);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  box-shadow: 0 8px 32px rgba(217, 119, 6, 0.2);
+}
+.pricing-card-starter:hover,
+.pricing-card-pro:hover,
+.pricing-card-elite:hover {
+  transform: translateY(-4px);
+  transition: transform 0.3s ease;
+}
+.pricing-points-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.pricing-point {
+  position: absolute;
+  bottom: -10px;
+  width: 2px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: pricing-float infinite ease-in-out;
+}
+@keyframes pricing-float {
+  0% { transform: translateY(0); opacity: 0.6; }
+  50% { opacity: 0.3; }
+  100% { transform: translateY(-120px); opacity: 0; }
+}
+.pricing-point:nth-child(1) { left: 8%; animation-duration: 3.5s; animation-delay: 0s; }
+.pricing-point:nth-child(2) { left: 18%; animation-duration: 4s; animation-delay: 0.8s; }
+.pricing-point:nth-child(3) { left: 28%; animation-duration: 3s; animation-delay: 0.3s; }
+.pricing-point:nth-child(4) { left: 38%; animation-duration: 3.8s; animation-delay: 1.2s; }
+.pricing-point:nth-child(5) { left: 48%; animation-duration: 4.2s; animation-delay: 0.5s; }
+.pricing-point:nth-child(6) { left: 58%; animation-duration: 3.2s; animation-delay: 1.8s; }
+.pricing-point:nth-child(7) { left: 68%; animation-duration: 3.6s; animation-delay: 0.1s; }
+.pricing-point:nth-child(8) { left: 78%; animation-duration: 4.5s; animation-delay: 1s; }
+.pricing-point:nth-child(9) { left: 85%; animation-duration: 3.3s; animation-delay: 0.7s; }
+.pricing-point:nth-child(10) { left: 92%; animation-duration: 3.9s; animation-delay: 1.5s; }
