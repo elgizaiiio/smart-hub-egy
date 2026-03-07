@@ -159,15 +159,15 @@ const ChatPage = () => {
     };
 
     // Build messages, including attached images as multimodal content
-    const imageAttachments = attachedFiles.filter(f => f.type === "image");
+    const imageAttachments = attachedFiles.filter((f) => f.type === "image");
     const allMessages = [...messages, userMsg].map((m) => {
       if (m === userMsg && imageAttachments.length > 0) {
         return {
           role: m.role,
           content: [
-            ...imageAttachments.map(f => ({ type: "image_url" as const, image_url: { url: f.data } })),
-            { type: "text" as const, text: m.content }
-          ]
+          ...imageAttachments.map((f) => ({ type: "image_url" as const, image_url: { url: f.data } })),
+          { type: "text" as const, text: m.content }]
+
         };
       }
       return { role: m.role, content: m.content };
@@ -187,7 +187,7 @@ const ChatPage = () => {
       model: selectedModel.id,
       searchEnabled,
       onDelta: updateAssistant,
-      onImages: (imgs) => { searchImages = imgs; },
+      onImages: (imgs) => {searchImages = imgs;},
       onDone: async () => {
         setIsLoading(false);
         setIsThinking(false);
@@ -276,7 +276,7 @@ const ChatPage = () => {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}>
               <FancyButton onClick={() => navigate("/pricing")}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+                
                 Unlock Pro
               </FancyButton>
             </motion.div>
