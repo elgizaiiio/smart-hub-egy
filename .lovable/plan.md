@@ -13,14 +13,15 @@
 - Updated ImagesPage and VideosPage to check credits before generation
 - Chat remains free
 
-### 2. Real Programming System (Fly.io)
-- Created `code-sandbox` edge function for Fly.io Machine management
-- Actions: create-app, create-machine, write-file, exec, status, destroy
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
 - Rebuilt `CodeWorkspace.tsx` with:
   - Plan → Build workflow with credit deduction (5 credits per build)
   - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Fly Machine
-  - Real preview via iframe pointing to Fly.io machine URL
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
   - Conversation persistence to Supabase
   - Project saving with files_snapshot
 
@@ -35,6 +36,6 @@
 - Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
 ### 5. Secrets Required
-- `FLY_API_TOKEN` ✅ Added
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
 - `COMPOSIO_API_KEY` ✅ Already exists
 - `FAL_API_KEY` ✅ Already exists
