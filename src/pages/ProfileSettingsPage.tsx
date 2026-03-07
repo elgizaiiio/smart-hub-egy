@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Mail, Lock, Trash2, Crown, Camera, ChevronRight, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, AtSign, KeyRound, Trash2, Sparkles, Camera, ChevronRight, Pencil, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,7 +152,7 @@ const ProfileSettingsPage = () => {
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 px-1">Security</p>
         <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
-          <Mail className="w-5 h-5 text-muted-foreground" />
+          <AtSign className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">Change Email</p>
             <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
@@ -160,7 +160,7 @@ const ProfileSettingsPage = () => {
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
         <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
-          <Lock className="w-5 h-5 text-muted-foreground" />
+          <KeyRound className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Change Password</p>
             <p className="text-xs text-muted-foreground">Update your password</p>
@@ -173,9 +173,7 @@ const ProfileSettingsPage = () => {
       {plan === "free" && (
         <div className="mt-4">
           <button onClick={() => navigate("/pricing")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-              <Crown className="w-5 h-5 text-primary" />
-            </div>
+            <Sparkles className="w-5 h-5 text-primary" />
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">Upgrade to Premium</p>
               <p className="text-xs text-muted-foreground">Get unlimited access to all features</p>
