@@ -25,6 +25,9 @@ import LegalPage from "./pages/LegalPage";
 import LanguagePage from "./pages/LanguagePage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import NotFound from "./pages/NotFound";
+import ChangeEmailPage from "./pages/ChangeEmailPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
+import DeleteAccountPage from "./pages/DeleteAccountPage";
 
 const queryClient = new QueryClient();
 
