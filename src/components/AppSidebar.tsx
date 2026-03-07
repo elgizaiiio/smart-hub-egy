@@ -29,7 +29,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
 
-  const showRecent = currentMode === "chat" || currentMode === "code";
+  const showRecent = currentMode === "chat" || currentMode === "code" || currentMode === "images";
 
   useEffect(() => {
     if (open) {
