@@ -124,6 +124,7 @@ const readFileAsDataUrl = (file: File): Promise<string> =>
 
 const ImagesPage = () => {
   const navigate = useNavigate();
+  const { userId, hasEnoughCredits, refreshCredits } = useCredits();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("images"));
   const [currentImage, setCurrentImage] = useState(0);

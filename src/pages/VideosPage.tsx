@@ -122,6 +122,7 @@ const readFileAsDataUrl = (file: File): Promise<string> =>
 
 const VideosPage = () => {
   const navigate = useNavigate();
+  const { userId, hasEnoughCredits, refreshCredits } = useCredits();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("videos"));
   const [currentVideo, setCurrentVideo] = useState(0);
