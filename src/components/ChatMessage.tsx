@@ -51,7 +51,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               ))}
             </div>
           )}
-          <div className="bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed" dir="auto" style={{ unicodeBidi: 'plaintext' }}>
+          <div className="bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
             {content}
           </div>
         </div>
