@@ -494,7 +494,7 @@ const VideosPage = () => {
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories />
+        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-violet-500 text-white hover:bg-violet-600" />
         <div className="w-9" />
       </div>
 
