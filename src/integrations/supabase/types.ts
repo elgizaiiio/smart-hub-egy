@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_transactions: {
+        Row: {
+          action_type: string
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       memories: {
         Row: {
           created_at: string
@@ -130,12 +157,70 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          files_snapshot: Json | null
+          fly_app_name: string | null
+          fly_machine_id: string | null
+          id: string
+          name: string
+          preview_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          files_snapshot?: Json | null
+          fly_app_name?: string | null
+          fly_machine_id?: string | null
+          id?: string
+          name?: string
+          preview_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          files_snapshot?: Json | null
+          fly_app_name?: string | null
+          fly_machine_id?: string | null
+          id?: string
+          name?: string
+          preview_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      deduct_credits: {
+        Args: {
+          p_action_type: string
+          p_amount: number
+          p_description?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
