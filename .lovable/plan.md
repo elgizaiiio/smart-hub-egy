@@ -1,88 +1,191 @@
 
 
-# Megsy Platform - Comprehensive Fixes & Improvements
+# Megsy Platform - Comprehensive Fixes Plan
 
-## Issues to Fix
-
-### 1. Chat Page - "Unlock Pro" text change
-- Change "Unlock Megsy Pro" → "Unlock Pro" and remove the Sparkles icon from FancyButton
-
-### 2. Images/Videos/Files Pages - Chat-like conversation flow
-Currently these pages show a static generate → result flow. Need to convert them to a chat-like interface where:
-- User message appears as a bubble (like ChatPage)
-- ThinkingLoader animation shows while generating
-- Result appears inline in the conversation (image/video/file preview)
-- Users can continue the conversation to iterate
-
-### 3. Files Page - PDF as primary download format
-- Change primary download from HTML to PDF (using browser print-to-PDF or html2pdf approach)
-- Keep HTML preview but offer PDF download button prominently
-
-### 4. Images/Videos - Model selector positioning
-Currently the ModelSelector dropdown uses `centerDropdown` which positions it as `fixed top-1/2 left-1/2` but it doesn't appear properly. Fix: ensure the dropdown renders as a modal overlay properly centered with a backdrop.
-
-### 5. Social media icons - Replace emoji with real SVG icons
-Replace 📘 📸 💼 emojis in "Publish to" sections with actual Facebook, Instagram, LinkedIn SVG icons from lucide-react (or inline SVGs).
-
-### 6. RTL/BiDi text mixing fix
-Arabic text mixed with English breaks layout. Add `dir="auto"` to message containers and use CSS `unicode-bidi: plaintext` on prose content.
-
-### 7. Web Search - Force 2 images
-Update search edge function to request images from Serper API explicitly, and ensure at least 2 images are always returned. Update ChatMessage to always display images when search is enabled.
-
-### 8. Verify fal.ai model endpoints
-Review `generate-image` and `generate-video` edge functions to ensure all model IDs map correctly to real fal.ai endpoints.
+## Overview
+This plan addresses ~15 distinct issues: sending files/images to AI, search image display, model selector positioning, pricing updates, authentication gating, sidebar filtering, white background, and user profile display.
 
 ---
 
-## Technical Plan
+## 1. Send Files/Images/Video to AI in Chat
 
-### Files to Edit:
+**Problem**: Attached files/images are stored in `attachedFiles` state but never included in the API messages sent to the chat edge function.
 
-**`src/components/FancyButton.tsx`** - Remove Sparkles icon
+**Fix**:
+- **`ChatPage.tsx`**: When `attachedFiles` contains images, construct multimodal message content (array with text + image_url parts) instead of plain string. Include base64 data in the message payload.
+- **`supabase/functions/chat/index.ts`**: Already passes messages through - multimodal content arrays are supported by both OpenRouter and Lovable AI gateway natively.
+- Add video file support: accept `video/*` in the image input, read as base64, send as content part. OpenRouter models like GPT-5 support video input.
+- The user message bubble should show attached image thumbnails above the text.
 
-**`src/pages/ChatPage.tsx`** - Change "Unlock Megsy Pro" → "Unlock Pro"
+**Files**: `ChatPage.tsx`, `ChatMessage.tsx`
 
-**`src/pages/ImagesPage.tsx`** - Convert to chat-like conversation flow with messages array, ThinkingLoader, and inline image results. Fix model selector to render as centered modal. Replace emoji social icons with real SVGs.
+---
 
-**`src/pages/VideosPage.tsx`** - Same chat-like conversion. Fix model selector. Replace emoji icons.
+## 2. Search Images Above Text (Not Below)
 
-**`src/pages/FilesPage.tsx`** - Convert to chat-like flow with ThinkingLoader. Add PDF download as primary format. Show file preview inline in conversation.
+**Problem**: In `ChatMessage.tsx`, images render after the text content (line 67-78). Also, search images are only added to messages in `onDone` callback, after streaming completes.
 
-**`src/components/ModelSelector.tsx`** - Fix centerDropdown positioning to use a proper modal overlay with backdrop
+**Fix**:
+- **`ChatMessage.tsx`**: Move the images block above the `prose-chat` text content block.
+- **`ChatPage.tsx`**: When search returns images, immediately set them on the assistant message state during streaming (not just in onDone). Add images to the initial assistant message creation.
 
-**`src/components/ChatMessage.tsx`** - Add `dir="auto"` and `unicode-bidi: plaintext` for BiDi text support
+**Files**: `ChatMessage.tsx`, `ChatPage.tsx`
 
-**`src/index.css`** - Add BiDi CSS rules for prose-chat
+---
 
-**`supabase/functions/search/index.ts`** - Add `gl` and `type: "images"` params to ensure images are returned. Make a separate images API call to Serper.
+## 3. White Background Default
 
-**`supabase/functions/generate-image/index.ts`** - Verify all fal.ai endpoint mappings are correct
+**Problem**: Default theme is dark (`data-theme: "dark"` in App.tsx line 34).
 
-**`supabase/functions/generate-video/index.ts`** - Verify all fal.ai endpoint mappings are correct
+**Fix**:
+- **`App.tsx`**: Change default theme from "dark" to "light".
+- **`index.css`**: The light theme variables already exist (`:root` / `[data-theme="light"]`). The background is `40 20% 98%` which is a warm off-white. Change to pure white: `0 0% 100%`.
 
-### Key Architecture Changes:
+**Files**: `App.tsx`, `index.css`
 
-**Images/Videos/Files → Chat-like flow:**
-```text
-State: messages[] array (like ChatPage)
-User sends prompt → user message bubble appears
-→ ThinkingLoader shows
-→ API call (fal.ai for images/videos, Lovable AI for files)
-→ Result appears as assistant message with embedded media
-→ User can send follow-up messages
-```
+---
 
-**ModelSelector center fix:**
-```text
-Current: fixed positioning but doesn't show properly
-Fix: Use a Dialog/modal pattern with proper z-index and backdrop
-```
+## 4. Photos Button Opens Gallery (3 Daily Limit)
 
-**Search images fix:**
-```text
-Current: Serper returns images but they may be empty
-Fix: Make separate /images API call to Serper
-Always attach at least 2 images to search results
-```
+**Problem**: Currently Photos button opens file picker same as Camera.
+
+**Fix**: Keep Photos as a file picker (`accept="image/*"` without `capture`) but remove `capture="environment"`. This opens the photo gallery on mobile. Add a daily limit check (3 images/day) using localStorage counter with date key.
+
+**Files**: `ChatPage.tsx`
+
+---
+
+## 5. Model Selector Dropdown Positioning Fix
+
+**Problem**: As shown in screenshots, the model dropdown in Images/Videos pages appears off-screen. The dropdown uses `absolute top-full mt-2 left-1/2 -translate-x-1/2` which goes outside viewport when the button is centered at the top.
+
+**Fix**:
+- **`ModelSelector.tsx`**: Use `fixed` positioning calculated from the button's `getBoundingClientRect()`. Position dropdown directly below the button, centered horizontally, clamped to viewport edges. Use a `useEffect` to compute position when `open` changes.
+
+**Files**: `ModelSelector.tsx`
+
+---
+
+## 6. Files Button Opens Device Files
+
+**Problem**: Files button in chat currently opens file picker with limited extensions.
+
+**Fix**: Already works correctly - the `fileInputRef` triggers a file picker. Just ensure the accept attribute includes common file types: `.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.docx,.xlsx`.
+
+**Files**: `ChatPage.tsx`
+
+---
+
+## 7. Mode Badge (Blur Badge for Learning/Shopping, Not Search)
+
+**Problem**: No visual indicator when modes are active.
+
+**Fix**: Add a small blurred badge/dot next to the input area or model name when Learning or Shopping mode is active. Do NOT show badge for search mode (search integrates silently).
+
+**Files**: `ChatPage.tsx`
+
+---
+
+## 8. Image Analysis (User Uploads Analyzed by AI)
+
+**Problem**: Images are attached but not sent to the AI model. Same as issue #1.
+
+**Fix**: Covered by #1 - send image data as multimodal content to the AI. The AI models (GPT-5, Gemini) all support image analysis natively.
+
+---
+
+## 9. Links Open in Popup
+
+**Problem**: AI response links open normally.
+
+**Fix**: In `ChatMessage.tsx`, customize ReactMarkdown's `a` component to open links via `window.open()` popup or a modal iframe preview.
+
+**Files**: `ChatMessage.tsx`
+
+---
+
+## 10. Require Auth Before Showing Content
+
+**Problem**: All routes are accessible without authentication.
+
+**Fix**:
+- **`App.tsx`**: Create a `ProtectedRoute` wrapper component that checks `supabase.auth.getUser()`. If no user, redirect to `/auth`. Wrap all routes except `/auth` and `/pricing` with it.
+
+**Files**: `App.tsx`
+
+---
+
+## 11. Update Pricing
+
+**Problem**: Current prices are $9.97/$29.97/$79.97 monthly.
+
+**Fix**: Update to:
+- Starter: $25/mo, $199/yr
+- Pro: $49/mo, $499/yr  
+- Business: $149/mo, $1299/yr
+
+**Files**: `PricingPage.tsx`
+
+---
+
+## 12. Remove Lovable AI Fallback, Use fal.ai Directly
+
+**Problem**: Previous fix added Lovable AI fallback because fal.ai balance was exhausted. Now fal.ai has balance again.
+
+**Fix**: Remove the fallback logic in `generate-image/index.ts`. Keep `generateWithFal` as the only path. Remove `generateWithLovableAI` function and the try/catch fallback wrapper. Keep `nano-banana-2` routing to Lovable AI since it's a Gemini model.
+
+**Files**: `supabase/functions/generate-image/index.ts`
+
+---
+
+## 13. Sidebar: Don't Show Conversations for Images/Videos/Files
+
+**Problem**: Sidebar shows recent conversations filtered by `currentMode`, but Images/Videos/Files pages pass their mode, showing those conversations.
+
+**Fix**: In `AppSidebar.tsx`, only show the "Recent" conversations section when `currentMode === "chat"` or `currentMode === "code"`. For images/videos/files, hide the recent section entirely.
+
+**Files**: `AppSidebar.tsx`
+
+---
+
+## 14. User Name/Avatar Not Showing Correctly
+
+**Problem**: Shows "User" and no real avatar. The `handle_new_user` trigger creates profiles with `display_name` from `full_name` metadata and `avatar_url` from metadata. But if user signs up with email/password, these metadata fields are empty.
+
+**Fix**:
+- The trigger already sets `display_name` to `split_part(email, '@', 1)` as fallback - this should work.
+- In `AppSidebar.tsx` and `SettingsPage.tsx`, the profile query looks correct. The issue is likely that the profile row exists but `display_name` is null for some users. Add better fallback: use email prefix if display_name is null.
+- Ensure `loadUserInfo` in sidebar correctly falls back through: `profile.display_name` -> `user.user_metadata.full_name` -> `user.email.split('@')[0]` -> "User"
+
+**Files**: `AppSidebar.tsx`, `SettingsPage.tsx`
+
+---
+
+## 15. Database Completeness
+
+The existing tables (conversations, messages, memories, profiles) cover the current functionality. No new tables needed for these fixes. The `profiles` table already has `avatar_url`, `display_name`, `credits`, and `plan` columns.
+
+---
+
+## Implementation Order
+
+1. **Quick UI fixes**: White background, pricing update, auth gating, sidebar filtering, mode badges
+2. **Core functionality**: Send files/images to AI (multimodal messages), search images above text
+3. **Model selector positioning**: Fixed positioning with viewport clamping
+4. **Edge functions**: Remove Lovable AI fallback from generate-image
+5. **Links popup, daily photo limit**
+
+## Files Summary
+
+| File | Changes |
+|------|---------|
+| `ChatPage.tsx` | Multimodal messages, photo gallery, mode badges, file accept types |
+| `ChatMessage.tsx` | Images above text, links in popup |
+| `ModelSelector.tsx` | Fixed dropdown positioning |
+| `AppSidebar.tsx` | Hide recent for non-chat modes, avatar fallback |
+| `SettingsPage.tsx` | Avatar fallback |
+| `App.tsx` | White default theme, ProtectedRoute wrapper |
+| `index.css` | White background for light theme |
+| `PricingPage.tsx` | New prices ($25/$49/$149 monthly, $199/$499/$1299 yearly) |
+| `generate-image/index.ts` | Remove Lovable AI fallback, use fal.ai directly |
 
