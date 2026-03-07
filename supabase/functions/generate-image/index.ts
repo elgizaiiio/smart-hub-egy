@@ -47,11 +47,58 @@ const MODEL_MAP: Record<string, { endpoint: string; inputKey?: string }> = {
   "ai-relighting": { endpoint: "fal-ai/ic-light" },
 };
 
+async function safeJson(resp: Response): Promise<any> {
+  const text = await resp.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Invalid JSON response (status ${resp.status}): ${text.slice(0, 200)}`);
+  }
+}
+
+// Upload base64 data URI to fal storage and return a URL
+async function uploadBase64ToFal(base64DataUrl: string, apiKey: string): Promise<string> {
+  // If it's already an http(s) URL, return as-is
+  if (base64DataUrl.startsWith("http://") || base64DataUrl.startsWith("https://")) {
+    return base64DataUrl;
+  }
+
+  // Extract mime type and base64 data
+  const match = base64DataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error("Invalid image data format");
+  }
+
+  const mimeType = match[1];
+  const base64Data = match[2];
+  const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+
+  // Upload to fal.ai storage
+  const uploadResp = await fetch("https://fal.run/fal-ai/workflows/upload", {
+    method: "PUT",
+    headers: {
+      Authorization: `Key ${apiKey}`,
+      "Content-Type": mimeType,
+    },
+    body: binaryData,
+  });
+
+  if (!uploadResp.ok) {
+    const errText = await uploadResp.text();
+    console.error("fal upload error:", uploadResp.status, errText);
+    throw new Error(`Failed to upload image to fal.ai: ${uploadResp.status}`);
+  }
+
+  const uploadResult = await safeJson(uploadResp);
+  return uploadResult.url || uploadResult.file_url || uploadResult.access_url;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, model, image_url } = await req.json();
+    const body = await safeJson(req);
+    const { prompt, model, image_url } = body;
     const FAL_API_KEY = Deno.env.get("FAL_API_KEY");
     if (!FAL_API_KEY) throw new Error("FAL_API_KEY not configured");
 
@@ -59,7 +106,17 @@ serve(async (req) => {
     const endpoint = modelConfig.endpoint;
 
     const input: Record<string, any> = { prompt: prompt || "A beautiful image" };
-    if (image_url) input.image_url = image_url;
+
+    // Handle image_url: convert base64 to hosted URL if needed
+    if (image_url) {
+      try {
+        const hostedUrl = await uploadBase64ToFal(image_url, FAL_API_KEY);
+        input.image_url = hostedUrl;
+      } catch (e) {
+        console.error("Image upload failed, skipping image:", e);
+        // Continue without image if upload fails
+      }
+    }
 
     const submitResp = await fetch(`https://queue.fal.run/${endpoint}`, {
       method: "POST",
@@ -73,10 +130,12 @@ serve(async (req) => {
     if (!submitResp.ok) {
       const errText = await submitResp.text();
       console.error("fal submit error:", submitResp.status, errText);
-      throw new Error(`fal.ai error: ${submitResp.status}`);
+      throw new Error(`fal.ai error: ${submitResp.status} - ${errText.slice(0, 200)}`);
     }
 
-    const { request_id } = await submitResp.json();
+    const submitData = await safeJson(submitResp);
+    const request_id = submitData.request_id;
+    if (!request_id) throw new Error("No request_id returned from fal.ai");
 
     let result = null;
     for (let i = 0; i < 60; i++) {
@@ -84,12 +143,23 @@ serve(async (req) => {
       const statusResp = await fetch(`https://queue.fal.run/${endpoint}/requests/${request_id}/status`, {
         headers: { Authorization: `Key ${FAL_API_KEY}` },
       });
-      const status = await statusResp.json();
+
+      if (!statusResp.ok) {
+        const errText = await statusResp.text();
+        console.error("fal status error:", statusResp.status, errText);
+        continue;
+      }
+
+      const status = await safeJson(statusResp);
       if (status.status === "COMPLETED") {
         const resultResp = await fetch(`https://queue.fal.run/${endpoint}/requests/${request_id}`, {
           headers: { Authorization: `Key ${FAL_API_KEY}` },
         });
-        result = await resultResp.json();
+        if (!resultResp.ok) {
+          const errText = await resultResp.text();
+          throw new Error(`fal result fetch error: ${resultResp.status} - ${errText.slice(0, 200)}`);
+        }
+        result = await safeJson(resultResp);
         break;
       }
       if (status.status === "FAILED") throw new Error("Image generation failed");
