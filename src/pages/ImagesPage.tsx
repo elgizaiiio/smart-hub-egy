@@ -4,6 +4,7 @@ import { Menu, Plus, Paperclip, ArrowUp, Download, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useCredits } from "@/hooks/useCredits";
 import AppSidebar from "@/components/AppSidebar";
 import ModelSelector, { getDefaultModel } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
@@ -123,6 +124,7 @@ const readFileAsDataUrl = (file: File): Promise<string> =>
 
 const ImagesPage = () => {
   const navigate = useNavigate();
+  const { userId, hasEnoughCredits, refreshCredits } = useCredits();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("images"));
   const [currentImage, setCurrentImage] = useState(0);
@@ -265,6 +267,12 @@ const ImagesPage = () => {
       return;
     }
 
+    const creditCost = Number(selectedModel.credits) || 1;
+    if (userId && !hasEnoughCredits(creditCost)) {
+      toast.error("رصيد الكريدت غير كافي. يرجى شحن حسابك.");
+      return;
+    }
+
     const userContent = trimmed || `Generate with ${selectedModel.name}`;
     const userMsg: ChatMsg = { role: "user", content: userContent };
     setMessages((prev) => [...prev, userMsg]);
@@ -286,6 +294,8 @@ const ImagesPage = () => {
           model: selectedModel.id,
           image_url: attachedImages[0]?.dataUrl,
           image_urls: attachedImages.map((img) => img.dataUrl),
+          user_id: userId,
+          credits_cost: Number(selectedModel.credits) || 1,
         }),
       });
 
@@ -312,6 +322,7 @@ const ImagesPage = () => {
 
     setIsGenerating(false);
     setAttachedImages([]);
+    refreshCredits();
 
     if (convId) {
       await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
