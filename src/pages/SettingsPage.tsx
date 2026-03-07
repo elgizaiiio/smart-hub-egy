@@ -62,19 +62,19 @@ const SettingsPage = () => {
   const quickActions = [
     { icon: Palette, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
     { icon: Languages, label: "Language", desc: "App language", path: "/settings/language" },
-    { icon: Plug, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
+    { icon: Unplug, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
   ];
 
   const menuItems = [
-    { icon: UserCircle, label: "Account", desc: "Profile & security", path: "/settings/profile" },
-    { icon: Wallet, label: "Billing", desc: "Credits & payments", path: "/settings/billing" },
-    { icon: Heart, label: "Referrals", desc: "Invite & earn 20%", path: "/settings/referrals" },
-    { icon: Terminal, label: "APIs", desc: "Developer access", path: "/settings/apis" },
+    { icon: CircleUserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
+    { icon: Wallet2, label: "Billing", desc: "Credits & payments", path: "/settings/billing" },
+    { icon: HeartHandshake, label: "Referrals", desc: "Invite & earn 20%", path: "/settings/referrals" },
+    { icon: Braces, label: "APIs", desc: "Developer access", path: "/settings/apis" },
   ];
 
   const supportItems = [
-    { icon: Wifi, label: "System Status", path: "/status" },
-    { icon: HelpCircle, label: "About Megsy", path: "/about" },
+    { icon: Signal, label: "System Status", path: "/status" },
+    { icon: BadgeInfo, label: "About Megsy", path: "/about" },
   ];
 
   return (

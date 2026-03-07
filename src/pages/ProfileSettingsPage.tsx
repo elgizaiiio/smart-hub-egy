@@ -173,9 +173,7 @@ const ProfileSettingsPage = () => {
       {plan === "free" && (
         <div className="mt-4">
           <button onClick={() => navigate("/pricing")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-              <Crown className="w-5 h-5 text-primary" />
-            </div>
+            <Sparkles className="w-5 h-5 text-primary" />
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">Upgrade to Premium</p>
               <p className="text-xs text-muted-foreground">Get unlimited access to all features</p>
