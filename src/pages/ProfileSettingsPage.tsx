@@ -1,24 +1,31 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Mail, Lock, Trash2, Crown } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowLeft, Mail, Lock, Trash2, Crown, Camera, ChevronRight, Pencil, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
+import { toast } from "sonner";
 
 const ProfileSettingsPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [credits, setCredits] = useState(0);
   const [plan, setPlan] = useState("free");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
 
   useEffect(() => {
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setUserId(user.id);
         setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "");
         setUserEmail(user.email || "");
         const { data: profile } = await supabase
@@ -39,60 +46,179 @@ const ProfileSettingsPage = () => {
 
   const initial = (userName || "U").charAt(0).toUpperCase();
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image too large. Max 5MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const filePath = `${userId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      setAvatarUrl(publicUrl);
+
+      await supabase.from("profiles").update({
+        avatar_url: publicUrl,
+        updated_at: new Date().toISOString(),
+      }).eq("id", userId);
+
+      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+      toast.success("Profile photo updated");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload photo");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!nameInput.trim() || !userId) return;
+    try {
+      await supabase.from("profiles").update({
+        display_name: nameInput.trim(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", userId);
+      await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } });
+      setUserName(nameInput.trim());
+      setEditingName(false);
+      toast.success("Name updated");
+    } catch {
+      toast.error("Failed to update name");
+    }
+  };
+
+  const startEditName = () => {
+    setNameInput(userName);
+    setEditingName(true);
+  };
+
   const ProfileContent = () => (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-lg">
-      <div className="flex flex-col items-center py-4">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover mb-3" />
-        ) : (
-          <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold mb-3">
-            {initial}
-          </div>
-        )}
-        <p className="text-lg font-semibold text-foreground">{userName}</p>
-        <p className="text-sm text-muted-foreground">{userEmail}</p>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary capitalize">{plan} Plan</span>
-          <span className="text-xs text-muted-foreground">{credits.toFixed(2)} credits</span>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg mx-auto">
+      {/* Avatar + Info */}
+      <div className="flex flex-col items-center py-6">
+        <div className="relative mb-3">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="w-24 h-24 rounded-full object-cover" />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-3xl font-bold">
+              {initial}
+            </div>
+          )}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+          {uploading && (
+            <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
         </div>
+
+        {/* Name - editable */}
+        {editingName ? (
+          <div className="flex items-center gap-2 mb-1">
+            <input
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+              autoFocus
+              className="text-lg font-semibold text-foreground bg-transparent border-b border-primary outline-none text-center w-48"
+            />
+            <button onClick={handleSaveName} className="p-1 text-primary hover:bg-primary/10 rounded-lg">
+              <Check className="w-4 h-4" />
+            </button>
+            <button onClick={() => setEditingName(false)} className="p-1 text-muted-foreground hover:bg-muted rounded-lg">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <button onClick={startEditName} className="flex items-center gap-1.5 mb-1 group">
+            <p className="text-lg font-semibold text-foreground">{userName || "Set your name"}</p>
+            <Pencil className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        )}
+
+        <p className="text-sm text-muted-foreground">{userEmail}</p>
+        <span className="text-xs text-muted-foreground mt-1.5 capitalize">{plan === "free" ? "Free Plan" : `${plan} Plan`}</span>
       </div>
 
-      <div className="space-y-2">
-        <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-accent/50 transition-colors text-left">
+      {/* Credits & Plan Stats */}
+      <div className="flex items-center mx-4 mb-6">
+        <button onClick={() => navigate("/settings/billing")} className="flex-1 py-3 text-left">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Credits</p>
+          <p className="text-xl font-bold text-foreground">{Math.floor(credits)}</p>
+        </button>
+        <div className="w-px h-10 bg-border" />
+        <button onClick={() => navigate("/pricing")} className="flex-1 py-3 text-right">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Plan</p>
+          <p className="text-xl font-bold text-foreground capitalize">{plan === "free" ? "Free" : plan}</p>
+        </button>
+      </div>
+
+      {/* Security */}
+      <div className="mx-4">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 px-1">Security</p>
+
+        <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-4 px-1 transition-colors text-left">
           <Mail className="w-5 h-5 text-muted-foreground" />
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">Change Email</p>
-            <p className="text-xs text-muted-foreground">{userEmail}</p>
+            <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
           </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
 
-        <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-accent/50 transition-colors text-left">
+        <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-4 px-1 transition-colors text-left">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Change Password</p>
             <p className="text-xs text-muted-foreground">Update your password</p>
           </div>
-        </button>
-
-        <button
-          onClick={() => navigate("/pricing")}
-          className="w-full flex items-center gap-3 p-4 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors text-left"
-        >
-          <Crown className="w-5 h-5 text-primary" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-foreground">Upgrade to Premium</p>
-            <p className="text-xs text-muted-foreground">Get more credits and features</p>
-          </div>
-        </button>
-
-        <button onClick={() => navigate("/settings/delete-account")} className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-destructive/5 transition-colors text-left mt-4">
-          <Trash2 className="w-5 h-5 text-destructive" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-destructive">Delete Account</p>
-            <p className="text-xs text-muted-foreground">Permanently delete your account</p>
-          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
       </div>
+
+      {/* Upgrade */}
+      {plan === "free" && (
+        <div className="mx-4 mt-4">
+          <button
+            onClick={() => navigate("/pricing")}
+            className="w-full flex items-center gap-3 py-4 px-1 transition-colors text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <Crown className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Upgrade to Premium</p>
+              <p className="text-xs text-muted-foreground">Get unlimited access to all features</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+          </button>
+        </div>
+      )}
+
+      {/* Delete Account */}
+      <div className="mx-4 mt-6 mb-8">
+        <button onClick={() => navigate("/settings/delete-account")} className="flex items-center gap-3 py-3 px-1 transition-colors text-left">
+          <Trash2 className="w-5 h-5 text-destructive/60" />
+          <p className="text-sm font-medium text-destructive/60">Delete Account</p>
+        </button>
+      </div>
+
+      <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
     </motion.div>
   );
 
@@ -111,11 +237,9 @@ const ProfileSettingsPage = () => {
           <button onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="font-display text-lg font-bold text-foreground">Profile</h1>
+          <h1 className="font-display text-lg font-bold text-foreground">Account</h1>
         </div>
-        <div className="px-4">
-          <ProfileContent />
-        </div>
+        <ProfileContent />
       </div>
     </div>
   );
