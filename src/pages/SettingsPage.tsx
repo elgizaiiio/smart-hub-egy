@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ChevronRight, Languages, Palette, Unplug, CircleUserRound, Wallet2,
-  HeartHandshake, Braces, Signal, BadgeInfo, LogOut, Crown,
+  ArrowLeft, ChevronRight, Globe2, Brush, Cable, UserRound, CreditCard,
+  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
