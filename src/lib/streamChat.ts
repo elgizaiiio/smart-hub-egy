@@ -6,16 +6,20 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 export async function streamChat({
   messages,
   model,
+  searchEnabled,
   onDelta,
   onDone,
   onError,
+  onImages,
   signal,
 }: {
   messages: Msg[];
   model?: string;
+  searchEnabled?: boolean;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError?: (error: string) => void;
+  onImages?: (images: string[]) => void;
   signal?: AbortSignal;
 }) {
   try {
@@ -25,7 +29,7 @@ export async function streamChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, model }),
+      body: JSON.stringify({ messages, model, searchEnabled }),
       signal,
     });
 
