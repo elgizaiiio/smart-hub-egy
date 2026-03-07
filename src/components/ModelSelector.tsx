@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import { createPortal } from "react-dom";
 
 export interface ModelOption {
   id: string;
@@ -21,14 +22,6 @@ const CHAT_MODELS: ModelOption[] = [
   { id: "deepseek/deepseek-r1", name: "DeepSeek R1", credits: "" },
 ];
 
-// fal.ai real pricing with 100%+ markup. 1 credit = $0.10
-// Flux Pro 1.1: $0.05 → 2 credits ($0.20) = 300%
-// Flux Kontext Pro: $0.04 → 2 credits = 400%
-// Seedream: $0.03 → 1 credit = 233%
-// Recraft v3: $0.05 → 2 credits = 300%
-// HiDream: $0.07 → 2 credits = 186%
-// Ideogram 3: $0.08 → 3 credits = 275%
-// Nano Banana (gemini flash image): ~$0.02 → 1 credit = 400%
 export const IMAGE_MODELS: ModelOption[] = [
   { id: "megsy-v1-img", name: "Megsy v1", credits: "2", category: "model" },
   { id: "gpt-image", name: "GPT Image 1.5", credits: "3", category: "model" },
@@ -64,7 +57,6 @@ export const IMAGE_MODELS: ModelOption[] = [
   { id: "ai-relighting", name: "AI Relighting", credits: "2", category: "tool", requiresImage: true },
 ];
 
-// Video pricing: Wan $0.05/5s → 2 credits, Kling Pro $0.07/s → 10 credits, Minimax $0.08 → 3 credits, Luma $0.10 → 4 credits
 export const VIDEO_MODELS: ModelOption[] = [
   { id: "megsy-video", name: "Megsy Video", credits: "3", category: "model" },
   { id: "kling-3-pro", name: "Kling 3.0 Pro", credits: "10", category: "model" },
@@ -110,12 +102,28 @@ interface ModelSelectorProps {
 const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: ModelSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"model" | "tool">("model");
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 280 });
   const models = MODELS[mode] || CHAT_MODELS;
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const filteredModels = showCategories
     ? models.filter(m => (m.category || "model") === tab)
     : models;
+
+  const updatePosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const dropdownWidth = 280;
+    let left = rect.left + rect.width / 2 - dropdownWidth / 2;
+    // Clamp to viewport
+    if (left < 8) left = 8;
+    if (left + dropdownWidth > window.innerWidth - 8) left = window.innerWidth - 8 - dropdownWidth;
+    setDropdownPos({ top: rect.bottom + 8, left, width: dropdownWidth });
+  }, []);
+
+  useEffect(() => {
+    if (open) updatePosition();
+  }, [open, updatePosition]);
 
   return (
     <div className="relative">
@@ -137,14 +145,15 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: M
       </button>
 
       <AnimatePresence>
-        {open && (
+        {open && createPortal(
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 glass-panel p-1.5 w-[280px] max-h-[380px] overflow-y-auto"
+              className="fixed z-[9999] glass-panel p-1.5 max-h-[380px] overflow-y-auto"
+              style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
             >
               {showCategories && (
                 <div className="flex gap-1 p-1 mb-1">
@@ -180,7 +189,8 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: M
                 </button>
               ))}
             </motion.div>
-          </>
+          </>,
+          document.body
         )}
       </AnimatePresence>
     </div>

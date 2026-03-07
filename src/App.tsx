@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
 import ImagesPage from "./pages/ImagesPage";
@@ -27,11 +28,32 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setAuthenticated(!!session);
+      setLoading(false);
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthenticated(!!session);
+      setLoading(false);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) return <div className="h-screen bg-background" />;
+  if (!authenticated) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+};
+
 const App = () => {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
-    else document.documentElement.setAttribute("data-theme", "dark");
+    else document.documentElement.setAttribute("data-theme", "light");
     const savedAccent = localStorage.getItem("accent");
     if (savedAccent) document.documentElement.style.setProperty("--primary", savedAccent);
   }, []);
@@ -43,26 +65,26 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<ChatPage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/images" element={<ImagesPage />} />
-            <Route path="/videos" element={<VideosPage />} />
-            <Route path="/files" element={<FilesPage />} />
-            <Route path="/code" element={<ProgrammingPage />} />
-            <Route path="/code/workspace" element={<CodeWorkspace />} />
             <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/settings/customization" element={<CustomizationPage />} />
-            <Route path="/settings/profile" element={<ProfileSettingsPage />} />
-            <Route path="/settings/billing" element={<BillingPage />} />
-            <Route path="/settings/referrals" element={<ReferralsPage />} />
-            <Route path="/settings/apis" element={<ApisPage />} />
-            <Route path="/settings/language" element={<LanguagePage />} />
-            <Route path="/settings/integrations" element={<IntegrationsPage />} />
-            <Route path="/status" element={<StatusPage />} />
-            <Route path="/about" element={<AboutPage />} />
             <Route path="/terms" element={<LegalPage />} />
             <Route path="/privacy" element={<LegalPage />} />
+            <Route path="/" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route path="/images" element={<ProtectedRoute><ImagesPage /></ProtectedRoute>} />
+            <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
+            <Route path="/files" element={<ProtectedRoute><FilesPage /></ProtectedRoute>} />
+            <Route path="/code" element={<ProtectedRoute><ProgrammingPage /></ProtectedRoute>} />
+            <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/settings/customization" element={<ProtectedRoute><CustomizationPage /></ProtectedRoute>} />
+            <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
+            <Route path="/settings/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
+            <Route path="/settings/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
+            <Route path="/settings/apis" element={<ProtectedRoute><ApisPage /></ProtectedRoute>} />
+            <Route path="/settings/language" element={<ProtectedRoute><LanguagePage /></ProtectedRoute>} />
+            <Route path="/settings/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
+            <Route path="/status" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
+            <Route path="/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -29,9 +29,11 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
 
+  const showRecent = currentMode === "chat" || currentMode === "code";
+
   useEffect(() => {
     if (open) {
-      loadConversations();
+      if (showRecent) loadConversations();
       loadUserInfo();
     }
   }, [open, currentMode]);
@@ -39,10 +41,9 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const loadUserInfo = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-      setUserName(displayName);
+      const emailPrefix = user.email?.split("@")[0] || "User";
+      setUserName(user.user_metadata?.full_name || emailPrefix);
       setUserEmail(user.email || "");
-      // Load profile data
       const { data: profile } = await supabase
         .from("profiles")
         .select("credits, avatar_url, display_name")
@@ -57,12 +58,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   };
 
   const loadConversations = async () => {
-    const modeFilter = currentMode === "chat" ? "chat" :
-      currentMode === "images" ? "images" :
-      currentMode === "videos" ? "videos" :
-      currentMode === "files" ? "files" :
-      currentMode === "code" ? "code" : "chat";
-
+    const modeFilter = currentMode === "code" ? "code" : "chat";
     const { data } = await supabase
       .from("conversations")
       .select("id, title, updated_at, mode")
@@ -100,7 +96,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-sidebar flex flex-col border-r border-sidebar-border"
           >
-            {/* New Chat */}
             <div className="p-3">
               <button
                 onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
@@ -110,7 +105,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               </button>
             </div>
 
-            {/* Services */}
             <div className="px-3">
               <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Services</p>
               <div className="space-y-0.5">
@@ -130,33 +124,35 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               </div>
             </div>
 
-            {/* Recent */}
-            <div className="flex-1 overflow-y-auto px-3 py-2">
-              <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Recent</p>
-              {conversations.length === 0 ? (
-                <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
-              ) : (
-                <div className="space-y-0.5">
-                  {conversations.map((conv) => (
-                    <button
-                      key={conv.id}
-                      onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
-                        activeConversationId === conv.id
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent"
-                      }`}
-                    >
-                      {conv.title}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Recent - only for chat/code modes */}
+            {showRecent && (
+              <div className="flex-1 overflow-y-auto px-3 py-2">
+                <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Recent</p>
+                {conversations.length === 0 ? (
+                  <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
+                ) : (
+                  <div className="space-y-0.5">
+                    {conversations.map((conv) => (
+                      <button
+                        key={conv.id}
+                        onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
+                          activeConversationId === conv.id
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent"
+                        }`}
+                      >
+                        {conv.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Bottom */}
+            {!showRecent && <div className="flex-1" />}
+
             <div className="p-3 space-y-2 border-t border-sidebar-border">
-              {/* Credits bar */}
               <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-medium text-sidebar-foreground">Credits</span>
@@ -167,7 +163,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                 </div>
               </div>
 
-              {/* User */}
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => { navigate("/settings"); onClose(); }}
