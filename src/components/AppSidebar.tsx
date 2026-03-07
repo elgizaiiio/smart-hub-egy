@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CreditCard, MessageSquare, ImageIcon, Video, Code2, FileText } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -20,13 +20,51 @@ interface AppSidebarProps {
   currentMode?: string;
 }
 
-const serviceIcons: Record<string, React.ElementType> = {
-  "/": MessageSquare,
-  "/images": ImageIcon,
-  "/videos": Video,
-  "/code": Code2,
-  "/files": FileText,
-};
+// Real brand-style SVG icons for each service
+const ChatIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+
+const ImagesIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
+    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+    <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const VideosIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
+    <rect x="2" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
+    <path d="M22 8l-4 2.5v3L22 16V8z" fill="currentColor"/>
+  </svg>
+);
+
+const CodeIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="16 18 22 12 16 6"/>
+    <polyline points="8 6 2 12 8 18"/>
+  </svg>
+);
+
+const FilesIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+  </svg>
+);
+
+const serviceItems = [
+  { path: "/", label: "Chat", Icon: ChatIcon },
+  { path: "/images", label: "Images", Icon: ImagesIcon },
+  { path: "/videos", label: "Videos", Icon: VideosIcon },
+  { path: "/code", label: "Programming", Icon: CodeIcon },
+  { path: "/files", label: "Files", Icon: FilesIcon },
+];
 
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
   const navigate = useNavigate();
@@ -76,14 +114,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
     if (data) setConversations(data);
   };
 
-  const services = [
-    { path: "/", label: "Chat" },
-    { path: "/images", label: "Images" },
-    { path: "/videos", label: "Videos" },
-    { path: "/code", label: "Programming" },
-    { path: "/files", label: "Files" },
-  ];
-
   const initial = userName.charAt(0).toUpperCase() || "U";
 
   return (
@@ -117,23 +147,20 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             <div className="px-3">
               <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Services</p>
               <div className="space-y-0.5">
-                {services.map((item) => {
-                  const Icon = serviceIcons[item.path] || MessageSquare;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => { navigate(item.path); onClose(); }}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-3 ${
-                        location.pathname === item.path
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.label}
-                    </button>
-                  );
-                })}
+                {serviceItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => { navigate(item.path); onClose(); }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-3 ${
+                      location.pathname === item.path
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}
+                  >
+                    <item.Icon />
+                    {item.label}
+                  </button>
+                ))}
               </div>
             </div>
 

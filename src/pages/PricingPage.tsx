@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Crown } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
 
@@ -64,7 +64,6 @@ const tierStyles = {
     bg: "bg-[#1A1A2E]/80",
     border: "border-[#333355]",
     badge: "",
-    badgeBg: "",
     btnClass: "bg-[#2A2A4A] hover:bg-[#3A3A5A] text-white",
     checkColor: "text-muted-foreground",
     scale: "",
@@ -73,7 +72,6 @@ const tierStyles = {
     bg: "bg-[#7C3AED]/10",
     border: "border-[#7C3AED]",
     badge: "bg-[#7C3AED] text-white",
-    badgeBg: "bg-[#7C3AED]",
     btnClass: "bg-[#7C3AED] hover:bg-[#6D28D9] text-white",
     checkColor: "text-[#7C3AED]",
     scale: "md:scale-105 z-10",
@@ -82,7 +80,6 @@ const tierStyles = {
     bg: "bg-[#FFD700]/10",
     border: "border-[#FFD700]",
     badge: "bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black",
-    badgeBg: "bg-[#FFD700]",
     btnClass: "bg-gradient-to-r from-[#FFD700] to-[#FFA500] hover:from-[#FFC800] hover:to-[#FF9500] text-black font-semibold",
     checkColor: "text-[#FFD700]",
     scale: "",
@@ -139,8 +136,7 @@ const PricingPage = () => {
                 className={`rounded-2xl border p-6 flex flex-col gap-4 ${style.bg} ${style.border} ${style.scale} transition-transform`}
               >
                 {plan.badge && (
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full self-start uppercase tracking-wider flex items-center gap-1.5 ${style.badge}`}>
-                    {plan.tier === "elite" && <Crown className="w-3 h-3" />}
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full self-start uppercase tracking-wider ${style.badge}`}>
                     {plan.badge}
                   </span>
                 )}
@@ -155,13 +151,7 @@ const PricingPage = () => {
                   <span className="text-sm text-muted-foreground">/{isYearly ? "year" : "month"}</span>
                 </div>
 
-                {plan.tier === "pro" ? (
-                  <FancyButton className="w-full">Get Started</FancyButton>
-                ) : (
-                  <button className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${style.btnClass}`}>
-                    Get Started
-                  </button>
-                )}
+                <FancyButton className="w-full">Get Started</FancyButton>
 
                 <ul className="space-y-2.5 mt-2">
                   {plan.features.map((feature) => (

@@ -6,7 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// All models grouped by page
 const IMAGE_MODELS = [
   "megsy-v1-img", "gpt-image", "nano-banana-2", "flux-kontext", "ideogram-3",
   "seedream-5-lite", "recraft-v4", "flux-2-pro", "seedream-4", "grok-imagine",
@@ -53,8 +52,27 @@ const MODEL_NAMES: Record<string, string> = {
   "kling-avatar-std": "Kling Avatar Std", "sadtalker": "SadTalker", "sync-lipsync": "Sync Lipsync V2",
 };
 
-// In-memory session state per chat (simple, resets on redeploy)
-const sessions: Record<number, { page: "images" | "videos"; modelIndex: number; models: string[] }> = {};
+// ---- Persistent session helpers (using memories table) ----
+interface BotSession {
+  page: "images" | "videos";
+  modelIndex: number;
+  models: string[];
+}
+
+async function loadSession(sb: ReturnType<typeof createClient>, chatId: number): Promise<BotSession | null> {
+  const { data } = await sb.from("memories").select("value").eq("key", `tg_${chatId}`).maybeSingle();
+  if (!data) return null;
+  try { return JSON.parse(data.value); } catch { return null; }
+}
+
+async function saveSession(sb: ReturnType<typeof createClient>, chatId: number, session: BotSession) {
+  await sb.from("memories").delete().eq("key", `tg_${chatId}`);
+  await sb.from("memories").insert({ key: `tg_${chatId}`, value: JSON.stringify(session) });
+}
+
+async function clearSession(sb: ReturnType<typeof createClient>, chatId: number) {
+  await sb.from("memories").delete().eq("key", `tg_${chatId}`);
+}
 
 async function callTelegram(token: string, method: string, body: Record<string, unknown>) {
   const resp = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
@@ -89,75 +107,84 @@ serve(async (req) => {
       const chatId = callback.message.chat.id;
       const data = callback.data;
 
-      // Answer callback to remove loading
       await callTelegram(BOT_TOKEN, "answerCallbackQuery", { callback_query_id: callback.id });
 
       if (data === "page_images" || data === "page_videos") {
         const page = data === "page_images" ? "images" : "videos";
         const allModels = page === "images" ? IMAGE_MODELS : VIDEO_MODELS;
 
-        // Find models without media
         const existing = await getExistingMedia(sb, allModels);
         const remaining = allModels.filter(m => !existing.has(m));
 
         if (remaining.length === 0) {
           await callTelegram(BOT_TOKEN, "sendMessage", {
             chat_id: chatId,
-            text: `✅ All ${page} models already have media! Nothing to upload.`,
+            text: `All ${page} models already have media! Nothing to upload.`,
           });
           return new Response("OK");
         }
 
-        sessions[chatId] = { page, modelIndex: 0, models: remaining };
+        const session: BotSession = { page, modelIndex: 0, models: remaining };
+        await saveSession(sb, chatId, session);
+
         const modelId = remaining[0];
         const modelName = MODEL_NAMES[modelId] || modelId;
-        const mediaType = page === "images" ? "📷 صورة" : "🎬 فيديو";
 
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `📦 *${page === "images" ? "Image" : "Video"} Models*\n\n` +
-            `متبقي: *${remaining.length}* نموذج\n\n` +
-            `▶️ النموذج: *${modelName}*\n` +
-            `🆔 \`${modelId}\`\n\n` +
-            `أرسل ${mediaType} لهذا النموذج:`,
+          text: `*${page === "images" ? "Image" : "Video"} Models*\n\n` +
+            `Remaining: *${remaining.length}* models\n\n` +
+            `Model: *${modelName}*\n` +
+            `ID: \`${modelId}\`\n\n` +
+            `Send ${page === "images" ? "an image" : "a video"} for this model:`,
           parse_mode: "Markdown",
+          reply_markup: JSON.stringify({
+            inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]],
+          }),
         });
 
         return new Response("OK");
       }
 
       if (data === "skip_model") {
-        const session = sessions[chatId];
-        if (!session) return new Response("OK");
-
-        session.modelIndex++;
-        if (session.modelIndex >= session.models.length) {
-          await callTelegram(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId,
-            text: "✅ تم الانتهاء من جميع النماذج!",
-          });
-          delete sessions[chatId];
+        const session = await loadSession(sb, chatId);
+        if (!session) {
+          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "No active session. Press /start" });
           return new Response("OK");
         }
 
+        session.modelIndex++;
+        if (session.modelIndex >= session.models.length) {
+          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "All models done!" });
+          await clearSession(sb, chatId);
+          return new Response("OK");
+        }
+
+        await saveSession(sb, chatId, session);
         const modelId = session.models[session.modelIndex];
         const modelName = MODEL_NAMES[modelId] || modelId;
         const remaining = session.models.length - session.modelIndex;
-        const mediaType = session.page === "images" ? "📷 صورة" : "🎬 فيديو";
 
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `⏭ تم تخطي النموذج السابق\n\n` +
-            `متبقي: *${remaining}* نموذج\n\n` +
-            `▶️ النموذج: *${modelName}*\n` +
-            `🆔 \`${modelId}\`\n\n` +
-            `أرسل ${mediaType} لهذا النموذج:`,
+          text: `Skipped.\n\nRemaining: *${remaining}* models\n\nModel: *${modelName}*\nID: \`${modelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({
-            inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "skip_model" }]],
+            inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]],
           }),
         });
 
+        return new Response("OK");
+      }
+
+      if (data === "status") {
+        const imgExisting = await getExistingMedia(sb, IMAGE_MODELS);
+        const vidExisting = await getExistingMedia(sb, VIDEO_MODELS);
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `*Status*\n\nImages: ${imgExisting.size}/${IMAGE_MODELS.length}\nVideos: ${vidExisting.size}/${VIDEO_MODELS.length}`,
+          parse_mode: "Markdown",
+        });
         return new Response("OK");
       }
 
@@ -168,20 +195,19 @@ serve(async (req) => {
       const chatId = message.chat.id;
       const text = message.text;
 
-      // /start command
       if (text === "/start") {
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: "🤖 *Megsy Model Media Bot*\n\nاختر الصفحة لرفع الصور/الفيديوهات:",
+          text: "*Megsy Model Media Bot*\n\nChoose a page to upload media:",
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({
             inline_keyboard: [
               [
-                { text: "📷 Image Models", callback_data: "page_images" },
-                { text: "🎬 Video Models", callback_data: "page_videos" },
+                { text: "Image Models", callback_data: "page_images" },
+                { text: "Video Models", callback_data: "page_videos" },
               ],
               [
-                { text: "📊 الحالة", callback_data: "status" },
+                { text: "Status", callback_data: "status" },
               ],
             ],
           }),
@@ -190,12 +216,9 @@ serve(async (req) => {
       }
 
       // Handle photo/video upload
-      const session = sessions[chatId];
+      const session = await loadSession(sb, chatId);
       if (!session) {
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: "اضغط /start للبدء",
-        });
+        await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Press /start to begin." });
         return new Response("OK");
       }
 
@@ -204,50 +227,34 @@ serve(async (req) => {
       let fileId: string | null = null;
       let mediaType: "image" | "video" = "image";
 
-      // Check for photo
       if (message.photo && message.photo.length > 0) {
-        // Get largest photo
         fileId = message.photo[message.photo.length - 1].file_id;
         mediaType = "image";
-      }
-      // Check for video
-      else if (message.video) {
+      } else if (message.video) {
         fileId = message.video.file_id;
         mediaType = "video";
-      }
-      // Check for animation (GIF)
-      else if (message.animation) {
+      } else if (message.animation) {
         fileId = message.animation.file_id;
         mediaType = "video";
-      }
-      // Check for document (could be image/video)
-      else if (message.document) {
+      } else if (message.document) {
         const mime = message.document.mime_type || "";
-        if (mime.startsWith("image/")) {
-          fileId = message.document.file_id;
-          mediaType = "image";
-        } else if (mime.startsWith("video/")) {
-          fileId = message.document.file_id;
-          mediaType = "video";
-        }
+        if (mime.startsWith("image/")) { fileId = message.document.file_id; mediaType = "image"; }
+        else if (mime.startsWith("video/")) { fileId = message.document.file_id; mediaType = "video"; }
       }
 
       if (!fileId) {
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: "❌ أرسل صورة أو فيديو فقط.",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "skip_model" }]],
-          }),
+          text: "Send an image or video only.",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
         });
         return new Response("OK");
       }
 
-      // Download file from Telegram
       const fileInfo = await callTelegram(BOT_TOKEN, "getFile", { file_id: fileId });
       const filePath = fileInfo.result?.file_path;
       if (!filePath) {
-        await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ فشل في تحميل الملف." });
+        await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Failed to download file." });
         return new Response("OK");
       }
 
@@ -257,7 +264,6 @@ serve(async (req) => {
       const ext = filePath.split(".").pop() || (mediaType === "image" ? "jpg" : "mp4");
       const storagePath = `${currentModelId}.${ext}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await sb.storage
         .from("model-media")
         .upload(storagePath, fileBuffer, {
@@ -267,15 +273,13 @@ serve(async (req) => {
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
-        await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `❌ خطأ في الرفع: ${uploadError.message}` });
+        await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `Upload error: ${uploadError.message}` });
         return new Response("OK");
       }
 
-      // Get public URL
       const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
       const publicUrl = urlData.publicUrl;
 
-      // Upsert into model_media table
       await sb.from("model_media").upsert({
         model_id: currentModelId,
         media_url: publicUrl,
@@ -283,42 +287,38 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: "model_id" });
 
-      // Move to next model
+      // Move to next
       session.modelIndex++;
       const remaining = session.models.length - session.modelIndex;
 
       if (remaining === 0) {
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `✅ تم رفع ${mediaType === "image" ? "صورة" : "فيديو"} لـ *${currentModelName}*\n\n🎉 انتهت جميع النماذج!`,
+          text: `Uploaded for *${currentModelName}*\n\nAll models done!`,
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({
             inline_keyboard: [
               [
-                { text: "📷 Image Models", callback_data: "page_images" },
-                { text: "🎬 Video Models", callback_data: "page_videos" },
+                { text: "Image Models", callback_data: "page_images" },
+                { text: "Video Models", callback_data: "page_videos" },
               ],
             ],
           }),
         });
-        delete sessions[chatId];
+        await clearSession(sb, chatId);
         return new Response("OK");
       }
 
+      await saveSession(sb, chatId, session);
       const nextModelId = session.models[session.modelIndex];
       const nextModelName = MODEL_NAMES[nextModelId] || nextModelId;
-      const nextMediaType = session.page === "images" ? "📷 صورة" : "🎬 فيديو";
 
       await callTelegram(BOT_TOKEN, "sendMessage", {
         chat_id: chatId,
-        text: `✅ تم رفع ${mediaType === "image" ? "صورة" : "فيديو"} لـ *${currentModelName}*\n\n` +
-          `متبقي: *${remaining}* نموذج\n\n` +
-          `▶️ التالي: *${nextModelName}*\n` +
-          `🆔 \`${nextModelId}\`\n\n` +
-          `أرسل ${nextMediaType} لهذا النموذج:`,
+        text: `Uploaded for *${currentModelName}*\n\nRemaining: *${remaining}* models\n\nNext: *${nextModelName}*\nID: \`${nextModelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
         parse_mode: "Markdown",
         reply_markup: JSON.stringify({
-          inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "skip_model" }]],
+          inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]],
         }),
       });
 
