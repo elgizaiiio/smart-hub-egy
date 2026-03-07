@@ -87,7 +87,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
 
-          <div className="prose-chat text-foreground" dir="auto" style={{ unicodeBidi: 'plaintext' }}>
+          <div className="prose-chat text-foreground">
             <ReactMarkdown
               components={{
                 a: ({ href, children }) => (

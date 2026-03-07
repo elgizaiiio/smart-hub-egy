@@ -152,11 +152,11 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: M
 
       {open && createPortal(
         <>
-          <div className="fixed inset-0 z-[35]" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-[42]" onClick={() => setOpen(false)} />
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="fixed z-[36] glass-panel p-1.5 max-h-[380px] overflow-y-auto"
+            className="fixed z-[43] glass-panel p-1.5 max-h-[380px] overflow-y-auto"
             style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
           >
             {showCategories && (
