@@ -241,7 +241,7 @@ const FilesPage = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); }} currentMode="files" />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} currentMode="files" />
 
       {/* Preview Modal */}
       <AnimatePresence>
