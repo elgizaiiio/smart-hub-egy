@@ -299,7 +299,7 @@ const ChatPage = () => {
               <h2 className="font-display text-2xl md:text-3xl font-bold mb-3 text-foreground">
                 Hey, what's up?
               </h2>
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
                 {[
               { label: "Images", path: "/images" },
               { label: "Videos", path: "/videos" },
@@ -309,8 +309,7 @@ const ChatPage = () => {
               <button
                 key={item.label}
                 onClick={() => navigate(item.path)}
-                className="px-4 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border">
-                
+                className="px-5 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border">
                     {item.label}
                   </button>
               )}
