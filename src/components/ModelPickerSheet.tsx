@@ -98,24 +98,25 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
           {/* ═══ Top Bar ═══ */}
           <div className="shrink-0 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-10">
             <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-              {detailModel ? (
-                <button
-                  onClick={() => setDetailModel(null)}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back</span>
-                </button>
-              ) : (
-                <h1 className="font-display text-lg font-bold text-foreground">Choose Model</h1>
-              )}
-              <div className="flex-1" />
               <button
-                onClick={() => { onClose(); setDetailModel(null); setSearch(""); }}
-                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors"
+                onClick={() => {
+                  if (detailModel) {
+                    setDetailModel(null);
+                  } else {
+                    onClose();
+                    setSearch("");
+                  }
+                }}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <X className="w-5 h-5 text-muted-foreground" />
+                <ArrowLeft className="w-4 h-4" />
+                <span>{detailModel ? "Back" : "Back"}</span>
               </button>
+              <div className="flex-1" />
+              <h1 className="font-display text-lg font-bold text-foreground">
+                {detailModel ? detailModel.name : "Choose Model"}
+              </h1>
+              <div className="flex-1" />
             </div>
           </div>
 
