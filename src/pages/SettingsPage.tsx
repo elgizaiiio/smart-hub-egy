@@ -40,7 +40,6 @@ const SettingsPage = () => {
     navigate("/auth");
   };
 
-  // Desktop: sidebar layout with home dashboard
   if (!isMobile) {
     return (
       <DesktopSettingsLayout title="Welcome" subtitle="Manage your account and preferences">
@@ -49,7 +48,6 @@ const SettingsPage = () => {
     );
   }
 
-  // Mobile: keep existing layout
   const initial = userName.charAt(0).toUpperCase();
 
   const sections = [
@@ -63,7 +61,7 @@ const SettingsPage = () => {
     {
       title: "AGENT & INTEGRATIONS",
       items: [
-        { icon: Zap, label: "Integrations", path: "/settings/integrations" },
+        { icon: Zap, label: "Agent Connections", path: "/settings/integrations" },
       ],
     },
     {
@@ -87,6 +85,7 @@ const SettingsPage = () => {
   return (
     <div className="h-[100dvh] bg-background overflow-y-auto">
       <div className="max-w-lg mx-auto">
+        {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3">
           <button onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -95,47 +94,55 @@ const SettingsPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-4">
-          <button onClick={() => navigate("/settings/profile")} className="w-full flex items-center gap-3 py-3 border-b border-border">
+          {/* User Profile Card */}
+          <button
+            onClick={() => navigate("/settings/profile")}
+            className="w-full flex items-center gap-3 py-4 mb-2"
+          >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+              <img src={avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+              <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
                 {initial}
               </div>
             )}
-            <div className="flex-1 text-left">
+            <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-medium text-foreground">{userName}</p>
-              <p className="text-xs text-muted-foreground">{userEmail}</p>
+              <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
             </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
           </button>
 
+          {/* Sections */}
           {sections.map((section) => (
-            <div key={section.title} className="py-2">
-              <p className="text-[11px] text-muted-foreground uppercase tracking-wider py-2">{section.title}</p>
+            <div key={section.title} className="mb-1">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider py-3">
+                {section.title}
+              </p>
               {section.items.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
                     key={item.label}
-                    onClick={() => item.path && navigate(item.path)}
-                    className="w-full flex items-center gap-3 py-3 text-left hover:bg-accent/50 rounded-lg transition-colors -mx-2 px-2"
+                    onClick={() => navigate(item.path)}
+                    className="w-full flex items-center gap-3 py-3.5 text-left"
                   >
                     <Icon className="w-5 h-5 text-muted-foreground" />
                     <span className="flex-1 text-sm text-foreground">{item.label}</span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                   </button>
                 );
               })}
             </div>
           ))}
 
+          {/* Sign Out */}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 py-3 text-left hover:bg-destructive/10 rounded-lg transition-colors -mx-2 px-2 mt-2 mb-6"
+            className="w-full flex items-center gap-3 py-3.5 text-left mt-4 mb-8"
           >
             <LogOut className="w-5 h-5 text-destructive" />
-            <span className="flex-1 text-sm text-destructive">Log out</span>
+            <span className="flex-1 text-sm text-destructive font-medium">Sign Out</span>
           </button>
         </motion.div>
       </div>
