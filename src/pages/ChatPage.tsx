@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Globe, Camera, Image, FileUp, Link2 } from "lucide-react";
+import { Menu, Plus, Globe, Camera, Image, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -465,7 +465,7 @@ const ChatPage = () => {
                       onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors">
                       
-                        <Link2 className="w-4 h-4 text-muted-foreground" />
+                        
                         <span className="text-sm text-foreground">Integrations</span>
                         <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
                       </button>
