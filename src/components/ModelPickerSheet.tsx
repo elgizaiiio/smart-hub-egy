@@ -98,24 +98,25 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
           {/* ═══ Top Bar ═══ */}
           <div className="shrink-0 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-10">
             <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-              {detailModel ? (
-                <button
-                  onClick={() => setDetailModel(null)}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back</span>
-                </button>
-              ) : (
-                <h1 className="font-display text-lg font-bold text-foreground">Choose Model</h1>
-              )}
-              <div className="flex-1" />
               <button
-                onClick={() => { onClose(); setDetailModel(null); setSearch(""); }}
-                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors"
+                onClick={() => {
+                  if (detailModel) {
+                    setDetailModel(null);
+                  } else {
+                    onClose();
+                    setSearch("");
+                  }
+                }}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <X className="w-5 h-5 text-muted-foreground" />
+                <ArrowLeft className="w-4 h-4" />
+                <span>{detailModel ? "Back" : "Back"}</span>
               </button>
+              <div className="flex-1" />
+              <h1 className="font-display text-lg font-bold text-foreground">
+                {detailModel ? detailModel.name : "Choose Model"}
+              </h1>
+              <div className="flex-1" />
             </div>
           </div>
 
@@ -241,16 +242,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
             /* ═══ LIST VIEW ═══ */
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-5xl mx-auto px-4 py-4 space-y-4">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Search models..."
-                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-secondary text-sm text-foreground placeholder:text-muted-foreground outline-none border border-transparent focus:border-primary/30 transition-colors"
-                  />
-                </div>
 
                 {/* Tabs */}
                 {hasTools && (
@@ -325,20 +316,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                               </div>
                             )}
 
-                            {/* Badges overlay */}
-                            <div className="absolute top-2 left-2 flex gap-1">
-                              {model.speed === "fast" && (
-                                <span className="w-5 h-5 rounded-md bg-background/70 backdrop-blur-sm flex items-center justify-center">
-                                  <Zap className="w-3 h-3 text-amber-500" />
-                                </span>
-                              )}
-                              {model.quality === "ultra" && (
-                                <span className="w-5 h-5 rounded-md bg-background/70 backdrop-blur-sm flex items-center justify-center">
-                                  <Crown className="w-3 h-3 text-amber-500" />
-                                </span>
-                              )}
-                            </div>
-
                             {/* Selected indicator */}
                             {isSelected && (
                               <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
@@ -346,12 +323,13 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                               </div>
                             )}
 
-                            {/* Details button */}
+                            {/* Details button - always visible */}
                             <button
                               onClick={(e) => { e.stopPropagation(); setDetailModel(model); }}
-                              className="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-background/70 backdrop-blur-sm text-[10px] font-medium text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background/90"
+                              className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-background/80 backdrop-blur-sm text-[10px] font-medium text-foreground hover:bg-background transition-colors flex items-center gap-1"
                             >
                               Details
+                              <ChevronRight className="w-3 h-3" />
                             </button>
                           </div>
 
