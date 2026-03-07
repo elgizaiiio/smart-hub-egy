@@ -49,27 +49,16 @@ const ProfileSettingsPage = () => {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image too large. Max 5MB.");
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image too large. Max 5MB."); return; }
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
       const filePath = `${userId}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, { upsert: true, contentType: file.type });
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true, contentType: file.type });
       if (uploadError) throw uploadError;
-
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
       setAvatarUrl(publicUrl);
-
-      await supabase.from("profiles").update({
-        avatar_url: publicUrl,
-        updated_at: new Date().toISOString(),
-      }).eq("id", userId);
-
+      await supabase.from("profiles").update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq("id", userId);
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
       toast.success("Profile photo updated");
     } catch (err: any) {
@@ -83,10 +72,7 @@ const ProfileSettingsPage = () => {
   const handleSaveName = async () => {
     if (!nameInput.trim() || !userId) return;
     try {
-      await supabase.from("profiles").update({
-        display_name: nameInput.trim(),
-        updated_at: new Date().toISOString(),
-      }).eq("id", userId);
+      await supabase.from("profiles").update({ display_name: nameInput.trim(), updated_at: new Date().toISOString() }).eq("id", userId);
       await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } });
       setUserName(nameInput.trim());
       setEditingName(false);
@@ -96,16 +82,11 @@ const ProfileSettingsPage = () => {
     }
   };
 
-  const startEditName = () => {
-    setNameInput(userName);
-    setEditingName(true);
-  };
-
   const ProfileContent = () => (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg mx-auto">
-      {/* Avatar + Info */}
-      <div className="flex flex-col items-center py-6">
-        <div className="relative mb-3">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-md mx-auto">
+      {/* Avatar + Name + Email */}
+      <div className="flex flex-col items-center py-8">
+        <div className="relative mb-4">
           {avatarUrl ? (
             <img src={avatarUrl} alt="" className="w-24 h-24 rounded-full object-cover" />
           ) : (
@@ -127,7 +108,6 @@ const ProfileSettingsPage = () => {
           )}
         </div>
 
-        {/* Name - editable */}
         {editingName ? (
           <div className="flex items-center gap-2 mb-1">
             <input
@@ -145,34 +125,33 @@ const ProfileSettingsPage = () => {
             </button>
           </div>
         ) : (
-          <button onClick={startEditName} className="flex items-center gap-1.5 mb-1 group">
+          <button onClick={() => { setNameInput(userName); setEditingName(true); }} className="flex items-center gap-1.5 mb-1 group">
             <p className="text-lg font-semibold text-foreground">{userName || "Set your name"}</p>
             <Pencil className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         )}
-
         <p className="text-sm text-muted-foreground">{userEmail}</p>
-        <span className="text-xs text-muted-foreground mt-1.5 capitalize">{plan === "free" ? "Free Plan" : `${plan} Plan`}</span>
+        <span className="text-xs text-muted-foreground mt-1 capitalize">{plan === "free" ? "Free Plan" : `${plan} Plan`}</span>
       </div>
 
-      {/* Credits & Plan Stats */}
-      <div className="flex items-center mx-4 mb-6">
-        <button onClick={() => navigate("/settings/billing")} className="flex-1 py-3 text-left">
+      {/* Credits & Plan */}
+      <div className="flex items-center mb-8">
+        <button onClick={() => navigate("/settings/billing")} className="flex-1 py-3 text-center">
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Credits</p>
-          <p className="text-xl font-bold text-foreground">{Math.floor(credits)}</p>
+          <p className="text-2xl font-bold text-foreground">{Math.floor(credits)}</p>
         </button>
         <div className="w-px h-10 bg-border" />
-        <button onClick={() => navigate("/pricing")} className="flex-1 py-3 text-right">
+        <button onClick={() => navigate("/pricing")} className="flex-1 py-3 text-center">
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Plan</p>
-          <p className="text-xl font-bold text-foreground capitalize">{plan === "free" ? "Free" : plan}</p>
+          <p className="text-2xl font-bold text-foreground capitalize">{plan === "free" ? "Free" : plan}</p>
         </button>
       </div>
 
       {/* Security */}
-      <div className="mx-4">
+      <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 px-1">Security</p>
 
-        <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-4 px-1 transition-colors text-left">
+        <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
           <Mail className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">Change Email</p>
@@ -181,7 +160,7 @@ const ProfileSettingsPage = () => {
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
 
-        <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-4 px-1 transition-colors text-left">
+        <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Change Password</p>
@@ -193,11 +172,8 @@ const ProfileSettingsPage = () => {
 
       {/* Upgrade */}
       {plan === "free" && (
-        <div className="mx-4 mt-4">
-          <button
-            onClick={() => navigate("/pricing")}
-            className="w-full flex items-center gap-3 py-4 px-1 transition-colors text-left"
-          >
+        <div className="mt-4">
+          <button onClick={() => navigate("/pricing")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Crown className="w-5 h-5 text-primary" />
             </div>
@@ -210,9 +186,9 @@ const ProfileSettingsPage = () => {
         </div>
       )}
 
-      {/* Delete Account */}
-      <div className="mx-4 mt-6 mb-8">
-        <button onClick={() => navigate("/settings/delete-account")} className="flex items-center gap-3 py-3 px-1 transition-colors text-left">
+      {/* Delete */}
+      <div className="mt-6 mb-8">
+        <button onClick={() => navigate("/settings/delete-account")} className="flex items-center gap-3 py-3 px-1 text-left">
           <Trash2 className="w-5 h-5 text-destructive/60" />
           <p className="text-sm font-medium text-destructive/60">Delete Account</p>
         </button>
@@ -239,7 +215,9 @@ const ProfileSettingsPage = () => {
           </button>
           <h1 className="font-display text-lg font-bold text-foreground">Account</h1>
         </div>
-        <ProfileContent />
+        <div className="px-4">
+          <ProfileContent />
+        </div>
       </div>
     </div>
   );

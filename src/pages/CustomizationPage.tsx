@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Sun, Moon, Check } from "lucide-react";
+import { ArrowLeft, Sun, Moon, Check, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -7,9 +7,9 @@ import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 
 const realThemes = [
   { id: "light", label: "Healthy Light", isDark: false },
+  { id: "white", label: "Pure White", isDark: false },
   { id: "dark", label: "Healthy Dark", isDark: true },
-  { id: "ocean", label: "Ocean", isDark: true },
-  { id: "sunset", label: "Sunset Warm", isDark: true },
+  { id: "oled", label: "OLED Black", isDark: true },
 ];
 
 const messageColors = [
@@ -46,14 +46,18 @@ const CustomizationPage = () => {
   };
 
   const CustomizationContent = () => (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-xl">
-      {!isMobile ? null : (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
+      {/* Header - mobile only */}
+      {isMobile && (
         <div className="text-center">
           <h1 className="font-display text-2xl font-bold text-foreground mb-2">Make it yours</h1>
-          <p className="text-sm text-muted-foreground">Personalize your experience with themes, colors, and backgrounds</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Personalize your experience{"\n"}with themes, colors, and{"\n"}backgrounds
+          </p>
         </div>
       )}
 
+      {/* Theme Selection */}
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">THEME</p>
         <div className="grid grid-cols-2 gap-3">
@@ -63,16 +67,26 @@ const CustomizationPage = () => {
               <button
                 key={t.id}
                 onClick={() => handleThemeChange(t.id)}
-                className={`relative flex flex-col items-center justify-center py-6 rounded-xl transition-all ${
-                  isSelected ? "ring-2 ring-primary" : "hover:bg-accent/30"
+                className={`relative flex flex-col items-center justify-center py-7 rounded-2xl border transition-all ${
+                  isSelected
+                    ? "border-primary ring-2 ring-primary"
+                    : "border-border hover:border-muted-foreground/30"
                 }`}
               >
                 {isSelected && (
-                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                     <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
                 )}
-                {t.isDark ? <Moon className="w-8 h-8 text-muted-foreground mb-2" /> : <Sun className="w-8 h-8 text-muted-foreground mb-2" />}
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
+                  t.isDark ? "bg-[#1a1a2e]" : "bg-muted"
+                }`}>
+                  {t.isDark ? (
+                    <Moon className="w-6 h-6 text-primary" />
+                  ) : (
+                    <Sun className="w-6 h-6 text-amber-500" />
+                  )}
+                </div>
                 <span className="text-sm font-medium text-foreground">{t.label}</span>
               </button>
             );
@@ -80,19 +94,20 @@ const CustomizationPage = () => {
         </div>
       </div>
 
+      {/* Message Color */}
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">MESSAGE COLOR</p>
-        <div className="rounded-xl overflow-hidden mb-4" style={{ background: `hsl(${currentAccent})` }}>
-          <p className="text-white text-sm font-medium px-5 py-3.5">This is how your messages will look</p>
+        <div className="rounded-2xl overflow-hidden mb-5" style={{ background: `hsl(${currentAccent})` }}>
+          <p className="text-white text-sm font-medium px-5 py-4">This is how your messages will look</p>
         </div>
-        <div className="grid grid-cols-6 gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           {messageColors.map(c => {
             const isSelected = currentAccent === c.hsl;
             return (
               <button
                 key={c.hex}
                 onClick={() => handleAccentChange(c.hsl)}
-                className="w-10 h-10 rounded-full mx-auto flex items-center justify-center transition-all hover:scale-110"
+                className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-110"
                 style={{ background: c.hex }}
               >
                 {isSelected && <Check className="w-4 h-4 text-white" />}
@@ -102,8 +117,14 @@ const CustomizationPage = () => {
         </div>
       </div>
 
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">Your preferences are saved automatically</p>
+      {/* Footer */}
+      <div className="flex flex-col items-center gap-2 py-4">
+        <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center">
+          <RefreshCw className="w-4 h-4 text-muted-foreground" />
+        </div>
+        <p className="text-sm text-muted-foreground text-center">
+          Your preferences are saved{"\n"}automatically and synced across all{"\n"}your devices
+        </p>
       </div>
     </motion.div>
   );
@@ -123,6 +144,7 @@ const CustomizationPage = () => {
           <button onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
+          <h1 className="font-display text-lg font-bold text-foreground">Customization</h1>
         </div>
         <div className="px-4">
           <CustomizationContent />
