@@ -46,9 +46,28 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, model, image_url } = await req.json();
+    const { prompt, model, image_url, user_id, credits_cost } = await req.json();
     const FAL_API_KEY = Deno.env.get("FAL_API_KEY");
     if (!FAL_API_KEY) throw new Error("FAL_API_KEY not configured");
+
+    // Deduct credits if user_id provided
+    if (user_id && credits_cost) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, serviceRoleKey);
+      const { data: creditResult } = await sb.rpc("deduct_credits", {
+        p_user_id: user_id,
+        p_amount: Number(credits_cost),
+        p_action_type: "video_generation",
+        p_description: `${model || "default"} - ${(prompt || "").slice(0, 50)}`,
+      });
+      if (creditResult && !creditResult.success) {
+        return new Response(JSON.stringify({ error: creditResult.error || "Insufficient credits" }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     const modelConfig = VIDEO_MODEL_MAP[model] || VIDEO_MODEL_MAP["megsy-video"];
     const endpoint = modelConfig.endpoint;
