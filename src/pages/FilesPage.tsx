@@ -27,10 +27,10 @@ const SUGGESTIONS = [
 ];
 
 const FILE_PLACEHOLDERS = [
-  "Write a professional report...",
-  "Create a presentation outline...",
-  "Summarize a document...",
-  "Analyze data from a CSV...",
+  "Write a professional business proposal...",
+  "Create a detailed report about...",
+  "Create a structured presentation about...",
+  "Summarize this document for me...",
 ];
 
 const FilesPage = () => {
@@ -261,7 +261,7 @@ const FilesPage = () => {
         )}
       </AnimatePresence>
 
-      <div className="flex items-center justify-between px-4 py-2">
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
@@ -318,7 +318,7 @@ const FilesPage = () => {
         )}
       </div>
 
-      <div className="shrink-0 px-3 pb-3 pt-1">
+      <div className="sticky bottom-0 z-20 shrink-0 px-3 pb-3 pt-1 bg-background/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto relative">
           {/* Attached files preview */}
           {attachedFiles.length > 0 && (
@@ -389,7 +389,7 @@ const FilesPage = () => {
               </>
             )}
           </AnimatePresence>
-          <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-xl px-3 py-2">
+          <div className="flex items-end gap-2 rounded-2xl border border-primary/30 bg-transparent backdrop-blur-md px-3 py-2">
             <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
               <Plus className="w-5 h-5" />
             </button>
@@ -402,7 +402,7 @@ const FilesPage = () => {
               className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
               style={{ minHeight: "32px" }}
             />
-            <button onClick={handleGenerate} disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20">
+            <button onClick={handleGenerate} disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating} className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors disabled:opacity-20 ${isGenerating ? "bg-[#7C3AED] text-white animate-pulse-slow" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
             </button>
           </div>

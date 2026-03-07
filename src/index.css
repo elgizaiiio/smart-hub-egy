@@ -412,3 +412,12 @@
 .prose-chat a { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 2px; }
 .prose-chat blockquote { border-left: 3px solid hsl(var(--primary)); padding-left: 1em; margin: 0.75em 0; color: hsl(var(--muted-foreground)); }
 .prose-chat img { border-radius: 8px; max-width: 100%; margin: 0.5em 0; }
+
+/* Slow pulse animation for loading button */
+@keyframes slow-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.97); }
+}
+.animate-pulse-slow {
+  animation: slow-pulse 3s ease-in-out infinite;
+}

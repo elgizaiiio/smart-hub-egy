@@ -59,7 +59,7 @@ const ProgrammingPage = () => {
     <div className="h-screen flex flex-col bg-background">
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} />
 
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
           <Menu className="w-5 h-5" />
         </button>
@@ -83,7 +83,7 @@ const ProgrammingPage = () => {
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="What do you want to build?"
                 rows={3}
-                className="w-full bg-secondary border border-border rounded-xl px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none"
+                className="w-full bg-transparent backdrop-blur-md border border-primary/30 rounded-xl px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none"
               />
               <button
                 onClick={handleSend}

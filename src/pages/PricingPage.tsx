@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import FancyButton from "@/components/FancyButton";
 
 const plans = [
   {
     name: "Starter",
     monthlyPrice: 25,
     yearlyPrice: 199,
-    credits: 100,
+    monthlyCredits: 250,
+    yearlyCredits: 2500,
     featured: false,
     badge: null,
+    tier: "starter" as const,
     features: [
-      "100 credits / month",
       "All chat models",
       "Image generation",
       "File analysis",
@@ -23,11 +25,12 @@ const plans = [
     name: "Pro",
     monthlyPrice: 49,
     yearlyPrice: 499,
-    credits: 500,
+    monthlyCredits: 500,
+    yearlyCredits: 5000,
     featured: true,
-    badge: "Most Popular",
+    badge: "MOST POPULAR",
+    tier: "pro" as const,
     features: [
-      "500 credits / month",
       "All AI models access",
       "Image & Video generation",
       "Code sandbox + GitHub",
@@ -37,14 +40,15 @@ const plans = [
     ],
   },
   {
-    name: "Business",
+    name: "Elite",
     monthlyPrice: 149,
     yearlyPrice: 1299,
-    credits: 2000,
+    monthlyCredits: 1500,
+    yearlyCredits: 15000,
     featured: false,
-    badge: "Best Value",
+    badge: "PREMIUM",
+    tier: "elite" as const,
     features: [
-      "2,000 credits / month",
       "All models (priority)",
       "Unlimited generations",
       "Full code IDE + deploy",
@@ -54,6 +58,36 @@ const plans = [
     ],
   },
 ];
+
+const tierStyles = {
+  starter: {
+    bg: "bg-[#1A1A2E]/80",
+    border: "border-[#333355]",
+    badge: "",
+    badgeBg: "",
+    btnClass: "bg-[#2A2A4A] hover:bg-[#3A3A5A] text-white",
+    checkColor: "text-muted-foreground",
+    scale: "",
+  },
+  pro: {
+    bg: "bg-[#7C3AED]/10",
+    border: "border-[#7C3AED]",
+    badge: "bg-[#7C3AED] text-white",
+    badgeBg: "bg-[#7C3AED]",
+    btnClass: "bg-[#7C3AED] hover:bg-[#6D28D9] text-white",
+    checkColor: "text-[#7C3AED]",
+    scale: "md:scale-105 z-10",
+  },
+  elite: {
+    bg: "bg-[#FFD700]/10",
+    border: "border-[#FFD700]",
+    badge: "bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black",
+    badgeBg: "bg-[#FFD700]",
+    btnClass: "bg-gradient-to-r from-[#FFD700] to-[#FFA500] hover:from-[#FFC800] hover:to-[#FF9500] text-black font-semibold",
+    checkColor: "text-[#FFD700]",
+    scale: "",
+  },
+};
 
 const PricingPage = () => {
   const navigate = useNavigate();
@@ -69,72 +103,77 @@ const PricingPage = () => {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <h2 className="font-display text-3xl font-bold mb-3 text-foreground">Choose your plan</h2>
           <p className="text-muted-foreground text-sm mb-6">Scale your AI usage with flexible credit-based pricing</p>
 
-          <div className="inline-flex items-center gap-3 bg-secondary rounded-full p-1">
+          <div className="inline-flex items-center gap-1 bg-secondary rounded-full p-1">
             <button
               onClick={() => setIsYearly(false)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${!isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${!isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
               Monthly
             </button>
             <button
               onClick={() => setIsYearly(true)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
               Yearly
-              <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "hsl(142 50% 45% / 0.2)", color: "hsl(142 50% 45%)" }}>Save</span>
+              <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500">Save</span>
             </button>
           </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className={`rounded-2xl border p-6 flex flex-col gap-4 ${
-                plan.featured ? "border-primary shadow-lg shadow-primary/10" : "border-border"
-              }`}
-            >
-              {plan.badge && (
-                <span className={`text-xs font-medium px-3 py-1 rounded-full self-start ${
-                  plan.featured ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
-                }`}>
-                  {plan.badge}
-                </span>
-              )}
-              <div>
-                <h3 className="font-display font-semibold text-foreground text-lg">{plan.name}</h3>
-                <p className="text-xs text-muted-foreground">{plan.credits.toLocaleString()} credits / month</p>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="font-display text-3xl font-bold text-foreground">
-                  ${isYearly ? plan.yearlyPrice : plan.monthlyPrice}
-                </span>
-                <span className="text-sm text-muted-foreground">/{isYearly ? "year" : "month"}</span>
-              </div>
-              <button className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                plan.featured
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-secondary text-foreground hover:bg-accent"
-              }`}>
-                Get Started
-              </button>
-              <ul className="space-y-2.5 mt-2">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
+        <div className="grid md:grid-cols-3 gap-6 items-center">
+          {plans.map((plan, i) => {
+            const style = tierStyles[plan.tier];
+            const credits = isYearly ? plan.yearlyCredits : plan.monthlyCredits;
+            const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
+
+            return (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className={`rounded-2xl border p-6 flex flex-col gap-4 ${style.bg} ${style.border} ${style.scale} transition-transform`}
+              >
+                {plan.badge && (
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full self-start uppercase tracking-wider flex items-center gap-1.5 ${style.badge}`}>
+                    {plan.tier === "elite" && <Crown className="w-3 h-3" />}
+                    {plan.badge}
+                  </span>
+                )}
+                <div>
+                  <h3 className="font-display font-semibold text-foreground text-lg">{plan.name}</h3>
+                  <p className="text-xs text-muted-foreground">{credits.toLocaleString()} credits / {isYearly ? "year" : "month"}</p>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-display text-3xl font-bold text-foreground">
+                    ${price}
+                  </span>
+                  <span className="text-sm text-muted-foreground">/{isYearly ? "year" : "month"}</span>
+                </div>
+
+                {plan.tier === "pro" ? (
+                  <FancyButton className="w-full">Get Started</FancyButton>
+                ) : (
+                  <button className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${style.btnClass}`}>
+                    Get Started
+                  </button>
+                )}
+
+                <ul className="space-y-2.5 mt-2">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className={`w-3.5 h-3.5 shrink-0 ${style.checkColor}`} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>
