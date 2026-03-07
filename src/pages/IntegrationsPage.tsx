@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 
 const integrations = [
   { id: "github", name: "GitHub", description: "Connect repositories & create issues", icon: "https://github.githubassets.com/favicons/favicon-dark.svg", category: "Development", app: "github" },
@@ -27,13 +29,12 @@ const integrations = [
 
 const IntegrationsPage = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [connectedApps, setConnectedApps] = useState<Record<string, string>>({});
   const [loadingApp, setLoadingApp] = useState<string | null>(null);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
 
-  useEffect(() => {
-    loadConnections();
-  }, []);
+  useEffect(() => { loadConnections(); }, []);
 
   const loadConnections = async () => {
     try {
@@ -46,9 +47,7 @@ const IntegrationsPage = () => {
       if (Array.isArray(items)) {
         items.forEach((item: any) => {
           const appName = (item.appName || item.appUniqueId || "").toLowerCase();
-          if (appName && item.status === "ACTIVE") {
-            connected[appName] = item.id;
-          }
+          if (appName && item.status === "ACTIVE") connected[appName] = item.id;
         });
       }
       setConnectedApps(connected);
@@ -66,12 +65,9 @@ const IntegrationsPage = () => {
         body: { action: "connect", app: integration.app, userId: "default" },
       });
       if (error) throw error;
-
-      // If there's a redirect URL, open it
       if (data?.redirectUrl) {
         window.open(data.redirectUrl, "_blank", "width=600,height=700");
         toast.success(`Opening ${integration.name} authorization...`);
-        // Poll for connection status
         setTimeout(() => loadConnections(), 5000);
         setTimeout(() => loadConnections(), 10000);
         setTimeout(() => loadConnections(), 20000);
@@ -79,7 +75,7 @@ const IntegrationsPage = () => {
         toast.success(`${integration.name} connected!`);
         setConnectedApps(prev => ({ ...prev, [integration.app]: data.id }));
       } else {
-        toast.info(`${integration.name} connection initiated. Complete the authorization in the opened window.`);
+        toast.info(`${integration.name} connection initiated.`);
       }
     } catch (e: any) {
       toast.error(`Failed to connect ${integration.name}: ${e.message || "Unknown error"}`);
@@ -89,8 +85,57 @@ const IntegrationsPage = () => {
   };
 
   const isConnected = (app: string) => !!connectedApps[app];
-
   const categories = [...new Set(integrations.map(i => i.category))];
+
+  const IntegrationsContent = () => (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-8 max-w-2xl">
+      <p className="text-sm text-muted-foreground">Connect your favorite apps to use them directly from Megsy chat.</p>
+
+      {isLoadingConnections ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        categories.map(cat => (
+          <div key={cat}>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">{cat}</p>
+            <div className="space-y-2">
+              {integrations.filter(i => i.category === cat).map(integration => (
+                <div key={integration.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/30 transition-colors">
+                  <img src={integration.icon} alt="" className="w-8 h-8 rounded-lg object-contain" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{integration.name}</p>
+                    <p className="text-xs text-muted-foreground">{integration.description}</p>
+                  </div>
+                  {isConnected(integration.app) ? (
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 text-emerald-600">
+                      <Check className="w-3 h-3" /> Connected
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleConnect(integration)}
+                      disabled={loadingApp === integration.id}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {loadingApp === integration.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Connect"}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+    </motion.div>
+  );
+
+  if (!isMobile) {
+    return (
+      <DesktopSettingsLayout title="Integrations" subtitle="Connect your favorite apps">
+        <IntegrationsContent />
+      </DesktopSettingsLayout>
+    );
+  }
 
   return (
     <div className="h-[100dvh] bg-background overflow-y-auto">
@@ -101,50 +146,9 @@ const IntegrationsPage = () => {
           </button>
           <h1 className="font-display text-lg font-bold text-foreground">Integrations</h1>
         </div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-4 space-y-6 pb-8">
-          <p className="text-sm text-muted-foreground">Connect your favorite apps to use them directly from Megsy chat.</p>
-
-          {isLoadingConnections ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            categories.map(cat => (
-              <div key={cat}>
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">{cat}</p>
-                <div className="space-y-2">
-                  {integrations.filter(i => i.category === cat).map(integration => (
-                    <div key={integration.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/30 transition-colors">
-                      <img src={integration.icon} alt="" className="w-8 h-8 rounded-lg object-contain" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">{integration.name}</p>
-                        <p className="text-xs text-muted-foreground">{integration.description}</p>
-                      </div>
-                      {isConnected(integration.app) ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 text-emerald-600">
-                          <Check className="w-3 h-3" /> Connected
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleConnect(integration)}
-                          disabled={loadingApp === integration.id}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-                        >
-                          {loadingApp === integration.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            "Connect"
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </motion.div>
+        <div className="px-4">
+          <IntegrationsContent />
+        </div>
       </div>
     </div>
   );

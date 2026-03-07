@@ -3,9 +3,13 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ChevronRight, Globe, Paintbrush, Zap, User, CreditCard, Gift, Code, Activity, Info, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
+import { DesktopSettingsHome } from "@/components/DesktopSettingsHome";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@email.com");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -17,7 +21,6 @@ const SettingsPage = () => {
         const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
         setUserName(displayName);
         setUserEmail(user.email || "");
-        // Load profile
         const { data: profile } = await supabase
           .from("profiles")
           .select("display_name, avatar_url")
@@ -37,6 +40,16 @@ const SettingsPage = () => {
     navigate("/auth");
   };
 
+  // Desktop: sidebar layout with home dashboard
+  if (!isMobile) {
+    return (
+      <DesktopSettingsLayout title="Welcome" subtitle="Manage your account and preferences">
+        <DesktopSettingsHome />
+      </DesktopSettingsLayout>
+    );
+  }
+
+  // Mobile: keep existing layout
   const initial = userName.charAt(0).toUpperCase();
 
   const sections = [
@@ -82,11 +95,7 @@ const SettingsPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-4">
-          {/* User */}
-          <button
-            onClick={() => navigate("/settings/profile")}
-            className="w-full flex items-center gap-3 py-3 border-b border-border"
-          >
+          <button onClick={() => navigate("/settings/profile")} className="w-full flex items-center gap-3 py-3 border-b border-border">
             {avatarUrl ? (
               <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
             ) : (
@@ -121,7 +130,6 @@ const SettingsPage = () => {
             </div>
           ))}
 
-          {/* Logout */}
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 py-3 text-left hover:bg-destructive/10 rounded-lg transition-colors -mx-2 px-2 mt-2 mb-6"
