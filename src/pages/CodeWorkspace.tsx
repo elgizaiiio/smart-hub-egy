@@ -112,7 +112,7 @@ const CodeWorkspace = () => {
 
   // Sandbox state
   const [sandbox, setSandbox] = useState<SandboxState>({
-    appName: null, machineId: null, previewUrl: null, status: "idle",
+    spriteName: null, previewUrl: null, status: "idle",
   });
   const [files, setFiles] = useState<FileTree>({});
   const [conversationId, setConversationId] = useState<string | null>(null);
