@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.github-repo]
 verify_jwt = false
+
+[functions.telegram-bot]
+verify_jwt = false
