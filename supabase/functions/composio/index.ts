@@ -93,17 +93,16 @@ serve(async (req) => {
 
       const integration = await getOrCreateIntegration(app, headers);
 
-      // Initiate connection using v3 API
+      // Initiate connection using v1 API
       const redirectUri = `${req.headers.get("origin") || "https://smart-hub-egy.lovable.app"}/settings/integrations`;
-      const connResp = await fetch("https://backend.composio.dev/api/v3/connected_accounts", {
+      const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          auth_config: { id: integration.id },
-          connection: {
-            user_id: userId || "default",
-            redirect_uri: redirectUri,
-          },
+          integrationId: integration.id,
+          userUuid: userId || "default",
+          redirectUri: redirectUri,
+          data: {},
         }),
       });
       if (!connResp.ok) {
