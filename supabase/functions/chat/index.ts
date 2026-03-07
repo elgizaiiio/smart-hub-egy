@@ -240,11 +240,107 @@ serve(async (req) => {
             const data = line.slice(6).trim();
             if (data === "[DONE]") {
               // If we have tool calls, execute them
-              if (toolCalls.length > 0 && COMPOSIO_API_KEY) {
+              if (toolCalls.length > 0) {
                 for (const tc of toolCalls) {
                   try {
                     const toolName = tc.function?.name;
                     const toolArgs = JSON.parse(tc.function?.arguments || "{}");
+
+                    // Handle WEB_SEARCH tool
+                    if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
+                      const searchQuery = toolArgs.query || "";
+                      const includeImages = toolArgs.include_images ?? false;
+                      
+                      const fetches: Promise<Response>[] = [
+                        fetch("https://google.serper.dev/search", {
+                          method: "POST",
+                          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+                          body: JSON.stringify({ q: searchQuery, num: 8 }),
+                        }),
+                      ];
+                      if (includeImages) {
+                        fetches.push(fetch("https://google.serper.dev/images", {
+                          method: "POST",
+                          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+                          body: JSON.stringify({ q: searchQuery, num: 4 }),
+                        }));
+                      }
+
+                      const responses = await Promise.all(fetches);
+                      const searchData = await responses[0].json();
+                      const imageData = includeImages && responses[1] ? await responses[1].json() : null;
+
+                      let context = "";
+                      const images: string[] = [];
+
+                      if (searchData.organic) {
+                        context = searchData.organic.map((r: any, i: number) =>
+                          `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`
+                        ).join("\n\n");
+                      }
+                      if (searchData.knowledgeGraph) {
+                        const kg = searchData.knowledgeGraph;
+                        context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
+                        if (kg.imageUrl) images.push(kg.imageUrl);
+                      }
+                      if (imageData?.images) {
+                        imageData.images.slice(0, 4).forEach((img: any) => {
+                          if (img.imageUrl) images.push(img.imageUrl);
+                        });
+                      }
+
+                      // Now make a second AI call with search results to generate the final answer
+                      const searchMessages = [
+                        ...body.messages,
+                        { role: "assistant", content: null, tool_calls: [{ id: "search_0", type: "function", function: { name: "WEB_SEARCH", arguments: tc.function.arguments } }] },
+                        { role: "tool", tool_call_id: "search_0", content: context || "No results found." },
+                      ];
+
+                      const secondBody: any = { model: modelId, messages: searchMessages, stream: true };
+
+                      const secondResp = await fetch(apiUrl, {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${apiKey}`,
+                          "Content-Type": "application/json",
+                          ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://egy.app", "X-Title": "egy" } : {}),
+                        },
+                        body: JSON.stringify(secondBody),
+                      });
+
+                      if (secondResp.ok && secondResp.body) {
+                        const secondReader = secondResp.body.getReader();
+                        let buf2 = "";
+                        while (true) {
+                          const { done: d2, value: v2 } = await secondReader.read();
+                          if (d2) break;
+                          buf2 += decoder.decode(v2, { stream: true });
+                          const lines2 = buf2.split("\n");
+                          buf2 = lines2.pop() || "";
+                          for (const l2 of lines2) {
+                            if (!l2.startsWith("data: ")) continue;
+                            const d = l2.slice(6).trim();
+                            if (d === "[DONE]") continue;
+                            try {
+                              const p = JSON.parse(d);
+                              if (p.choices?.[0]?.delta?.content) {
+                                controller.enqueue(encoder.encode(`data: ${d}\n\n`));
+                              }
+                            } catch {}
+                          }
+                        }
+                      }
+
+                      // Send images as a special event if any
+                      if (images.length > 0) {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "" } }], images })}\n\n`));
+                      }
+
+                      continue;
+                    }
+
+                    // Handle Composio tools
+                    if (!COMPOSIO_API_KEY) continue;
 
                     // Get connected account
                     const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
@@ -253,7 +349,6 @@ serve(async (req) => {
                     const connData = await connResp.json();
                     const accounts = connData.items || connData || [];
                     
-                    // Find matching connected account for the tool
                     const appName = toolName.split("_")[0].toLowerCase();
                     const account = accounts.find((a: any) => 
                       (a.appName || "").toLowerCase().includes(appName) || 
@@ -266,7 +361,6 @@ serve(async (req) => {
                       continue;
                     }
 
-                    // Execute the tool
                     const execResp = await fetch(`${COMPOSIO_BASE}/actions/${encodeURIComponent(toolName)}/execute`, {
                       method: "POST",
                       headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
