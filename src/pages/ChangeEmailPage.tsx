@@ -42,7 +42,7 @@ const ChangeEmailPage = () => {
       {/* Current email display */}
       <div className="flex flex-col items-center py-8">
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-          <AtSign className="w-7 h-7 text-primary" />
+          <MailPlus className="w-7 h-7 text-primary" />
         </div>
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Current Email</p>
         <p className="text-sm font-medium text-foreground">{currentEmail}</p>
