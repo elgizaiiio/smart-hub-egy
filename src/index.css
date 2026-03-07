@@ -287,7 +287,7 @@
 /* Fancy Button (ilkhoeri) */
 .fancy-btn {
   --h-button: 40px;
-  --round: 0.75rem;
+  --round: 1.25rem;
   cursor: pointer;
   position: relative;
   display: inline-flex;
@@ -295,16 +295,11 @@
   justify-content: center;
   overflow: hidden;
   transition: all 0.25s ease;
-  background: radial-gradient(
-      65.28% 65.28% at 50% 100%,
-      rgba(223, 113, 255, 0.8) 0%,
-      rgba(223, 113, 255, 0) 100%
-    ),
-    linear-gradient(0deg, hsl(var(--primary)), hsl(var(--primary)));
+  background: linear-gradient(135deg, #ef4444, #f97316, #eab308);
   border-radius: var(--round);
   border: none;
   outline: none;
-  padding: 8px 16px;
+  padding: 10px 22px;
 }
 .fancy-btn::before,
 .fancy-btn::after {
@@ -317,16 +312,11 @@
 }
 .fancy-btn::before {
   --space: 1px;
-  background: linear-gradient(177.95deg, rgba(255,255,255,0.19) 0%, rgba(255,255,255,0) 100%);
+  background: linear-gradient(177.95deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 100%);
 }
 .fancy-btn::after {
   --space: 2px;
-  background: radial-gradient(
-      65.28% 65.28% at 50% 100%,
-      rgba(223, 113, 255, 0.8) 0%,
-      rgba(223, 113, 255, 0) 100%
-    ),
-    linear-gradient(0deg, hsl(var(--primary)), hsl(var(--primary)));
+  background: linear-gradient(135deg, #ef4444, #f97316, #eab308);
 }
 .fancy-btn:active { transform: scale(0.95); }
 .fancy-btn .fold {
