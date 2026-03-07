@@ -12,28 +12,11 @@ const AuthPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const checkEmailExists = async () => {
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+
+  const handleContinueWithEmail = () => {
     if (!email.trim()) return;
-    setIsSubmitting(true);
-    try {
-      // Use signInWithOtp with shouldCreateUser false to check if email exists
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
-      });
-      if (error?.message?.includes("Signups not allowed for otp") || error?.message?.includes("User not found") || error?.message?.includes("user_not_found")) {
-        // User doesn't exist
-        setIsSignUp(true);
-      } else {
-        // User exists (either OTP sent or other message)
-        setIsSignUp(false);
-      }
-    } catch {
-      // Default to sign up flow
-      setIsSignUp(true);
-    }
     setStep("password");
-    setIsSubmitting(false);
   };
 
   const handleAuth = async () => {
