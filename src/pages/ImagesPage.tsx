@@ -267,6 +267,12 @@ const ImagesPage = () => {
       return;
     }
 
+    const creditCost = Number(selectedModel.credits) || 1;
+    if (userId && !hasEnoughCredits(creditCost)) {
+      toast.error("رصيد الكريدت غير كافي. يرجى شحن حسابك.");
+      return;
+    }
+
     const userContent = trimmed || `Generate with ${selectedModel.name}`;
     const userMsg: ChatMsg = { role: "user", content: userContent };
     setMessages((prev) => [...prev, userMsg]);
