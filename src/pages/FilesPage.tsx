@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, Mail, HardDrive } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image } from "lucide-react";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
 import ThinkingLoader from "@/components/ThinkingLoader";
@@ -10,6 +10,12 @@ interface ChatMsg {
   role: "user" | "assistant";
   content: string;
   htmlContent?: string;
+}
+
+interface AttachedFile {
+  name: string;
+  type: string;
+  data: string;
 }
 
 const SUGGESTIONS = [
@@ -36,6 +42,7 @@ const FilesPage = () => {
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -56,16 +63,50 @@ const FilesPage = () => {
     return () => clearInterval(t);
   }, [placeholderIdx, input]);
 
+  const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>, type: "file" | "image") => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 10MB)`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAttachedFiles(prev => [...prev, {
+          name: file.name,
+          type: file.type,
+          data: reader.result as string,
+        }]);
+        toast.success(`${file.name} attached`);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleGenerate = async () => {
-    if (!input.trim()) return;
-    const userMsg: ChatMsg = { role: "user", content: input };
+    if (!input.trim() && attachedFiles.length === 0) return;
+    const userMsg: ChatMsg = { role: "user", content: input || `[Attached ${attachedFiles.length} file(s)]` };
     setMessages(prev => [...prev, userMsg]);
     const userInput = input;
     setInput("");
+    const files = [...attachedFiles];
+    setAttachedFiles([]);
     setIsGenerating(true);
 
     try {
-      // First generate the HTML document
+      let prompt = `Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished. Output ONLY the HTML code, no explanations:\n\n${userInput}`;
+      
+      if (files.length > 0) {
+        prompt += `\n\n[User attached ${files.length} file(s): ${files.map(f => f.name).join(", ")}]`;
+      }
+
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: {
@@ -73,7 +114,7 @@ const FilesPage = () => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: [{ role: "user", content: `Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished. Output ONLY the HTML code, no explanations:\n\n${userInput}` }],
+          messages: [{ role: "user", content: prompt }],
           model: "google/gemini-3-flash-preview",
           mode: "files",
         }),
@@ -114,7 +155,6 @@ const FilesPage = () => {
       const htmlMatch = content.match(/```html\n([\s\S]*?)```/);
       if (htmlMatch) html = htmlMatch[1];
 
-      // Now generate AI description
       const descResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: {
@@ -169,7 +209,7 @@ const FilesPage = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); }} currentMode="files" />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); }} currentMode="files" />
 
       {/* Preview Modal */}
       <AnimatePresence>
@@ -248,12 +288,26 @@ const FilesPage = () => {
 
       <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto relative">
+          {/* Attached files preview */}
+          {attachedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2 px-1">
+              {attachedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm text-foreground">
+                  <Paperclip className="w-3 h-3 text-muted-foreground" />
+                  <span className="truncate max-w-[120px]">{f.name}</span>
+                  <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <AnimatePresence>
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64">
-                  {/* Web Search toggle */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56">
                   <button
                     onClick={() => { setSearchEnabled(!searchEnabled); setMenuOpen(false); }}
                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
@@ -275,18 +329,6 @@ const FilesPage = () => {
                     <Paperclip className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm">Attach Document</span>
                   </button>
-
-                  <div className="border-t border-border mt-1 pt-1">
-                    <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Agents</p>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
-                      <Mail className="w-4 h-4 text-muted-foreground" /> Email
-                      <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">PRO</span>
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
-                      <HardDrive className="w-4 h-4 text-muted-foreground" /> Google Drive
-                      <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">PRO</span>
-                    </button>
-                  </div>
                 </motion.div>
               </>
             )}
@@ -304,12 +346,12 @@ const FilesPage = () => {
               className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
               style={{ minHeight: "32px" }}
             />
-            <button onClick={handleGenerate} disabled={!input.trim() || isGenerating} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20">
+            <button onClick={handleGenerate} disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20">
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
             </button>
           </div>
-          <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.txt,.md,.csv,.json,.docx,.xlsx" />
-          <input ref={imageInputRef} type="file" className="hidden" accept="image/*" />
+          <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.txt,.md,.csv,.json,.docx,.xlsx" multiple onChange={(e) => handleFileAttach(e, "file")} />
+          <input ref={imageInputRef} type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileAttach(e, "image")} />
         </div>
       </div>
     </div>
