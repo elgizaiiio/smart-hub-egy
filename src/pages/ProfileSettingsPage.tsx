@@ -22,26 +22,27 @@ const ProfileSettingsPage = () => {
   const [nameInput, setNameInput] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "");
-        setUserEmail(user.email || "");
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("credits, plan, display_name, avatar_url")
-          .eq("id", user.id)
-          .single();
-        if (profile) {
-          setCredits(Number(profile.credits) || 0);
-          setPlan(profile.plan || "free");
-          if (profile.display_name) setUserName(profile.display_name);
-          setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
-        }
+      if (!user || cancelled) return;
+      setUserId(user.id);
+      setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "");
+      setUserEmail(user.email || "");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits, plan, display_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+      if (profile && !cancelled) {
+        setCredits(Number(profile.credits) || 0);
+        setPlan(profile.plan || "free");
+        if (profile.display_name) setUserName(profile.display_name);
+        setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
       }
     };
     loadUser();
+    return () => { cancelled = true; };
   }, []);
 
   const initial = (userName || "U").charAt(0).toUpperCase();
@@ -82,7 +83,7 @@ const ProfileSettingsPage = () => {
     }
   };
 
-  const ProfileContent = () => (
+  const content = (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-md mx-auto">
       {/* Avatar + Name + Email */}
       <div className="flex flex-col items-center py-8">
@@ -150,7 +151,6 @@ const ProfileSettingsPage = () => {
       {/* Security */}
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 px-1">Security</p>
-
         <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
           <Mail className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
@@ -159,7 +159,6 @@ const ProfileSettingsPage = () => {
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
-
         <button onClick={() => navigate("/settings/change-password")} className="w-full flex items-center gap-3 py-4 px-1 text-left">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1">
@@ -201,7 +200,7 @@ const ProfileSettingsPage = () => {
   if (!isMobile) {
     return (
       <DesktopSettingsLayout title="Account" subtitle="Manage your profile and security">
-        <ProfileContent />
+        {content}
       </DesktopSettingsLayout>
     );
   }
@@ -215,9 +214,7 @@ const ProfileSettingsPage = () => {
           </button>
           <h1 className="font-display text-lg font-bold text-foreground">Account</h1>
         </div>
-        <div className="px-4">
-          <ProfileContent />
-        </div>
+        <div className="px-4">{content}</div>
       </div>
     </div>
   );
