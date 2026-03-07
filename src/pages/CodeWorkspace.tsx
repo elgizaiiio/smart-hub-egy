@@ -245,9 +245,8 @@ const CodeWorkspace = () => {
       addLog(`Writing ${filePath}...`);
       await callSandbox({
         action: "write-file",
-        app_name: sb.appName,
-        machine_id: sb.machineId,
-        file_path: filePath,
+        sprite_name: sb.spriteName,
+        file_path: `/app/${filePath}`,
         file_content: content,
       });
     }
