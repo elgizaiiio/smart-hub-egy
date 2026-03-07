@@ -366,15 +366,20 @@ const ChatPage = () => {
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Mode badge */}
-          {chatMode !== "normal" && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary backdrop-blur-sm font-medium">
-              {chatMode === "learning" ? "Learning" : "Shopping"}
-            </span>
-          )}
           <AnimatePresence>
             {!hasConversation && (
               <motion.div
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <FancyButton onClick={() => navigate("/pricing")}>
+                  Unlock Pro
+                </FancyButton>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
                 initial={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
