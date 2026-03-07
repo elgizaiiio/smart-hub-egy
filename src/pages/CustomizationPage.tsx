@@ -80,6 +80,7 @@ const CustomizationPage = () => {
                   </div>
                 </div>
                 <p className="text-xs font-medium text-foreground">{t.label}</p>
+                <p className="text-[10px] text-muted-foreground">{t.desc}</p>
                 {isSelected && (
                   <motion.div
                     layoutId="theme-indicator"
