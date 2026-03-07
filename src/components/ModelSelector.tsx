@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { createPortal } from "react-dom";
+import ModelPickerSheet from "./ModelPickerSheet";
 
 export interface ModelOption {
   id: string;
@@ -115,89 +114,29 @@ interface ModelSelectorProps {
   colorClass?: string;
 }
 
-const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories, colorClass }: ModelSelectorProps) => {
+const ModelSelector = ({ mode, selectedModel, onModelChange, colorClass }: ModelSelectorProps) => {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"model" | "tool">("model");
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 280 });
-  const models = MODELS[mode] || CHAT_MODELS;
-  const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const filteredModels = showCategories
-    ? models.filter(m => (m.category || "model") === tab)
-    : models;
-
-  const updatePosition = useCallback(() => {
-    if (!buttonRef.current) return;
-    const rect = buttonRef.current.getBoundingClientRect();
-    const dropdownWidth = 280;
-    let left = rect.left + rect.width / 2 - dropdownWidth / 2;
-    if (left < 8) left = 8;
-    if (left + dropdownWidth > window.innerWidth - 8) left = window.innerWidth - 8 - dropdownWidth;
-    setDropdownPos({ top: rect.bottom + 8, left, width: dropdownWidth });
-  }, []);
-
-  useEffect(() => {
-    if (open) updatePosition();
-  }, [open, updatePosition]);
+  const pickerMode = (mode === "images" || mode === "videos" || mode === "chat") ? mode : "chat";
 
   return (
-    <div className="relative" style={{ zIndex: 50 }}>
+    <>
       <button
-        ref={buttonRef}
-        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        onClick={(e) => { e.stopPropagation(); setOpen(true); }}
         className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-colors ${colorClass || "bg-primary text-primary-foreground hover:bg-primary/90"}`}
       >
         {selectedModel.name}
         <ChevronDown className="w-3 h-3" />
       </button>
 
-      {open && createPortal(
-        <>
-          <div className="fixed inset-0 z-[42]" onClick={() => setOpen(false)} />
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fixed z-[43] glass-panel p-1.5 max-h-[380px] overflow-y-auto"
-            style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
-          >
-            {showCategories && (
-              <div className="flex gap-1 p-1 mb-1">
-                <button
-                  onClick={() => setTab("model")}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === "model" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
-                >
-                  Models
-                </button>
-                <button
-                  onClick={() => setTab("tool")}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === "tool" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
-                >
-                  Tools
-                </button>
-              </div>
-            )}
-            {filteredModels.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => { onModelChange(m); setOpen(false); }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition-colors ${
-                  m.id === selectedModel.id ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                }`}
-              >
-                <div className="flex flex-col">
-                  <span className="text-foreground text-xs font-medium">{m.name}</span>
-                  {m.requiresImage && <span className="text-[10px] text-primary">Requires image</span>}
-                </div>
-                {m.credits && (
-                  <span className="text-[10px] opacity-60">{m.credits} credits</span>
-                )}
-              </button>
-            ))}
-          </motion.div>
-        </>,
-        document.body
-      )}
-    </div>
+      <ModelPickerSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        onSelect={onModelChange}
+        mode={pickerMode}
+        selectedModelId={selectedModel.id}
+      />
+    </>
   );
 };
 
