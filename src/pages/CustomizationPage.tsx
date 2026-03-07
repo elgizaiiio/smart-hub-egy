@@ -1,30 +1,30 @@
 import { useState, useCallback } from "react";
-import { ArrowLeft, Sun, Moon, Monitor, Zap, Check, Palette, MessageCircle } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 
 const themes = [
-  { id: "light", label: "Light", icon: Sun, preview: "bg-white border border-border" },
-  { id: "white", label: "Pure White", icon: Monitor, preview: "bg-[#fafafa] border border-border" },
-  { id: "dark", label: "Dark", icon: Moon, preview: "bg-[#1a1a2e]" },
-  { id: "oled", label: "OLED", icon: Zap, preview: "bg-black" },
+  { id: "light", label: "Light", colors: ["#ffffff", "#f5f5f5", "#e5e5e5"] },
+  { id: "white", label: "Pure White", colors: ["#fafafa", "#f0f0f0", "#e0e0e0"] },
+  { id: "dark", label: "Dark", colors: ["#1a1a2e", "#16213e", "#0f3460"] },
+  { id: "oled", label: "OLED", colors: ["#000000", "#0a0a0a", "#111111"] },
 ];
 
 const accentColors = [
-  { hsl: "262 60% 55%", hex: "#7c5cfc", name: "Violet" },
-  { hsl: "210 80% 55%", hex: "#3b82f6", name: "Blue" },
-  { hsl: "142 50% 50%", hex: "#22c55e", name: "Green" },
-  { hsl: "330 70% 55%", hex: "#ec4899", name: "Pink" },
-  { hsl: "25 90% 55%", hex: "#f97316", name: "Orange" },
-  { hsl: "160 60% 45%", hex: "#14b8a6", name: "Teal" },
-  { hsl: "0 70% 55%", hex: "#ef4444", name: "Red" },
-  { hsl: "270 60% 55%", hex: "#8b5cf6", name: "Purple" },
-  { hsl: "180 60% 45%", hex: "#06b6d4", name: "Cyan" },
-  { hsl: "45 90% 50%", hex: "#eab308", name: "Gold" },
-  { hsl: "150 60% 40%", hex: "#10b981", name: "Emerald" },
-  { hsl: "340 80% 55%", hex: "#f43f5e", name: "Rose" },
+  { hsl: "262 60% 55%", hex: "#7c5cfc" },
+  { hsl: "210 80% 55%", hex: "#3b82f6" },
+  { hsl: "142 50% 50%", hex: "#22c55e" },
+  { hsl: "330 70% 55%", hex: "#ec4899" },
+  { hsl: "25 90% 55%", hex: "#f97316" },
+  { hsl: "160 60% 45%", hex: "#14b8a6" },
+  { hsl: "0 70% 55%", hex: "#ef4444" },
+  { hsl: "270 60% 55%", hex: "#8b5cf6" },
+  { hsl: "180 60% 45%", hex: "#06b6d4" },
+  { hsl: "45 90% 50%", hex: "#eab308" },
+  { hsl: "150 60% 40%", hex: "#10b981" },
+  { hsl: "340 80% 55%", hex: "#f43f5e" },
 ];
 
 const CustomizationPage = () => {
@@ -47,34 +47,43 @@ const CustomizationPage = () => {
 
   const content = (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
-      {/* Theme Grid */}
+      {/* Theme Selection */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Palette className="w-4 h-4 text-muted-foreground" />
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Theme</p>
-        </div>
-        <div className="grid grid-cols-4 gap-2.5">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-4">Theme</p>
+        <div className="grid grid-cols-2 gap-3">
           {themes.map(t => {
             const isSelected = currentTheme === t.id;
-            const Icon = t.icon;
             return (
               <button
                 key={t.id}
                 onClick={() => handleThemeChange(t.id)}
-                className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl transition-all ${
-                  isSelected
-                    ? "bg-primary/10 ring-1.5 ring-primary/40"
-                    : "hover:bg-muted/40"
+                className={`relative rounded-2xl p-3 transition-all ${
+                  isSelected ? "ring-2 ring-primary" : "ring-1 ring-border hover:ring-primary/30"
                 }`}
               >
-                <div className={`w-12 h-12 rounded-xl ${t.preview} flex items-center justify-center transition-transform ${isSelected ? "scale-105" : ""}`}>
-                  <Icon className={`w-5 h-5 ${t.id === "dark" || t.id === "oled" ? "text-white/70" : "text-neutral-600"}`} />
+                {/* Mini mockup */}
+                <div
+                  className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-2.5"
+                  style={{ background: t.colors[0] }}
+                >
+                  <div className="p-2 space-y-1.5">
+                    <div className="h-2 w-8 rounded-full" style={{ background: t.colors[2] }} />
+                    <div className="h-1.5 w-full rounded-full" style={{ background: t.colors[1] }} />
+                    <div className="h-1.5 w-3/4 rounded-full" style={{ background: t.colors[1] }} />
+                    <div className="h-1.5 w-1/2 rounded-full" style={{ background: t.colors[1] }} />
+                    <div className="mt-2 flex justify-end">
+                      <div
+                        className="h-2.5 w-12 rounded-full"
+                        style={{ background: `hsl(${currentAccent})` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[11px] font-medium text-foreground">{t.label}</span>
+                <p className="text-xs font-medium text-foreground">{t.label}</p>
                 {isSelected && (
                   <motion.div
-                    layoutId="theme-check"
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
+                    layoutId="theme-indicator"
+                    className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
                   >
                     <Check className="w-3 h-3 text-primary-foreground" />
                   </motion.div>
@@ -85,50 +94,40 @@ const CustomizationPage = () => {
         </div>
       </div>
 
-      {/* Chat Preview */}
+      {/* Accent Color */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <MessageCircle className="w-4 h-4 text-muted-foreground" />
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Preview</p>
-        </div>
-        <div className="rounded-2xl bg-muted/30 p-4 space-y-3">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-4">Accent Color</p>
+
+        {/* Chat Preview */}
+        <div className="rounded-2xl bg-muted/30 p-4 mb-5 space-y-2.5">
           <div className="flex justify-end">
-            <div className="rounded-2xl rounded-br-md px-4 py-2.5 max-w-[75%]" style={{ background: `hsl(${currentAccent})` }}>
-              <p className="text-white text-[13px]">Hey, how does this look? ✨</p>
+            <div className="rounded-2xl rounded-br-sm px-3.5 py-2 max-w-[65%]" style={{ background: `hsl(${currentAccent})` }}>
+              <p className="text-white text-[13px]">Hey! How's it going?</p>
             </div>
           </div>
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-muted max-w-[75%]">
-              <p className="text-[13px] text-foreground">Looking great! Love the color.</p>
+            <div className="rounded-2xl rounded-bl-sm px-3.5 py-2 bg-muted max-w-[65%]">
+              <p className="text-[13px] text-foreground">Pretty good, thanks!</p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Accent Colors */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-4 h-4 rounded-full" style={{ background: `hsl(${currentAccent})` }} />
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Accent Color</p>
-        </div>
-        <div className="grid grid-cols-6 gap-3 justify-items-center">
+        <div className="flex flex-wrap gap-3 justify-center">
           {accentColors.map(c => {
             const isSelected = currentAccent === c.hsl;
             return (
               <button
                 key={c.hex}
                 onClick={() => handleAccentChange(c.hsl)}
-                className="group flex flex-col items-center gap-1.5"
+                className={`w-9 h-9 rounded-full transition-all hover:scale-110 flex items-center justify-center ${
+                  isSelected ? "ring-2 ring-offset-2 ring-offset-background" : ""
+                }`}
+                style={{
+                  background: c.hex,
+                  ...(isSelected ? { boxShadow: `0 0 14px ${c.hex}50` } : {}),
+                }}
               >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all group-hover:scale-110 ${
-                    isSelected ? "ring-2 ring-offset-2 ring-offset-background" : ""
-                  }`}
-                  style={{ background: c.hex, ...(isSelected ? { boxShadow: `0 0 12px ${c.hex}60` } : {}) }}
-                >
-                  {isSelected && <Check className="w-4 h-4 text-white drop-shadow" />}
-                </div>
-                <span className="text-[9px] text-muted-foreground">{c.name}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow-sm" />}
               </button>
             );
           })}
@@ -139,7 +138,7 @@ const CustomizationPage = () => {
 
   if (!isMobile) {
     return (
-      <DesktopSettingsLayout title="Customization" subtitle="Personalize your experience with themes and colors">
+      <DesktopSettingsLayout title="Customization" subtitle="Personalize your experience">
         {content}
       </DesktopSettingsLayout>
     );
