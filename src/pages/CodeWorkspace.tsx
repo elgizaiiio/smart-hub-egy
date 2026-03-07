@@ -325,9 +325,24 @@ const CodeWorkspace = () => {
           // Parse AI output as JSON
           let parsed: { files: FileTree };
           // Try to extract JSON from potential markdown wrapping
-          const jsonMatch = assistantContent.match(/\{[\s\S]*\}/);
-          if (!jsonMatch) throw new Error("No JSON found in AI response");
-          parsed = JSON.parse(jsonMatch[0]);
+          let cleaned = assistantContent
+            .replace(/```json\s*/gi, "")
+            .replace(/```\s*/g, "")
+            .trim();
+          const jsonStart = cleaned.search(/[\{\[]/);
+          const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === '[' ? ']' : '}');
+          if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found in AI response");
+          cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+          try {
+            parsed = JSON.parse(cleaned);
+          } catch {
+            // Fix control characters and trailing commas
+            cleaned = cleaned
+              .replace(/,\s*}/g, "}")
+              .replace(/,\s*]/g, "]")
+              .replace(/[\x00-\x1F\x7F]/g, "");
+            parsed = JSON.parse(cleaned);
+          }
 
           if (!parsed.files || typeof parsed.files !== "object") {
             throw new Error("Invalid file structure in AI response");
