@@ -42,7 +42,7 @@ const DeleteAccountPage = () => {
       {/* Warning hero */}
       <div className="flex flex-col items-center py-8">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-          <TriangleAlert className="w-7 h-7 text-destructive" />
+          <OctagonAlert className="w-7 h-7 text-destructive" />
         </div>
         <h2 className="text-lg font-semibold text-foreground mb-1">Delete your account?</h2>
         <p className="text-sm text-muted-foreground text-center max-w-xs">
