@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Plus, Paperclip, ArrowUp, Download, Share2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import ModelSelector, { getDefaultModel } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
@@ -15,6 +16,59 @@ const InstagramIcon = () => (
 const LinkedInIcon = () => (
   <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
 );
+
+const IMAGE_PHRASES = [
+  "Your vision, painted in pixels.",
+  "A masterpiece, freshly rendered.",
+  "Behold what imagination looks like.",
+  "Art born from your words.",
+  "The canvas speaks your language.",
+  "Crafted with digital brushstrokes.",
+  "Where thought becomes sight.",
+  "A glimpse into the impossible.",
+  "Reality, reimagined for you.",
+  "From mind to masterpiece.",
+  "Your idea, now immortalized.",
+  "Pixels dancing to your tune.",
+  "The AI muse delivers.",
+  "A visual whisper of creativity.",
+  "Freshly conjured, just for you.",
+  "Your prompt, elevated to art.",
+  "Digital alchemy at its finest.",
+  "A new world in a frame.",
+  "Imagination rendered in high fidelity.",
+  "The machine dreams your dream.",
+  "Art that didn't exist a second ago.",
+  "Your concept, now tangible.",
+  "Sculpted from pure imagination.",
+  "A symphony of color and light.",
+  "Rendered with algorithmic grace.",
+  "The spark of an idea, visualized.",
+  "Born from the void of creativity.",
+  "A digital poem in pixels.",
+  "Your words became this.",
+  "Conjured from the depths of AI.",
+  "A visual echo of your thoughts.",
+  "Freshly forged in the neural fires.",
+  "Where language meets light.",
+  "The art of the impossible.",
+  "Your narrative, illustrated.",
+  "A frame-worthy moment, generated.",
+  "Pixels aligning to your will.",
+  "The intersection of code and canvas.",
+  "A visual revelation awaits.",
+  "Dreamt up and delivered.",
+  "The algorithm paints for you.",
+  "A digital daydream materialized.",
+  "Your aesthetic, amplified.",
+  "Creativity compressed into an image.",
+  "A thousand computations, one artwork.",
+  "The future of art, in your hands.",
+  "Woven from threads of data.",
+  "A portrait of pure possibility.",
+  "Your imagination, no limits.",
+  "Art without boundaries.",
+];
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -38,6 +92,8 @@ const PLACEHOLDERS = [
   "Abstract art with vibrant colors...",
 ];
 
+const getRandomPhrase = () => IMAGE_PHRASES[Math.floor(Math.random() * IMAGE_PHRASES.length)];
+
 const ImagesPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("images"));
@@ -49,8 +105,10 @@ const ImagesPage = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentImage(p => (p + 1) % SHOWCASE_IMAGES.length), 4000);
@@ -73,6 +131,42 @@ const ImagesPage = () => {
     return () => clearInterval(t);
   }, [placeholderIdx, input]);
 
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  const createOrGetConversation = async (firstMessage: string) => {
+    if (conversationId) return conversationId;
+    const title = firstMessage.slice(0, 50) || "Image Generation";
+    const { data } = await supabase
+      .from("conversations")
+      .insert({ title, mode: "images", model: selectedModel.id })
+      .select("id")
+      .single();
+    if (data) {
+      setConversationId(data.id);
+      return data.id;
+    }
+    return null;
+  };
+
+  const saveMessage = async (convId: string, role: string, content: string, images?: string[]) => {
+    await supabase.from("messages").insert({
+      conversation_id: convId,
+      role,
+      content,
+      images: images || null,
+    });
+  };
+
   const handleGenerate = async () => {
     if (!input.trim() && !attachedImage) return;
     if (selectedModel.requiresImage && !attachedImage) {
@@ -80,10 +174,14 @@ const ImagesPage = () => {
       return;
     }
 
-    const userMsg: ChatMsg = { role: "user", content: input || "Generate image" };
+    const userContent = input || "Generate image";
+    const userMsg: ChatMsg = { role: "user", content: userContent };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsGenerating(true);
+
+    const convId = await createOrGetConversation(userContent);
+    if (convId) await saveMessage(convId, "user", userContent);
 
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`, {
@@ -93,24 +191,36 @@ const ImagesPage = () => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          prompt: userMsg.content,
+          prompt: userContent,
           model: selectedModel.id,
           image_url: attachedImage || undefined,
         }),
       });
       const data = await resp.json();
       if (data.error) {
-        setMessages(prev => [...prev, { role: "assistant", content: `Error: ${data.error}` }]);
+        const errMsg = `Error: ${data.error}`;
+        setMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
+        if (convId) await saveMessage(convId, "assistant", errMsg);
       } else if (data.image_url) {
-        setMessages(prev => [...prev, { role: "assistant", content: "Here's your generated image:", imageUrl: data.image_url }]);
+        const phrase = getRandomPhrase();
+        setMessages(prev => [...prev, { role: "assistant", content: phrase, imageUrl: data.image_url }]);
+        if (convId) await saveMessage(convId, "assistant", phrase, [data.image_url]);
       } else {
-        setMessages(prev => [...prev, { role: "assistant", content: "No image was returned. Please try again." }]);
+        const noImg = "No image was returned. Please try again.";
+        setMessages(prev => [...prev, { role: "assistant", content: noImg }]);
+        if (convId) await saveMessage(convId, "assistant", noImg);
       }
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]);
+      const failMsg = "Generation failed. Please try again.";
+      setMessages(prev => [...prev, { role: "assistant", content: failMsg }]);
+      if (convId) await saveMessage(convId, "assistant", failMsg);
     }
     setIsGenerating(false);
     setAttachedImage(null);
+    // Update conversation timestamp
+    if (convId) {
+      await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    }
   };
 
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,11 +232,73 @@ const ImagesPage = () => {
     e.target.value = "";
   };
 
+  const handleShare = (platform: string, imageUrl?: string) => {
+    if (!imageUrl) {
+      // Find the last image in messages
+      const lastImg = [...messages].reverse().find(m => m.imageUrl);
+      imageUrl = lastImg?.imageUrl;
+    }
+    if (!imageUrl) {
+      toast.error("No image to share");
+      setMenuOpen(false);
+      return;
+    }
+    const encodedUrl = encodeURIComponent(imageUrl);
+    const text = encodeURIComponent("Check out this AI-generated image!");
+    let shareUrl = "";
+    switch (platform) {
+      case "facebook":
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+        break;
+      case "instagram":
+        // Instagram doesn't have a direct share URL, copy link instead
+        navigator.clipboard.writeText(imageUrl);
+        toast.success("Image link copied! Open Instagram and paste it.");
+        setMenuOpen(false);
+        return;
+      case "linkedin":
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+        break;
+    }
+    if (shareUrl) window.open(shareUrl, "_blank", "width=600,height=400");
+    setMenuOpen(false);
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setConversationId(null);
+    setInput("");
+    setAttachedImage(null);
+  };
+
+  const loadConversation = async (id: string) => {
+    setConversationId(id);
+    const { data: msgs } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", id)
+      .order("created_at", { ascending: true });
+    if (msgs) {
+      setMessages(msgs.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        imageUrl: m.images?.[0] || undefined,
+      })));
+    }
+  };
+
   const hasMessages = messages.length > 0;
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); }} currentMode="images" />
+      <AppSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onNewChat={handleNewChat}
+        onSelectConversation={loadConversation}
+        activeConversationId={conversationId}
+        currentMode="images"
+      />
 
       <div className="flex items-center justify-between px-4 py-2">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
@@ -181,8 +353,14 @@ const ImagesPage = () => {
                           <button onClick={() => window.open(msg.imageUrl, "_blank")} className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors">
                             <Download className="w-4 h-4" />
                           </button>
-                          <button className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors">
-                            <Share2 className="w-4 h-4" />
+                          <button onClick={() => handleShare("facebook", msg.imageUrl)} className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors" title="Share to Facebook">
+                            <FacebookIcon />
+                          </button>
+                          <button onClick={() => handleShare("instagram", msg.imageUrl)} className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors" title="Share to Instagram">
+                            <InstagramIcon />
+                          </button>
+                          <button onClick={() => handleShare("linkedin", msg.imageUrl)} className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors" title="Share to LinkedIn">
+                            <LinkedInIcon />
                           </button>
                         </div>
                       </div>
@@ -207,13 +385,12 @@ const ImagesPage = () => {
             </div>
           )}
           <div className="relative flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-xl px-3 py-2">
-            <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-              <Plus className="w-5 h-5" />
-            </button>
-            <AnimatePresence>
-              {menuOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+            <div ref={menuRef} className="relative">
+              <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                <Plus className="w-5 h-5" />
+              </button>
+              <AnimatePresence>
+                {menuOpen && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56">
                     <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
                       <Paperclip className="w-4 h-4 text-muted-foreground" />
@@ -221,20 +398,20 @@ const ImagesPage = () => {
                     </button>
                     <div className="border-t border-border mt-1 pt-1">
                       <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Publish to</p>
-                      <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
+                      <button onClick={() => handleShare("facebook")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
                         <FacebookIcon /> Facebook
                       </button>
-                      <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
+                      <button onClick={() => handleShare("instagram")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
                         <InstagramIcon /> Instagram
                       </button>
-                      <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
+                      <button onClick={() => handleShare("linkedin")} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground">
                         <LinkedInIcon /> LinkedIn
                       </button>
                     </div>
                   </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+                )}
+              </AnimatePresence>
+            </div>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
