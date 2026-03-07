@@ -29,7 +29,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
 
-  const showRecent = currentMode === "chat" || currentMode === "code" || currentMode === "images" || currentMode === "videos";
+  const showRecent = currentMode === "chat" || currentMode === "code" || currentMode === "images" || currentMode === "videos" || currentMode === "files";
 
   useEffect(() => {
     if (open) {
@@ -58,7 +58,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   };
 
   const loadConversations = async () => {
-    const modeFilter = currentMode === "code" ? "code" : currentMode === "images" ? "images" : currentMode === "videos" ? "videos" : "chat";
+    const modeFilter = currentMode === "code" ? "code" : currentMode === "images" ? "images" : currentMode === "videos" ? "videos" : currentMode === "files" ? "files" : "chat";
     const { data } = await supabase
       .from("conversations")
       .select("id, title, updated_at, mode")

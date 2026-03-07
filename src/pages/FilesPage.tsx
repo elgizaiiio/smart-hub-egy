@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileSpreadsheet, FileText, Presentation, Table } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import ReactMarkdown from "react-markdown";
@@ -43,6 +44,7 @@ const FilesPage = () => {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -90,15 +92,42 @@ const FilesPage = () => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const createOrGetConversation = async (firstMessage: string) => {
+    if (conversationId) return conversationId;
+    const title = firstMessage.slice(0, 50) || "File Generation";
+    const { data } = await supabase
+      .from("conversations")
+      .insert({ title, mode: "files" })
+      .select("id")
+      .single();
+    if (data) {
+      setConversationId(data.id);
+      return data.id;
+    }
+    return null;
+  };
+
+  const saveMessage = async (convId: string, role: string, content: string) => {
+    await supabase.from("messages").insert({
+      conversation_id: convId,
+      role,
+      content,
+    });
+  };
+
   const handleGenerate = async () => {
     if (!input.trim() && attachedFiles.length === 0) return;
-    const userMsg: ChatMsg = { role: "user", content: input || `[Attached ${attachedFiles.length} file(s)]` };
+    const userContent = input || `[Attached ${attachedFiles.length} file(s)]`;
+    const userMsg: ChatMsg = { role: "user", content: userContent };
     setMessages(prev => [...prev, userMsg]);
     const userInput = input;
     setInput("");
     const files = [...attachedFiles];
     setAttachedFiles([]);
     setIsGenerating(true);
+
+    const convId = await createOrGetConversation(userContent);
+    if (convId) await saveMessage(convId, "user", userContent);
 
     try {
       let prompt = `Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished. Output ONLY the HTML code, no explanations:\n\n${userInput}`;
@@ -191,8 +220,11 @@ const FilesPage = () => {
       }
 
       setMessages(prev => [...prev, { role: "assistant", content: description, htmlContent: html }]);
+      if (convId) await saveMessage(convId, "assistant", description);
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]);
+      const failMsg = "Generation failed. Please try again.";
+      setMessages(prev => [...prev, { role: "assistant", content: failMsg }]);
+      if (convId) await saveMessage(convId, "assistant", failMsg);
     }
     setIsGenerating(false);
   };
@@ -209,7 +241,7 @@ const FilesPage = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); }} currentMode="files" />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} currentMode="files" />
 
       {/* Preview Modal */}
       <AnimatePresence>
