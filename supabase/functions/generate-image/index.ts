@@ -68,50 +68,15 @@ function cleanBase64(base64String: string): string {
   return cleaned;
 }
 
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
+function normalizeImageInput(imageValue: string): string {
+  if (!imageValue || !imageValue.startsWith("data:")) return imageValue;
 
-async function uploadDataUriToFalStorage(dataUri: string, apiKey: string): Promise<string> {
-  const match = dataUri.match(DATA_URI_REGEX);
-  if (!match) return dataUri;
+  const match = imageValue.match(DATA_URI_REGEX);
+  if (!match) return imageValue;
 
-  const mimeType = match[1] || "application/octet-stream";
-  const base64Payload = cleanBase64(match[2] || "");
-  const bytes = base64ToBytes(base64Payload);
-
-  const uploadResp = await fetch("https://fal.run/fal-ai/storage/upload", {
-    method: "POST",
-    headers: {
-      Authorization: `Key ${apiKey}`,
-      "Content-Type": mimeType,
-    },
-    body: bytes,
-  });
-
-  if (!uploadResp.ok) {
-    const uploadErr = await uploadResp.text();
-    throw new Error(`fal storage upload failed: ${uploadResp.status} - ${uploadErr.slice(0, 200)}`);
-  }
-
-  const uploadResult = await uploadResp.json();
-  const uploadedUrl = uploadResult?.url || uploadResult?.file?.url || uploadResult?.data?.url;
-
-  if (!uploadedUrl) throw new Error("fal storage upload returned no URL");
-  return uploadedUrl;
-}
-
-async function normalizeImageInput(imageValue: string, apiKey: string): Promise<string> {
-  if (!imageValue) return imageValue;
-  if (imageValue.startsWith("data:")) {
-    return uploadDataUriToFalStorage(imageValue, apiKey);
-  }
-  return imageValue;
+  const mimeType = match[1] || "image/png";
+  const cleanedBase64 = cleanBase64(match[2] || "");
+  return `data:${mimeType};base64,${cleanedBase64}`;
 }
 
 serve(async (req) => {
@@ -135,7 +100,7 @@ serve(async (req) => {
       .map((value) => value.trim());
 
     const uniqueImages = [...new Set(rawImages)].slice(0, modelConfig.maxImages || 1);
-    const processedImages = await Promise.all(uniqueImages.map((img) => normalizeImageInput(img, FAL_API_KEY)));
+    const processedImages = uniqueImages.map((img) => normalizeImageInput(img));
 
     if (modelConfig.requiresImage && processedImages.length === 0) {
       throw new Error(`${model || "Selected model"} requires at least one image input`);
