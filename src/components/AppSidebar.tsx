@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CreditCard, MessageSquare, ImageIcon, VideoIcon, Code2, FileText, Gift, Settings } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -69,11 +69,11 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   };
 
   const services = [
-    { path: "/", label: "Chat", icon: MessageSquare },
-    { path: "/images", label: "Images", icon: ImageIcon },
-    { path: "/videos", label: "Videos", icon: VideoIcon },
-    { path: "/code", label: "Code", icon: Code2 },
-    { path: "/files", label: "Files", icon: FileText },
+    { path: "/", label: "Chat" },
+    { path: "/images", label: "Images" },
+    { path: "/videos", label: "Videos" },
+    { path: "/code", label: "Programming" },
+    { path: "/files", label: "Files" },
   ];
 
   const initial = userName.charAt(0).toUpperCase() || "U";
@@ -96,7 +96,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-sidebar flex flex-col border-r border-sidebar-border"
           >
-            {/* New chat */}
             <div className="p-3">
               <button
                 onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
@@ -106,102 +105,53 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               </button>
             </div>
 
-            {/* Services */}
             <div className="px-3">
               <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Services</p>
               <div className="space-y-0.5">
-                {services.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.path}
-                      onClick={() => { navigate(item.path); onClose(); }}
-                      className={`w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                        location.pathname === item.path
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.label}
-                    </button>
-                  );
-                })}
+                {services.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => { navigate(item.path); onClose(); }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      location.pathname === item.path
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="px-5 py-2">
-              <div className="border-t border-sidebar-border" />
-            </div>
-
-            {/* Referrals - gold accent */}
-            <div className="px-3">
-              <button
-                onClick={() => { navigate("/settings/referrals"); onClose(); }}
-                className={`w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  location.pathname === "/settings/referrals"
-                    ? "bg-[#FFD700]/10 text-[#FFD700]"
-                    : "text-sidebar-foreground hover:bg-[#FFD700]/5"
-                }`}
-              >
-                <Gift className="w-4 h-4 text-[#FFD700]" />
-                <span>Referrals</span>
-                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-[#FFD700]/20 text-[#FFD700] font-bold">20%</span>
-              </button>
-            </div>
-
-            {/* Recent */}
+            {/* Recent - only for chat/code modes */}
             {showRecent && (
-              <div className="flex-1 overflow-y-auto mt-1">
-                <div className="sticky top-0 bg-sidebar z-10 px-3">
-                  <div className="px-5 py-1">
-                    <div className="border-t border-sidebar-border" />
+              <div className="flex-1 overflow-y-auto px-3 py-2">
+                <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Recent</p>
+                {conversations.length === 0 ? (
+                  <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
+                ) : (
+                  <div className="space-y-0.5">
+                    {conversations.map((conv) => (
+                      <button
+                        key={conv.id}
+                        onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
+                          activeConversationId === conv.id
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent"
+                        }`}
+                      >
+                        {conv.title}
+                      </button>
+                    ))}
                   </div>
-                  <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Recent</p>
-                </div>
-                <div className="px-3">
-                  {conversations.length === 0 ? (
-                    <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
-                  ) : (
-                    <div className="space-y-0.5">
-                      {conversations.map((conv) => (
-                        <button
-                          key={conv.id}
-                          onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
-                            activeConversationId === conv.id
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent"
-                          }`}
-                        >
-                          {conv.title}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             )}
 
             {!showRecent && <div className="flex-1" />}
 
-            {/* Settings link */}
-            <div className="px-3 py-1">
-              <button
-                onClick={() => { navigate("/settings"); onClose(); }}
-                className={`w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  location.pathname === "/settings"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent"
-                }`}
-              >
-                <Settings className="w-4 h-4" />
-                Settings
-              </button>
-            </div>
-
-            {/* Bottom */}
             <div className="p-3 space-y-2 border-t border-sidebar-border">
               <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-1.5">

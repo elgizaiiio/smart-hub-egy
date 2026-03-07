@@ -98,10 +98,59 @@ const SHOWCASE_VIDEOS = [
 ];
 
 const PLACEHOLDERS = [
-  "Describe the scene you want to create...",
-  "A cinematic video of a sunset over the ocean...",
-  "A sports car speeding on the highway...",
-  "A man walking through a misty forest...",
+  "A cinematic drone shot of mountains...",
+  "Person walking through neon streets...",
+  "Time-lapse of a flower blooming...",
+  "Slow motion water splash...",
+  "A cat playing with a butterfly...",
+  "Sunset over the ocean waves...",
+  "A dancer performing in the rain...",
+  "Birds flying in slow motion...",
+  "A car driving through a desert highway...",
+  "Snow falling in a quiet forest...",
+  "A rocket launching into space...",
+  "Waves crashing on rocky cliffs...",
+  "A chef cooking in slow motion...",
+  "Fireworks exploding in the night sky...",
+  "A horse galloping on the beach...",
+  "City traffic time-lapse at night...",
+  "A butterfly emerging from a cocoon...",
+  "Aurora borealis over snowy mountains...",
+  "Rain drops hitting a puddle...",
+  "A surfer riding a giant wave...",
+  "Candle flame flickering in darkness...",
+  "A hot air balloon floating over fields...",
+  "Underwater coral reef with fish...",
+  "A train passing through countryside...",
+  "Clouds forming and dissolving...",
+  "A gymnast performing flips...",
+  "Lava flowing from a volcano...",
+  "A dog running through a meadow...",
+  "Lightning striking in slow motion...",
+  "A couple dancing under the stars...",
+  "Waterfall in a tropical jungle...",
+  "A pianist playing passionately...",
+  "Autumn leaves falling from trees...",
+  "A drone shot of a winding river...",
+  "Ink dropping into water...",
+  "A skateboarder doing tricks...",
+  "Sunrise through morning fog...",
+  "A jellyfish swimming gracefully...",
+  "Wind blowing through wheat fields...",
+  "A bonfire burning at night...",
+  "Aerial view of a coral island...",
+  "A ballerina spinning on stage...",
+  "Ice crystals forming on glass...",
+  "A wolf running through snow...",
+  "Meteor shower across the sky...",
+  "A samurai drawing his sword...",
+  "Cherry blossoms falling in wind...",
+  "A robot walking in a futuristic city...",
+  "Dolphins jumping out of water...",
+  "A painter creating a masterpiece...",
+  "Sand dunes shifting in the wind...",
+  "A spaceship landing on an alien planet...",
+  "Hummingbird hovering near a flower...",
 ];
 
 const PUBLISH_OPTIONS: { platform: PublishPlatform; label: string; Icon: () => JSX.Element }[] = [
@@ -441,7 +490,7 @@ const VideosPage = () => {
         currentMode="videos"
       />
 
-      <div className={`sticky top-0 z-20 flex items-center justify-between px-4 py-2 bg-background/80 backdrop-blur-md transition-opacity ${sidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+      <div className={`flex items-center justify-between px-4 py-2 transition-opacity ${sidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
@@ -533,7 +582,7 @@ const VideosPage = () => {
             </div>
           )}
 
-          <div className="relative flex items-end gap-2 rounded-2xl border border-border/30 bg-transparent backdrop-blur-md px-3 py-2">
+          <div className="relative flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-xl px-3 py-2">
             <div ref={menuRef} className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                 <Plus className="w-5 h-5" />
