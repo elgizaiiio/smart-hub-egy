@@ -19,6 +19,9 @@ import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import BillingPage from "./pages/BillingPage";
 import ReferralsPage from "./pages/ReferralsPage";
 import ApisPage from "./pages/ApisPage";
+import ApiLandingPage from "./pages/ApiLandingPage";
+import ApiDocsPage from "./pages/ApiDocsPage";
+import ApiModelsPage from "./pages/ApiModelsPage";
 import StatusPage from "./pages/StatusPage";
 import AboutPage from "./pages/AboutPage";
 import LegalPage from "./pages/LegalPage";
@@ -70,6 +73,9 @@ const App = () => {
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/api" element={<ApiLandingPage />} />
+            <Route path="/api/docs" element={<ApiDocsPage />} />
+            <Route path="/api/models" element={<ApiModelsPage />} />
             <Route path="/terms" element={<LegalPage />} />
             <Route path="/privacy" element={<LegalPage />} />
             <Route path="/" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
