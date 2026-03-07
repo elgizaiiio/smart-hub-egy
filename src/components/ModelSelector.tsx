@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { createPortal } from "react-dom";
 
@@ -150,55 +150,52 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, showCategories }: M
         <ChevronDown className="w-3 h-3" />
       </button>
 
-      <AnimatePresence>
-        {open && createPortal(
-          <>
-            <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className="fixed z-[9999] glass-panel p-1.5 max-h-[380px] overflow-y-auto"
-              style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
-            >
-              {showCategories && (
-                <div className="flex gap-1 p-1 mb-1">
-                  <button
-                    onClick={() => setTab("model")}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === "model" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
-                  >
-                    Models
-                  </button>
-                  <button
-                    onClick={() => setTab("tool")}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === "tool" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
-                  >
-                    Tools
-                  </button>
-                </div>
-              )}
-              {filteredModels.map((m) => (
+      {open && createPortal(
+        <>
+          <div className="fixed inset-0 z-[35]" onClick={() => setOpen(false)} />
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed z-[36] glass-panel p-1.5 max-h-[380px] overflow-y-auto"
+            style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+          >
+            {showCategories && (
+              <div className="flex gap-1 p-1 mb-1">
                 <button
-                  key={m.id}
-                  onClick={() => { onModelChange(m); setOpen(false); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition-colors ${
-                    m.id === selectedModel.id ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  }`}
+                  onClick={() => setTab("model")}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === "model" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
                 >
-                  <div className="flex flex-col">
-                    <span className="text-foreground text-xs font-medium">{m.name}</span>
-                    {m.requiresImage && <span className="text-[10px] text-primary">Requires image</span>}
-                  </div>
-                  {m.credits && (
-                    <span className="text-[10px] opacity-60">{m.credits} credits</span>
-                  )}
+                  Models
                 </button>
-              ))}
-            </motion.div>
-          </>,
-          document.body
-        )}
-      </AnimatePresence>
+                <button
+                  onClick={() => setTab("tool")}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === "tool" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                >
+                  Tools
+                </button>
+              </div>
+            )}
+            {filteredModels.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => { onModelChange(m); setOpen(false); }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition-colors ${
+                  m.id === selectedModel.id ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                }`}
+              >
+                <div className="flex flex-col">
+                  <span className="text-foreground text-xs font-medium">{m.name}</span>
+                  {m.requiresImage && <span className="text-[10px] text-primary">Requires image</span>}
+                </div>
+                {m.credits && (
+                  <span className="text-[10px] opacity-60">{m.credits} credits</span>
+                )}
+              </button>
+            ))}
+          </motion.div>
+        </>,
+        document.body
+      )}
     </div>
   );
 };
