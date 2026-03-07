@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Search, ArrowLeft, Zap, Crown, Clock, CheckCircle2, ImagePlus, ChevronRight, Play } from "lucide-react";
+import { ArrowLeft, Zap, Crown, Clock, CheckCircle2, ImagePlus, HelpCircle, Star, Play } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ALL_MODEL_DETAILS, type ModelDetail, type ModelType } from "@/lib/modelDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,10 +17,24 @@ interface ModelPickerSheetProps {
 }
 
 const MODE_TYPES: Record<PickerMode, { models: ModelType[]; tools: ModelType[]; modelLabel: string; toolLabel: string }> = {
-  images: { models: ["image"], tools: ["image-tool"], modelLabel: "Generation", toolLabel: "Tools" },
-  videos: { models: ["video"], tools: ["video-i2v", "video-avatar"], modelLabel: "Text → Video", toolLabel: "Image → Video" },
+  images: { models: ["image"], tools: ["image-tool"], modelLabel: "Models", toolLabel: "Tools" },
+  videos: { models: ["video"], tools: ["video-i2v", "video-avatar"], modelLabel: "Models", toolLabel: "Tools" },
   chat: { models: ["chat"], tools: [], modelLabel: "Models", toolLabel: "" },
 };
+
+// Sub-categories for image models
+const IMAGE_SUBCATEGORIES = [
+  { key: "generate", label: "Generate", filter: (m: ModelDetail) => !m.requiresImage && !m.type.includes("tool") },
+  { key: "edit", label: "Edit", filter: (m: ModelDetail) => m.type === "image-tool" && (m.id.includes("edit") || m.id.includes("variation") || m.id.includes("extender")) },
+  { key: "enhance", label: "Enhance", filter: (m: ModelDetail) => m.type === "image-tool" && (m.id.includes("upscal") || m.id.includes("enhancer") || m.id.includes("restor") || m.id.includes("coloriz") || m.id.includes("relight")) },
+  { key: "templates", label: "Templates", filter: (m: ModelDetail) => m.type === "image-tool" && (m.id.includes("logo") || m.id.includes("sticker") || m.id.includes("qr") || m.id.includes("headshot") || m.id.includes("product") || m.id.includes("cartoon") || m.id.includes("style") || m.id.includes("bg-re")) },
+];
+
+const VIDEO_SUBCATEGORIES = [
+  { key: "t2v", label: "Text to Video", filter: (m: ModelDetail) => m.type === "video" },
+  { key: "i2v", label: "Image to Video", filter: (m: ModelDetail) => m.type === "video-i2v" },
+  { key: "avatar", label: "Avatar", filter: (m: ModelDetail) => m.type === "video-avatar" },
+];
 
 const QUALITY_BADGE: Record<string, { label: string; className: string }> = {
   standard: { label: "Standard", className: "bg-secondary text-muted-foreground" },
@@ -36,12 +50,21 @@ interface ModelMediaRecord {
 
 const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: ModelPickerSheetProps) => {
   const [tab, setTab] = useState<"models" | "tools">("models");
-  const [search, setSearch] = useState("");
+  const [subCategory, setSubCategory] = useState<string>("generate");
   const [detailModel, setDetailModel] = useState<ModelDetail | null>(null);
   const [mediaMap, setMediaMap] = useState<Record<string, ModelMediaRecord>>({});
 
   const types = MODE_TYPES[mode];
   const hasTools = types.tools.length > 0;
+
+  // Reset sub-category when tab changes
+  useEffect(() => {
+    if (mode === "images") {
+      setSubCategory(tab === "models" ? "generate" : "edit");
+    } else if (mode === "videos") {
+      setSubCategory(tab === "models" ? "t2v" : "i2v");
+    }
+  }, [tab, mode]);
 
   // Load media from Supabase
   useEffect(() => {
@@ -62,14 +85,24 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     return ALL_MODEL_DETAILS.filter(m => typeList.includes(m.type));
   }, [tab, types]);
 
+  // Get subcategories based on mode and tab
+  const subcategories = useMemo(() => {
+    if (mode === "images") {
+      if (tab === "models") return [IMAGE_SUBCATEGORIES[0]];
+      return IMAGE_SUBCATEGORIES.slice(1);
+    }
+    if (mode === "videos") {
+      if (tab === "models") return [VIDEO_SUBCATEGORIES[0]];
+      return VIDEO_SUBCATEGORIES.slice(1);
+    }
+    return [];
+  }, [mode, tab]);
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return allModels;
-    const q = search.toLowerCase();
-    return allModels.filter(m =>
-      m.name.toLowerCase().includes(q) ||
-      m.description.toLowerCase().includes(q)
-    );
-  }, [allModels, search]);
+    const sub = subcategories.find(s => s.key === subCategory);
+    if (sub) return allModels.filter(sub.filter);
+    return allModels;
+  }, [allModels, subCategory, subcategories]);
 
   const handleSelect = (model: ModelDetail) => {
     onSelect({
@@ -81,7 +114,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     });
     onClose();
     setDetailModel(null);
-    setSearch("");
   };
 
   if (!open) return null;
@@ -96,28 +128,87 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
           className="fixed inset-0 z-50 bg-background flex flex-col"
         >
           {/* ═══ Top Bar ═══ */}
-          <div className="shrink-0 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-10">
-            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="shrink-0 bg-background sticky top-0 z-10">
+            <div className="max-w-5xl mx-auto px-4 pt-3 pb-2 flex items-center gap-3">
               <button
                 onClick={() => {
                   if (detailModel) {
                     setDetailModel(null);
                   } else {
                     onClose();
-                    setSearch("");
                   }
                 }}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>{detailModel ? "Back" : "Back"}</span>
+                <ArrowLeft className="w-5 h-5" />
               </button>
-              <div className="flex-1" />
-              <h1 className="font-display text-lg font-bold text-foreground">
-                {detailModel ? detailModel.name : "Choose Model"}
-              </h1>
-              <div className="flex-1" />
+
+              {!detailModel && hasTools && (
+                <div className="flex-1 flex justify-center">
+                  <div className="flex bg-secondary rounded-full p-1 min-w-[200px]">
+                    <button
+                      onClick={() => setTab("models")}
+                      className={`flex-1 py-2 px-5 rounded-full text-sm font-semibold transition-all ${
+                        tab === "models"
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {types.modelLabel}
+                    </button>
+                    <button
+                      onClick={() => setTab("tools")}
+                      className={`flex-1 py-2 px-5 rounded-full text-sm font-semibold transition-all ${
+                        tab === "tools"
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {types.toolLabel}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {detailModel && (
+                <>
+                  <div className="flex-1" />
+                  <h1 className="font-display text-lg font-bold text-foreground">{detailModel.name}</h1>
+                  <div className="flex-1" />
+                  <div className="w-8" />
+                </>
+              )}
+
+              {!detailModel && !hasTools && (
+                <>
+                  <div className="flex-1" />
+                  <h1 className="font-display text-lg font-bold text-foreground">Choose Model</h1>
+                  <div className="flex-1" />
+                  <div className="w-8" />
+                </>
+              )}
             </div>
+
+            {/* Sub-category pills */}
+            {!detailModel && subcategories.length > 1 && (
+              <div className="max-w-5xl mx-auto px-4 pb-3">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                  {subcategories.map(sc => (
+                    <button
+                      key={sc.key}
+                      onClick={() => setSubCategory(sc.key)}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
+                        subCategory === sc.key
+                          ? "bg-foreground text-background border-foreground"
+                          : "bg-transparent text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground"
+                      }`}
+                    >
+                      {sc.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {detailModel ? (
@@ -126,7 +217,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
               <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
                 {/* Media preview */}
                 {mediaMap[detailModel.id] && (
-                  <div className="rounded-2xl overflow-hidden border border-border aspect-video bg-secondary">
+                  <div className="rounded-2xl overflow-hidden aspect-video bg-secondary">
                     {mediaMap[detailModel.id].media_type === "video" ? (
                       <video
                         src={mediaMap[detailModel.id].media_url}
@@ -222,7 +313,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
                 {detailModel.notes && (
                   <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20">
-                    <p className="text-sm text-foreground/80">💡 {detailModel.notes}</p>
+                    <p className="text-sm text-foreground/80">{detailModel.notes}</p>
                   </div>
                 )}
 
@@ -234,34 +325,14 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                       : "bg-primary text-primary-foreground hover:bg-primary/90"
                   }`}
                 >
-                  {selectedModelId === detailModel.id ? "✓ Currently Selected" : `Select ${detailModel.name}`}
+                  {selectedModelId === detailModel.id ? "Currently Selected" : `Select ${detailModel.name}`}
                 </button>
               </div>
             </div>
           ) : (
             /* ═══ LIST VIEW ═══ */
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-5xl mx-auto px-4 py-4 space-y-4">
-
-                {/* Tabs */}
-                {hasTools && (
-                  <div className="flex gap-1 p-1 rounded-2xl bg-secondary">
-                    <button
-                      onClick={() => setTab("models")}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === "models" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      {types.modelLabel}
-                    </button>
-                    <button
-                      onClick={() => setTab("tools")}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === "tools" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      {types.toolLabel}
-                    </button>
-                  </div>
-                )}
-
-                {/* Grid */}
+              <div className="max-w-5xl mx-auto px-4 py-3">
                 {filtered.length === 0 ? (
                   <div className="text-center py-16">
                     <p className="text-muted-foreground text-sm">No models found.</p>
@@ -271,21 +342,22 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                     {filtered.map(model => {
                       const isSelected = selectedModelId === model.id;
                       const media = mediaMap[model.id];
+                      const rating = model.quality === "ultra" ? 5.0 : model.quality === "high" ? 4.5 : 0.0;
 
                       return (
                         <motion.div
                           key={model.id}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className={`group relative rounded-2xl border overflow-hidden transition-all cursor-pointer ${
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all bg-card border ${
                             isSelected
                               ? "border-primary ring-2 ring-primary/20"
-                              : "border-border hover:border-primary/30 hover:shadow-md"
+                              : "border-border hover:border-primary/30"
                           }`}
                           onClick={() => handleSelect(model)}
                         >
                           {/* Media thumbnail */}
-                          <div className="aspect-square bg-secondary relative overflow-hidden">
+                          <div className="aspect-[4/5] bg-secondary relative overflow-hidden">
                             {media ? (
                               media.media_type === "video" ? (
                                 <>
@@ -297,7 +369,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                                     onMouseOut={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
                                   />
                                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center group-hover:opacity-0 transition-opacity">
+                                    <div className="w-9 h-9 rounded-full bg-background/50 backdrop-blur-sm flex items-center justify-center group-hover:opacity-0 transition-opacity">
                                       <Play className="w-4 h-4 text-foreground fill-foreground" />
                                     </div>
                                   </div>
@@ -306,49 +378,49 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                                 <img
                                   src={media.media_url}
                                   alt={model.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                   loading="lazy"
                                 />
                               )
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <span className="text-3xl opacity-20">🎨</span>
+                              <div className="w-full h-full bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
+                                <span className="text-4xl opacity-10">AI</span>
                               </div>
                             )}
+
+                            {/* Info button - top left */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDetailModel(model); }}
+                              className="absolute top-2.5 left-2.5 w-7 h-7 rounded-full bg-foreground/60 backdrop-blur-sm flex items-center justify-center hover:bg-foreground/80 transition-colors"
+                            >
+                              <HelpCircle className="w-4 h-4 text-background" />
+                            </button>
 
                             {/* Selected indicator */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                <CheckCircle2 className="w-3 h-3 text-primary-foreground" />
+                              <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground" />
                               </div>
                             )}
-
-                            {/* Details button - always visible */}
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setDetailModel(model); }}
-                              className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-background/80 backdrop-blur-sm text-[10px] font-medium text-foreground hover:bg-background transition-colors flex items-center gap-1"
-                            >
-                              Details
-                              <ChevronRight className="w-3 h-3" />
-                            </button>
                           </div>
 
-                          {/* Info */}
-                          <div className="p-2.5">
+                          {/* Card info */}
+                          <div className="p-3 space-y-1">
                             <div className="flex items-center justify-between gap-1">
-                              <h3 className="text-xs font-semibold text-foreground truncate">{model.name}</h3>
-                              {model.credits > 0 ? (
-                                <span className="shrink-0 text-[10px] font-bold text-primary">{model.credits}</span>
-                              ) : (
-                                <span className="shrink-0 text-[10px] font-bold text-green-600 dark:text-green-400">Free</span>
+                              <h3 className="text-sm font-bold text-foreground truncate">{model.name}</h3>
+                              <span className="shrink-0 text-xs text-muted-foreground font-medium">
+                                {model.credits > 0 ? `${model.credits} Credit` : "Free"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="text-[11px] text-muted-foreground truncate">{model.description}</p>
+                              {rating > 0 && (
+                                <span className="shrink-0 flex items-center gap-0.5 text-[11px] font-semibold text-primary">
+                                  <Star className="w-3 h-3 fill-primary text-primary" />
+                                  {rating.toFixed(1)}
+                                </span>
                               )}
                             </div>
-                            {model.requiresImage && (
-                              <span className="text-[9px] text-primary font-medium flex items-center gap-0.5 mt-0.5">
-                                <ImagePlus className="w-2.5 h-2.5" />
-                                {model.maxImages > 1 ? `${model.maxImages} images` : "1 image"}
-                              </span>
-                            )}
                           </div>
                         </motion.div>
                       );
