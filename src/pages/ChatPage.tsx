@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Globe, Camera, Image, FileUp } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -422,7 +422,7 @@ const ChatPage = () => {
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
                       
                         <div className="flex items-center gap-3">
-                          <Globe className="w-4 h-4 text-muted-foreground" />
+                          
                           <span className="text-sm text-foreground">Web search</span>
                         </div>
                         <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
