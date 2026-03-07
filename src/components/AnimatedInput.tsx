@@ -70,7 +70,7 @@ const DEFAULT_PLACEHOLDERS = [
 
 const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders }: AnimatedInputProps) => {
   const items = placeholders || DEFAULT_PLACEHOLDERS;
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * (placeholders || DEFAULT_PLACEHOLDERS).length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [isTyping, setIsTyping] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
