@@ -406,8 +406,7 @@ const CodeWorkspace = () => {
               await supabase
                 .from("projects")
                 .update({
-                  fly_machine_id: sb.machineId,
-                  fly_app_name: sb.appName,
+                  fly_app_name: sb.spriteName,
                   preview_url: sb.previewUrl,
                   status: "running",
                 })
