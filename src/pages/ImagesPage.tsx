@@ -631,7 +631,7 @@ const ImagesPage = () => {
             <button
               onClick={handleGenerate}
               disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
-              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20"
+              className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors disabled:opacity-20 ${isGenerating ? "bg-[#7C3AED] text-white animate-pulse-slow" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
             >
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
             </button>

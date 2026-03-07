@@ -83,7 +83,7 @@ const ProgrammingPage = () => {
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="What do you want to build?"
                 rows={3}
-                className="w-full bg-secondary border border-border rounded-xl px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none"
+                className="w-full bg-transparent backdrop-blur-md border border-primary/30 rounded-xl px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none"
               />
               <button
                 onClick={handleSend}
