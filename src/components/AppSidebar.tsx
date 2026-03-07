@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CreditCard } from "lucide-react";
+import { CreditCard, MessageSquare, ImageIcon, Video, Code2, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -19,6 +19,14 @@ interface AppSidebarProps {
   activeConversationId?: string | null;
   currentMode?: string;
 }
+
+const serviceIcons: Record<string, React.ElementType> = {
+  "/": MessageSquare,
+  "/images": ImageIcon,
+  "/videos": Video,
+  "/code": Code2,
+  "/files": FileText,
+};
 
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
   const navigate = useNavigate();
@@ -105,29 +113,39 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               </button>
             </div>
 
+            {/* Services */}
             <div className="px-3">
               <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Services</p>
               <div className="space-y-0.5">
-                {services.map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => { navigate(item.path); onClose(); }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                      location.pathname === item.path
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+                {services.map((item) => {
+                  const Icon = serviceIcons[item.path] || MessageSquare;
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => { navigate(item.path); onClose(); }}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-3 ${
+                        location.pathname === item.path
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Recent - only for chat/code modes */}
+            {/* Separator */}
+            <div className="mx-3 my-2 border-t border-sidebar-border" />
+
+            {/* Recent */}
             {showRecent && (
-              <div className="flex-1 overflow-y-auto px-3 py-2">
-                <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Recent</p>
+              <div className="flex-1 overflow-y-auto px-3">
+                <div className="sticky top-0 z-10 bg-sidebar py-2">
+                  <p className="text-[11px] text-muted-foreground px-3 uppercase tracking-wider">Recent</p>
+                </div>
                 {conversations.length === 0 ? (
                   <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
                 ) : (
@@ -152,7 +170,10 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
 
             {!showRecent && <div className="flex-1" />}
 
-            <div className="p-3 space-y-2 border-t border-sidebar-border">
+            {/* Separator */}
+            <div className="mx-3 border-t border-sidebar-border" />
+
+            <div className="p-3 space-y-2">
               <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-medium text-sidebar-foreground">Credits</span>
