@@ -419,4 +419,5 @@
 .prose-chat a { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 2px; }
 .prose-chat blockquote { border-left: 3px solid hsl(var(--primary)); padding-left: 1em; margin: 0.75em 0; color: hsl(var(--muted-foreground)); }
 .prose-chat img { border-radius: 8px; max-width: 100%; margin: 0.5em 0; }
-.prose-chat p, .prose-chat li, .prose-chat blockquote { unicode-bidi: plaintext; }
+.prose-chat p, .prose-chat li, .prose-chat blockquote { unicode-bidi: plaintext; direction: ltr; }
+.prose-chat[dir="auto"] p, .prose-chat[dir="auto"] li, .prose-chat[dir="auto"] blockquote { direction: inherit; }
