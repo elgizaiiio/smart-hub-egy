@@ -62,7 +62,7 @@ const ProfileSettingsPage = () => {
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
       setAvatarUrl(publicUrl);
-      await supabase.from("profiles").update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq("id", userId);
+      await supabase.rpc("update_profile_safe", { p_user_id: userId, p_avatar_url: publicUrl });
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
       toast.success("Profile photo updated");
     } catch (err: any) {
