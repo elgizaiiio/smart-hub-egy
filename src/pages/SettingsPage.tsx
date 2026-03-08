@@ -112,7 +112,7 @@ const SettingsPage = () => {
                 <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
                 <div className="flex items-center gap-3 mt-2">
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                    {Math.floor(credits)} credits
+                    {Math.floor(credits)} MC
                   </span>
                   <span className="w-1 h-1 rounded-full bg-border" />
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider capitalize">

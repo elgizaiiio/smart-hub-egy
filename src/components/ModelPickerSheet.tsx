@@ -311,7 +311,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                             <div className="min-w-0">
                               <h3 className="text-sm font-bold text-foreground truncate">{model.name}</h3>
                               <span className="text-[11px] text-muted-foreground font-medium">
-                                {model.credits > 0 ? `${model.credits} Credits` : "Free"}
+                                {model.credits > 0 ? `${model.credits} MC` : "Free"}
                               </span>
                             </div>
                             <button
