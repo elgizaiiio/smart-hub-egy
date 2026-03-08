@@ -386,8 +386,8 @@ const VideosPage = () => {
         toast.success("Video link copied! Open Instagram and paste it.");
         setMenuOpen(false);
         return;
-      case "linkedin":
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+      case "youtube":
+        shareUrl = `https://studio.youtube.com/`;
         break;
     }
     if (shareUrl) window.open(shareUrl, "_blank", "width=600,height=400");
