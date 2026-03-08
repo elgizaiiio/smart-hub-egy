@@ -230,14 +230,14 @@ const ImagesPage = () => {
 
   const createOrGetConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
-
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
     const title = firstMessage.slice(0, 50) || "Image Generation";
     const { data } = await supabase
       .from("conversations")
-      .insert({ title, mode: "images", model: selectedModel.id })
+      .insert({ title, mode: "images", model: selectedModel.id, user_id: user.id } as any)
       .select("id")
       .single();
-
     if (data) {
       setConversationId(data.id);
       return data.id;
