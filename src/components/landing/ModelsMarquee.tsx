@@ -39,7 +39,7 @@ const ModelsMarquee = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: i * 0.1 }}
-            className="text-lg font-black uppercase tracking-wider text-foreground/20 md:text-2xl"
+            className="text-xs font-black uppercase tracking-wider text-foreground/20 md:text-2xl"
           >
             {name}
           </motion.span>
