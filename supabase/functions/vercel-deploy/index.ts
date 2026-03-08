@@ -46,10 +46,10 @@ serve(async (req) => {
         name: deployName.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 52),
         files: vercelFiles,
         projectSettings: {
-          framework: "nextjs",
+          framework: "vite",
           installCommand: "npm install",
-          buildCommand: "next build",
-          outputDirectory: ".next",
+          buildCommand: "npm run build",
+          outputDirectory: "dist",
         },
         target: "production",
       }),
