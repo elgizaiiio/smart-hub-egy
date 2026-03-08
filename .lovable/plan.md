@@ -1,44 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-# إصلاح الثغرات الأمنية المتبقية
+## ✅ Completed
 
-## المشاكل المكتشفة من الفحص الأمني
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-### 1. حرجة: profiles UPDATE لا يزال يسمح بتعديل plan و credits
-رغم إننا عملنا `REVOKE/GRANT` على الأعمدة، الـ scanner لسه شايف إن المستخدم يقدر يعدل `plan` و `credits`. الحل الأقوى: إضافة **BEFORE UPDATE trigger** يمنع تعديل هذه الأعمدة من أي session مش service_role.
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-### 2. تحذير: withdrawal_requests -- المستخدم يقدر يعمل INSERT بـ status = 'approved'
-سياسة INSERT بتتحقق من `user_id` بس، لكن المستخدم يقدر يحط `status = 'approved'` مباشرة. الحل: تعديل WITH CHECK لتفرض `status = 'pending'`.
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-### 3. تحذير: RLS policies with USING(true) على جداول service_role
-هذه مقصودة (oauth_tokens, oauth_codes, etc.) لأنها `TO service_role` فقط. سنعمل dismiss/ignore لهذا التحذير.
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-### 4. تحذير: Leaked Password Protection معطلة
-إجراء يدوي من Supabase Dashboard.
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
----
-
-## خطة التنفيذ
-
-### Migration واحد:
-
-**1. Trigger لحماية profiles من تعديل plan/credits:**
-```sql
-CREATE FUNCTION protect_profile_columns() RETURNS trigger
--- يرفض أي تعديل لـ plan أو credits إلا من service_role
-```
-
-**2. تعديل سياسة withdrawal_requests INSERT:**
-```sql
-DROP POLICY ... ON withdrawal_requests;
-CREATE POLICY ... WITH CHECK (auth.uid() = user_id AND status = 'pending');
-```
-
-**3. Dismiss تحذير USING(true)** لأنه مطبق على service_role فقط وهذا مقصود.
-
-### إجراء يدوي
-- تفعيل Leaked Password Protection من Supabase Dashboard
-
-### النتيجة المتوقعة
-0 أخطاء حرجة، 1 تحذير فقط (Leaked Password -- يدوي).
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
