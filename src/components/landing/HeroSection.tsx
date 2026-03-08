@@ -1,149 +1,126 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Play } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
+import ModelBrandIcon from "@/components/landing/ModelBrandIcon";
+
+const spotlightModels = [
+  { id: "megsy-v1", name: "Megsy V1" },
+  { id: "megsy-v1-img", name: "Megsy V1 Image" },
+  { id: "megsy-video", name: "Megsy Video" },
+  { id: "openai/gpt-5", name: "GPT-5" },
+  { id: "x-ai/grok-3", name: "Grok 3" },
+];
 
 const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
-      {/* Animated gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          animate={{
-            x: [0, 100, -50, 0],
-            y: [0, -80, 60, 0],
-            scale: [1, 1.3, 0.9, 1],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full bg-purple-600/20 blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            x: [0, -120, 80, 0],
-            y: [0, 60, -100, 0],
-            scale: [1, 0.8, 1.2, 1],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-violet-500/15 blur-[100px]"
-        />
-        <motion.div
-          animate={{
-            x: [0, 60, -80, 0],
-            y: [0, -40, 80, 0],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full bg-fuchsia-500/10 blur-[80px]"
-        />
+    <section className="relative min-h-screen overflow-hidden bg-background pt-24">
+      <div className="landing-grid-overlay absolute inset-0" />
+
+      <div className="pointer-events-none absolute inset-0 overflow-hidden select-none">
+        <motion.span
+          initial={{ opacity: 0, y: -80 }}
+          animate={{ opacity: 0.55, y: 0 }}
+          transition={{ duration: 1.1, ease: "easeOut" }}
+          className="landing-hero-word absolute -top-[2vw] left-1/2 -translate-x-1/2 text-[24vw] leading-none text-primary"
+        >
+          MEGSY
+        </motion.span>
+
+        <motion.span
+          initial={{ opacity: 0, x: -120 }}
+          animate={{ opacity: 0.45, x: 0 }}
+          transition={{ duration: 1.1, delay: 0.15, ease: "easeOut" }}
+          className="landing-hero-word absolute left-[-11vw] top-1/2 -translate-y-1/2 rotate-[-90deg] text-[14vw] leading-none text-primary"
+        >
+          YOUR IDEAS
+        </motion.span>
+
+        <motion.span
+          initial={{ opacity: 0, x: 120 }}
+          animate={{ opacity: 0.45, x: 0 }}
+          transition={{ duration: 1.1, delay: 0.2, ease: "easeOut" }}
+          className="landing-hero-word absolute right-[-11vw] top-1/2 -translate-y-1/2 rotate-90 text-[14vw] leading-none text-primary"
+        >
+          TOOLS
+        </motion.span>
+
+        <motion.span
+          initial={{ opacity: 0, y: 80 }}
+          animate={{ opacity: 0.55, y: 0 }}
+          transition={{ duration: 1.1, delay: 0.25, ease: "easeOut" }}
+          className="landing-hero-word absolute -bottom-[3vw] left-1/2 -translate-x-1/2 text-[19vw] leading-none text-primary"
+        >
+          CREATE
+        </motion.span>
       </div>
 
-      {/* Grid overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
-        {/* Badge */}
-        <motion.div
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-6xl flex-col items-center justify-center px-6 text-center">
+        <motion.p
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="mb-8"
+          transition={{ duration: 0.6 }}
+          className="mb-6 text-sm font-semibold uppercase tracking-[0.24em] text-foreground/70"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-sm font-medium">
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-            Powered by 80+ AI Models
-          </span>
-        </motion.div>
-
-        {/* Giant Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.4 }}
-          className="text-[12vw] md:text-[8vw] lg:text-[7vw] font-black uppercase leading-[0.9] tracking-tighter mb-2"
-        >
-          <span className="text-white">THE ALL-IN-ONE</span>
-        </motion.h1>
-        <motion.h1
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.6 }}
-          className="text-[12vw] md:text-[8vw] lg:text-[7vw] font-black uppercase leading-[0.9] tracking-tighter mb-8"
-        >
-          <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-            AI CREATIVE PLATFORM
-          </span>
-        </motion.h1>
-
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="text-white/50 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
-        >
-          Generate stunning images, cinematic videos, intelligent conversations,
-          and production-ready code -- all from one platform with Megsy's
-          proprietary AI models.
+          Creator-first AI Platform
         </motion.p>
 
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
+        <motion.h1
+          initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.0 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="font-display text-[11vw] font-black uppercase leading-[0.88] tracking-tight text-foreground md:text-[8vw]"
         >
-          <FancyButton onClick={() => navigate("/auth")} className="text-lg px-8 py-3">
-            <span className="flex items-center gap-2">
-              Start Creating Free <ArrowRight size={18} />
-            </span>
+          THE ALL-IN-ONE
+          <br />
+          AI CREATIVE PLATFORM
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 32 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.22 }}
+          className="mx-auto mt-7 max-w-3xl text-base leading-relaxed text-muted-foreground md:text-xl"
+        >
+          Megsy يجمع الدردشة الذكية، صناعة الصور، الفيديو، التعديل الاحترافي، وبناء التطبيقات في تجربة واحدة متكاملة
+          تشرح وتنفذ وتنتج من فكرة واحدة حتى النتيجة النهائية.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 26 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+        >
+          <FancyButton onClick={() => navigate("/auth")} className="px-8 py-3 text-base">
+            Start Creating
           </FancyButton>
           <button
-            onClick={() => {
-              document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="flex items-center gap-2 text-white/60 hover:text-white border border-white/15 hover:border-white/30 rounded-xl px-6 py-3 transition-all duration-300"
+            onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+            className="rounded-xl border border-border bg-secondary/40 px-8 py-3 text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary"
           >
-            <Play size={16} /> Watch Demo
+            Explore Full Platform
           </button>
         </motion.div>
 
-        {/* Floating showcase images */}
         <motion.div
-          initial={{ opacity: 0, y: 80 }}
+          initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 1.3 }}
-          className="mt-20 relative"
+          transition={{ duration: 0.7, delay: 0.45 }}
+          className="mt-12 flex flex-wrap items-center justify-center gap-3"
         >
-          <div className="relative mx-auto max-w-5xl">
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
-            <div className="grid grid-cols-3 gap-3 opacity-80">
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                src="/api-showcase/showcase-1.png"
-                alt="AI Generated Art"
-                className="rounded-2xl w-full h-48 md:h-64 object-cover"
-              />
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                src="/api-showcase/showcase-2.jpg"
-                alt="AI Generated Art"
-                className="rounded-2xl w-full h-48 md:h-64 object-cover mt-8"
-              />
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                src="/api-showcase/showcase-3.jpg"
-                alt="AI Generated Art"
-                className="rounded-2xl w-full h-48 md:h-64 object-cover"
-              />
-            </div>
-          </div>
+          {spotlightModels.map((model) => (
+            <span
+              key={model.id}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-2 text-sm font-semibold text-foreground"
+            >
+              <ModelBrandIcon modelId={model.id} className="h-4 w-4" />
+              {model.name}
+            </span>
+          ))}
         </motion.div>
       </div>
-
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent" />
     </section>
   );
 };

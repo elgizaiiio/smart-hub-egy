@@ -1,93 +1,62 @@
 import { motion } from "framer-motion";
-
-const models = [
-  { name: "Megsy V1", flagship: true },
-  { name: "Megsy Video", flagship: true },
-  { name: "Megsy V1 Image", flagship: true },
-  { name: "FLUX Kontext Max", flagship: false },
-  { name: "Nano Banana 2", flagship: false },
-  { name: "Recraft V4", flagship: false },
-  { name: "Ideogram 3", flagship: false },
-  { name: "Seedream 5 Lite", flagship: false },
-  { name: "FLUX 2 Pro", flagship: false },
-  { name: "Veo 3.1", flagship: false },
-  { name: "Kling 3.0 Pro", flagship: false },
-  { name: "Pika 2.2", flagship: false },
-  { name: "Sora", flagship: false },
-  { name: "Luma Dream Machine", flagship: false },
-  { name: "HiDream I1", flagship: false },
-  { name: "OmniGen2", flagship: false },
-  { name: "Seedance Pro", flagship: false },
-  { name: "PixVerse V5.5", flagship: false },
-  { name: "Grok Imagine", flagship: false },
-  { name: "ImagineArt 1.5", flagship: false },
-];
+import ModelBrandIcon from "@/components/landing/ModelBrandIcon";
+import { LANDING_MODEL_BRANDS } from "@/components/landing/modelBrands";
 
 const ModelsMarquee = () => {
-  const items = [...models, ...models];
+  const items = [...LANDING_MODEL_BRANDS, ...LANDING_MODEL_BRANDS];
 
   return (
-    <section id="models" className="relative py-16 overflow-hidden">
-      {/* Section title */}
+    <section id="models" className="relative overflow-hidden py-20 md:py-24">
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 35 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="text-center mb-12 px-6"
+        className="mb-10 px-6 text-center"
       >
-        <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-white mb-4">
-          80+ <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Models</span>
+        <h2 className="font-display text-5xl font-black uppercase tracking-tight text-foreground md:text-7xl">
+          80+ AI MODELS
         </h2>
-        <p className="text-white/40 text-lg max-w-xl mx-auto">
-          Access the most comprehensive collection of AI models -- all in one platform.
+        <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
+          كل النماذج الأساسية في سوق الذكاء الاصطناعي موجودة داخل Megsy في واجهة واحدة مع هوية واضحة لكل نموذج.
         </p>
       </motion.div>
 
-      {/* Marquee row 1 */}
       <div className="relative mb-4">
-        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-black to-transparent z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-background to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-background to-transparent" />
         <div className="landing-marquee">
           <div className="landing-marquee-track">
-            {items.map((m, i) => (
+            {items.map((model, index) => (
               <span
-                key={i}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border text-sm font-medium whitespace-nowrap ${
-                  m.flagship
-                    ? "border-purple-500/40 bg-purple-500/15 text-purple-300"
-                    : "border-white/10 bg-white/[0.03] text-white/50"
-                }`}
+                key={`${model.id}-top-${index}`}
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-card/80 px-5 py-2.5 text-sm font-semibold text-foreground"
               >
-                {m.flagship && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                <ModelBrandIcon modelId={model.id} className="h-4 w-4" />
+                {model.name}
+                {model.flagship && (
+                  <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                    Flagship
+                  </span>
                 )}
-                {m.name}
               </span>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Marquee row 2 (reverse) */}
       <div className="relative">
-        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-black to-transparent z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-background to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-background to-transparent" />
         <div className="landing-marquee">
           <div className="landing-marquee-track-reverse">
-            {[...items].reverse().map((m, i) => (
+            {[...items].reverse().map((model, index) => (
               <span
-                key={i}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border text-sm font-medium whitespace-nowrap ${
-                  m.flagship
-                    ? "border-purple-500/40 bg-purple-500/15 text-purple-300"
-                    : "border-white/10 bg-white/[0.03] text-white/50"
-                }`}
+                key={`${model.id}-bottom-${index}`}
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-secondary/70 px-5 py-2.5 text-sm font-semibold text-foreground/85"
               >
-                {m.flagship && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                )}
-                {m.name}
+                <ModelBrandIcon modelId={model.id} className="h-4 w-4" />
+                {model.name}
               </span>
             ))}
           </div>

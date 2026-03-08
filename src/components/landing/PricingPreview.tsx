@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 
 const plans = [
@@ -8,13 +7,12 @@ const plans = [
     name: "Free",
     price: "0",
     period: "forever",
-    description: "Perfect for exploring Megsy's capabilities",
+    description: "مناسب للبدء وتجربة كل مسارات المنصة",
     features: [
-      "50 free credits on signup",
-      "Access to all 80+ models",
-      "Standard generation speed",
-      "Community support",
-      "720p image exports",
+      "50 Credits مجانية عند التسجيل",
+      "الوصول لكل فئات النماذج",
+      "سرعة توليد قياسية",
+      "تصدير حتى 720p",
     ],
     highlight: false,
   },
@@ -22,14 +20,13 @@ const plans = [
     name: "Pro",
     price: "19",
     period: "/month",
-    description: "For creators who need more power and speed",
+    description: "للصناع الذين يحتاجون سرعة أعلى وجودة إنتاج أكبر",
     features: [
-      "2,000 credits/month",
-      "Priority generation queue",
-      "4K image exports",
-      "HD video generation",
-      "API access",
-      "Priority support",
+      "2000 Credits شهرياً",
+      "أولوية في المعالجة",
+      "صور 4K + فيديو HD",
+      "API Access",
+      "دعم أولوية",
     ],
     highlight: true,
   },
@@ -37,14 +34,12 @@ const plans = [
     name: "Enterprise",
     price: "Custom",
     period: "",
-    description: "For teams and businesses at scale",
+    description: "للشركات والفرق متعددة المنتجات",
     features: [
-      "Unlimited credits",
-      "Dedicated GPU instances",
-      "Custom model fine-tuning",
-      "SSO & team management",
-      "SLA guarantee",
-      "Dedicated account manager",
+      "خطط استخدام مرنة",
+      "إدارة فرق وصلاحيات",
+      "تكاملات مخصصة",
+      "SLA ودعم مخصص",
     ],
     highlight: false,
   },
@@ -54,78 +49,76 @@ const PricingPreview = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="pricing" className="relative py-24 md:py-32 overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6">
+    <section id="pricing" className="relative overflow-hidden py-24 md:py-32">
+      <div className="mx-auto max-w-6xl px-6">
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 36 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="mb-14 text-center"
         >
-          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-white mb-4">
-            SIMPLE{" "}
-            <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
-              PRICING
-            </span>
+          <h2 className="font-display text-5xl font-black uppercase tracking-tight text-foreground md:text-7xl">
+            SIMPLE PRICING
           </h2>
-          <p className="text-white/40 text-lg max-w-xl mx-auto">
-            Start free, scale as you grow. No hidden fees.
+          <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
+            خطط واضحة حسب حجم شغلك، بدون تعقيد أو رسوم مخفية.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {plans.map((plan, i) => (
-            <motion.div
+        <div className="grid gap-6 md:grid-cols-3">
+          {plans.map((plan, index) => (
+            <motion.article
               key={plan.name}
-              initial={{ opacity: 0, y: 60 }}
+              initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.15 }}
-              className={`relative rounded-2xl border p-8 ${
+              transition={{ duration: 0.55, delay: index * 0.1 }}
+              className={`relative rounded-3xl border p-8 ${
                 plan.highlight
-                  ? "border-purple-500/40 bg-purple-500/[0.08] shadow-xl shadow-purple-500/10"
-                  : "border-white/10 bg-white/[0.02]"
+                  ? "border-primary/50 bg-primary/10 shadow-xl shadow-primary/20"
+                  : "border-border bg-card/70"
               }`}
             >
               {plan.highlight && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-purple-500 text-white text-xs font-bold uppercase tracking-wider">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-primary/40 bg-background px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
                   Most Popular
                 </div>
               )}
 
-              <h3 className="text-white font-bold text-xl mb-2">{plan.name}</h3>
-              <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-4xl font-black text-white">
-                  {plan.price === "Custom" ? "" : "$"}
-                  {plan.price}
-                </span>
-                <span className="text-white/40 text-sm">{plan.period}</span>
+              <h3 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">{plan.name}</h3>
+              <div className="mt-2 flex items-end gap-1">
+                <span className="text-4xl font-black text-foreground">{plan.price === "Custom" ? plan.price : `$${plan.price}`}</span>
+                <span className="text-sm text-muted-foreground">{plan.period}</span>
               </div>
-              <p className="text-white/40 text-sm mb-6">{plan.description}</p>
+              <p className="mt-3 text-sm text-muted-foreground">{plan.description}</p>
 
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-white/60">
-                    <Check size={14} className="text-purple-400 flex-shrink-0" />
-                    {f}
+              <ul className="mt-7 space-y-3">
+                {plan.features.map((feature, featureIndex) => (
+                  <li key={feature} className="flex items-start gap-3 text-sm text-foreground/85">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-[11px] font-bold text-foreground">
+                      {featureIndex + 1}
+                    </span>
+                    <span>{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              {plan.highlight ? (
-                <FancyButton onClick={() => navigate("/auth")} className="w-full">
-                  Get Started
-                </FancyButton>
-              ) : (
-                <button
-                  onClick={() => plan.name === "Enterprise" ? undefined : navigate("/auth")}
-                  className="w-full py-2.5 rounded-xl border border-white/15 text-white/70 hover:text-white hover:border-white/30 text-sm font-medium transition-all"
-                >
-                  {plan.name === "Enterprise" ? "Contact Sales" : "Get Started"}
-                </button>
-              )}
-            </motion.div>
+              <div className="mt-8">
+                {plan.highlight ? (
+                  <FancyButton onClick={() => navigate("/auth")} className="w-full">
+                    Get Started
+                  </FancyButton>
+                ) : (
+                  <button
+                    onClick={() => (plan.name === "Enterprise" ? undefined : navigate("/auth"))}
+                    className="w-full rounded-xl border border-border bg-secondary/40 py-2.5 text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary"
+                  >
+                    {plan.name === "Enterprise" ? "Contact Sales" : "Get Started"}
+                  </button>
+                )}
+              </div>
+            </motion.article>
           ))}
         </div>
       </div>
