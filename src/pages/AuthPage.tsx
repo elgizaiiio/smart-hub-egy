@@ -185,7 +185,8 @@ const AuthPage = () => {
       if (error) throw error;
 
       toast.success("Account created!");
-      navigate("/chat");
+      if (redirectUrl) window.location.href = redirectUrl;
+      else navigate("/chat");
     } catch (e: any) {
       toast.error(e.message || "Could not create account");
     } finally {
