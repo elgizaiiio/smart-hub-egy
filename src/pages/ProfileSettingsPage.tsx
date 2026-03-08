@@ -41,6 +41,7 @@ const ProfileSettingsPage = () => {
         setPlan(profile.plan || "free");
         if (profile.display_name) setUserName(profile.display_name);
         setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
+        setTwoFactorEnabled(profile.two_factor_enabled ?? false);
       }
     };
     loadUser();
