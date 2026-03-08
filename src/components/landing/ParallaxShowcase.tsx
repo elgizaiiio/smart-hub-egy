@@ -1,12 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
-const parallaxItems = [
+const parallaxItems: { src: string; type?: string; label: string }[] = [
   { src: "/api-showcase/showcase-1.png", label: "CONCEPT ART" },
-  { src: "/api-showcase/video-5.mp4", type: "video" as const, label: "MOTION DESIGN" },
+  { src: "/api-showcase/video-5.mp4", type: "video", label: "MOTION DESIGN" },
   { src: "/api-showcase/showcase-3.jpg", label: "PRODUCT SHOT" },
   { src: "/api-showcase/showcase-4.jpg", label: "EDITORIAL" },
-  { src: "/api-showcase/video-6.mp4", type: "video" as const, label: "CINEMATIC" },
+  { src: "/api-showcase/video-6.mp4", type: "video", label: "CINEMATIC" },
 ];
 
 const INTERVAL = 4000;
