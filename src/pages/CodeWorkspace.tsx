@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
