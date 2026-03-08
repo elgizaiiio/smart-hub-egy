@@ -183,6 +183,7 @@ const ProgrammingPage = () => {
       </div>
     </div>
     </AppLayout>
+  );
 };
 
 export default ProgrammingPage;
