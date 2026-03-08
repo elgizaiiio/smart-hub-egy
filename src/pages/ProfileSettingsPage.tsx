@@ -20,6 +20,8 @@ const ProfileSettingsPage = () => {
   const [uploading, setUploading] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState("");
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [toggling2FA, setToggling2FA] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
