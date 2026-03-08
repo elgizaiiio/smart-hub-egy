@@ -21,6 +21,8 @@ const AuthPage = () => {
   const [has2FA, setHas2FA] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectUrl = searchParams.get("redirect");
 
   const startCountdown = () => {
     setCountdown(60);
