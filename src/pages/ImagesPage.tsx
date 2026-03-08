@@ -269,7 +269,7 @@ const ImagesPage = () => {
 
     const creditCost = Number(selectedModel.credits) || 1;
     if (userId && !hasEnoughCredits(creditCost)) {
-      toast.error("رصيد الكريدت غير كافي. يرجى شحن حسابك.");
+      toast.error("رصيد MC غير كافي. يرجى شحن حسابك.");
       return;
     }
 
