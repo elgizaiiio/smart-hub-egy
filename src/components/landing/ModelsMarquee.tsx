@@ -16,7 +16,7 @@ const ModelsMarquee = () => {
   const items = [...services, ...services];
 
   return (
-    <section id="models" className="relative overflow-hidden py-20">
+    <section id="models" className="relative overflow-hidden py-12 md:py-20">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
