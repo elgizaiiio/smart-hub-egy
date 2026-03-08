@@ -46,7 +46,13 @@ const ShowcaseGallery = () => {
         </h2>
       </motion.div>
 
-      <div className="mx-auto mb-6 max-w-md px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="mx-auto mb-6 max-w-md px-6"
+      >
         <div className="flex items-center justify-center gap-2 rounded-full border border-border bg-card/40 p-2">
           {categories.map((cat, i) => (
             <button
