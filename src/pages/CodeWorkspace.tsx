@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle } from "lucide-react";
+import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import BuildTimeline, { BuildStep } from "@/components/BuildTimeline";
 import ReactMarkdown from "react-markdown";
@@ -128,6 +129,7 @@ const DEFAULT_STEPS: () => BuildStep[] = () => [
 
 const CodeWorkspace = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"chat" | "preview">("chat");
   const [searchParams] = useSearchParams();
   const prompt = searchParams.get("prompt") || "";
@@ -632,157 +634,177 @@ Rules:
     !isLoading &&
     !isBuildActive;
 
-  return (
-    <div className="h-[100dvh] flex flex-col bg-background">
-      {/* Header */}
-      {activeTab === "chat" && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-          <button onClick={() => navigate("/code")} className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {isBuildActive ? "Building..." : "Chat Mode"}
-            </span>
-            {sandbox.status === "ready" && <span className="w-2 h-2 rounded-full bg-green-500" title="Sandbox running" />}
-          </div>
-          <div className="w-8" />
+  // Shared chat panel content
+  const chatPanel = (
+    <div className="h-full flex flex-col bg-background">
+      {/* Chat header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
+        <button onClick={() => navigate("/code")} className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {isBuildActive ? "Building..." : "Chat"}
+          </span>
+          {sandbox.status === "ready" && <span className="w-2 h-2 rounded-full bg-success" title="Sandbox running" />}
         </div>
-      )}
+        <div className="w-8" />
+      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden min-h-0">
-        {activeTab === "chat" ? (
-          <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto px-4 py-4 max-w-3xl mx-auto w-full space-y-4">
-              {messages.map((msg, i) => (
-                <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>
-                  {msg.role === "user" ? (
-                    <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm">
-                      {msg.content}
-                    </div>
-                  ) : msg.type === "timeline" ? (
-                    buildSteps.length > 0 && (
-                      <BuildTimeline steps={buildSteps} title="Building your project" />
-                    )
-                  ) : msg.type === "log" ? (
-                    <div className="text-xs text-muted-foreground font-mono py-1 flex items-center gap-2">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      {msg.content}
-                    </div>
-                  ) : (
-                    <div className="prose-chat text-foreground text-sm" dir="auto">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && <ThinkingLoader />}
-              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && <ThinkingLoader />}
-
-              {/* Approve plan button */}
-              {lastAssistantIsPlan && (
-                <motion.button
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={handleApprove}
-                  className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
-                  Approve Plan ({BUILD_CREDIT_COST} MC)
-                </motion.button>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div className="shrink-0 px-4 py-3 max-w-3xl mx-auto w-full">
-              <div className="relative">
-                <AnimatedPlusMenu
-                  open={menuOpen}
-                  onClose={() => setMenuOpen(false)}
-                  onGitHub={handleGitHubPush}
-                  onVercel={handleVercelDeploy}
-                  onSupabase={() => navigate("/settings/integrations")}
-                  hasFiles={Object.keys(files).length > 0}
-                />
-                <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
-                  <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-                    <Plus className="w-5 h-5" />
-                  </button>
-                  <textarea
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    placeholder="Ask about your project..."
-                    rows={1}
-                    className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
-                    style={{ minHeight: "32px" }}
-                  />
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={!input.trim() || isLoading}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
-                  >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                  </button>
-                </div>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 max-w-3xl mx-auto w-full space-y-4">
+        {messages.map((msg, i) => (
+          <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>
+            {msg.role === "user" ? (
+              <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm">
+                {msg.content}
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="h-full relative">
-            {sandbox.previewUrl && !previewError ? (
-              <>
-                <iframe
-                  ref={iframeRef}
-                  src={sandbox.previewUrl}
-                  className="w-full h-full border-none"
-                  title="Project Preview"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                  onError={() => setPreviewError(true)}
-                />
-                {/* Refresh button overlay */}
-                <button
-                  onClick={handleRetryPreview}
-                  className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm"
-                  title="Reload preview"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </>
+            ) : msg.type === "timeline" ? (
+              buildSteps.length > 0 && (
+                <BuildTimeline steps={buildSteps} title="Building your project" />
+              )
+            ) : msg.type === "log" ? (
+              <div className="text-xs text-muted-foreground font-mono py-1 flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                {msg.content}
+              </div>
             ) : (
-              <div className="h-full flex items-center justify-center bg-secondary">
-                <div className="text-center space-y-3">
-                  {previewError ? (
-                    <>
-                      <p className="text-foreground text-sm font-medium">Preview unavailable</p>
-                      <p className="text-xs text-muted-foreground">The sandbox may still be starting up</p>
-                      <button
-                        onClick={handleRetryPreview}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
-                      >
-                        <RefreshCw className="w-4 h-4" /> Retry
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-muted-foreground text-sm">Preview will appear here</p>
-                      <p className="text-xs text-muted-foreground">
-                        {sandbox.status === "creating"
-                          ? "Creating sandbox..."
-                          : sandbox.status === "building"
-                          ? "Building project..."
-                          : "Approve the plan to start building"}
-                      </p>
-                    </>
-                  )}
-                </div>
+              <div className="prose-chat text-foreground text-sm" dir="auto">
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
             )}
           </div>
+        ))}
+        {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && <ThinkingLoader />}
+        {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && <ThinkingLoader />}
+
+        {/* Approve plan button */}
+        {lastAssistantIsPlan && (
+          <motion.button
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={handleApprove}
+            className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Approve Plan ({BUILD_CREDIT_COST} MC)
+          </motion.button>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Bottom tabs */}
+      {/* Input */}
+      <div className="shrink-0 px-4 py-3 max-w-3xl mx-auto w-full">
+        <div className="relative">
+          <AnimatedPlusMenu
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            onGitHub={handleGitHubPush}
+            onVercel={handleVercelDeploy}
+            onSupabase={() => navigate("/settings/integrations")}
+            hasFiles={Object.keys(files).length > 0}
+          />
+          <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
+            <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+              <Plus className="w-5 h-5" />
+            </button>
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Ask about your project..."
+              rows={1}
+              className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
+              style={{ minHeight: "32px" }}
+            />
+            <button
+              onClick={() => handleSend()}
+              disabled={!input.trim() || isLoading}
+              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Shared preview panel content
+  const previewPanel = (
+    <div className="h-full relative bg-secondary">
+      {sandbox.previewUrl && !previewError ? (
+        <>
+          <iframe
+            ref={iframeRef}
+            src={sandbox.previewUrl}
+            className="w-full h-full border-none"
+            title="Project Preview"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            onError={() => setPreviewError(true)}
+          />
+          <button
+            onClick={handleRetryPreview}
+            className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm"
+            title="Reload preview"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </>
+      ) : (
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center space-y-3">
+            {previewError ? (
+              <>
+                <p className="text-foreground text-sm font-medium">Preview unavailable</p>
+                <p className="text-xs text-muted-foreground">The sandbox may still be starting up</p>
+                <button
+                  onClick={handleRetryPreview}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" /> Retry
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground text-sm">Preview will appear here</p>
+                <p className="text-xs text-muted-foreground">
+                  {sandbox.status === "creating"
+                    ? "Creating sandbox..."
+                    : sandbox.status === "building"
+                    ? "Building project..."
+                    : "Approve the plan to start building"}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Desktop: side-by-side layout
+  if (!isMobile) {
+    return (
+      <div className="h-[100dvh] flex bg-background">
+        {/* Chat panel - left side */}
+        <div className="w-[420px] shrink-0 border-r border-border">
+          {chatPanel}
+        </div>
+        {/* Preview panel - right side fills remaining space */}
+        <div className="flex-1 min-w-0">
+          {previewPanel}
+        </div>
+      </div>
+    );
+  }
+
+  // Mobile: tabbed layout (unchanged)
+  return (
+    <div className="h-[100dvh] flex flex-col bg-background">
+      <div className="flex-1 overflow-hidden min-h-0">
+        {activeTab === "chat" ? chatPanel : previewPanel}
+      </div>
+
+      {/* Bottom tabs - mobile only */}
       <div className="flex border-t border-border">
         <button
           onClick={() => setActiveTab("chat")}
