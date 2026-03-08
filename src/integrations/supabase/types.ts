@@ -18,24 +18,30 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_shared: boolean | null
           mode: string
           model: string | null
+          share_id: string | null
           title: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_shared?: boolean | null
           mode?: string
           model?: string | null
+          share_id?: string | null
           title?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_shared?: boolean | null
           mode?: string
           model?: string | null
+          share_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -545,6 +551,69 @@ export type Database = {
           referral_code?: string
           referred_id?: string
           referrer_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      service_incidents: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          resolved_at: string | null
+          service_name: string
+          started_at: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          service_name: string
+          started_at?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          service_name?: string
+          started_at?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      service_status: {
+        Row: {
+          checked_at: string
+          error_message: string | null
+          id: string
+          response_time_ms: number | null
+          service_name: string
+          service_url: string
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          error_message?: string | null
+          id?: string
+          response_time_ms?: number | null
+          service_name: string
+          service_url: string
+          status?: string
+        }
+        Update: {
+          checked_at?: string
+          error_message?: string | null
+          id?: string
+          response_time_ms?: number | null
+          service_name?: string
+          service_url?: string
           status?: string
         }
         Relationships: []

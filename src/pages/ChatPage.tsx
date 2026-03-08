@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -181,6 +181,19 @@ const ChatPage = () => {
     reader.readAsDataURL(file); e.target.value = "";
   };
 
+  const handleShare = async () => {
+    if (!conversationId) return;
+    const shareId = Math.random().toString(36).substring(2, 10);
+    const { error } = await supabase
+      .from("conversations")
+      .update({ is_shared: true, share_id: shareId } as any)
+      .eq("id", conversationId);
+    if (error) { toast.error("Failed to share"); return; }
+    const url = `${window.location.origin}/share/${shareId}`;
+    await navigator.clipboard.writeText(url);
+    toast.success("Share link copied!");
+  };
+
   const hasConversation = messages.length > 0;
 
   return (
@@ -211,7 +224,13 @@ const ChatPage = () => {
               </motion.div>
             )}
           </AnimatePresence>
-          <div className="w-9" />
+          {conversationId && hasConversation ? (
+            <button onClick={handleShare} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+              <Share2 className="w-5 h-5" />
+            </button>
+          ) : (
+            <div className="w-9" />
+          )}
         </div>
 
         {/* Messages */}
