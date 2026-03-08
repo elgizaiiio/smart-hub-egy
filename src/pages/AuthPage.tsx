@@ -21,6 +21,8 @@ const AuthPage = () => {
   const [has2FA, setHas2FA] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectUrl = searchParams.get("redirect");
 
   const startCountdown = () => {
     setCountdown(60);
@@ -94,8 +96,9 @@ const AuthPage = () => {
         await sendOTP();
         setStep("otp-2fa");
       } else {
-        toast.success("Welcome back!");
-        navigate("/chat");
+      toast.success("Welcome back!");
+        if (redirectUrl) window.location.href = redirectUrl;
+        else navigate("/chat");
       }
     } catch (e: any) {
       toast.error(e.message || "Login failed");
@@ -146,7 +149,8 @@ const AuthPage = () => {
         if (!data?.success) throw new Error(data?.error || "Invalid code");
 
         toast.success("Welcome back!");
-        navigate("/chat");
+        if (redirectUrl) window.location.href = redirectUrl;
+        else navigate("/chat");
       } else {
         // Signup: verify OTP then go to set password
         const { data, error } = await supabase.functions.invoke("otp", {
@@ -181,7 +185,8 @@ const AuthPage = () => {
       if (error) throw error;
 
       toast.success("Account created!");
-      navigate("/chat");
+      if (redirectUrl) window.location.href = redirectUrl;
+      else navigate("/chat");
     } catch (e: any) {
       toast.error(e.message || "Could not create account");
     } finally {
@@ -192,7 +197,7 @@ const AuthPage = () => {
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: redirectUrl || window.location.origin },
     });
   };
 
