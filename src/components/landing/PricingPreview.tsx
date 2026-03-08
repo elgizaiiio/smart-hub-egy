@@ -99,27 +99,25 @@ const PricingPreview = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: i * 0.12 }}
-              className={`relative rounded-3xl border p-9 ${
-                plan.highlight
-                  ? `${plan.borderColor} ${plan.bgColor} shadow-xl shadow-purple-500/10`
-                  : `${plan.borderColor} ${plan.bgColor}`
+              className={`relative rounded-3xl border p-9 transition-all duration-300 hover:scale-[1.02] ${plan.cardBorder} ${plan.cardBg} ${
+                plan.highlight ? "shadow-xl shadow-purple-500/10" : ""
               }`}
             >
               {plan.highlight && (
-                <div className={`absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full ${plan.badgeColor} px-4 py-1 text-xs font-bold uppercase tracking-wider text-white`}>
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-purple-500 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white">
                   Most Popular
                 </div>
               )}
 
-              <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
+              <h3 className={`text-lg font-bold ${plan.nameColor}`}>{plan.name}</h3>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-5xl font-black text-white">
                   ${plan.price}
                 </span>
                 <span className="text-base text-white/40">{plan.period}</span>
               </div>
-              <p className="mt-1 text-xs text-white/30">or {plan.yearlyPrice} billed yearly</p>
-              <p className="mt-2 text-sm text-white/40">{plan.description}</p>
+              <p className="mt-1.5 text-xs text-white/25">{plan.yearlyNote}</p>
+              <p className="mt-3 text-sm leading-relaxed text-white/40">{plan.description}</p>
 
               <ul className="mt-8 space-y-3">
                 {plan.features.map((f) => (
