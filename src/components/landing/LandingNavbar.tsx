@@ -18,7 +18,7 @@ interface MenuColumn {
 interface NavDropdown {
   label: string;
   columns: MenuColumn[];
-  featured?: { title: string; cta: string; href: string };
+  featured?: { title: string; desc?: string; cta: string; href: string };
 }
 
 interface NavLink {
