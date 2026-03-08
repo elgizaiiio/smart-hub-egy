@@ -190,10 +190,12 @@ const ContactPage = () => {
                     )}
                   />
 
-                  <FancyButton type="submit" className="w-full gap-2 text-base">
-                    <Send className="h-4 w-4" />
-                    Send Message
-                  </FancyButton>
+                  <button type="submit" className="w-full">
+                    <FancyButton className="w-full gap-2 text-base">
+                      <Send className="h-4 w-4" />
+                      Send Message
+                    </FancyButton>
+                  </button>
                 </form>
               </Form>
             </div>
