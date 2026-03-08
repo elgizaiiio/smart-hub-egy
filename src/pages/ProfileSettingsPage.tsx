@@ -91,7 +91,7 @@ const ProfileSettingsPage = () => {
     setToggling2FA(true);
     try {
       const newVal = !twoFactorEnabled;
-      await supabase.from("profiles").update({ two_factor_enabled: newVal, updated_at: new Date().toISOString() } as any).eq("id", userId);
+      await supabase.rpc("update_profile_safe", { p_user_id: userId, p_two_factor_enabled: newVal });
       setTwoFactorEnabled(newVal);
       toast.success(newVal ? "Two-factor authentication enabled" : "Two-factor authentication disabled");
     } catch {
