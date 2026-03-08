@@ -65,6 +65,13 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     }
   };
 
+  // Reset height when value is cleared (e.g. after sending)
+  useEffect(() => {
+    if (!value && textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  }, [value]);
+
   return (
     <div className="relative">
       <div className="relative flex items-center gap-2 rounded-2xl border border-primary/30 bg-transparent backdrop-blur-md px-3 py-2">
