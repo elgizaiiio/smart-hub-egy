@@ -30,6 +30,7 @@ import WithdrawPage from "./pages/WithdrawPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import CookieConsent from "./components/CookieConsent";
 const queryClient = new QueryClient();
 

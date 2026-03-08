@@ -396,6 +396,21 @@ const AuthPage = () => {
               <button onClick={resetFlow} className="text-xs text-white/40 hover:text-white/60">Back</button>
             </motion.div>
           )}
+
+          {/* Step: Forgot Password */}
+          {step === "forgot-password" && (
+            <motion.div key="forgot" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
+              <p className="text-xs text-white/50">{email}</p>
+              <button
+                onClick={handleForgotPassword}
+                disabled={isSubmitting}
+                className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? "Sending..." : "Send Reset Link"}
+              </button>
+              <button onClick={() => setStep("password")} className="text-xs text-white/40 hover:text-white/60">Back to login</button>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         <p className="text-[11px] text-white/30 mt-6">
