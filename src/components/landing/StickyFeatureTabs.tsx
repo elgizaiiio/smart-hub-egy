@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
 import ChatDemo from "@/components/landing/ChatDemo";
 import CodeDemo from "@/components/landing/CodeDemo";
+import LazyVideo from "@/components/landing/LazyVideo";
 
 const tabs = [
   {
@@ -124,14 +125,7 @@ const StickyFeatureTabs = () => {
                 </div>
               ) : (
                 <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
-                  <video
-                    src={current.video}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-full w-full object-cover"
-                  />
+                  <LazyVideo src={current.video} className="h-full w-full" />
                 </div>
               )}
             </motion.div>

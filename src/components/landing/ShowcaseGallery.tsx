@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import LazyVideo from "@/components/landing/LazyVideo";
 
 const categories = [
   {
@@ -83,15 +84,7 @@ const ShowcaseGallery = () => {
               className="group relative overflow-hidden rounded-2xl border border-border"
             >
               {item.type === "video" ? (
-                <video
-                  src={item.src}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
-                  className="aspect-[4/5] w-full object-cover"
-                />
+                <LazyVideo src={item.src} className="aspect-[4/5] w-full" />
               ) : (
                 <img src={item.src} alt={item.model} className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
               )}

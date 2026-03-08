@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import LazyVideo from "@/components/landing/LazyVideo";
 
 const ParallaxShowcase = () => {
   return (
@@ -26,15 +27,7 @@ const ParallaxShowcase = () => {
         className="mx-auto w-full max-w-5xl px-6"
       >
         <div className="overflow-hidden rounded-2xl border border-border/40 bg-background md:rounded-[2rem]">
-          <video
-            src="/api-showcase/showcase-main.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            className="aspect-video w-full object-cover"
-          />
+          <LazyVideo src="/api-showcase/showcase-main.mp4" className="aspect-video w-full" />
         </div>
       </motion.div>
     </section>
