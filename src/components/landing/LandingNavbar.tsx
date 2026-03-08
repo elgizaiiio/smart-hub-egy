@@ -69,7 +69,7 @@ const LandingNavbar = () => {
       </div>
 
       {mobileOpen && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-t border-border bg-background px-6 py-5 md:hidden">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-t border-white/[0.06] bg-black px-6 py-5 md:hidden">
           {links.map((l) => (
             <a
               key={l.label}
