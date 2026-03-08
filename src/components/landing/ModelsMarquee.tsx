@@ -21,12 +21,13 @@ const services = [
   { name: "Task Automation" },
 ];
 
-const logos = [
-  "DUCATI",
-  "Canva",
-  "Spotify",
-  "Adobe",
-  "Netflix",
+const providers = [
+  "Google",
+  "OpenAI",
+  "Anthropic",
+  "Stability AI",
+  "Runway",
+  "Meta",
 ];
 
 const ModelsMarquee = () => {
