@@ -66,6 +66,10 @@ const ChatPage = () => {
 
   const handleLike = async (index: number, liked: boolean | null) => {
     setMessages((prev) => prev.map((m, i) => i === index ? { ...m, liked } : m));
+    const msg = messages[index];
+    if (msg?.id) {
+      await supabase.from("messages").update({ liked }).eq("id", msg.id);
+    }
   };
 
   const loadConversation = async (id: string) => {
