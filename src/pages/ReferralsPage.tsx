@@ -247,10 +247,9 @@ const ReferralsPage = () => {
                     <p className="text-[11px] text-muted-foreground">{w.method} — {formatDate(w.created_at)}</p>
                   </div>
                   <span className={`text-[11px] font-medium ${
-                    w.status === "completed" ? "text-green-500" :
                     w.status === "rejected" ? "text-destructive" :
                     "text-primary"
-                  }`}>
+                  }`} style={w.status === "completed" ? { color: "#FFD700" } : {}}>
                     {w.status}
                   </span>
                 </div>

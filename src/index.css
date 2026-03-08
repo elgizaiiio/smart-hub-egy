@@ -444,6 +444,15 @@ img, video {
 .fancy-btn-green .fold {
   background: linear-gradient(135deg, rgba(5,150,105,0.8), rgba(4,120,87,0.5)) !important;
 }
+.fancy-btn-gold {
+  background: linear-gradient(135deg, #FFD700, #FFA500) !important;
+}
+.fancy-btn-gold::after {
+  background: linear-gradient(135deg, #FFD700, #FFA500) !important;
+}
+.fancy-btn-gold .fold {
+  background: linear-gradient(135deg, rgba(255,215,0,0.8), rgba(255,165,0,0.5)) !important;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
