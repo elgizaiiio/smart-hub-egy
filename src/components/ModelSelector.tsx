@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ModelPickerSheet from "./ModelPickerSheet";
+import deepseekLogo from "@/assets/deepseek-logo.png";
+import grokLogo from "@/assets/grok-logo.png";
+import ModelPickerSheet from "./ModelPickerSheet";
 
 export interface ModelOption {
   id: string;
