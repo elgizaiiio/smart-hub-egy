@@ -338,7 +338,7 @@ const ChatPage = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.96 }}
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64 rounded-2xl"
+                      className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-1.5 w-[min(260px,calc(100vw-2rem))] max-h-[min(70vh,480px)] overflow-y-auto rounded-2xl"
                     >
                       {/* ATTACH */}
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1.5">Attach</p>
