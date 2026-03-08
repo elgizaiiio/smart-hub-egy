@@ -673,3 +673,11 @@
   transition-duration: 0.2s;
 }
 
+@media (max-width: 767px) {
+  .cookie-card {
+    width: calc(100% - 32px);
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
+}
