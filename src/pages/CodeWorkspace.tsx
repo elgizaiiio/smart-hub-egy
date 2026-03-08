@@ -129,6 +129,7 @@ const DEFAULT_STEPS: () => BuildStep[] = () => [
 
 const CodeWorkspace = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"chat" | "preview">("chat");
   const [searchParams] = useSearchParams();
   const prompt = searchParams.get("prompt") || "";
