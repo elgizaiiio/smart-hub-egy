@@ -98,12 +98,12 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             className="fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-sidebar flex flex-col border-r border-sidebar-border"
           >
             <div className="p-3">
-              <button
+              <FancyButton
                 onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
-                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="w-full"
               >
                 + New chat
-              </button>
+              </FancyButton>
             </div>
 
             {/* Services */}
