@@ -247,11 +247,18 @@ const ChatPage = () => {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-lg">
-                <h2 className="font-display text-2xl md:text-4xl font-bold mb-3 text-foreground">Hey, what's up?</h2>
+                <h2 className="font-display text-2xl md:text-4xl font-bold mb-3 text-foreground">
+                  {(() => {
+                    const h = new Date().getHours();
+                    if (h < 12) return "صباح الخير ☀️";
+                    if (h < 18) return "مساء الخير 👋";
+                    return "مساء الخير 🌙";
+                  })()}
+                </h2>
                 <p className="hidden md:block text-muted-foreground text-sm mb-6">Ask me anything -- I'm here to help with chat, code, images, and more.</p>
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
                   {[{ label: "Images", path: "/images" }, { label: "Videos", path: "/videos" }, { label: "Files", path: "/files" }, { label: "Code", path: "/code" }].map((item) => (
@@ -274,6 +281,21 @@ const ChatPage = () => {
               <div ref={messagesEndRef} />
             </div>
           )}
+
+          {/* Scroll to bottom button */}
+          <AnimatePresence>
+            {showScrollBtn && messages.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={scrollToBottom}
+                className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 w-9 h-9 rounded-full bg-secondary border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <ArrowDown className="w-4 h-4" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Input */}
