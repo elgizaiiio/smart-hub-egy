@@ -34,7 +34,7 @@ const HeroSection = () => {
         {/* Right — rotated */}
         <motion.span
           initial={{ opacity: 0, x: 400 }}
-          animate={{ opacity: 0.06, x: 80 }}
+          animate={{ opacity: 0.12, x: 80 }}
           transition={{ duration: 1.4, delay: 0.3, ease: "easeOut" }}
           className="absolute right-[-8vw] text-[16vw] font-black uppercase leading-none tracking-tighter text-purple-500"
           style={{ fontFamily: "var(--font-display)", writingMode: "vertical-lr" }}
