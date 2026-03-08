@@ -37,7 +37,7 @@ const CTASection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="mx-auto mt-8 max-w-2xl text-xl text-white/40 md:text-2xl"
+          className="mx-auto mt-5 max-w-2xl text-base text-white/40 md:mt-8 md:text-2xl"
         >
           Millions of creators and the world's most innovative teams trust Megsy's AI tools to create with speed, polish, and control.
         </motion.p>
