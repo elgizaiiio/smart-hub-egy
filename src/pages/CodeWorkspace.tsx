@@ -280,7 +280,7 @@ const CodeWorkspace = () => {
       });
       const deductData = await deductResp.json();
       if (!deductData.success) {
-        toast.error(deductData.error || "Credit deduction failed");
+        toast.error(deductData.error || "MC deduction failed");
         setIsLoading(false);
         setIsThinking(false);
         return;
