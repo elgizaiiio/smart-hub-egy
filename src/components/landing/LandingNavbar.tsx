@@ -327,7 +327,7 @@ const LandingNavbar = () => {
                                   onClick={() => handleNav(sub.href)}
                                   className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-white/[0.06]"
                                 >
-                                  <div className="shrink-0"><Icon /></div>
+                                  
                                   <div>
                                     <span className="text-sm text-white/80">{sub.label}</span>
                                     <span className="block text-xs text-white/30">{sub.desc}</span>
