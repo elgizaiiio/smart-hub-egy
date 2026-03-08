@@ -220,20 +220,18 @@ const CodeWorkspace = () => {
     let assistantContent = "";
 
     // Always use plan mode for chat - user must explicitly switch
-    const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. You build complete Next.js 14+ applications with:
-- App Router (app/ directory)
-- TypeScript throughout
+    const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. You build complete React applications with:
+- React + Vite + React Router
 - Tailwind CSS for styling
-- API routes (app/api/*/route.ts) for backend logic
-- Server Components by default, Client Components with "use client" when needed
-- Database integration via Supabase or any REST API
-- Authentication patterns if requested
+- Multiple pages/routes with react-router-dom
+- Component-based architecture
+- Clean, production-ready code
 
 Analyze the user's request thoroughly:
-1. Understand the full scope (frontend, backend, database, APIs, auth)
+1. Understand the full scope (pages, components, features)
 2. Outline a detailed plan with file structure, tech stack, and features
 3. Ask clarifying questions if the request is ambiguous
-4. Plan: Database schema → API routes → Frontend pages → Components → Styling
+4. Plan: Pages → Components → Styling → Interactivity
 
 Be conversational. Do not use emoji. Respond in the user's language. Keep plans structured and actionable.`;
 
