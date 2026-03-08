@@ -14,7 +14,7 @@ const LANGUAGES = [
   { code: "zh", name: "Chinese", native: "中文" },
   { code: "ja", name: "Japanese", native: "日本語" },
   { code: "ko", name: "Korean", native: "한국어" },
-  
+  { code: "pt", name: "Portuguese", native: "Português" },
   { code: "ru", name: "Russian", native: "Русский" },
   { code: "tr", name: "Turkish", native: "Türkçe" },
   { code: "hi", name: "Hindi", native: "हिन्दी" },
