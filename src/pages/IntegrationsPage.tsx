@@ -283,58 +283,100 @@ const IntegrationsPage = () => {
   const isConnected = (app: string) => !!connectedApps[app];
   const categories = ["Essential", "Productivity", "Development", "Social & Marketing", "Business"];
 
+  const connectedCount = Object.keys(connectedApps).length;
+
   const IntegrationsContent = () => (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-8 max-w-2xl">
-      <p className="text-sm text-muted-foreground">Connect your favorite apps to use them directly from Megsy chat.</p>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-12">
+
+      {/* Stats bar */}
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-muted/30 border border-border/30">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-medium text-foreground">{connectedCount} Connected</span>
+        </div>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-muted/30 border border-border/30">
+          <span className="text-xs font-medium text-muted-foreground">{integrations.length} Available</span>
+        </div>
+      </div>
+
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        Connect your favorite apps and use them directly from Megsy chat — send emails, manage files, create issues, and more.
+      </p>
 
       {isLoadingConnections ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <Loader2 className="w-7 h-7 animate-spin text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">Loading integrations...</p>
         </div>
       ) : (
-        categories.map(cat => (
-          <div key={cat}>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">{cat}</p>
-            <div className="space-y-2">
-              {integrations.filter(i => i.category === cat).map(integration => {
-                const Icon = integration.icon;
-                return (
-                  <div key={integration.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/30 transition-colors">
-                    <div className="w-9 h-9 rounded-xl bg-muted/60 flex items-center justify-center shrink-0">
-                      <Icon />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{integration.name}</p>
-                      <p className="text-xs text-muted-foreground">{integration.description}</p>
-                    </div>
-                    {isConnected(integration.app) ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 text-emerald-600">
-                          <Check className="w-3 h-3" /> Connected
-                        </span>
+        categories.map((cat, catIdx) => {
+          const catIntegrations = integrations.filter(i => i.category === cat);
+          return (
+            <motion.div
+              key={cat}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: catIdx * 0.06 }}
+            >
+              <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-3 px-1">{cat}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {catIntegrations.map((integration, idx) => {
+                  const Icon = integration.icon;
+                  const connected = isConnected(integration.app);
+                  const loading = loadingApp === integration.id;
+                  return (
+                    <motion.div
+                      key={integration.id}
+                      initial={{ opacity: 0, scale: 0.97 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: catIdx * 0.06 + idx * 0.03 }}
+                      className={`group relative flex items-center gap-3.5 p-4 rounded-2xl border transition-all duration-200 hover:shadow-md ${
+                        connected
+                          ? "border-emerald-500/20 bg-emerald-500/[0.03]"
+                          : "border-border/40 bg-card/50 hover:border-border/80 hover:bg-card"
+                      }`}
+                    >
+                      {/* Icon */}
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                        connected ? "bg-emerald-500/10" : "bg-muted/50"
+                      }`}>
+                        <Icon />
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{integration.name}</p>
+                          {connected && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{integration.description}</p>
+                      </div>
+
+                      {/* Action */}
+                      {connected ? (
                         <button
                           onClick={() => handleDisconnect(integration)}
-                          disabled={loadingApp === integration.id}
-                          className="px-2 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                          disabled={loading}
+                          className="px-3 py-1.5 rounded-xl text-[11px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 border border-transparent hover:border-destructive/20 transition-all disabled:opacity-50 shrink-0"
                         >
-                          {loadingApp === integration.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Disconnect"}
+                          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Disconnect"}
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleConnect(integration)}
-                        disabled={loadingApp === integration.id}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50"
-                      >
-                        {loadingApp === integration.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Connect"}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))
+                      ) : (
+                        <button
+                          onClick={() => handleConnect(integration)}
+                          disabled={loading}
+                          className="px-4 py-2 rounded-xl text-[11px] font-semibold bg-foreground text-background hover:opacity-90 transition-all disabled:opacity-50 shrink-0"
+                        >
+                          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Connect"}
+                        </button>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          );
+        })
       )}
     </motion.div>
   );
