@@ -305,12 +305,13 @@ const IntegrationsPage = () => {
                         </button>
                       </div>
                     ) : (
-                      <FancyButton
+                      <button
                         onClick={() => handleConnect(integration)}
-                        className="text-xs px-3 py-1"
+                        disabled={loadingApp === integration.id}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50"
                       >
                         {loadingApp === integration.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Connect"}
-                      </FancyButton>
+                      </button>
                     )}
                   </div>
                 );
