@@ -820,3 +820,42 @@ img, video {
     bottom: 16px;
   }
 }
+
+/* Enterprise card animated border */
+.enterprise-card {
+  padding: 2px;
+  position: relative;
+}
+
+.enterprise-border-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  background: conic-gradient(
+    from var(--enterprise-angle, 0deg),
+    hsl(262 60% 55% / 0.6),
+    hsl(220 70% 50% / 0.3),
+    hsl(280 60% 55% / 0.6),
+    hsl(262 60% 55% / 0.1),
+    hsl(262 60% 55% / 0.6)
+  );
+  animation: enterprise-rotate 6s linear infinite;
+  filter: blur(2px);
+}
+
+.enterprise-card:hover .enterprise-border-glow {
+  filter: blur(4px);
+  opacity: 1;
+}
+
+@keyframes enterprise-rotate {
+  to {
+    --enterprise-angle: 360deg;
+  }
+}
+
+@property --enterprise-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
