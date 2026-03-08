@@ -110,6 +110,14 @@ const StickyFeatureTabs = () => {
             >
               {current.useChat ? (
                 <ChatDemo />
+              ) : current.image ? (
+                <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
+                  <img
+                    src={current.image}
+                    alt={current.title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
               ) : (
                 <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
                   <video
