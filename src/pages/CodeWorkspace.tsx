@@ -473,10 +473,14 @@ Rules:
             setPreviewError(false);
             setActiveTab("preview");
           } catch (sandboxErr) {
-            updateStep("sandbox", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
+            updateStep("start", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
             if (savedProjectId) {
               await supabase.from("projects").update({ status: "ready" }).eq("id", savedProjectId);
             }
+            setMessages(prev => [
+              ...prev,
+              { role: "assistant", content: `Preview start failed: ${sandboxErr instanceof Error ? sandboxErr.message : "Unknown error"}` },
+            ]);
           }
         } catch (e) {
           updateStep("parse", { status: "error", detail: e instanceof Error ? e.message : "Error" });
