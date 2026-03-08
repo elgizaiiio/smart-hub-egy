@@ -234,22 +234,85 @@ const PricingPage = () => {
 
         {/* Enterprise Section */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-12 rounded-2xl border border-border bg-card p-8 text-center"
+          transition={{ delay: 0.4, duration: 0.7 }}
+          className="enterprise-card mt-14 relative rounded-2xl overflow-hidden"
         >
-          <h3 className="font-display text-xl font-bold text-foreground mb-2">Enterprise</h3>
-          <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">
-            Custom plans for large teams with dedicated infrastructure, SLA guarantees, and priority support.
-          </p>
-          <a
-            href="mailto:support@megsyai.com"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Mail className="w-4 h-4" />
-            Contact Sales
-          </a>
+          {/* Animated gradient border */}
+          <div className="enterprise-border-glow" />
+
+          {/* Inner content */}
+          <div className="relative z-10 rounded-[14px] bg-gradient-to-br from-[hsl(245,40%,12%)] via-[hsl(260,35%,10%)] to-[hsl(220,40%,8%)] p-8 md:p-10">
+            {/* Particles */}
+            <div className="pricing-points-wrapper">
+              {Array.from({ length: 14 }).map((_, j) => (
+                <span key={j} className="pricing-point" />
+              ))}
+            </div>
+
+            {/* Badge */}
+            <motion.span
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.6 }}
+              className="inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1 rounded-full bg-white/10 text-white/70 uppercase tracking-widest mb-6 border border-white/10"
+            >
+              <Building2 className="w-3 h-3" />
+              For Teams & Organizations
+            </motion.span>
+
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+              {/* Left — Title & Description */}
+              <div className="md:max-w-sm">
+                <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-3">Enterprise</h3>
+                <p className="text-sm text-white/50 leading-relaxed">
+                  Tailored solutions for large teams and organizations. Get dedicated infrastructure, custom integrations, and enterprise-grade security with guaranteed uptime.
+                </p>
+                <div className="flex flex-wrap gap-3 mt-6">
+                  <a
+                    href="mailto:support@megsyai.com"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Contact Sales
+                  </a>
+                  <a
+                    href="mailto:support@megsyai.com?subject=Book%20a%20Demo"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/15 text-white/70 text-sm font-medium hover:border-white/30 hover:text-white transition-all"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Book a Demo
+                  </a>
+                </div>
+              </div>
+
+              {/* Right — Features Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
+                {[
+                  { icon: Zap, label: "Custom MC allocation" },
+                  { icon: Cpu, label: "All AI models (priority queue)" },
+                  { icon: Infinity, label: "Unlimited images, videos & deploys" },
+                  { icon: Server, label: "Dedicated infrastructure" },
+                  { icon: ShieldCheck, label: "SSO & SAML authentication" },
+                  { icon: Users, label: "Team management & roles" },
+                  { icon: Gauge, label: "Custom API rate limits" },
+                  { icon: Clock, label: "99.9% uptime SLA guarantee" },
+                  { icon: HeadphonesIcon, label: "Dedicated account manager" },
+                  { icon: Webhook, label: "Custom integrations & webhooks" },
+                  { icon: Globe, label: "Data residency options" },
+                  { icon: BarChart3, label: "Advanced analytics & reporting" },
+                  { icon: HardDrive, label: "On-premise deployment option" },
+                  { icon: Headset, label: "Priority 24/7 support" },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex items-center gap-2.5 py-1.5 text-sm text-white/70">
+                    <Icon className="w-3.5 h-3.5 shrink-0 text-purple-400/80" />
+                    {label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>
