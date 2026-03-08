@@ -51,8 +51,8 @@ serve(async (req) => {
         url.searchParams.append("cmd", command);
         url.searchParams.set("stdin", "false");
 
-        // Keep long-running commands (like dev server) alive after disconnect
-        const keepAlive = command.includes("npm run dev") || command.includes("nohup") ? "24h" : "30m";
+        // Keep long-running commands alive after disconnect
+        const keepAlive = command.includes("npm run dev") || command.includes("nohup") || command.includes("npm install") ? "24h" : "30m";
         url.searchParams.set("max_run_after_disconnect", keepAlive);
 
         const resp = await fetch(url.toString(), {
@@ -64,13 +64,23 @@ serve(async (req) => {
           throw new Error(`Exec failed: ${resp.status} ${err}`);
         }
 
-        const text = await resp.text();
-        // Surface obvious command errors to caller so UI doesn't mark build as successful
-        if (/not found|command not found|No such file or directory|npm ERR!/i.test(text)) {
-          throw new Error(`Exec command failed: ${text}`);
+        if (detach === true) {
+          await resp.body?.cancel();
+          result = { success: true, detached: true };
+          break;
         }
 
-        result = { output: text, success: true };
+        const text = await resp.text();
+        const output = text.length > 12000
+          ? `${text.slice(0, 6000)}\n... [output truncated] ...\n${text.slice(-6000)}`
+          : text;
+
+        // Surface obvious command errors to caller so UI doesn't mark build as successful
+        if (/not found|command not found|No such file or directory|npm ERR!/i.test(output)) {
+          throw new Error(`Exec command failed: ${output}`);
+        }
+
+        result = { output, success: true };
         break;
       }
 
