@@ -227,7 +227,8 @@ const ContactPage = () => {
                   {/* Tab Switcher */}
                   <motion.div
                     initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
                     transition={{ delay: 0.25, duration: 0.5 }}
                     className="mx-auto mb-10 flex w-fit rounded-full bg-white/[0.08] p-1.5"
                   >
