@@ -76,7 +76,7 @@ const LandingNavbar = () => {
               href={l.href}
               onClick={() => setMobileOpen(false)}
               {...((l as any).external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="block py-3 text-base font-medium text-muted-foreground hover:text-foreground"
+              className="block py-3 text-base font-medium text-white/50 hover:text-white"
             >
               {l.label}
             </a>
