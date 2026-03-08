@@ -349,7 +349,7 @@ const AuthPage = () => {
           {(step === "otp-signup" || step === "otp-2fa") && (
             <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5">
               <p className="text-xs text-white/50">{email}</p>
-              <OtpInputs />
+              {otpInputsElement}
               {isSubmitting && <p className="text-xs text-white/50 animate-pulse">Verifying...</p>}
               <div className="pt-2">
                 {countdown > 0 ? (
