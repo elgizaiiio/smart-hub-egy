@@ -49,14 +49,7 @@ const FAQSection = () => {
           className="mb-16 text-center"
         >
           <h2 className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
-            FA
-            <motion.span
-              animate={{ y: [0, -4, 0] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-              className="inline-block bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent"
-            >
-              Qs
-            </motion.span>
+            FA<span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Qs</span>
           </h2>
           <p className="mt-4 text-xl text-white/40">Everything you need to know about Megsy.</p>
         </motion.div>

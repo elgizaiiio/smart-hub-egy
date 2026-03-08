@@ -43,14 +43,7 @@ const ShowcaseGallery = () => {
         className="mx-auto mb-10 max-w-[95vw] px-6 text-center"
       >
         <h2 className="font-display text-[13vw] font-black uppercase leading-[0.85] tracking-tighter text-foreground md:text-[10vw]">
-          BUILT FOR{" "}
-          <motion.span
-            animate={{ y: [0, -4, 0], scale: [1, 1.02, 1] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="inline-block"
-          >
-            MAKERS
-          </motion.span>
+          BUILT FOR MAKERS
         </h2>
       </motion.div>
 

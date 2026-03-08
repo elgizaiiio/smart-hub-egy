@@ -23,14 +23,7 @@ const HorizontalGallery = () => {
           className="mb-8 md:mb-12"
         >
           <h2 className="font-display text-3xl font-black uppercase tracking-tight text-foreground md:text-6xl">
-            IMAGE{" "}
-            <motion.span
-              animate={{ y: [0, -3, 0] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-              className="inline-block text-primary"
-            >
-              MODELS
-            </motion.span>
+            IMAGE <span className="text-primary">MODELS</span>
           </h2>
           <p className="mt-3 max-w-lg text-sm text-muted-foreground md:text-base">
             Explore what each model can create — from hyper-real portraits to epic fantasy worlds.
