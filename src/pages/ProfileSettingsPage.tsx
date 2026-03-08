@@ -41,7 +41,7 @@ const ProfileSettingsPage = () => {
         setPlan(profile.plan || "free");
         if (profile.display_name) setUserName(profile.display_name);
         setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
-        setTwoFactorEnabled(profile.two_factor_enabled ?? false);
+        setTwoFactorEnabled((profile as any).two_factor_enabled ?? false);
       }
     };
     loadUser();
@@ -83,6 +83,21 @@ const ProfileSettingsPage = () => {
       toast.success("Name updated");
     } catch {
       toast.error("Failed to update name");
+    }
+  };
+
+  const handleToggle2FA = async () => {
+    if (!userId) return;
+    setToggling2FA(true);
+    try {
+      const newVal = !twoFactorEnabled;
+      await supabase.from("profiles").update({ two_factor_enabled: newVal, updated_at: new Date().toISOString() } as any).eq("id", userId);
+      setTwoFactorEnabled(newVal);
+      toast.success(newVal ? "Two-factor authentication enabled" : "Two-factor authentication disabled");
+    } catch {
+      toast.error("Failed to update 2FA setting");
+    } finally {
+      setToggling2FA(false);
     }
   };
 
@@ -151,7 +166,7 @@ const ProfileSettingsPage = () => {
         </button>
       </div>
 
-      {/* Security + Upgrade + Delete — compact list */}
+      {/* Security + Upgrade + Delete */}
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1 px-1">Security</p>
         <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
