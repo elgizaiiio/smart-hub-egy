@@ -28,9 +28,10 @@ const tabs = [
   },
   {
     title: "CODE & DEPLOY",
-    description: "Write, preview, and deploy production-ready code. Live sandbox preview, GitHub integration, and one-click Vercel deployment.",
-    video: "/api-showcase/video-4.mp4",
+    description: "Describe what you want, watch it come to life. Live preview, real-time code editing, GitHub sync & one-click Vercel deployment. From idea to production in seconds — no setup, no limits.",
+    video: "",
     accent: "bg-cyan-500",
+    useCode: true,
   },
 ];
 
