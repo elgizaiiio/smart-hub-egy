@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 
 const parallaxItems = [
   { src: "/api-showcase/showcase-1.png", label: "CONCEPT ART" },
@@ -8,50 +9,24 @@ const parallaxItems = [
   { src: "/api-showcase/video-6.mp4", type: "video" as const, label: "CINEMATIC" },
 ];
 
-function ParallaxItem({ item, index }: { item: { src: string; type?: string; label: string }; index: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 60, scale: 0.95 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.7, delay: 0.1 }}
-      className="mx-auto w-full max-w-5xl px-6"
-    >
-      <div className="group relative overflow-hidden rounded-[2rem] border border-border/40 bg-card/20">
-        {item.type === "video" ? (
-          <video
-            src={item.src}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="aspect-video w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <img
-            src={item.src}
-            alt={item.label}
-            loading="lazy"
-            className="aspect-video w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        )}
-        <div className="absolute left-6 top-6">
-          <span className="rounded-full bg-background/60 px-4 py-1.5 text-xs font-black uppercase tracking-[0.15em] text-foreground backdrop-blur-xl">
-            {item.label}
-          </span>
-        </div>
-        <div className="absolute bottom-4 right-6">
-          <span className="font-display text-7xl font-black text-foreground/[0.05]">0{index + 1}</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
+const INTERVAL = 4000;
 
 const ParallaxShowcase = () => {
+  const [active, setActive] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval>>();
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setActive((prev) => (prev + 1) % parallaxItems.length);
+    }, INTERVAL);
+    return () => clearInterval(timerRef.current);
+  }, []);
+
+  const current = parallaxItems[active];
+
   return (
     <section className="py-20 md:py-32">
-      <div className="mx-auto mb-16 max-w-7xl px-6 text-center">
+      <div className="mx-auto mb-12 max-w-7xl px-6 text-center">
         <motion.h2
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -66,10 +41,93 @@ const ParallaxShowcase = () => {
         </motion.h2>
       </div>
 
-      <div className="flex flex-col gap-20 md:gap-32">
+      {/* Indicator dots */}
+      <div className="mx-auto mb-6 flex items-center justify-center gap-2">
         {parallaxItems.map((item, i) => (
-          <ParallaxItem key={i} item={item} index={i} />
+          <button
+            key={i}
+            onClick={() => {
+              setActive(i);
+              clearInterval(timerRef.current);
+              timerRef.current = setInterval(() => {
+                setActive((prev) => (prev + 1) % parallaxItems.length);
+              }, INTERVAL);
+            }}
+            className={`rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${
+              i === active
+                ? "bg-foreground text-background"
+                : "border border-border/40 text-muted-foreground/60 hover:text-foreground"
+            }`}
+          >
+            {item.label}
+          </button>
         ))}
+      </div>
+
+      {/* Media container */}
+      <div className="mx-auto w-full max-w-5xl px-6">
+        <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-border/40 bg-card/20">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.6 }}
+              className="absolute inset-0"
+            >
+              {current.type === "video" ? (
+                <video
+                  src={current.src}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <img
+                  src={current.src}
+                  alt={current.label}
+                  className="h-full w-full object-cover"
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Label overlay */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="absolute left-6 top-6 z-10"
+            >
+              <span className="rounded-full bg-background/60 px-4 py-1.5 text-xs font-black uppercase tracking-[0.15em] text-foreground backdrop-blur-xl">
+                {current.label}
+              </span>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="absolute bottom-4 right-6 z-10">
+            <span className="font-display text-7xl font-black text-foreground/[0.05]">
+              0{active + 1}
+            </span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="absolute bottom-0 left-0 right-0 z-10 h-1 bg-border/20">
+            <motion.div
+              key={active}
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: INTERVAL / 1000, ease: "linear" }}
+              className="h-full bg-primary/70"
+            />
+          </div>
+        </div>
       </div>
     </section>
   );
