@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { MessageSquare, Image, Film, Code2, FileText, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import FancyButton from "@/components/FancyButton";
+import NotificationBell from "@/components/NotificationBell";
 
 interface Conversation {
   id: string;
@@ -179,6 +180,11 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
 
       {/* Bottom section */}
       <div className="p-2 space-y-2">
+        {/* Notification Bell */}
+        <div className={`flex ${expanded ? "px-2 justify-end" : "justify-center"}`}>
+          <NotificationBell collapsed={!expanded} />
+        </div>
+
         {/* MC Balance - only when expanded */}
         {expanded && (
           <div className="px-2 py-2">
