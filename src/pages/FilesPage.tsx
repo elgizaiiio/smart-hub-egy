@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
+import AppLayout from "@/layouts/AppLayout";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
 import ReactMarkdown from "react-markdown";
