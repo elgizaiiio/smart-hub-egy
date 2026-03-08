@@ -64,90 +64,51 @@ const ShowcaseGallery = () => {
 
   return (
     <section className="relative overflow-hidden py-24 md:py-40">
-      {/* Giant "BUILT FOR MAKERS" text */}
       <motion.div
-        initial={{ opacity: 0, y: 80 }}
+        initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 1 }}
-        className="mx-auto max-w-[95vw] px-6 text-center mb-10"
+        transition={{ duration: 0.8 }}
+        className="mx-auto mb-10 max-w-[95vw] px-6 text-center"
       >
-        <h2 className="font-display text-[13vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[10vw]">
-          BUILT FOR
-        </h2>
-        <h2 className="font-display text-[13vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[10vw]">
-          <span className="inline-flex items-center gap-[2vw]">
-            {/* Purple icon placeholder */}
-            <span className="inline-flex h-[8vw] w-[6vw] items-center justify-center rounded-2xl bg-purple-500 md:h-[6vw] md:w-[5vw]">
-              <svg viewBox="0 0 24 24" fill="white" className="h-[4vw] w-[4vw] md:h-[3vw] md:w-[3vw]">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-            </span>
-            MAKERS
-          </span>
+        <h2 className="font-display text-[13vw] font-black uppercase leading-[0.85] tracking-tighter text-foreground md:text-[10vw]">
+          BUILT FOR MAKERS
         </h2>
       </motion.div>
 
-      {/* Role tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7, delay: 0.2 }}
-        className="mx-auto max-w-6xl px-6 mb-6"
-      >
-        <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] p-2 md:gap-0 md:justify-between">
+      <div className="mx-auto mb-6 max-w-6xl px-6">
+        <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-border bg-card/40 p-2 md:justify-between">
           {roles.map((role, i) => (
             <button
               key={role.label}
               onClick={() => setActiveRole(i)}
               className={`rounded-full px-6 py-2.5 text-base font-bold uppercase tracking-wider transition-all md:text-lg ${
-                activeRole === i
-                  ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30"
-                  : "text-white/50 hover:text-white/80"
+                activeRole === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {role.label}
             </button>
           ))}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Description */}
-      <motion.p
-        key={activeRole}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="mx-auto max-w-2xl px-6 text-center text-lg text-white/50 mb-10"
-      >
+      <motion.p key={activeRole} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto mb-10 max-w-2xl px-6 text-center text-lg text-muted-foreground">
         {currentRole.description}
       </motion.p>
 
-      {/* Image grid */}
       <div className="mx-auto max-w-7xl px-6">
-        <motion.div
-          key={activeRole}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="grid grid-cols-1 gap-5 md:grid-cols-3"
-        >
+        <motion.div key={activeRole} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {currentRole.images.map((img, i) => (
             <motion.div
               key={`${activeRole}-${i}`}
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="group relative overflow-hidden rounded-2xl"
+              transition={{ duration: 0.45, delay: i * 0.08 }}
+              className="group relative overflow-hidden rounded-2xl border border-border"
             >
-              <img
-                src={img.src}
-                alt={img.model}
-                className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-6 pt-20">
-                <p className="text-sm font-bold text-white">{img.model}</p>
+              <img src={img.src} alt={img.model} className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/85 to-transparent p-6 pt-20">
+                <p className="text-sm font-bold text-foreground">{img.model}</p>
               </div>
             </motion.div>
           ))}
