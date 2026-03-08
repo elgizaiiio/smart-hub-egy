@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ModelPickerSheet from "./ModelPickerSheet";
+import deepseekLogo from "@/assets/deepseek-logo.png";
+import grokLogo from "@/assets/grok-logo.png";
 
 export interface ModelOption {
   id: string;
@@ -124,23 +126,13 @@ const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
       </svg>
     );
   }
-  // xAI Grok - ✗ symbol
+  // xAI Grok - official logo
   if (modelId.includes("grok")) {
-    return (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-      </svg>
-    );
+    return <img src={grokLogo} alt="Grok" className="w-4 h-4 object-contain" />;
   }
   // DeepSeek - official logo
   if (modelId.includes("deepseek")) {
-    return (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#4D6BFE"/>
-        <path d="M16.8 9.2c-.3-.8-1.1-1.4-2-1.6-.6-.1-1.2 0-1.8.2-.8.3-1.5.8-2 1.5-.4.5-.7 1.1-.8 1.7 0 .2.1.4.2.5.2.1.4.1.5 0 .4-.3.9-.5 1.4-.5.3 0 .7.1 1 .3.2.1.3.3.3.5s-.1.4-.3.5c-.3.2-.7.3-1 .3-.5 0-1-.1-1.4-.4-.5-.3-.8-.8-.9-1.3-.1-.7.1-1.4.5-2 .5-.7 1.2-1.2 2-1.5.9-.3 1.8-.3 2.6.1.7.3 1.2.9 1.5 1.6.2.6.2 1.2 0 1.8-.3.8-.8 1.4-1.5 1.8-.5.3-1 .5-1.6.5h-.3c-.2 0-.3.1-.4.3-.1.2 0 .3.1.4.5.4 1.1.6 1.7.6.8 0 1.6-.3 2.2-.8.7-.6 1.2-1.4 1.4-2.3.2-.8.1-1.7-.3-2.5z" fill="white"/>
-        <circle cx="10.5" cy="13.5" r=".8" fill="white"/>
-      </svg>
-    );
+    return <img src={deepseekLogo} alt="DeepSeek" className="w-4 h-4 object-contain" />;
   }
   return <div className="w-4 h-4 rounded-full bg-primary/20" />;
 };
