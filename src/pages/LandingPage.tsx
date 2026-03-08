@@ -32,9 +32,11 @@ const LandingPage = () => {
 
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.8,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      duration: 3.2,
+      easing: (t) => 1 - Math.pow(1 - t, 5),
       smoothWheel: true,
+      wheelMultiplier: 1.4,
+      touchMultiplier: 2.5,
     });
 
     function raf(time: number) {
