@@ -98,7 +98,7 @@ const ApiModelsPage = () => {
                 <span className="col-span-2 text-center hidden sm:block">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{catLabel}</span>
                 </span>
-                <span className="col-span-7 sm:col-span-2 text-right text-primary font-medium">{model.credits} cr</span>
+                <span className="col-span-7 sm:col-span-2 text-right text-primary font-medium">{model.credits} MC</span>
               </div>
             );
           })}
