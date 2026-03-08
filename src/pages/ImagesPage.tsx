@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslatedPlaceholders } from "@/hooks/useTranslatedPlaceholders";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Download, Loader2 } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Download, Loader2, Zap, ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
