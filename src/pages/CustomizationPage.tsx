@@ -201,28 +201,6 @@ const CustomizationPage = () => {
         </div>
       </div>
 
-      {/* Font Size */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Type className="w-3.5 h-3.5 text-muted-foreground" />
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Font Size</p>
-        </div>
-        <div className="rounded-2xl bg-muted/30 border border-border/50 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] text-muted-foreground">A</span>
-            <span className="text-xs font-medium text-foreground">{fontSizeLabels[fontSize]}</span>
-            <span className="text-base text-muted-foreground font-bold">A</span>
-          </div>
-          <Slider
-            value={[fontSize]}
-            onValueChange={([v]) => setFontSize(v)}
-            min={0}
-            max={2}
-            step={1}
-          />
-        </div>
-      </div>
-
       {/* Chat Bubble Style */}
       <div>
         <div className="flex items-center gap-2 mb-4">
