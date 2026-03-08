@@ -33,7 +33,7 @@ const ProfileSettingsPage = () => {
       setUserEmail(user.email || "");
       const { data: profile } = await supabase
         .from("profiles")
-        .select("credits, plan, display_name, avatar_url")
+        .select("credits, plan, display_name, avatar_url, two_factor_enabled")
         .eq("id", user.id)
         .single();
       if (profile && !cancelled) {
