@@ -19,7 +19,7 @@ interface DesktopSidebarProps {
 }
 
 const navItems = [
-  { path: "/", label: "Chat", icon: MessageSquare },
+  { path: "/chat", label: "Chat", icon: MessageSquare },
   { path: "/images", label: "Images", icon: Image },
   { path: "/videos", label: "Videos", icon: Film },
   { path: "/code", label: "Code", icon: Code2 },
