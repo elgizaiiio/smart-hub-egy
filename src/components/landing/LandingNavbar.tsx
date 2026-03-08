@@ -310,7 +310,7 @@ const LandingNavbar = () => {
                           <div key={col.title}>
                             <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-white/30">{col.title}</h4>
                             {col.items.map((sub) => {
-                              const Icon = sub.icon;
+                              
                               return (
                                 <button
                                   key={sub.label}
