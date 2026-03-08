@@ -68,7 +68,6 @@ const SettingsPage = () => {
   const menuItems = [
     { icon: UserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
-    { icon: Gift, label: "Referrals", desc: "Invite & earn 20%", path: "/settings/referrals" },
     { icon: SquareCode, label: "APIs", desc: "Developer access", path: "https://api.megsyai.com", external: true },
   ];
 

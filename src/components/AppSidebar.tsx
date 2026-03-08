@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CreditCard } from "lucide-react";
+import { CreditCard, MessageSquare, Image, Video, Code, FileText, Clock } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,12 +22,61 @@ interface AppSidebarProps {
 }
 
 const serviceItems = [
-  { path: "/", label: "Chat" },
-  { path: "/images", label: "Images" },
-  { path: "/videos", label: "Videos" },
-  { path: "/code", label: "Programming" },
-  { path: "/files", label: "Files" },
+  { path: "/", label: "Chat", icon: MessageSquare },
+  { path: "/images", label: "Images", icon: Image },
+  { path: "/videos", label: "Videos", icon: Video },
+  { path: "/code", label: "Programming", icon: Code },
+  { path: "/files", label: "Files", icon: FileText },
 ];
+
+const getModeIcon = (mode: string) => {
+  switch (mode) {
+    case "images": return Image;
+    case "videos": return Video;
+    case "code": return Code;
+    case "files": return FileText;
+    default: return MessageSquare;
+  }
+};
+
+const getRelativeTime = (dateStr: string) => {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "الآن";
+  if (diffMins < 60) return `${diffMins}د`;
+  if (diffHours < 24) return `${diffHours}س`;
+  if (diffDays < 7) return `${diffDays}ي`;
+  return date.toLocaleDateString("ar", { month: "short", day: "numeric" });
+};
+
+const groupConversations = (convs: Conversation[]) => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const weekAgo = new Date(today.getTime() - 7 * 86400000);
+
+  const groups: { label: string; items: Conversation[] }[] = [
+    { label: "اليوم", items: [] },
+    { label: "أمس", items: [] },
+    { label: "هذا الأسبوع", items: [] },
+    { label: "أقدم", items: [] },
+  ];
+
+  convs.forEach((c) => {
+    const d = new Date(c.updated_at);
+    if (d >= today) groups[0].items.push(c);
+    else if (d >= yesterday) groups[1].items.push(c);
+    else if (d >= weekAgo) groups[2].items.push(c);
+    else groups[3].items.push(c);
+  });
+
+  return groups.filter((g) => g.items.length > 0);
+};
 
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
   const navigate = useNavigate();
@@ -78,6 +127,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   };
 
   const initial = userName.charAt(0).toUpperCase() || "U";
+  const grouped = groupConversations(conversations);
 
   return (
     <AnimatePresence>
@@ -110,49 +160,68 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             <div className="px-3">
               <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Services</p>
               <div className="space-y-0.5">
-                {serviceItems.map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => { navigate(item.path); onClose(); }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                      location.pathname === item.path
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+                {serviceItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => { navigate(item.path); onClose(); }}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2.5 ${
+                        location.pathname === item.path
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {item.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Separator */}
             <div className="mx-3 my-2 border-t border-sidebar-border" />
 
-            {/* Recent */}
+            {/* Recent - grouped by date */}
             {showRecent && (
               <div className="flex-1 overflow-y-auto px-3">
-                <div className="sticky top-0 z-10 bg-sidebar py-2">
-                  <p className="text-[11px] text-muted-foreground px-3 uppercase tracking-wider">Recent</p>
-                </div>
                 {conversations.length === 0 ? (
-                  <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
-                ) : (
-                  <div className="space-y-0.5">
-                    {conversations.map((conv) => (
-                      <button
-                        key={conv.id}
-                        onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
-                          activeConversationId === conv.id
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent"
-                        }`}
-                      >
-                        {conv.title}
-                      </button>
-                    ))}
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <Clock className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-xs text-muted-foreground">لا توجد محادثات بعد</p>
                   </div>
+                ) : (
+                  grouped.map((group) => (
+                    <div key={group.label} className="mb-3">
+                      <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider px-3 py-1.5 font-medium">
+                        {group.label}
+                      </p>
+                      <div className="space-y-0.5">
+                        {group.items.map((conv) => {
+                          const ModeIcon = getModeIcon(conv.mode);
+                          const isActive = activeConversationId === conv.id;
+                          return (
+                            <button
+                              key={conv.id}
+                              onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center gap-2.5 group ${
+                                isActive
+                                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                  : "text-sidebar-foreground hover:bg-sidebar-accent"
+                              }`}
+                            >
+                              <ModeIcon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                              <span className="flex-1 truncate">{conv.title}</span>
+                              <span className="text-[10px] text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {getRelativeTime(conv.updated_at)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             )}
