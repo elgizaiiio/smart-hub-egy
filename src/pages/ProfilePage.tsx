@@ -4,6 +4,7 @@ import { ArrowLeft, User, Camera, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AppLayout from "@/layouts/AppLayout";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
