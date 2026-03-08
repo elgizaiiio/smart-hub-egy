@@ -94,7 +94,13 @@ const PricingPreview = () => {
         >
           <h2 className="font-display text-[10vw] font-black uppercase tracking-tighter leading-[0.85] text-white md:text-[8vw]">
             SIMPLE{" "}
-            <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">PRICING</span>
+            <motion.span
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+              className="inline-block bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent"
+            >
+              PRICING
+            </motion.span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-xl text-white/40">
             Start free, scale as you grow. No hidden fees.

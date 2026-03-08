@@ -53,7 +53,14 @@ const StickyFeatureTabs = () => {
           className="mb-12"
         >
           <h2 className="font-display text-3xl font-black uppercase tracking-tight text-foreground md:text-6xl">
-            WHAT YOU CAN <span className="text-primary">CREATE</span>
+            WHAT YOU CAN{" "}
+            <motion.span
+              animate={{ y: [0, -3, 0] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+              className="inline-block text-primary"
+            >
+              CREATE
+            </motion.span>
           </h2>
         </motion.div>
 

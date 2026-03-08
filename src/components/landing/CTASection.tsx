@@ -27,9 +27,13 @@ const CTASection = () => {
           transition={{ duration: 1, delay: 0.1 }}
           className="font-display text-[10vw] font-black uppercase italic leading-[0.85] tracking-tighter md:text-[8vw]"
         >
-          <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+          <motion.span
+            animate={{ y: [0, -6, 0], scale: [1, 1.02, 1] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-block bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent"
+          >
             LEADING CREATORS
-          </span>
+          </motion.span>
         </motion.h2>
 
         <motion.p

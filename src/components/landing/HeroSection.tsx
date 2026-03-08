@@ -32,9 +32,6 @@ const HeroSection = () => {
             THAT PUTS YOU IN CONTROL
           </motion.span>
         </motion.h1>
-          THE AI CREATIVE SUITE{" "}
-          <span className="text-primary">THAT PUTS YOU IN CONTROL</span>
-        </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 25 }}

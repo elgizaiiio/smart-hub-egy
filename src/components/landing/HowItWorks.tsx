@@ -95,9 +95,13 @@ const HowItWorks = () => {
             GET STARTED
           </h2>
           <h2 className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter md:text-[8vw]">
-            <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+            <motion.span
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+              className="inline-block bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+            >
               WITH MEGSY
-            </span>
+            </motion.span>
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-lg text-white/40 leading-relaxed">
             From signup to deployment in five simple steps.
