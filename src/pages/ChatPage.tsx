@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, Share2, ArrowDown } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -237,13 +237,7 @@ const ChatPage = () => {
               </motion.div>
             )}
           </AnimatePresence>
-          {conversationId && hasConversation ? (
-            <button onClick={handleShare} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
-              <Share2 className="w-5 h-5" />
-            </button>
-          ) : (
-            <div className="w-9" />
-          )}
+          <div className="w-9" />
         </div>
 
         {/* Messages */}
@@ -265,7 +259,7 @@ const ChatPage = () => {
           ) : (
             <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
               {messages.map((msg, i) => (
-                <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} />
+                <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} onShare={msg.role === "assistant" && conversationId ? handleShare : undefined} />
               ))}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
                 <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />

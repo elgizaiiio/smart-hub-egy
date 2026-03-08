@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink, Share2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import ThinkingLoader from "./ThinkingLoader";
 
@@ -12,6 +12,7 @@ interface ChatMessageProps {
   attachedImages?: string[];
   onLike?: (liked: boolean | null) => void;
   liked?: boolean | null;
+  onShare?: () => void;
 }
 
 // Extract domain from URL
@@ -33,7 +34,7 @@ const getFavicon = (url: string) => {
   }
 };
 
-const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, onLike, liked }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, onLike, liked, onShare }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -179,6 +180,14 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               >
                 <ThumbsDown className="w-3.5 h-3.5" />
               </button>
+              {onShare && (
+                <button
+                  onClick={onShare}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
 
