@@ -66,7 +66,7 @@ const ShowcaseGallery = () => {
             </button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       <motion.p key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto mb-10 max-w-2xl px-6 text-center text-lg text-muted-foreground">
         {current.description}
