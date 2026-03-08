@@ -80,10 +80,8 @@ const App = () => {
             <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
             <Route path="/settings/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
             <Route path="/settings/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
-            <Route path="/settings/apis" element={<ProtectedRoute><ApisPage /></ProtectedRoute>} />
             <Route path="/settings/language" element={<ProtectedRoute><LanguagePage /></ProtectedRoute>} />
             <Route path="/settings/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
-            <Route path="/status" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
             <Route path="/settings/change-email" element={<ProtectedRoute><ChangeEmailPage /></ProtectedRoute>} />
             <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
             <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />

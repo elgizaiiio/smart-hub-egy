@@ -26,6 +26,13 @@ const VIDEO_MODELS = [
   "wan-flf", "kling-avatar-pro", "kling-avatar-std", "sadtalker", "sync-lipsync",
 ];
 
+const CHAT_MODELS = [
+  "google/gemini-3-flash-preview", "google/gemini-2.5-pro",
+  "openai/gpt-5", "x-ai/grok-3", "deepseek/deepseek-r1",
+];
+
+const CODE_MODELS = ["x-ai/grok-3", "openai/gpt-5", "deepseek/deepseek-r1"];
+
 const MODEL_NAMES: Record<string, string> = {
   "megsy-v1-img": "Megsy v1", "gpt-image": "GPT Image 1.5", "nano-banana-2": "Nano Banana 2",
   "flux-kontext": "FLUX Kontext Max", "ideogram-3": "Ideogram 3", "seedream-5-lite": "Seedream 5 Lite",
@@ -50,13 +57,19 @@ const MODEL_NAMES: Record<string, string> = {
   "pixverse-5.5-i2v": "PixVerse I2V", "wan-2.6-i2v": "WAN 2.6 I2V",
   "wan-flf": "WAN First-Last-Frame", "kling-avatar-pro": "Kling Avatar Pro",
   "kling-avatar-std": "Kling Avatar Std", "sadtalker": "SadTalker", "sync-lipsync": "Sync Lipsync V2",
+  "google/gemini-3-flash-preview": "Megsy V1 (Chat)", "google/gemini-2.5-pro": "Gemini 2.5 Pro",
+  "openai/gpt-5": "GPT-5", "x-ai/grok-3": "Grok 3", "deepseek/deepseek-r1": "DeepSeek R1",
 };
 
-// ---- Persistent session helpers (using memories table) ----
+// ---- Persistent session helpers ----
 interface BotSession {
-  page: "images" | "videos";
-  modelIndex: number;
-  models: string[];
+  page?: "images" | "videos";
+  modelIndex?: number;
+  models?: string[];
+  adminAction?: string;
+  adminModelId?: string;
+  adminField?: string;
+  adminUserId?: string;
 }
 
 async function loadSession(sb: ReturnType<typeof createClient>, chatId: number): Promise<BotSession | null> {
@@ -88,6 +101,23 @@ async function getExistingMedia(sb: ReturnType<typeof createClient>, models: str
   return new Set((data || []).map((r: { model_id: string }) => r.model_id));
 }
 
+// ---- Model config helpers (stored in memories table) ----
+async function getModelConfig(sb: ReturnType<typeof createClient>, modelId: string): Promise<Record<string, string> | null> {
+  const { data } = await sb.from("memories").select("value").eq("key", `model_config_${modelId}`).maybeSingle();
+  if (!data) return null;
+  try { return JSON.parse(data.value); } catch { return null; }
+}
+
+async function setModelConfig(sb: ReturnType<typeof createClient>, modelId: string, config: Record<string, string>) {
+  await sb.from("memories").delete().eq("key", `model_config_${modelId}`);
+  await sb.from("memories").insert({ key: `model_config_${modelId}`, value: JSON.stringify(config) });
+}
+
+function isAdmin(chatId: number): boolean {
+  const adminIds = (Deno.env.get("ADMIN_CHAT_IDS") || "").split(",").map(s => s.trim()).filter(Boolean);
+  return adminIds.includes(String(chatId));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -106,74 +136,56 @@ serve(async (req) => {
     if (callback) {
       const chatId = callback.message.chat.id;
       const data = callback.data;
-
       await callTelegram(BOT_TOKEN, "answerCallbackQuery", { callback_query_id: callback.id });
 
+      // ---- Media upload flow ----
       if (data === "page_images" || data === "page_videos") {
         const page = data === "page_images" ? "images" : "videos";
         const allModels = page === "images" ? IMAGE_MODELS : VIDEO_MODELS;
-
         const existing = await getExistingMedia(sb, allModels);
         const remaining = allModels.filter(m => !existing.has(m));
 
         if (remaining.length === 0) {
-          await callTelegram(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId,
-            text: `All ${page} models already have media! Nothing to upload.`,
-          });
+          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `All ${page} models already have media!` });
           return new Response("OK");
         }
 
         const session: BotSession = { page, modelIndex: 0, models: remaining };
         await saveSession(sb, chatId, session);
-
         const modelId = remaining[0];
         const modelName = MODEL_NAMES[modelId] || modelId;
 
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `*${page === "images" ? "Image" : "Video"} Models*\n\n` +
-            `Remaining: *${remaining.length}* models\n\n` +
-            `Model: *${modelName}*\n` +
-            `ID: \`${modelId}\`\n\n` +
-            `Send ${page === "images" ? "an image" : "a video"} for this model:`,
+          text: `*${page === "images" ? "Image" : "Video"} Models*\nRemaining: *${remaining.length}*\n\nModel: *${modelName}*\nID: \`${modelId}\`\n\nSend ${page === "images" ? "an image" : "a video"}:`,
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]],
-          }),
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
         });
-
         return new Response("OK");
       }
 
       if (data === "skip_model") {
         const session = await loadSession(sb, chatId);
-        if (!session) {
+        if (!session || !session.models) {
           await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "No active session. Press /start" });
           return new Response("OK");
         }
-
-        session.modelIndex++;
+        session.modelIndex = (session.modelIndex || 0) + 1;
         if (session.modelIndex >= session.models.length) {
           await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "All models done!" });
           await clearSession(sb, chatId);
           return new Response("OK");
         }
-
         await saveSession(sb, chatId, session);
         const modelId = session.models[session.modelIndex];
         const modelName = MODEL_NAMES[modelId] || modelId;
         const remaining = session.models.length - session.modelIndex;
-
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `Skipped.\n\nRemaining: *${remaining}* models\n\nModel: *${modelName}*\nID: \`${modelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
+          text: `Skipped.\n\nRemaining: *${remaining}*\n\nModel: *${modelName}*\nID: \`${modelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]],
-          }),
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
         });
-
         return new Response("OK");
       }
 
@@ -188,6 +200,144 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ---- Admin callbacks ----
+      if (data === "admin_panel" && isAdmin(chatId)) {
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: "🔧 *Admin Panel*\n\nChoose an action:",
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({
+            inline_keyboard: [
+              [{ text: "📋 List Models", callback_data: "admin_list_models" }],
+              [{ text: "✏️ Edit Model", callback_data: "admin_edit_model" }],
+              [{ text: "👥 User Credits", callback_data: "admin_users" }],
+              [{ text: "📊 System Stats", callback_data: "admin_stats" }],
+              [{ text: "🔙 Back", callback_data: "back_main" }],
+            ],
+          }),
+        });
+        return new Response("OK");
+      }
+
+      if (data === "back_main") {
+        await clearSession(sb, chatId);
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: "*Megsy Admin Bot*\n\nChoose an action:",
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({
+            inline_keyboard: [
+              [{ text: "📸 Image Models", callback_data: "page_images" }, { text: "🎬 Video Models", callback_data: "page_videos" }],
+              [{ text: "📊 Status", callback_data: "status" }],
+              ...(isAdmin(chatId) ? [[{ text: "🔧 Admin Panel", callback_data: "admin_panel" }]] : []),
+            ],
+          }),
+        });
+        return new Response("OK");
+      }
+
+      if (data === "admin_list_models" && isAdmin(chatId)) {
+        const categories = [
+          { label: "🖼 Image Models", models: IMAGE_MODELS },
+          { label: "🎬 Video Models", models: VIDEO_MODELS },
+          { label: "💬 Chat Models", models: CHAT_MODELS },
+          { label: "💻 Code Models", models: CODE_MODELS },
+        ];
+        let text = "*All Models*\n\n";
+        for (const cat of categories) {
+          text += `*${cat.label}* (${cat.models.length})\n`;
+          for (const m of cat.models.slice(0, 15)) {
+            const config = await getModelConfig(sb, m);
+            const name = config?.name || MODEL_NAMES[m] || m;
+            const provider = config?.provider || "default";
+            const credits = config?.credits || "—";
+            text += `• \`${m}\` → ${name} [${credits} MC] (${provider})\n`;
+          }
+          if (cat.models.length > 15) text += `  ... +${cat.models.length - 15} more\n`;
+          text += "\n";
+        }
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Admin", callback_data: "admin_panel" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (data === "admin_edit_model" && isAdmin(chatId)) {
+        await saveSession(sb, chatId, { adminAction: "awaiting_model_id" });
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: "✏️ *Edit Model*\n\nSend the model ID you want to edit.\nExample: `megsy-v1-img` or `openai/gpt-5`",
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Cancel", callback_data: "admin_panel" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (data?.startsWith("edit_field_") && isAdmin(chatId)) {
+        const field = data.replace("edit_field_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+
+        const fieldLabels: Record<string, string> = {
+          name: "Model Name", credits: "MC Cost", description: "Description",
+          provider: "Provider ID (fal/openrouter)", capabilities: "Capabilities",
+          fal_id: "fal.ai Model ID", openrouter_id: "OpenRouter Model ID",
+        };
+
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `Enter new *${fieldLabels[field] || field}* for \`${session.adminModelId}\`:`,
+          parse_mode: "Markdown",
+        });
+        return new Response("OK");
+      }
+
+      if (data === "admin_users" && isAdmin(chatId)) {
+        await saveSession(sb, chatId, { adminAction: "awaiting_user_email" });
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: "👥 *User Management*\n\nSend user email to look up:",
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Cancel", callback_data: "admin_panel" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (data?.startsWith("user_add_mc_") && isAdmin(chatId)) {
+        const userId = data.replace("user_add_mc_", "");
+        await saveSession(sb, chatId, { adminAction: "awaiting_mc_amount", adminUserId: userId });
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: "Enter MC amount to add (negative to subtract):",
+        });
+        return new Response("OK");
+      }
+
+      if (data === "admin_stats" && isAdmin(chatId)) {
+        const { count: userCount } = await sb.from("profiles").select("*", { count: "exact", head: true });
+        const { count: convCount } = await sb.from("conversations").select("*", { count: "exact", head: true });
+        const { count: msgCount } = await sb.from("messages").select("*", { count: "exact", head: true });
+        const { count: projectCount } = await sb.from("projects").select("*", { count: "exact", head: true });
+        const imgMedia = await getExistingMedia(sb, IMAGE_MODELS);
+        const vidMedia = await getExistingMedia(sb, VIDEO_MODELS);
+
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `📊 *System Stats*\n\n` +
+            `👥 Users: ${userCount || 0}\n` +
+            `💬 Conversations: ${convCount || 0}\n` +
+            `📝 Messages: ${msgCount || 0}\n` +
+            `💻 Projects: ${projectCount || 0}\n` +
+            `🖼 Image Media: ${imgMedia.size}/${IMAGE_MODELS.length}\n` +
+            `🎬 Video Media: ${vidMedia.size}/${VIDEO_MODELS.length}`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Admin", callback_data: "admin_panel" }]] }),
+        });
+        return new Response("OK");
+      }
+
       return new Response("OK");
     }
 
@@ -196,132 +346,263 @@ serve(async (req) => {
       const text = message.text;
 
       if (text === "/start") {
+        await clearSession(sb, chatId);
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: "*Megsy Model Media Bot*\n\nChoose a page to upload media:",
+          text: "*Megsy Model Media Bot*\n\nChoose an action:",
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({
             inline_keyboard: [
-              [
-                { text: "Image Models", callback_data: "page_images" },
-                { text: "Video Models", callback_data: "page_videos" },
-              ],
-              [
-                { text: "Status", callback_data: "status" },
-              ],
+              [{ text: "📸 Image Models", callback_data: "page_images" }, { text: "🎬 Video Models", callback_data: "page_videos" }],
+              [{ text: "📊 Status", callback_data: "status" }],
+              ...(isAdmin(chatId) ? [[{ text: "🔧 Admin Panel", callback_data: "admin_panel" }]] : []),
             ],
           }),
         });
         return new Response("OK");
       }
 
-      // Handle photo/video upload
+      // ---- Handle admin text input ----
       const session = await loadSession(sb, chatId);
-      if (!session) {
-        await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Press /start to begin." });
+
+      if (session?.adminAction === "awaiting_model_id" && isAdmin(chatId) && text) {
+        const modelId = text.trim();
+        const allModels = [...IMAGE_MODELS, ...VIDEO_MODELS, ...CHAT_MODELS, ...CODE_MODELS];
+        if (!allModels.includes(modelId)) {
+          await callTelegram(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId,
+            text: `❌ Model \`${modelId}\` not found.\n\nAvailable IDs include: ${allModels.slice(0, 10).map(m => `\`${m}\``).join(", ")}...`,
+            parse_mode: "Markdown",
+          });
+          return new Response("OK");
+        }
+
+        const config = await getModelConfig(sb, modelId) || {};
+        const name = config.name || MODEL_NAMES[modelId] || modelId;
+
+        await saveSession(sb, chatId, { adminAction: "editing_model", adminModelId: modelId });
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `*Editing: ${name}*\nID: \`${modelId}\`\n\n` +
+            `Name: ${config.name || "default"}\n` +
+            `Credits: ${config.credits || "default"}\n` +
+            `Provider: ${config.provider || "default"}\n` +
+            `fal ID: ${config.fal_id || "—"}\n` +
+            `OpenRouter ID: ${config.openrouter_id || "—"}\n` +
+            `Description: ${config.description || "default"}\n` +
+            `Capabilities: ${config.capabilities || "default"}\n\n` +
+            `Choose what to edit:`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({
+            inline_keyboard: [
+              [{ text: "📝 Name", callback_data: "edit_field_name" }, { text: "💰 Credits", callback_data: "edit_field_credits" }],
+              [{ text: "📄 Description", callback_data: "edit_field_description" }],
+              [{ text: "🔗 fal ID", callback_data: "edit_field_fal_id" }, { text: "🔗 OpenRouter ID", callback_data: "edit_field_openrouter_id" }],
+              [{ text: "⚡ Capabilities", callback_data: "edit_field_capabilities" }],
+              [{ text: "🏷 Provider", callback_data: "edit_field_provider" }],
+              [{ text: "🔙 Admin", callback_data: "admin_panel" }],
+            ],
+          }),
+        });
         return new Response("OK");
       }
 
-      const currentModelId = session.models[session.modelIndex];
-      const currentModelName = MODEL_NAMES[currentModelId] || currentModelId;
-      let fileId: string | null = null;
-      let mediaType: "image" | "video" = "image";
+      if (session?.adminAction === "awaiting_field_value" && isAdmin(chatId) && text && session.adminModelId && session.adminField) {
+        const config = await getModelConfig(sb, session.adminModelId) || {};
+        config[session.adminField] = text.trim();
+        await setModelConfig(sb, session.adminModelId, config);
 
-      if (message.photo && message.photo.length > 0) {
-        fileId = message.photo[message.photo.length - 1].file_id;
-        mediaType = "image";
-      } else if (message.video) {
-        fileId = message.video.file_id;
-        mediaType = "video";
-      } else if (message.animation) {
-        fileId = message.animation.file_id;
-        mediaType = "video";
-      } else if (message.document) {
-        const mime = message.document.mime_type || "";
-        if (mime.startsWith("image/")) { fileId = message.document.file_id; mediaType = "image"; }
-        else if (mime.startsWith("video/")) { fileId = message.document.file_id; mediaType = "video"; }
-      }
-
-      if (!fileId) {
+        const name = config.name || MODEL_NAMES[session.adminModelId] || session.adminModelId;
         await callTelegram(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: "Send an image or video only.",
+          text: `✅ Updated *${session.adminField}* for *${name}* to:\n\`${text.trim()}\``,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({
+            inline_keyboard: [
+              [{ text: "✏️ Edit More", callback_data: "admin_edit_model" }],
+              [{ text: "🔙 Admin", callback_data: "admin_panel" }],
+            ],
+          }),
+        });
+        await saveSession(sb, chatId, { adminAction: "idle" });
+        return new Response("OK");
+      }
+
+      if (session?.adminAction === "awaiting_user_email" && isAdmin(chatId) && text) {
+        const email = text.trim().toLowerCase();
+        const { data: profiles } = await sb.from("profiles").select("id, credits, plan, display_name, created_at").limit(5);
+        
+        // We need to search by email in auth - but we can't query auth directly.
+        // Let's search by display_name or just show all matching profiles
+        const { data: allProfiles } = await sb.from("profiles").select("id, credits, plan, display_name, created_at");
+        
+        // Find profile by searching - we'll use a workaround
+        let foundProfile = null;
+        if (allProfiles) {
+          // Try to find by display name containing email prefix
+          const prefix = email.split("@")[0];
+          foundProfile = allProfiles.find(p => 
+            p.display_name?.toLowerCase().includes(prefix) || 
+            p.display_name?.toLowerCase().includes(email)
+          );
+          // If not found, try the first few characters of ID
+          if (!foundProfile && email.length >= 8) {
+            foundProfile = allProfiles.find(p => p.id.startsWith(email));
+          }
+        }
+
+        if (!foundProfile) {
+          // Show recent users instead
+          const recent = (allProfiles || []).slice(0, 10);
+          let text = "❌ User not found by that query.\n\n*Recent Users:*\n";
+          for (const p of recent) {
+            text += `• ${p.display_name || "—"} | ${Number(p.credits).toFixed(0)} MC | ${p.plan}\n  ID: \`${p.id.slice(0, 8)}...\`\n`;
+          }
+          text += "\nTry sending a user ID (first 8+ chars) or display name.";
+          await callTelegram(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Admin", callback_data: "admin_panel" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `👤 *User Found*\n\n` +
+            `Name: ${foundProfile.display_name || "—"}\n` +
+            `ID: \`${foundProfile.id}\`\n` +
+            `MC: ${Number(foundProfile.credits).toFixed(2)}\n` +
+            `Plan: ${foundProfile.plan}\n` +
+            `Joined: ${new Date(foundProfile.created_at).toLocaleDateString()}`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({
+            inline_keyboard: [
+              [{ text: "💰 Add/Remove MC", callback_data: `user_add_mc_${foundProfile.id}` }],
+              [{ text: "🔙 Admin", callback_data: "admin_panel" }],
+            ],
+          }),
+        });
+        await saveSession(sb, chatId, { adminAction: "idle" });
+        return new Response("OK");
+      }
+
+      if (session?.adminAction === "awaiting_mc_amount" && isAdmin(chatId) && text && session.adminUserId) {
+        const amount = parseFloat(text.trim());
+        if (isNaN(amount)) {
+          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ Invalid number. Try again:" });
+          return new Response("OK");
+        }
+
+        const { data: profile } = await sb.from("profiles").select("credits, display_name").eq("id", session.adminUserId).single();
+        if (!profile) {
+          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ User not found." });
+          return new Response("OK");
+        }
+
+        const newCredits = Number(profile.credits) + amount;
+        await sb.from("profiles").update({ credits: newCredits }).eq("id", session.adminUserId);
+        await sb.from("credit_transactions").insert({
+          user_id: session.adminUserId,
+          amount: Math.abs(amount),
+          action_type: amount >= 0 ? "admin_add" : "admin_deduct",
+          description: `Admin adjustment: ${amount >= 0 ? "+" : ""}${amount} MC`,
+        });
+
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ Updated *${profile.display_name || "User"}*\n\nPrevious: ${Number(profile.credits).toFixed(2)} MC\nChange: ${amount >= 0 ? "+" : ""}${amount}\nNew: ${newCredits.toFixed(2)} MC`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Admin", callback_data: "admin_panel" }]] }),
+        });
+        await saveSession(sb, chatId, { adminAction: "idle" });
+        return new Response("OK");
+      }
+
+      // ---- Handle photo/video upload for media management ----
+      if (session?.page && session.models) {
+        const currentModelId = session.models[session.modelIndex || 0];
+        const currentModelName = MODEL_NAMES[currentModelId] || currentModelId;
+        let fileId: string | null = null;
+        let mediaType: "image" | "video" = "image";
+
+        if (message.photo && message.photo.length > 0) {
+          fileId = message.photo[message.photo.length - 1].file_id;
+          mediaType = "image";
+        } else if (message.video) {
+          fileId = message.video.file_id;
+          mediaType = "video";
+        } else if (message.animation) {
+          fileId = message.animation.file_id;
+          mediaType = "video";
+        } else if (message.document) {
+          const mime = message.document.mime_type || "";
+          if (mime.startsWith("image/")) { fileId = message.document.file_id; mediaType = "image"; }
+          else if (mime.startsWith("video/")) { fileId = message.document.file_id; mediaType = "video"; }
+        }
+
+        if (!fileId) {
+          await callTelegram(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: "Send an image or video only.",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        const fileInfo = await callTelegram(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) {
+          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Failed to download file." });
+          return new Response("OK");
+        }
+
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || (mediaType === "image" ? "jpg" : "mp4");
+        const storagePath = `${currentModelId}.${ext}`;
+
+        const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, {
+          contentType: mediaType === "image" ? `image/${ext}` : `video/${ext}`,
+          upsert: true,
+        });
+
+        if (uploadError) {
+          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `Upload error: ${uploadError.message}` });
+          return new Response("OK");
+        }
+
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        await sb.from("model_media").upsert({
+          model_id: currentModelId, media_url: urlData.publicUrl, media_type: mediaType, updated_at: new Date().toISOString(),
+        }, { onConflict: "model_id" });
+
+        session.modelIndex = (session.modelIndex || 0) + 1;
+        const remaining = session.models.length - session.modelIndex;
+
+        if (remaining === 0) {
+          await callTelegram(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `Uploaded for *${currentModelName}*\n\nAll models done!`, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "📸 Images", callback_data: "page_images" }, { text: "🎬 Videos", callback_data: "page_videos" }]] }),
+          });
+          await clearSession(sb, chatId);
+          return new Response("OK");
+        }
+
+        await saveSession(sb, chatId, session);
+        const nextModelId = session.models[session.modelIndex];
+        const nextModelName = MODEL_NAMES[nextModelId] || nextModelId;
+
+        await callTelegram(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `Uploaded for *${currentModelName}*\n\nRemaining: *${remaining}*\n\nNext: *${nextModelName}*\nID: \`${nextModelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
+          parse_mode: "Markdown",
           reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
         });
         return new Response("OK");
       }
 
-      const fileInfo = await callTelegram(BOT_TOKEN, "getFile", { file_id: fileId });
-      const filePath = fileInfo.result?.file_path;
-      if (!filePath) {
-        await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Failed to download file." });
-        return new Response("OK");
-      }
-
-      const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
-      const fileResp = await fetch(fileUrl);
-      const fileBuffer = await fileResp.arrayBuffer();
-      const ext = filePath.split(".").pop() || (mediaType === "image" ? "jpg" : "mp4");
-      const storagePath = `${currentModelId}.${ext}`;
-
-      const { error: uploadError } = await sb.storage
-        .from("model-media")
-        .upload(storagePath, fileBuffer, {
-          contentType: mediaType === "image" ? `image/${ext}` : `video/${ext}`,
-          upsert: true,
-        });
-
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `Upload error: ${uploadError.message}` });
-        return new Response("OK");
-      }
-
-      const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
-      const publicUrl = urlData.publicUrl;
-
-      await sb.from("model_media").upsert({
-        model_id: currentModelId,
-        media_url: publicUrl,
-        media_type: mediaType,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "model_id" });
-
-      // Move to next
-      session.modelIndex++;
-      const remaining = session.models.length - session.modelIndex;
-
-      if (remaining === 0) {
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: `Uploaded for *${currentModelName}*\n\nAll models done!`,
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [
-              [
-                { text: "Image Models", callback_data: "page_images" },
-                { text: "Video Models", callback_data: "page_videos" },
-              ],
-            ],
-          }),
-        });
-        await clearSession(sb, chatId);
-        return new Response("OK");
-      }
-
-      await saveSession(sb, chatId, session);
-      const nextModelId = session.models[session.modelIndex];
-      const nextModelName = MODEL_NAMES[nextModelId] || nextModelId;
-
-      await callTelegram(BOT_TOKEN, "sendMessage", {
-        chat_id: chatId,
-        text: `Uploaded for *${currentModelName}*\n\nRemaining: *${remaining}* models\n\nNext: *${nextModelName}*\nID: \`${nextModelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
-        parse_mode: "Markdown",
-        reply_markup: JSON.stringify({
-          inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]],
-        }),
-      });
-
+      // Default
+      await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Press /start to begin." });
       return new Response("OK");
     }
 
@@ -329,8 +610,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("Telegram bot error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

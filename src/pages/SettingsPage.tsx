@@ -195,7 +195,7 @@ const SettingsPage = () => {
               return (
                 <button
                   key={item.label}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => (item as any).external ? window.open(item.path, "_blank") : navigate(item.path)}
                   className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-muted/30 transition-colors"
                 >
                   <Icon className="w-5 h-5 text-muted-foreground" />

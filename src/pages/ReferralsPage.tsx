@@ -73,12 +73,9 @@ const ReferralsPage = () => {
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
-        <button
-          onClick={handleShare}
-          className="w-full mt-3 py-3 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-accent/30 transition-colors flex items-center justify-center gap-2"
-        >
+        <FancyButton onClick={handleShare} className="w-full mt-3">
           <Share2 className="w-4 h-4" /> Share Link
-        </button>
+        </FancyButton>
       </div>
 
       {/* How it works */}
