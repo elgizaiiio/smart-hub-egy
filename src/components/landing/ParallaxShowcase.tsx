@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import LazyVideo from "@/components/landing/LazyVideo";
 
 const ParallaxShowcase = () => {
   return (
