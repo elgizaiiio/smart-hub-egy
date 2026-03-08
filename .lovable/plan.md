@@ -1,48 +1,39 @@
 
-# Megsy Platform - Credits + Real Programming + Integrations
 
-## ✅ Completed
+# تشديد الحماية النهائي -- إصلاح 4 تحذيرات متبقية
 
-### 1. Credit System
-- Created `credit_transactions` table in Supabase
-- Created `deduct_credits` database function (SECURITY DEFINER)
-- Created `deduct-credits` edge function
-- Created `useCredits` hook for frontend credit checking
-- Updated `generate-image` edge function to deduct credits
-- Updated `generate-video` edge function to deduct credits
-- Updated ImagesPage and VideosPage to check credits before generation
-- Chat remains free
+## المشاكل الحالية (من فحص Supabase)
 
-### 2. Real Programming System (Sprites.dev)
-- Created `sprites-sandbox` edge function for Sprites.dev API management
-- Actions: create, exec, write-file, write-files, status, destroy
-- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
-- Rebuilt `CodeWorkspace.tsx` with:
-  - Plan → Build workflow with credit deduction (5 credits per build)
-  - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Sprite
-  - Real preview via iframe pointing to Sprite URL
-  - Conversation persistence to Supabase
-  - Project saving with files_snapshot
+| # | المشكلة | المستوى |
+|---|---------|---------|
+| 1 | `USING(true)` على سياسات INSERT/UPDATE لجداول service_role | warn |
+| 2 | Leaked Password Protection معطلة | warn |
+| 3 | `service_status_public` بدون سياسات RLS | warn |
+| 4 | `status_subscribers` تسمح INSERT بدون أي شروط | warn |
 
-### 3. GitHub Integration
-- Created `github-repo` edge function via Composio
-- Actions: check-connection, create-repo, push-files
-- Push to GitHub button in CodeWorkspace plus menu
-- Creates new repo and pushes all project files
+## خطة الإصلاح
 
-### 4. Database
-- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
-- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
+### 1. Migration لإصلاح `service_status_public` و `status_subscribers`
 
-### 5. OAuth2 "Login with Megsy"
-- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
-- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
-- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
-- Built `/oauth/authorize` consent screen page
-- Updated App.tsx routes and config.toml
+```sql
+-- service_status_public: تفعيل RLS + سياسة SELECT عامة فقط
+ALTER TABLE service_status_public ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read" ON service_status_public FOR SELECT USING (true);
 
-### 6. Secrets Required
-- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
-- `COMPOSIO_API_KEY` ✅ Already exists
-- `FAL_API_KEY` ✅ Already exists
+-- status_subscribers: تقييد INSERT + إضافة rate limiting بسيط
+DROP POLICY "Public can insert subscribers" ON status_subscribers;
+CREATE POLICY "Authenticated subscribe" ON status_subscribers 
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Users can delete own" ON status_subscribers
+  FOR DELETE TO authenticated USING (contact = (SELECT email FROM auth.users WHERE id = auth.uid()));
+```
+
+### 2. Dismiss تحذيرات `USING(true)` المقصودة
+السياسات على `service_incidents`, `service_status`, `memories`, `oauth_*`, `otp_codes` مقيدة بـ `TO service_role` -- مقصودة وآمنة.
+
+### 3. إجراء يدوي
+تفعيل **Leaked Password Protection** من Supabase Dashboard > Auth Settings.
+
+### النتيجة المتوقعة
+0 تحذيرات بعد التطبيق (عدا Leaked Password -- يدوي).
+
