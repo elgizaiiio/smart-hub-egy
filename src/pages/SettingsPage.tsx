@@ -125,7 +125,7 @@ const SettingsPage = () => {
           </button>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-4 gap-2.5 mb-8">
+          <div className="grid grid-cols-3 gap-2.5 mb-8">
             {quickActions.map((action, i) => {
               const Icon = action.icon;
               return (
