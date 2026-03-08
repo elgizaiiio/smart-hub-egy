@@ -1,49 +1,41 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-# خطة التنفيذ
+## ✅ Completed
 
-## 1. صفحة الفواتير (BillingPage)
-- حذف "Powered by" (سطر 58) وإبقاء "Megsy" فقط
-- حذف "Free" من badge الخطة أو إخفاؤه
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-## 2. أزرار صفحة الإعدادات بألوان مميزة (FancyButton)
-- جعل زر **Theme** بتنسيق fancy بلون مختلف (مثلاً أزرق/بنفسجي)
-- جعل زر **Connect** بتنسيق fancy بلون مختلف (مثلاً أخضر)
-- زر **Referrals** يبقى كما هو (fancy بلونه الحالي)
-- تطبيق ذلك بإضافة CSS classes مختلفة لكل fancy-btn (مثل `--hue` variable)
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-## 3. صفحة الملفات - زر + وعرض التكاملات
-- عرض أول 2 تكاملات فقط مع زر "Show more" يوجه لصفحة Integrations
-- استبدال emoji icons (`📁📝📧💻`) بأيقونات SVG حقيقية (نفس الموجودة في IntegrationsPage)
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-## 4. صفحة Integrations - إصلاح الأيقونات
-- أيقونات SVG موجودة بالفعل وتبدو صحيحة (Slack, Gmail, Drive, etc.)
-- سأراجع وأصلح أي أيقونات خاطئة (خاصة Outlook, Google Calendar, Teams)
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-## 5. أيقونة Megsy في الشات بلا خلفية
-- في `ModelSelector.tsx` (سطر 106-111): إزالة خلفية div المربع وجعل الحرف M يظهر بدون حاويه
-
-## 6. أيقونة DeepSeek - إصلاح
-- الأيقونة الحالية: دائرة زرقاء مع عدسة بحث (غير صحيحة)
-- استبدالها بشعار DeepSeek الحقيقي (حوت/دولفين أزرق)
-
-## 7. أيقونة Grok - إصلاح  
-- الأيقونة الحالية: مربع أسود مكتوب عليه "xAI" (غير دقيقة)
-- استبدالها بشعار Grok الحقيقي (رمز ✗ المميز لـ xAI)
-
-## 8. التأكد من عمل التكاملات بشكل حقيقي
-- مراجعة أن Composio edge function تتعامل مع كل الإجراءات بشكل صحيح
-- التأكد من أن التكاملات في صفحة الملفات تربط فعلاً بصفحة Integrations (هذا موجود بالفعل)
-
----
-
-## الملفات المتأثرة
-
-| الملف | التغيير |
-|-------|---------|
-| `BillingPage.tsx` | حذف "Powered by" و "Free" |
-| `SettingsPage.tsx` | جعل Theme و Connect أزرار fancy بألوان مختلفة |
-| `FilesPage.tsx` | Show more + أيقونات SVG حقيقية |
-| `ModelSelector.tsx` | إصلاح أيقونات Megsy, DeepSeek, Grok |
-| `index.css` | إضافة CSS variants للألوان المختلفة لـ fancy-btn |
-
+### 5. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists

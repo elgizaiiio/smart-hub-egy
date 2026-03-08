@@ -49,13 +49,10 @@ const BillingPage = () => {
                 {credits.toFixed(0)} <span className="text-lg font-normal text-white/70">MC</span>
               </p>
             </div>
-            <p className="text-white/80 text-xs font-medium uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
-              {plan}
-            </p>
+            <div className="w-8" />
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-white/50 text-[10px] uppercase tracking-[0.15em]">Powered by</p>
               <p className="text-white text-xl font-bold tracking-wide" style={{ fontFamily: "var(--font-display)" }}>
                 Megsy
               </p>

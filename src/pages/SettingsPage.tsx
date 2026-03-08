@@ -60,9 +60,9 @@ const SettingsPage = () => {
   const isPremium = plan !== "free";
 
   const quickActions = [
-    { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization", fancy: false },
-    { icon: Gift, label: "Referrals", desc: "Invite & earn", path: "/settings/referrals", fancy: true },
-    { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations", fancy: false },
+    { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization", fancy: true, variant: "fancy-btn-blue" },
+    { icon: Gift, label: "Referrals", desc: "Invite & earn", path: "/settings/referrals", fancy: true, variant: "" },
+    { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations", fancy: true, variant: "fancy-btn-green" },
   ];
 
   const menuItems = [
@@ -139,7 +139,7 @@ const SettingsPage = () => {
                   >
                     <button
                       onClick={() => navigate(action.path)}
-                      className="fancy-btn !rounded-2xl !py-4 w-full"
+                      className={`fancy-btn !rounded-2xl !py-4 w-full ${(action as any).variant || ""}`}
                     >
                       <span className="fold" />
                       <div className="points_wrapper">
