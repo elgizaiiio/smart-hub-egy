@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Shield, X, Check, Loader2 } from "lucide-react";
+import { Shield, X, Check, Loader2, ExternalLink } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function OAuthAuthorizePage() {
   const [searchParams] = useSearchParams();
@@ -21,7 +21,6 @@ export default function OAuthAuthorizePage() {
 
   useEffect(() => {
     const init = async () => {
-      // Check auth
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         const returnUrl = window.location.href;
@@ -31,24 +30,23 @@ export default function OAuthAuthorizePage() {
       setUserId(session.user.id);
 
       if (!clientId || !redirectUri) {
-        setError("بيانات التطبيق غير مكتملة");
+        setError("Incomplete application data");
         setLoading(false);
         return;
       }
 
-      // Get app info
       const { data, error: fetchError } = await supabase.functions.invoke("oauth-authorize", {
         body: { client_id: clientId, redirect_uri: redirectUri, scope, action: "info" },
       });
 
       if (fetchError || !data) {
-        setError("تطبيق غير صالح");
+        setError("Invalid application");
         setLoading(false);
         return;
       }
 
       if (!data.valid_redirect) {
-        setError("رابط إعادة التوجيه غير مسموح به");
+        setError("Redirect URI not allowed");
         setLoading(false);
         return;
       }
@@ -68,7 +66,7 @@ export default function OAuthAuthorizePage() {
     });
 
     if (invokeError || !data?.code) {
-      setError("حدث خطأ أثناء التفويض");
+      setError("Authorization failed");
       setApproving(false);
       return;
     }
@@ -98,57 +96,121 @@ export default function OAuthAuthorizePage() {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <X className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <p className="text-lg font-medium text-foreground">{error}</p>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md text-center"
+        >
+          <div className="mx-auto mb-6 w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center">
+            <X className="w-8 h-8 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground mb-2" style={{ fontFamily: "var(--font-display)" }}>
+            Authorization Error
+          </h2>
+          <p className="text-muted-foreground">{error}</p>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-lg"
+      >
+        {/* Header */}
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="mx-auto mb-5 w-20 h-20 rounded-2xl bg-card border border-border shadow-sm flex items-center justify-center overflow-hidden"
+          >
             {appInfo?.logo_url ? (
-              <img src={appInfo.logo_url} alt={appInfo.name} className="w-10 h-10 rounded-xl" />
+              <img src={appInfo.logo_url} alt={appInfo.name} className="w-full h-full object-cover rounded-2xl" />
             ) : (
-              <Shield className="w-8 h-8 text-primary" />
+              <Shield className="w-9 h-9 text-primary" />
             )}
-          </div>
-          <CardTitle className="text-xl">{appInfo?.name}</CardTitle>
-          <CardDescription>يريد الوصول إلى حسابك في Megsy</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-muted/50 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-medium text-foreground">سيتمكن التطبيق من:</p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Check className="w-4 h-4 text-primary shrink-0" />
-              <span>قراءة معلومات حسابك (الاسم، البريد، الصورة)</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Check className="w-4 h-4 text-primary shrink-0" />
-              <span>معرفة خطتك الحالية</span>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={handleDeny}>
-              رفض
-            </Button>
-            <Button className="flex-1" onClick={handleApprove} disabled={approving}>
-              {approving ? <Loader2 className="w-4 h-4 animate-spin" /> : "السماح"}
-            </Button>
-          </div>
-
-          <p className="text-xs text-center text-muted-foreground">
-            بالضغط على "السماح"، أنت توافق على مشاركة بياناتك مع هذا التطبيق.
+          </motion.div>
+          <h1
+            className="text-2xl font-bold text-foreground tracking-tight"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {appInfo?.name}
+          </h1>
+          <p className="text-muted-foreground mt-1.5 text-sm">
+            wants to access your <span className="font-medium text-foreground">Megsy</span> account
           </p>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Permissions */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-card border border-border rounded-2xl p-5 mb-6"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+            This app will be able to
+          </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Check className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="text-sm text-foreground">Read your account info (name, email, avatar)</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex gap-3"
+        >
+          <Button
+            variant="outline"
+            className="flex-1 h-12 rounded-xl text-sm font-medium"
+            onClick={handleDeny}
+          >
+            Deny
+          </Button>
+          <Button
+            className="flex-1 h-12 rounded-xl text-sm font-medium"
+            onClick={handleApprove}
+            disabled={approving}
+          >
+            {approving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Authorize"}
+          </Button>
+        </motion.div>
+
+        {/* Footer */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-xs text-center text-muted-foreground mt-5"
+        >
+          By clicking "Authorize", you agree to share your data with this application.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="flex items-center justify-center gap-1.5 mt-3"
+        >
+          <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">Powered by</span>
+          <span className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-widest" style={{ fontFamily: "var(--font-display)" }}>
+            Megsy
+          </span>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

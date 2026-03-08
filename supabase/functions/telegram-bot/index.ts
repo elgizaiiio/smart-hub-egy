@@ -580,14 +580,17 @@ serve(async (req) => {
         if (!app) { await send(BOT_TOKEN, chatId, msgId, "❌ التطبيق غير موجود", [[{ text: "🔙 رجوع", callback_data: "oauth_list" }]]); return new Response("OK"); }
 
         const uris = (app.redirect_uris || []).join("\n") || "لم يتم تحديد";
+        const logoStatus = app.logo_url ? "✅" : "❌";
         await send(BOT_TOKEN, chatId, msgId,
           `🔑 *${app.name}*\n\n` +
           `📌 Client ID:\n\`${app.client_id}\`\n\n` +
           `🔗 Redirect URIs:\n${uris}\n\n` +
+          `🖼 Logo: ${logoStatus}\n` +
           `🔓 Public: ${app.is_public ? "نعم" : "لا"}\n` +
           `📅 ${new Date(app.created_at).toLocaleDateString("ar-EG")}`,
           [
             [{ text: "✏️ تعديل الاسم", callback_data: `oedit_name_${appId}` }],
+            [{ text: "🖼 تعديل الصورة", callback_data: `oedit_logo_${appId}` }],
             [{ text: "🔗 تعديل Redirect URIs", callback_data: `oedit_uri_${appId}` }],
             [{ text: "🔄 إعادة توليد Secret", callback_data: `oregen_${appId}` }],
             [{ text: "🗑 حذف", callback_data: `odel_${appId}` }],
@@ -611,6 +614,26 @@ serve(async (req) => {
         await saveSession(sb, chatId, { oauthStep: "edit_uri", oauthAppId: appId });
         await send(BOT_TOKEN, chatId, msgId, "🔗 أدخل Redirect URIs الجديدة\n(كل URI في سطر منفصل):", [
           [{ text: "🔙 إلغاء", callback_data: `oapp_${appId}` }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("oedit_logo_")) {
+        const appId = d.replace("oedit_logo_", "");
+        await saveSession(sb, chatId, { oauthStep: "edit_logo", oauthAppId: appId });
+        await send(BOT_TOKEN, chatId, msgId, "🖼 أرسل صورة الشعار الجديدة للتطبيق:", [
+          [{ text: "🗑 حذف الصورة", callback_data: `odel_logo_${appId}` }],
+          [{ text: "🔙 إلغاء", callback_data: `oapp_${appId}` }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("odel_logo_")) {
+        const appId = d.replace("odel_logo_", "");
+        await sb.from("oauth_clients").update({ logo_url: null }).eq("id", appId);
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم حذف صورة التطبيق.", [
+          [{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${appId}` }],
         ]);
         return new Response("OK");
       }
@@ -761,6 +784,52 @@ serve(async (req) => {
         await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
           text: `✅ تم تحديث Redirect URIs:\n${uris.join("\n")}`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${session.oauthAppId}` }]] }),
+        });
+        return new Response("OK");
+      }
+
+      // Upload OAuth app logo
+      if (session?.oauthStep === "edit_logo" && session.oauthAppId) {
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document?.mime_type?.startsWith("image/")) fileId = message.document.file_id;
+
+        if (!fileId) {
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: "أرسل صورة فقط.",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 إلغاء", callback_data: `oapp_${session.oauthAppId}` }]] }),
+          });
+          return new Response("OK");
+        }
+
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل تحميل الملف." }); return new Response("OK"); }
+
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || "jpg";
+        const storagePath = `oauth-logos/${session.oauthAppId}.${ext}`;
+
+        const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, {
+          contentType: `image/${ext}`,
+          upsert: true,
+        });
+
+        if (uploadError) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ في الرفع: ${uploadError.message}` });
+          return new Response("OK");
+        }
+
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        await sb.from("oauth_clients").update({ logo_url: urlData.publicUrl }).eq("id", session.oauthAppId);
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم تحديث صورة التطبيق بنجاح!`,
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${session.oauthAppId}` }]] }),
         });
