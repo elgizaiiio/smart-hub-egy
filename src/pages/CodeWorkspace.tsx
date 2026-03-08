@@ -222,10 +222,12 @@ const CodeWorkspace = () => {
 
   const createOrGetConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
     const title = firstMessage.slice(0, 50) || "Code Project";
     const { data } = await supabase
       .from("conversations")
-      .insert({ title, mode: "code", model: "grok-3" })
+      .insert({ title, mode: "code", model: "grok-3", user_id: user.id } as any)
       .select("id")
       .single();
     if (data) {
