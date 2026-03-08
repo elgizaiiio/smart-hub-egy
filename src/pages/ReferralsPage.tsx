@@ -246,10 +246,7 @@ const ReferralsPage = () => {
                     <p className="text-sm font-medium text-foreground">${Number(w.amount).toFixed(2)}</p>
                     <p className="text-[11px] text-muted-foreground">{w.method} — {formatDate(w.created_at)}</p>
                   </div>
-                  <span className={`text-[11px] font-medium ${
-                    w.status === "rejected" ? "text-destructive" :
-                    "text-primary"
-                  }`} style={w.status === "completed" ? { color: "#FFD700" } : {}}>
+                  <span className={`text-[11px] font-medium ${w.status === "rejected" ? "text-destructive" : ""}`} style={w.status !== "rejected" ? { color: "#FFD700" } : {}}>
                     {w.status}
                   </span>
                 </div>
