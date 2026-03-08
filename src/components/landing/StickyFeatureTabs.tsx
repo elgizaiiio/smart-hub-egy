@@ -58,12 +58,12 @@ const StickyFeatureTabs = () => {
         </motion.div>
 
         {/* Tab buttons */}
-        <div className="mb-8 flex flex-wrap gap-3">
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide md:mb-8 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0">
           {tabs.map((tab, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`relative rounded-full px-5 py-2.5 text-sm font-bold uppercase tracking-wider transition-all duration-300 ${
+              className={`relative shrink-0 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 md:px-5 md:py-2.5 md:text-sm ${
                 i === active
                   ? "bg-foreground text-background"
                   : "border border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground"
