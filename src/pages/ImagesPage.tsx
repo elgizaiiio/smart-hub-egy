@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslatedPlaceholders } from "@/hooks/useTranslatedPlaceholders";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Plus, Paperclip, ArrowUp, Download, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -146,6 +147,8 @@ const ImagesPage = () => {
 
   const capability = useMemo(() => getImageModelCapability(selectedModel.id), [selectedModel.id]);
 
+  const translatedPlaceholders = useTranslatedPlaceholders(PLACEHOLDERS);
+
   useEffect(() => {
     const interval = setInterval(() => setCurrentImage((p) => (p + 1) % SHOWCASE_IMAGES.length), 4000);
     return () => clearInterval(interval);
@@ -157,7 +160,7 @@ const ImagesPage = () => {
 
   useEffect(() => {
     if (input) return;
-    const target = PLACEHOLDERS[placeholderIdx];
+    const target = translatedPlaceholders[placeholderIdx];
     let i = 0;
     setDisplayedPlaceholder("");
     const t = setInterval(() => {
@@ -166,11 +169,11 @@ const ImagesPage = () => {
         i += 1;
       } else {
         clearInterval(t);
-        setTimeout(() => setPlaceholderIdx((p) => (p + 1) % PLACEHOLDERS.length), 2500);
+        setTimeout(() => setPlaceholderIdx((p) => (p + 1) % translatedPlaceholders.length), 2500);
       }
     }, 50);
     return () => clearInterval(t);
-  }, [placeholderIdx, input]);
+  }, [placeholderIdx, input, translatedPlaceholders]);
 
   useEffect(() => {
     if (!menuOpen) return;

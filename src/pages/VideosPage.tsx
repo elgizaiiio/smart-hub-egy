@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslatedPlaceholders } from "@/hooks/useTranslatedPlaceholders";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Plus, Paperclip, ArrowUp, Loader2, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -144,6 +145,8 @@ const VideosPage = () => {
 
   const capability = useMemo(() => getVideoModelCapability(selectedModel.id), [selectedModel.id]);
 
+  const translatedPlaceholders = useTranslatedPlaceholders(PLACEHOLDERS);
+
   useEffect(() => {
     const interval = setInterval(() => setCurrentVideo((p) => (p + 1) % SHOWCASE_VIDEOS.length), 8000);
     return () => clearInterval(interval);
@@ -155,7 +158,7 @@ const VideosPage = () => {
 
   useEffect(() => {
     if (input) return;
-    const target = PLACEHOLDERS[placeholderIdx];
+    const target = translatedPlaceholders[placeholderIdx];
     let i = 0;
     setDisplayedPlaceholder("");
     const t = setInterval(() => {
@@ -164,11 +167,11 @@ const VideosPage = () => {
         i += 1;
       } else {
         clearInterval(t);
-        setTimeout(() => setPlaceholderIdx((p) => (p + 1) % PLACEHOLDERS.length), 2500);
+        setTimeout(() => setPlaceholderIdx((p) => (p + 1) % translatedPlaceholders.length), 2500);
       }
     }, 50);
     return () => clearInterval(t);
-  }, [placeholderIdx, input]);
+  }, [placeholderIdx, input, translatedPlaceholders]);
 
   // Close menu on outside click
   useEffect(() => {
