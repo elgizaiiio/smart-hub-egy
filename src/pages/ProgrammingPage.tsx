@@ -96,7 +96,7 @@ const ProgrammingPage = () => {
           <p className="text-sm text-muted-foreground mb-8">Describe your idea and AI will create it for you</p>
 
           <div className="w-full max-w-md mx-auto">
-            <div className="relative">
+            <div className="relative" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

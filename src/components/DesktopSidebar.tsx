@@ -121,7 +121,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       {/* Navigation */}
       <nav className="px-2 space-y-0.5">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || (item.path === "/chat" && location.pathname === "/");
           return (
             <button
               key={item.path}

@@ -289,7 +289,7 @@ const ChatPage = () => {
               </motion.div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-4">
+            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-32">
               {messages.map((msg, i) => (
                 <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} onShare={msg.role === "assistant" && conversationId ? handleShare : undefined} />
               ))}

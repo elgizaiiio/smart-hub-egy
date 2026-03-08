@@ -222,6 +222,7 @@ const ProfilePage = () => {
         </motion.div>
       </div>
     </div>
+    </AppLayout>
   );
 };
 
