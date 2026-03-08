@@ -110,7 +110,7 @@ const PLACEHOLDERS = [
 const PUBLISH_OPTIONS: { platform: PublishPlatform; label: string; Icon: () => JSX.Element }[] = [
   { platform: "facebook", label: "Facebook", Icon: FacebookIcon },
   { platform: "instagram", label: "Instagram", Icon: InstagramIcon },
-  { platform: "linkedin", label: "LinkedIn", Icon: LinkedInIcon },
+  { platform: "youtube", label: "YouTube", Icon: YouTubeIcon },
 ];
 
 const getRandomPhrase = () => VIDEO_PHRASES[Math.floor(Math.random() * VIDEO_PHRASES.length)];
