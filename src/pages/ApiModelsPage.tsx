@@ -84,7 +84,7 @@ const ApiModelsPage = () => {
             <span className="col-span-3">Model</span>
             <span className="col-span-5 hidden sm:block">Description</span>
             <span className="col-span-2 text-center hidden sm:block">Category</span>
-            <span className="col-span-2 sm:col-span-2 text-right">Credits</span>
+            <span className="col-span-2 sm:col-span-2 text-right">MC</span>
           </div>
           {filtered.map((model, i) => {
             const catLabel = API_CATEGORIES.find(c => c.id === model.category)?.label || model.category;
