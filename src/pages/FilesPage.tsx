@@ -23,12 +23,12 @@ interface AttachedFile {
 }
 
 const SUGGESTIONS = [
-  "Write a professional report",
-  "Create a presentation",
-  "Summarize this document",
-  "Convert image to PDF",
-  "Create a spreadsheet",
-  "Generate a PDF",
+  { text: "Write a professional report", icon: FileText, color: "text-blue-500", bg: "bg-blue-500/10" },
+  { text: "Create a presentation", icon: Presentation, color: "text-orange-500", bg: "bg-orange-500/10" },
+  { text: "Summarize this document", icon: FileSearch, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { text: "Convert image to PDF", icon: ImageIcon, color: "text-pink-500", bg: "bg-pink-500/10" },
+  { text: "Create a spreadsheet", icon: Table, color: "text-violet-500", bg: "bg-violet-500/10" },
+  { text: "Generate a PDF", icon: FilePlus2, color: "text-cyan-500", bg: "bg-cyan-500/10" },
 ];
 
 const GoogleDriveIcon = () => (
