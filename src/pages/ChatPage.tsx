@@ -247,6 +247,32 @@ const ChatPage = () => {
         {/* Input */}
         <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-1">
           <div className="max-w-3xl mx-auto space-y-1.5">
+            {/* Active mode badge */}
+            <AnimatePresence>
+              {chatMode !== "normal" && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/8 backdrop-blur-md border border-primary/15 w-fit"
+                >
+                  {chatMode === "learning" ? (
+                    <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                  ) : (
+                    <ShoppingCart className="w-3.5 h-3.5 text-primary" />
+                  )}
+                  <span className="text-xs text-primary font-medium">
+                    {chatMode === "learning" ? "Learning" : "Shopping"} Mode
+                  </span>
+                  <button
+                    onClick={() => setChatMode("normal")}
+                    className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors"
+                  >
+                    <X className="w-3 h-3 text-primary" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
             {attachedFiles.length > 0 && (
               <div className="flex gap-2 px-2 overflow-x-auto pb-1">
                 {attachedFiles.map((f, i) => (
