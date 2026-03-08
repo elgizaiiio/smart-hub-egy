@@ -195,16 +195,27 @@ const ChatPage = () => {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isTextFile =
+      file.type.startsWith("text/") ||
+      /\.(txt|md|csv|json|js|ts|py|html|css|xml|yml|yaml|log)$/i.test(file.name);
+
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
       reader.readAsDataURL(file);
-    } else {
+    } else if (isTextFile) {
       const text = await file.text();
       setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: text.slice(0, 5000) }]);
       setInput((prev) => prev + `\n\nFile (${file.name}):\n${text.slice(0, 5000)}`);
+    } else {
+      setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: "" }]);
+      setInput((prev) => prev + `\n\nAttached file: ${file.name}`);
+      toast.success(`${file.name} attached`);
     }
+
     e.target.value = "";
   };
 
