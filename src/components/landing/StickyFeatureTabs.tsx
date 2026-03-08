@@ -79,7 +79,7 @@ const StickyFeatureTabs = () => {
         </div>
 
         {/* Content */}
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:items-stretch">
+        <div className="grid gap-6 md:gap-8 lg:grid-cols-[1fr_1.4fr] lg:items-stretch">
           {/* Text side */}
           <AnimatePresence mode="wait">
             <motion.div
