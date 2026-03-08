@@ -76,7 +76,7 @@ const ProfileSettingsPage = () => {
   const handleSaveName = async () => {
     if (!nameInput.trim() || !userId) return;
     try {
-      await supabase.from("profiles").update({ display_name: nameInput.trim(), updated_at: new Date().toISOString() }).eq("id", userId);
+      await supabase.rpc("update_profile_safe", { p_user_id: userId, p_display_name: nameInput.trim() });
       await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } });
       setUserName(nameInput.trim());
       setEditingName(false);
