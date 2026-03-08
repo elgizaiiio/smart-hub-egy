@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, CreditCard, Settings, Sparkles, Users, CheckCheck } from "lucide-react";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 
 const typeConfig: Record<string, { icon: typeof Bell; className: string }> = {
@@ -46,7 +45,7 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
           <p className="text-sm font-medium text-sidebar-foreground truncate">{n.title}</p>
           <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
           <p className="text-[10px] text-muted-foreground mt-1">
-            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ar })}
+            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
           </p>
         </div>
         {!n.read && <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />}
@@ -58,10 +57,8 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`relative flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors ${
-          collapsed ? "w-9 h-9" : "w-9 h-9"
-        }`}
-        title="الإشعارات"
+        className="relative flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors w-9 h-9"
+        title="Notifications"
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -74,7 +71,7 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
       {open && (
         <div className="absolute bottom-full mb-2 left-0 w-[320px] bg-popover border border-border rounded-xl shadow-lg z-50 overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
-            <span className="text-sm font-semibold text-foreground">الإشعارات</span>
+            <span className="text-sm font-semibold text-foreground">Notifications</span>
             <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
@@ -82,14 +79,14 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
                   className="text-xs text-primary hover:underline flex items-center gap-1"
                 >
                   <CheckCheck className="w-3 h-3" />
-                  قراءة الكل
+                  Mark all read
                 </button>
               )}
             </div>
           </div>
           <div className="max-h-[340px] overflow-y-auto p-1.5 space-y-0.5">
             {notifications.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">لا توجد إشعارات</p>
+              <p className="text-sm text-muted-foreground text-center py-8">No notifications</p>
             ) : (
               notifications.slice(0, 15).map(renderItem)
             )}
@@ -99,7 +96,7 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
               onClick={() => { setOpen(false); navigate("/notifications"); }}
               className="text-xs text-primary hover:underline w-full text-center"
             >
-              عرض كل الإشعارات
+              View all notifications
             </button>
           </div>
         </div>

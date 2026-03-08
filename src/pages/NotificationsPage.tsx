@@ -1,24 +1,23 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Bell, CreditCard, Settings, Sparkles, Users, CheckCheck } from "lucide-react";
+import { ArrowLeft, Bell, CreditCard, Settings, Sparkles, Users, CheckCheck } from "lucide-react";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
 import AppLayout from "@/layouts/AppLayout";
 
 const typeConfig: Record<string, { icon: typeof Bell; className: string; label: string }> = {
-  credits: { icon: CreditCard, className: "text-yellow-500", label: "كريدتس" },
-  system: { icon: Settings, className: "text-blue-500", label: "نظام" },
-  generation: { icon: Sparkles, className: "text-purple-500", label: "توليد" },
-  referral: { icon: Users, className: "text-green-500", label: "إحالة" },
+  credits: { icon: CreditCard, className: "text-yellow-500", label: "Credits" },
+  system: { icon: Settings, className: "text-blue-500", label: "System" },
+  generation: { icon: Sparkles, className: "text-purple-500", label: "Generation" },
+  referral: { icon: Users, className: "text-green-500", label: "Referral" },
 };
 
 const filters = [
-  { value: "all", label: "الكل" },
-  { value: "credits", label: "كريدتس" },
-  { value: "system", label: "نظام" },
-  { value: "generation", label: "توليد" },
-  { value: "referral", label: "إحالة" },
+  { value: "all", label: "All" },
+  { value: "credits", label: "Credits" },
+  { value: "system", label: "System" },
+  { value: "generation", label: "Generation" },
+  { value: "referral", label: "Referral" },
 ];
 
 const NotificationsPage = () => {
@@ -51,7 +50,7 @@ const NotificationsPage = () => {
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
           <p className="text-xs text-muted-foreground mt-1.5">
-            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ar })}
+            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
           </p>
         </div>
       </div>
@@ -62,15 +61,14 @@ const NotificationsPage = () => {
     <AppLayout>
       <div className="h-full overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6">
-          {/* Header */}
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-muted transition-colors">
-              <ArrowRight className="w-5 h-5 text-foreground" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-foreground">الإشعارات</h1>
+              <h1 className="text-xl font-bold text-foreground">Notifications</h1>
               {unreadCount > 0 && (
-                <p className="text-sm text-muted-foreground">{unreadCount} غير مقروءة</p>
+                <p className="text-sm text-muted-foreground">{unreadCount} unread</p>
               )}
             </div>
             {unreadCount > 0 && (
@@ -79,12 +77,11 @@ const NotificationsPage = () => {
                 className="flex items-center gap-1.5 text-sm text-primary hover:underline"
               >
                 <CheckCheck className="w-4 h-4" />
-                قراءة الكل
+                Mark all read
               </button>
             )}
           </div>
 
-          {/* Filters */}
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
             {filters.map(f => (
               <button
@@ -101,12 +98,11 @@ const NotificationsPage = () => {
             ))}
           </div>
 
-          {/* List */}
           <div className="space-y-2">
             {filtered.length === 0 ? (
               <div className="text-center py-16">
                 <Bell className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground">لا توجد إشعارات</p>
+                <p className="text-muted-foreground">No notifications</p>
               </div>
             ) : (
               filtered.map(renderItem)

@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Bell, Mail, Loader2 } from "lucide-react";
+import { ArrowLeft, Bell, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import AppLayout from "@/layouts/AppLayout";
 import { toast } from "@/hooks/use-toast";
 
 interface Preferences {
-  email_welcome: boolean;
-  email_low_balance: boolean;
-  email_transactions: boolean;
-  email_newsletter: boolean;
   app_credits: boolean;
   app_system: boolean;
   app_generation: boolean;
@@ -18,10 +14,6 @@ interface Preferences {
 }
 
 const defaults: Preferences = {
-  email_welcome: true,
-  email_low_balance: true,
-  email_transactions: true,
-  email_newsletter: true,
   app_credits: true,
   app_system: true,
   app_generation: true,
@@ -50,10 +42,6 @@ const NotificationSettingsPage = () => {
 
     if (data) {
       setPrefs({
-        email_welcome: data.email_welcome,
-        email_low_balance: data.email_low_balance,
-        email_transactions: data.email_transactions,
-        email_newsletter: data.email_newsletter,
         app_credits: data.app_credits,
         app_system: data.app_system,
         app_generation: data.app_generation,
@@ -79,19 +67,9 @@ const NotificationSettingsPage = () => {
 
     setSaving(false);
     if (error) {
-      toast({ title: "خطأ", description: "فشل حفظ التفضيلات", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to save preferences", variant: "destructive" });
     }
   };
-
-  const Section = ({ title, icon: Icon, children }: { title: string; icon: typeof Bell; children: React.ReactNode }) => (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      </div>
-      <div className="space-y-1">{children}</div>
-    </div>
-  );
 
   const PrefRow = ({ label, desc, prefKey }: { label: string; desc: string; prefKey: keyof Preferences }) => (
     <div className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-muted/50 transition-colors">
@@ -119,27 +97,24 @@ const NotificationSettingsPage = () => {
         <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-muted transition-colors">
-              <ArrowRight className="w-5 h-5 text-foreground" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
-            <h1 className="text-xl font-bold text-foreground">تفضيلات الإشعارات</h1>
+            <h1 className="text-xl font-bold text-foreground">Notification Preferences</h1>
             {saving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
 
-          <Section title="إشعارات داخلية" icon={Bell}>
-            <PrefRow label="كريدتس" desc="تنبيهات انخفاض الرصيد" prefKey="app_credits" />
-            <PrefRow label="نظام" desc="تحديثات وصيانة" prefKey="app_system" />
-            <PrefRow label="توليد" desc="اكتمال توليد صور/فيديو" prefKey="app_generation" />
-            <PrefRow label="إحالات" desc="تسجيل جديد عبر كود الإحالة" prefKey="app_referral" />
-          </Section>
-
-          <div className="border-t border-border" />
-
-          <Section title="إشعارات البريد" icon={Mail}>
-            <PrefRow label="ترحيب" desc="إيميل ترحيبي عند التسجيل" prefKey="email_welcome" />
-            <PrefRow label="رصيد منخفض" desc="تنبيه عند انخفاض الرصيد" prefKey="email_low_balance" />
-            <PrefRow label="عمليات" desc="تأكيد عمليات السحب والشحن" prefKey="email_transactions" />
-            <PrefRow label="نشرة أخبار" desc="تحديثات دورية وعروض" prefKey="email_newsletter" />
-          </Section>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">In-App Notifications</h3>
+            </div>
+            <div className="space-y-1">
+              <PrefRow label="Credits" desc="Low balance alerts" prefKey="app_credits" />
+              <PrefRow label="System" desc="Updates & maintenance" prefKey="app_system" />
+              <PrefRow label="Generation" desc="Image/video generation complete" prefKey="app_generation" />
+              <PrefRow label="Referrals" desc="New signups via your referral code" prefKey="app_referral" />
+            </div>
+          </div>
         </div>
       </div>
     </AppLayout>
