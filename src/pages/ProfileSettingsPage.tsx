@@ -170,6 +170,16 @@ const ProfileSettingsPage = () => {
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
         </button>
+        <button onClick={handleToggle2FA} disabled={toggling2FA} className="w-full flex items-center gap-3 py-3 px-1 text-left">
+          <ShieldCheck className={`w-5 h-5 ${twoFactorEnabled ? "text-primary" : "text-muted-foreground"}`} />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">Two-Factor Authentication</p>
+            <p className="text-xs text-muted-foreground">{twoFactorEnabled ? "Enabled — OTP required on login" : "Disabled — Enable for extra security"}</p>
+          </div>
+          <div className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-colors ${twoFactorEnabled ? "bg-primary" : "bg-muted"}`}>
+            <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${twoFactorEnabled ? "translate-x-4" : "translate-x-0"}`} />
+          </div>
+        </button>
         {plan === "free" && (
           <button onClick={() => navigate("/pricing")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
             <Gem className="w-5 h-5 text-primary" />
