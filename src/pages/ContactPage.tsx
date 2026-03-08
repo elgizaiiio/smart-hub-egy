@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Lenis from "lenis";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,6 +45,22 @@ const ContactPage = () => {
   const [activeTab, setActiveTab] = useState<"support" | "enterprise">("support");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 3.2,
+      easing: (t) => 1 - Math.pow(1 - t, 5),
+      smoothWheel: true,
+      wheelMultiplier: 1.4,
+      touchMultiplier: 2.5,
+    });
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+    return () => lenis.destroy();
+  }, []);
 
   const supportForm = useForm<SupportFormValues>({
     resolver: zodResolver(supportSchema),
