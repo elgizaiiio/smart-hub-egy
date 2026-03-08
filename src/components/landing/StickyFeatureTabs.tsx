@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
 import ChatDemo from "@/components/landing/ChatDemo";
+import CodeDemo from "@/components/landing/CodeDemo";
 
 const tabs = [
   {
