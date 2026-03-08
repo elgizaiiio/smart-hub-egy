@@ -401,8 +401,8 @@ const ChatPage = () => {
                       <div className="border-t border-border pt-1.5 mt-1">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Modes</p>
                         <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left transition-all group ${chatMode === "learning" ? "bg-primary/10" : "hover:bg-accent/60"}`}>
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${chatMode === "learning" ? "bg-primary/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
-                            <GraduationCap className={`w-3.5 h-3.5 ${chatMode === "learning" ? "text-primary" : "text-amber-500"}`} />
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${chatMode === "learning" ? "bg-primary/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
+                            <GraduationCap className={`w-3 h-3 ${chatMode === "learning" ? "text-primary" : "text-amber-500"}`} />
                           </div>
                           <div className="flex-1">
                             <p className="text-[13px] text-foreground font-medium">Learning</p>
