@@ -5,21 +5,24 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
-import FancyButton from "@/components/FancyButton";
+import visaBg from "@/assets/visa-bg.png";
 
 const BillingPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [credits, setCredits] = useState(0);
+  const [plan, setPlan] = useState("Free");
   const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase.from("profiles").select("credits").eq("id", user.id).single();
-        if (profile) setCredits(Number(profile.credits) || 0);
-
+        const { data: profile } = await supabase.from("profiles").select("credits, plan").eq("id", user.id).single();
+        if (profile) {
+          setCredits(Number(profile.credits) || 0);
+          setPlan(profile.plan || "Free");
+        }
         const { data: txns } = await supabase
           .from("credit_transactions")
           .select("*")
@@ -33,50 +36,88 @@ const BillingPage = () => {
   }, []);
 
   const content = (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-md mx-auto">
-      {/* Balance */}
-      <div className="text-center pt-4 pb-2">
-        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Available Balance</p>
-        <p className="text-4xl font-bold text-foreground tracking-tight">
-          {credits.toFixed(0)}
-        </p>
-        <p className="text-sm text-muted-foreground mt-1">MC</p>
-      </div>
-
-      {/* Add MC */}
-      <div className="flex justify-center">
-        <FancyButton onClick={() => navigate("/pricing")}>
-          Add MC
-        </FancyButton>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-muted/40 p-4">
-          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Plan</span>
-          <p className="text-sm font-semibold text-foreground mt-1">Free</p>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
+      {/* Visa Card */}
+      <div className="relative w-full aspect-[1.7/1] rounded-2xl overflow-hidden shadow-2xl">
+        <img src={visaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="relative z-10 flex flex-col justify-between h-full p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-white/60 text-[10px] uppercase tracking-[0.2em] font-medium">Balance</p>
+              <p className="text-white text-4xl font-bold tracking-tight mt-1">
+                {credits.toFixed(0)} <span className="text-lg font-normal text-white/70">MC</span>
+              </p>
+            </div>
+            <p className="text-white/80 text-xs font-medium uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
+              {plan}
+            </p>
+          </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-white/50 text-[10px] uppercase tracking-[0.15em]">Powered by</p>
+              <p className="text-white text-xl font-bold tracking-wide" style={{ fontFamily: "var(--font-display)" }}>
+                Megsy
+              </p>
+            </div>
+            <div className="flex gap-[-8px]">
+              <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm" />
+              <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm -ml-3" />
+            </div>
+          </div>
         </div>
-        <div className="rounded-2xl bg-muted/40 p-4">
-          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Transactions</span>
-          <p className="text-sm font-semibold text-foreground mt-1">{transactions.length}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate("/pricing")}
+          className="fancy-btn !rounded-xl !py-3"
+        >
+          <span className="fold" />
+          <div className="points_wrapper">
+            {Array.from({ length: 8 }).map((_, i) => <span key={i} className="point" />)}
+          </div>
+          <span className="inner text-sm">Add MC</span>
+        </button>
+        <button
+          onClick={() => navigate("/settings/referrals")}
+          className="py-3 rounded-xl text-sm font-medium text-foreground border border-border hover:bg-muted/50 transition-colors"
+        >
+          Referrals
+        </button>
+      </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="text-center py-3">
+          <p className="text-2xl font-bold text-foreground">{credits.toFixed(0)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">MC Left</p>
+        </div>
+        <div className="text-center py-3">
+          <p className="text-2xl font-bold text-foreground capitalize">{plan}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Plan</p>
+        </div>
+        <div className="text-center py-3">
+          <p className="text-2xl font-bold text-foreground">{transactions.length}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Transactions</p>
         </div>
       </div>
 
       {/* History */}
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Recent Activity</p>
-
         {transactions.length === 0 ? (
-          <div className="text-center py-10 rounded-2xl bg-muted/20">
+          <div className="text-center py-12">
             <p className="text-sm text-muted-foreground">No transactions yet</p>
             <p className="text-xs text-muted-foreground/60 mt-1">Your MC history will appear here</p>
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {transactions.map((tx) => {
               const isCredit = tx.amount > 0;
               return (
-                <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 transition-colors">
+                <div key={tx.id} className="flex items-center gap-3 py-3 px-1">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground truncate">{tx.description || tx.action_type}</p>
                     <p className="text-[11px] text-muted-foreground">
