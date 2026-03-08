@@ -477,35 +477,26 @@ const ImagesPage = () => {
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
-            {/* Mobile: 2-column staggered grid */}
+            {/* Mobile: single rotating showcase */}
             <div className="md:hidden w-full max-w-sm mb-5">
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="flex flex-col gap-2.5">
-                  {SHOWCASE_IMAGES.filter((_, i) => i % 2 === 0).map((src, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className={`relative rounded-xl overflow-hidden ${i === 0 ? "aspect-[3/4]" : "aspect-square"}`}
-                    >
-                      <img src={src} alt={`Showcase ${i * 2 + 1}`} className="w-full h-full object-cover" />
-                    </motion.div>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2.5 mt-6">
-                  {SHOWCASE_IMAGES.filter((_, i) => i % 2 === 1).map((src, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.05 + i * 0.1 }}
-                      className={`relative rounded-xl overflow-hidden ${i === 1 ? "aspect-[3/4]" : "aspect-square"}`}
-                    >
-                      <img src={src} alt={`Showcase ${i * 2 + 2}`} className="w-full h-full object-cover" />
-                    </motion.div>
-                  ))}
-                </div>
+              <motion.div
+                key={currentImage}
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative rounded-2xl overflow-hidden aspect-[3/4]"
+              >
+                <img src={SHOWCASE_IMAGES[currentImage]} alt="Showcase" className="w-full h-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/60 to-transparent" />
+              </motion.div>
+              <div className="flex justify-center gap-1.5 mt-3">
+                {SHOWCASE_IMAGES.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentImage(i)}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImage ? "bg-foreground w-4" : "bg-muted-foreground/30"}`}
+                  />
+                ))}
               </div>
             </div>
 
