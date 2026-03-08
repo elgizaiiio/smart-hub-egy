@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { MessageSquare, Image, Film, Code2, FileText, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import FancyButton from "@/components/FancyButton";
+import NotificationBell from "@/components/NotificationBell";
 
 interface Conversation {
   id: string;
