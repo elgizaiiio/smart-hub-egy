@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
 import ChatDemo from "@/components/landing/ChatDemo";
+import CodeDemo from "@/components/landing/CodeDemo";
 
 const tabs = [
   {
@@ -27,9 +28,10 @@ const tabs = [
   },
   {
     title: "CODE & DEPLOY",
-    description: "Write, preview, and deploy production-ready code. Live sandbox preview, GitHub integration, and one-click Vercel deployment.",
-    video: "/api-showcase/video-4.mp4",
+    description: "Describe what you want, watch it come to life. Live preview, real-time code editing, GitHub sync & one-click Vercel deployment. From idea to production in seconds — no setup, no limits.",
+    video: "",
     accent: "bg-cyan-500",
+    useCode: true,
   },
 ];
 
@@ -110,6 +112,8 @@ const StickyFeatureTabs = () => {
             >
               {current.useChat ? (
                 <ChatDemo />
+              ) : current.useCode ? (
+                <CodeDemo />
               ) : current.image ? (
                 <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
                   <img
