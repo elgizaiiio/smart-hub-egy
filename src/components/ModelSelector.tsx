@@ -132,7 +132,7 @@ const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
   }
   // DeepSeek - official logo
   if (modelId.includes("deepseek")) {
-    return <img src={deepseekLogo} alt="DeepSeek" className="w-4 h-4 object-contain" />;
+    return <img src={deepseekLogo} alt="DeepSeek" className="w-5 h-5 object-contain" />;
   }
   return <div className="w-4 h-4 rounded-full bg-primary/20" />;
 };
