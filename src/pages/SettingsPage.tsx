@@ -60,9 +60,9 @@ const SettingsPage = () => {
   const isPremium = plan !== "free";
 
   const quickActions = [
-    { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
-    { icon: Globe2, label: "Language", desc: "App language", path: "/settings/language" },
-    { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
+    { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization", fancy: false },
+    { icon: Gift, label: "Referrals", desc: "Invite & earn", path: "/settings/referrals", fancy: true },
+    { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations", fancy: false },
   ];
 
   const menuItems = [
