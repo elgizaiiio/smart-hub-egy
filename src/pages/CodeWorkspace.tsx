@@ -346,16 +346,15 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
     abortRef.current = controller;
     let assistantContent = "";
 
-    const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete Next.js 14+ project. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. 
+    const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete React+Vite project with Tailwind CSS. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. 
 
 Rules:
-- Use App Router (app/ directory structure)
-- TypeScript for all files (.ts, .tsx)
-- Tailwind CSS for styling
-- For backend logic, create API routes in app/api/*/route.ts using NextResponse
-- Use "use client" directive only for interactive components
-- Include proper error handling
-- Do NOT include package.json, next.config.js, tsconfig.json, tailwind.config.ts, postcss.config.js, app/layout.tsx, app/globals.css unless you need to modify defaults
+- Use React with JSX (.jsx files)
+- Use react-router-dom for multi-page apps (BrowserRouter)
+- Tailwind CSS for all styling
+- Keep files in src/ directory
+- Include proper error handling and responsive design
+- Do NOT include package.json, vite.config.js, index.html, src/main.jsx, src/index.css, tailwind.config.js, postcss.config.js unless you need to modify defaults
 - Output raw JSON only, no markdown.`;
 
     const allMessages = messages
