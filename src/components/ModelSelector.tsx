@@ -102,12 +102,10 @@ const MODELS: Record<ModelMode, ModelOption[]> = {
 
 // Real brand icons for chat models
 const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
-  // Megsy M logo
+  // Megsy M logo - no background
   if (modelId.includes("gemini-3-flash")) {
     return (
-      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #C0C0C0, #E8E8E8, #A0A0A0, #D0D0D0)" }}>
-        <span className="text-[10px] font-black leading-none" style={{ background: "linear-gradient(180deg, #555, #222)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
-      </div>
+      <span className="text-sm font-black leading-none" style={{ background: "linear-gradient(135deg, #C0C0C0, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
     );
   }
   // Google Gemini - real multi-color star
