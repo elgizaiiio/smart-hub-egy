@@ -9,31 +9,31 @@ import {
 const faqs = [
   {
     q: "What is Megsy?",
-    a: "Megsy is an all-in-one AI creative platform that brings together 80+ AI models for chat, image generation, video creation, code building, and professional image tools -- all in a single unified interface.",
+    a: "Megsy is an all-in-one AI creative platform that brings together 80+ AI models for chat, image generation, video creation, code building, and professional image tools — all in a single unified interface.",
   },
   {
-    q: "How does the credit system work?",
-    a: "Each AI operation costs a specific number of credits (MC). Simple tasks like chat cost 1 MC, while complex operations like video generation cost more. You receive free credits on signup, and can purchase additional credits or earn them through referrals.",
+    q: "How does the MC credit system work?",
+    a: "MC (Megsy Credits) is the platform's currency. Each AI operation costs a specific amount of MC — chat is free, while image and video generation costs vary by model. Code builds cost 5 MC. You can get MC by subscribing to one of our plans (Starter, Pro, or Elite).",
   },
   {
-    q: "What makes Megsy V1 different from other AI models?",
-    a: "Megsy V1 is our flagship proprietary model, fine-tuned for exceptional quality across conversation, image generation, and video creation. It combines advanced reasoning with creative capabilities that surpass standard models.",
+    q: "What plans are available?",
+    a: "We offer three plans: Starter ($25/mo — 250 MC, 50 images, 5 videos), Pro ($49/mo — 500 MC, 500 images, 50 videos), and Elite ($149/mo — 1,500 MC, unlimited images & videos). All plans include access to all chat models. Annual billing is also available at a discount.",
   },
   {
     q: "Can I use Megsy for commercial projects?",
-    a: "Yes. All content generated on Megsy is yours to use commercially. Our Pro and Enterprise plans include full commercial rights for all generated assets.",
+    a: "Yes. All content generated on Megsy is yours to use commercially across all paid plans.",
   },
   {
     q: "What image and video formats are supported?",
-    a: "Images can be generated and exported in PNG, JPEG, and WebP formats at resolutions up to 4K. Videos support MP4 and WebM formats with lengths from 4 to 16 seconds depending on the model.",
-  },
-  {
-    q: "Is there an API available?",
-    a: "Yes, Megsy offers a comprehensive REST API for all features. Access image generation, video creation, chat, and tools programmatically. API documentation and SDKs are available for Python, JavaScript, and more.",
+    a: "Images can be generated and exported in PNG, JPEG, and WebP formats. Videos support MP4 and WebM formats with varying lengths depending on the model used.",
   },
   {
     q: "How do referrals work?",
-    a: "Share your unique referral code with friends. When they sign up and make their first generation, both you and your friend receive bonus credits. There is no limit to how many people you can refer.",
+    a: "Share your unique referral link (megsyai.com/ref/YOUR_CODE) with friends. You earn a 20% lifetime commission on every referred user's spending. Earnings can be withdrawn via PayPal or Bank Transfer with a minimum payout of $20.",
+  },
+  {
+    q: "Is there an API available?",
+    a: "API access is available for paid plan subscribers. You can integrate image generation, video creation, chat, and other tools programmatically into your own applications.",
   },
 ];
 
