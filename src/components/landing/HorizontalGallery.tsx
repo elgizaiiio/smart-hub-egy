@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { motion } from "framer-motion";
 
 const galleryItems = [
   { src: "/showcase/model-1.jpg", label: "MEGSY V1", model: "megsy", desc: "Hyper-realistic portraits with cinematic depth" },
@@ -9,75 +9,62 @@ const galleryItems = [
   { src: "/showcase/model-6.jpg", label: "NANO BANANA 2", model: "nano", desc: "Classical painting style with atmospheric lighting" },
 ];
 
-const CARD_W = 320;
-
 const HorizontalGallery = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const handleWheel: React.WheelEventHandler<HTMLDivElement> = (event) => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    const atStart = scrollLeft <= 0;
-    const atEnd = scrollLeft + clientWidth >= scrollWidth - 1;
-    const movingRight = event.deltaY > 0;
-    const canScrollHorizontally = (movingRight && !atEnd) || (!movingRight && !atStart);
-
-    if (canScrollHorizontally) {
-      event.preventDefault();
-      container.scrollLeft += event.deltaY * 1.2;
-    }
-  };
-
   return (
-    <section className="overflow-hidden bg-background py-20 md:py-28">
-      <div className="mx-auto max-w-7xl px-6 md:px-12 mb-10">
-        <h2 className="font-display text-4xl font-black uppercase tracking-tight text-foreground md:text-6xl">
-          IMAGE <span className="text-primary">MODELS</span>
-        </h2>
-        <p className="mt-3 max-w-lg text-base text-muted-foreground">
-          Explore what each model can create — from hyper-real portraits to epic fantasy worlds.
-        </p>
-      </div>
+    <section className="bg-background py-20 md:py-28">
+      <div className="mx-auto max-w-7xl px-6 md:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="mb-12"
+        >
+          <h2 className="font-display text-4xl font-black uppercase tracking-tight text-foreground md:text-6xl">
+            IMAGE <span className="text-primary">MODELS</span>
+          </h2>
+          <p className="mt-3 max-w-lg text-base text-muted-foreground">
+            Explore what each model can create — from hyper-real portraits to epic fantasy worlds.
+          </p>
+        </motion.div>
 
-      <div
-        ref={scrollRef}
-        onWheel={handleWheel}
-        className="flex gap-6 overflow-x-auto px-6 pb-4 md:px-12"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {galleryItems.map((item, i) => (
-          <div
-            key={i}
-            className="group relative flex-shrink-0 overflow-hidden rounded-2xl border border-border/30"
-            style={{ width: CARD_W, height: 440 }}
-          >
-            <img
-              src={item.src}
-              alt={item.label}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-            />
+        {/* Grid layout */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+          {galleryItems.map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className="group relative overflow-hidden rounded-2xl border border-border/30 aspect-[3/4]"
+            >
+              <img
+                src={item.src}
+                alt={item.label}
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
 
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-85" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
 
-            {item.model === "megsy" && (
-              <div className="absolute top-4 left-4 rounded-full bg-primary/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground backdrop-blur-sm">
-                Megsy Model
+              {item.model === "megsy" && (
+                <div className="absolute top-3 left-3 rounded-full bg-primary/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground backdrop-blur-sm md:text-xs">
+                  Megsy Model
+                </div>
+              )}
+
+              <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
+                <h3 className="font-display text-sm font-black uppercase tracking-tight text-foreground md:text-lg">
+                  {item.label}
+                </h3>
+                <p className="mt-1 hidden text-sm text-muted-foreground/70 md:block">
+                  {item.desc}
+                </p>
               </div>
-            )}
-
-            <div className="absolute inset-x-0 bottom-0 p-5">
-              <h3 className="font-display text-lg font-black uppercase tracking-tight text-foreground">
-                {item.label}
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground/70 opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-                {item.desc}
-              </p>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
