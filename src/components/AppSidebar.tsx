@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CreditCard } from "lucide-react";
+import FancyButton from "@/components/FancyButton";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
