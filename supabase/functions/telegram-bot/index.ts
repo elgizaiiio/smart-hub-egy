@@ -790,6 +790,51 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // Upload OAuth app logo
+      if (session?.oauthStep === "edit_logo" && session.oauthAppId) {
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document?.mime_type?.startsWith("image/")) fileId = message.document.file_id;
+
+        if (!fileId) {
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: "أرسل صورة فقط.",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 إلغاء", callback_data: `oapp_${session.oauthAppId}` }]] }),
+          });
+          return new Response("OK");
+        }
+
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل تحميل الملف." }); return new Response("OK"); }
+
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || "jpg";
+        const storagePath = `oauth-logos/${session.oauthAppId}.${ext}`;
+
+        const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, {
+          contentType: `image/${ext}`,
+          upsert: true,
+        });
+
+        if (uploadError) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ في الرفع: ${uploadError.message}` });
+          return new Response("OK");
+        }
+
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        await sb.from("oauth_clients").update({ logo_url: urlData.publicUrl }).eq("id", session.oauthAppId);
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم تحديث صورة التطبيق بنجاح!`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${session.oauthAppId}` }]] }),
+        });
+        return new Response("OK");
+
       // إدخال قيمة حقل
       if (session?.adminAction === "awaiting_value" && text && session.adminModelId && session.adminField) {
         const config = await getModelConfig(sb, session.adminModelId);
