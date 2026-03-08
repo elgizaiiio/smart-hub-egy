@@ -82,7 +82,7 @@ const LandingNavbar = () => {
             </a>
           ))}
           <div className="mt-5 flex flex-col gap-3">
-            <button onClick={() => navigate("/auth")} className="rounded-lg border border-border py-2.5 text-sm font-medium text-foreground">
+            <button onClick={() => navigate("/auth")} className="rounded-lg border border-white/20 py-2.5 text-sm font-medium text-white">
               Log in
             </button>
             <FancyButton onClick={() => navigate("/auth")}>Start Creating</FancyButton>
