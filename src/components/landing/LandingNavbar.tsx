@@ -98,6 +98,7 @@ const LandingNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [pinned, setPinned] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
