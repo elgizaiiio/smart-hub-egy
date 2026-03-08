@@ -180,10 +180,6 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
 
       {/* Bottom section */}
       <div className="p-2 space-y-2">
-        {/* Notification Bell */}
-        <div className={`flex ${expanded ? "px-2 justify-end" : "justify-center"}`}>
-          <NotificationBell collapsed={!expanded} />
-        </div>
 
         {/* MC Balance - only when expanded */}
         {expanded && (
