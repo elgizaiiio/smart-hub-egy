@@ -2,9 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileSpreadsheet, FileText, Presentation, Table } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import ThinkingLoader from "@/components/ThinkingLoader";
+import FancyButton from "@/components/FancyButton";
 import ReactMarkdown from "react-markdown";
 
 interface ChatMsg {
@@ -34,6 +36,7 @@ const FILE_PLACEHOLDERS = [
 ];
 
 const FilesPage = () => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -105,6 +108,21 @@ const FilesPage = () => {
       return data.id;
     }
     return null;
+  };
+
+  const loadOldConversation = async (id: string) => {
+    setConversationId(id);
+    const { data: msgs } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", id)
+      .order("created_at", { ascending: true });
+    if (msgs) {
+      setMessages(msgs.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })));
+    }
   };
 
   const saveMessage = async (convId: string, role: string, content: string) => {
@@ -241,7 +259,7 @@ const FilesPage = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} currentMode="files" />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} onSelectConversation={loadOldConversation} activeConversationId={conversationId} currentMode="files" />
 
       {/* Preview Modal */}
       <AnimatePresence>
@@ -265,6 +283,9 @@ const FilesPage = () => {
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
+        <FancyButton onClick={() => navigate("/pricing")}>
+          Unlock Pro
+        </FancyButton>
         <div className="w-9" />
       </div>
 
@@ -396,7 +417,7 @@ const FilesPage = () => {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+              onKeyDown={(e) => { /* Enter creates new line naturally, no send on Enter */ }}
               placeholder={displayedPlaceholder + "│"}
               rows={1}
               className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"

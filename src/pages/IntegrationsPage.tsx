@@ -19,10 +19,11 @@ const SlackIcon = () => (
 
 const OutlookIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
-    <path d="M24 7.387v10.478c0 .23-.08.424-.238.576a.806.806 0 0 1-.587.234h-8.55V6.577h8.55c.23 0 .424.08.587.234A.778.778 0 0 1 24 7.387z" fill="#0364B8"/>
-    <path d="M14.625 6.577v12.098h-8.55a.806.806 0 0 1-.587-.234.778.778 0 0 1-.238-.576V7.387c0-.23.08-.424.238-.576a.806.806 0 0 1 .587-.234h8.55z" fill="#0A2767"/>
-    <path d="M8.5 10.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z" fill="#0078D4"/>
-    <path d="M5 8.25c-.69 0-1.25.56-1.25 1.25v2c0 .69.56 1.25 1.25 1.25s1.25-.56 1.25-1.25v-2c0-.69-.56-1.25-1.25-1.25z" fill="white"/>
+    <path d="M24 7.8v8.4c0 .99-.81 1.8-1.8 1.8H14V6h8.2c.99 0 1.8.81 1.8 1.8z" fill="#0364B8"/>
+    <path d="M14 6v12H3.8c-.99 0-1.8-.81-1.8-1.8V7.8C2 6.81 2.81 6 3.8 6H14z" fill="#0078D4"/>
+    <path d="M14 6v12l10-6V6H14z" fill="#28A8EA"/>
+    <ellipse cx="8" cy="12" rx="3.5" ry="4" fill="#0078D4"/>
+    <ellipse cx="8" cy="12" rx="2.2" ry="2.8" fill="white"/>
   </svg>
 );
 
@@ -197,11 +198,36 @@ const IntegrationsPage = () => {
       });
       if (error) throw error;
       if (data?.redirectUrl) {
-        window.open(data.redirectUrl, "_blank", "width=600,height=700");
+        const authWindow = window.open(data.redirectUrl, "_blank", "width=600,height=700");
+        if (!authWindow) {
+          toast.error("Please allow popups to connect.");
+          return;
+        }
         toast.success(`Opening ${integration.name} authorization...`);
-        setTimeout(() => loadConnections(), 5000);
-        setTimeout(() => loadConnections(), 10000);
-        setTimeout(() => loadConnections(), 20000);
+        // Poll for connection status after auth window opens
+        const pollInterval = setInterval(async () => {
+          try {
+            const { data: checkData } = await supabase.functions.invoke("composio", {
+              body: { action: "list-connections", userId: "default" },
+            });
+            const items = checkData?.items || checkData || [];
+            if (Array.isArray(items)) {
+              const found = items.find((item: any) => {
+                const appName = (item.appName || item.appUniqueId || "").toLowerCase();
+                return appName === integration.app && item.status === "ACTIVE";
+              });
+              if (found) {
+                clearInterval(pollInterval);
+                setConnectedApps(prev => ({ ...prev, [integration.app]: found.id }));
+                toast.success(`${integration.name} connected!`);
+                setLoadingApp(null);
+              }
+            }
+          } catch {}
+        }, 3000);
+        // Stop polling after 60s
+        setTimeout(() => { clearInterval(pollInterval); setLoadingApp(null); }, 60000);
+        return;
       } else if (data?.connectionStatus === "ACTIVE") {
         toast.success(`${integration.name} connected!`);
         setConnectedApps(prev => ({ ...prev, [integration.app]: data.id }));
@@ -210,6 +236,28 @@ const IntegrationsPage = () => {
       }
     } catch (e: any) {
       toast.error(`Failed to connect ${integration.name}: ${e.message || "Unknown error"}`);
+    } finally {
+      setLoadingApp(null);
+    }
+  };
+
+  const handleDisconnect = async (integration: typeof integrations[0]) => {
+    const connectionId = connectedApps[integration.app];
+    if (!connectionId) return;
+    setLoadingApp(integration.id);
+    try {
+      const { error } = await supabase.functions.invoke("composio", {
+        body: { action: "disconnect", connectionId, userId: "default" },
+      });
+      if (error) throw error;
+      setConnectedApps(prev => {
+        const next = { ...prev };
+        delete next[integration.app];
+        return next;
+      });
+      toast.success(`${integration.name} disconnected.`);
+    } catch (e: any) {
+      toast.error(`Failed to disconnect: ${e.message || "Unknown error"}`);
     } finally {
       setLoadingApp(null);
     }
@@ -243,9 +291,18 @@ const IntegrationsPage = () => {
                       <p className="text-xs text-muted-foreground">{integration.description}</p>
                     </div>
                     {isConnected(integration.app) ? (
-                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 text-emerald-600">
-                        <Check className="w-3 h-3" /> Connected
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 text-emerald-600">
+                          <Check className="w-3 h-3" /> Connected
+                        </span>
+                        <button
+                          onClick={() => handleDisconnect(integration)}
+                          disabled={loadingApp === integration.id}
+                          className="px-2 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                        >
+                          {loadingApp === integration.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Disconnect"}
+                        </button>
+                      </div>
                     ) : (
                       <button
                         onClick={() => handleConnect(integration)}

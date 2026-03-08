@@ -164,8 +164,8 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             <div className="p-3 space-y-2">
               <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-sidebar-foreground">Credits</span>
-                  <span className="text-xs text-muted-foreground">{credits.toFixed(2)}</span>
+                  <span className="text-sm font-medium text-sidebar-foreground">MC</span>
+                  <span className="text-xs text-muted-foreground">{credits.toFixed(0)}</span>
                 </div>
                 <div className="w-full h-2 bg-sidebar-accent rounded-full overflow-hidden">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.min((credits / 100) * 100, 100)}%` }} />

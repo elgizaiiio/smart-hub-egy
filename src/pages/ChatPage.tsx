@@ -446,11 +446,15 @@ const ChatPage = () => {
                     <div className="border-t border-border mt-1 pt-1">
                       <button
                       onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors">
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
                       
-                        
-                        <span className="text-sm text-foreground">Integrations</span>
-                        <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-md bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                            <span className="text-[8px] font-bold text-white">⚡</span>
+                          </div>
+                          <span className="text-sm text-foreground">Integrations</span>
+                        </div>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
                       </button>
                     </div>
                   </motion.div>

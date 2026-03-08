@@ -254,7 +254,7 @@ const CodeWorkspace = () => {
 
   const handleApprove = async () => {
     if (!hasEnoughCredits(BUILD_CREDIT_COST)) {
-      toast.error("رصيد الكريدت غير كافي. تحتاج 5 كريدت للبناء.");
+      toast.error("رصيد MC غير كافي. تحتاج 5 MC للبناء.");
       return;
     }
 
@@ -280,13 +280,13 @@ const CodeWorkspace = () => {
       });
       const deductData = await deductResp.json();
       if (!deductData.success) {
-        toast.error(deductData.error || "Credit deduction failed");
+        toast.error(deductData.error || "MC deduction failed");
         setIsLoading(false);
         setIsThinking(false);
         return;
       }
       refreshCredits();
-      addLog(`${BUILD_CREDIT_COST} credits deducted.`);
+      addLog(`${BUILD_CREDIT_COST} MC deducted.`);
     }
 
     // Get AI to generate files
@@ -560,7 +560,7 @@ const CodeWorkspace = () => {
               onClick={handleApprove}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
               
-                  Approve Plan ({BUILD_CREDIT_COST} credits)
+                  Approve Plan ({BUILD_CREDIT_COST} MC)
                 </button>
             }
               <div ref={messagesEndRef} />
@@ -591,10 +591,7 @@ const CodeWorkspace = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
+                    // Enter creates new line, send only via send button
                   }}
                   placeholder="Ask about your project..."
                   rows={1}

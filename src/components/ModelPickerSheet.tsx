@@ -149,7 +149,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                 <div className="flex items-center justify-between">
                   <h2 className="font-display text-2xl font-bold text-foreground">{detailModel.name}</h2>
                   {detailModel.credits > 0 ? (
-                    <span className="text-lg font-bold text-primary">{detailModel.credits} cr</span>
+                    <span className="text-lg font-bold text-primary">{detailModel.credits} MC</span>
                   ) : (
                     <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-sm font-semibold">Free</span>
                   )}
@@ -205,7 +205,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                         </>
                       )}
                       <tr>
-                        <td className="px-4 py-3 text-muted-foreground">Credits</td>
+                        <td className="px-4 py-3 text-muted-foreground">MC</td>
                         <td className="px-4 py-3 text-primary font-bold text-right">{detailModel.credits > 0 ? `${detailModel.credits} per request` : "Free"}</td>
                       </tr>
                     </tbody>
@@ -311,7 +311,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                             <div className="min-w-0">
                               <h3 className="text-sm font-bold text-foreground truncate">{model.name}</h3>
                               <span className="text-[11px] text-muted-foreground font-medium">
-                                {model.credits > 0 ? `${model.credits} Credits` : "Free"}
+                                {model.credits > 0 ? `${model.credits} MC` : "Free"}
                               </span>
                             </div>
                             <button

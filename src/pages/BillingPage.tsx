@@ -20,34 +20,33 @@ const BillingPage = () => {
         const { data: profile } = await supabase.from("profiles").select("credits").eq("id", user.id).single();
         if (profile) setCredits(Number(profile.credits) || 0);
 
-        const { data: txns } = await supabase.
-        from("credit_transactions").
-        select("*").
-        eq("user_id", user.id).
-        order("created_at", { ascending: false }).
-        limit(20);
+        const { data: txns } = await supabase
+          .from("credit_transactions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
         if (txns) setTransactions(txns);
       }
     };
     load();
   }, []);
 
-  const content =
-  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-md mx-auto">
+  const content = (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-md mx-auto">
       {/* Balance */}
       <div className="text-center pt-4 pb-2">
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Available Balance</p>
         <p className="text-4xl font-bold text-foreground tracking-tight">
-          {credits.toFixed(2)}
+          {credits.toFixed(0)}
         </p>
-        <p className="text-sm text-muted-foreground mt-1">credits · 1 credit = $0.10</p>
+        <p className="text-sm text-muted-foreground mt-1">MC</p>
       </div>
 
-      {/* Add Credits */}
+      {/* Add MC */}
       <div className="flex justify-center">
         <FancyButton onClick={() => navigate("/pricing")}>
-          
-          Add Credits
+          Add MC
         </FancyButton>
       </div>
 
@@ -67,17 +66,17 @@ const BillingPage = () => {
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Recent Activity</p>
 
-        {transactions.length === 0 ?
-      <div className="text-center py-10 rounded-2xl bg-muted/20">
+        {transactions.length === 0 ? (
+          <div className="text-center py-10 rounded-2xl bg-muted/20">
             <p className="text-sm text-muted-foreground">No transactions yet</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Your credit history will appear here</p>
-          </div> :
-
-      <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground/60 mt-1">Your MC history will appear here</p>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
             {transactions.map((tx) => {
-          const isCredit = tx.amount > 0;
-          return (
-            <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 transition-colors">
+              const isCredit = tx.amount > 0;
+              return (
+                <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground truncate">{tx.description || tx.action_type}</p>
                     <p className="text-[11px] text-muted-foreground">
@@ -87,21 +86,21 @@ const BillingPage = () => {
                   <span className={`text-sm font-semibold tabular-nums ${isCredit ? "text-emerald-500" : "text-red-500"}`}>
                     {isCredit ? "+" : ""}{tx.amount}
                   </span>
-                </div>);
-
-        })}
+                </div>
+              );
+            })}
           </div>
-      }
+        )}
       </div>
-    </motion.div>;
-
+    </motion.div>
+  );
 
   if (!isMobile) {
     return (
-      <DesktopSettingsLayout title="Billing" subtitle="Manage your credits and view transaction history">
+      <DesktopSettingsLayout title="Billing" subtitle="Manage your MC and view transaction history">
         {content}
-      </DesktopSettingsLayout>);
-
+      </DesktopSettingsLayout>
+    );
   }
 
   return (
@@ -115,8 +114,8 @@ const BillingPage = () => {
         </div>
         <div className="px-4">{content}</div>
       </div>
-    </div>);
-
+    </div>
+  );
 };
 
 export default BillingPage;

@@ -269,7 +269,7 @@ const ImagesPage = () => {
 
     const creditCost = Number(selectedModel.credits) || 1;
     if (userId && !hasEnoughCredits(creditCost)) {
-      toast.error("رصيد الكريدت غير كافي. يرجى شحن حسابك.");
+      toast.error("رصيد MC غير كافي. يرجى شحن حسابك.");
       return;
     }
 
@@ -617,10 +617,7 @@ const ImagesPage = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleGenerate();
-                }
+                // Enter creates new line, send only via send button
               }}
               placeholder={displayedPlaceholder + "│"}
               rows={1}

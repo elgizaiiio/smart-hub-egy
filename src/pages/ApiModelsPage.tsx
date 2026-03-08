@@ -84,7 +84,7 @@ const ApiModelsPage = () => {
             <span className="col-span-3">Model</span>
             <span className="col-span-5 hidden sm:block">Description</span>
             <span className="col-span-2 text-center hidden sm:block">Category</span>
-            <span className="col-span-2 sm:col-span-2 text-right">Credits</span>
+            <span className="col-span-2 sm:col-span-2 text-right">MC</span>
           </div>
           {filtered.map((model, i) => {
             const catLabel = API_CATEGORIES.find(c => c.id === model.category)?.label || model.category;
@@ -98,7 +98,7 @@ const ApiModelsPage = () => {
                 <span className="col-span-2 text-center hidden sm:block">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{catLabel}</span>
                 </span>
-                <span className="col-span-7 sm:col-span-2 text-right text-primary font-medium">{model.credits} cr</span>
+                <span className="col-span-7 sm:col-span-2 text-right text-primary font-medium">{model.credits} MC</span>
               </div>
             );
           })}
@@ -126,7 +126,7 @@ const ApiModelsPage = () => {
                   <span className="text-xs text-muted-foreground">({models.length})</span>
                 </div>
                 <span className="text-primary font-medium">
-                  {min === max ? `${min} credits` : `${min}-${max} credits`}
+                  {min === max ? `${min} MC` : `${min}-${max} MC`}
                 </span>
               </div>
             );
