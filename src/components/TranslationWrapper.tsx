@@ -37,7 +37,7 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
   }
 
   return (
-    <Translator from="en" to={lang}>
+    <Translator from="en" to={lang as any}>
       {children}
     </Translator>
   );
