@@ -38,28 +38,18 @@ const navItems: NavItem[] = [
       {
         title: "Image",
         items: [
-          { label: "AI Image Generator", desc: "Create images from prompts or references", href: "/images" },
-          { label: "Creative Ideation", desc: "Explore visual ideas and directions", href: "/images" },
-          { label: "Background Remover", desc: "Remove and replace image backgrounds", href: "/images" },
-          { label: "Train Your Own Model", desc: "Train custom models for consistency", href: "/images" },
+          { label: "AI Image Generator", desc: "Create images from prompts", href: "/images" },
+          { label: "Creative Ideation", desc: "Explore visual ideas", href: "/images" },
+          { label: "Background Remover", desc: "Remove backgrounds", href: "/images" },
+          { label: "Train Your Model", desc: "Custom model training", href: "/images" },
         ],
       },
       {
-        title: "Video",
+        title: "Video & Editing",
         items: [
-          { label: "AI Video Generator", desc: "Generate motion from images or text", href: "/videos" },
-        ],
-      },
-      {
-        title: "Editing",
-        items: [
-          { label: "Image Editor", desc: "Edit and refine images with AI", href: "/images" },
-        ],
-      },
-      {
-        title: "Upscaling",
-        items: [
-          { label: "Image Upscaler", desc: "Enhance resolution without losing detail", href: "/images" },
+          { label: "AI Video Generator", desc: "Generate motion from images", href: "/videos" },
+          { label: "Image Editor", desc: "Edit images with AI", href: "/images" },
+          { label: "Image Upscaler", desc: "Enhance resolution", href: "/images" },
         ],
       },
     ],
