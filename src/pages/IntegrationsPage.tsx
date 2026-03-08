@@ -244,9 +244,18 @@ const IntegrationsPage = () => {
                       <p className="text-xs text-muted-foreground">{integration.description}</p>
                     </div>
                     {isConnected(integration.app) ? (
-                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 text-emerald-600">
-                        <Check className="w-3 h-3" /> Connected
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 text-emerald-600">
+                          <Check className="w-3 h-3" /> Connected
+                        </span>
+                        <button
+                          onClick={() => handleDisconnect(integration)}
+                          disabled={loadingApp === integration.id}
+                          className="px-2 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                        >
+                          {loadingApp === integration.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Disconnect"}
+                        </button>
+                      </div>
                     ) : (
                       <button
                         onClick={() => handleConnect(integration)}
