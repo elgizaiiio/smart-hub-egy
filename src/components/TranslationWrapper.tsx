@@ -99,29 +99,62 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     const style = document.createElement("style");
     style.textContent = `
       .goog-te-banner-frame, .goog-te-balloon-frame,
-      iframe.goog-te-banner-frame { display: none !important; height: 0 !important; width: 0 !important; visibility: hidden !important; overflow: hidden !important; }
-      body { top: 0 !important; margin-top: 0 !important; position: static !important; }
+      iframe.goog-te-banner-frame,
+      .goog-te-spinner-pos,
+      .goog-te-spinner-animation { display: none !important; height: 0 !important; width: 0 !important; visibility: hidden !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+      body { top: 0px !important; margin-top: 0px !important; position: static !important; }
+      html > body { top: 0px !important; }
       .goog-tooltip, .goog-tooltip:hover { display: none !important; }
       .goog-text-highlight { background: none !important; box-shadow: none !important; }
       #google_translate_element { display: none !important; }
-      .skiptranslate { display: none !important; height: 0 !important; overflow: hidden !important; }
+      .skiptranslate { display: none !important; height: 0 !important; overflow: hidden !important; opacity: 0 !important; }
       #goog-gt-tt, .goog-te-menu-value { display: none !important; }
+      .VIpgJd-ZVi9od-ORHb-OEVmcd, .VIpgJd-ZVi9od-SmfZ-OEVmcd,
+      .VIpgJd-ZVi9od-xl07Ob-OEVmcd, .VIpgJd-ZVi9od-aZ2wEe-OEVmcd { display: none !important; }
     `;
     document.head.appendChild(style);
 
-    // MutationObserver to strip any top/margin-top Google injects on body
-    const observer = new MutationObserver(() => {
-      if (document.body.style.top && document.body.style.top !== "0px") {
-        document.body.style.top = "0px";
+    // Aggressively strip body.style.top and hide banner frames
+    const cleanUp = () => {
+      document.body.style.top = "0px";
+      document.body.style.marginTop = "0px";
+      // Hide any banner iframes Google creates
+      document.querySelectorAll<HTMLIFrameElement>(".goog-te-banner-frame, iframe.skiptranslate").forEach(f => {
+        f.style.display = "none";
+        f.style.height = "0";
+        f.style.visibility = "hidden";
+      });
+    };
+
+    // MutationObserver on body attributes
+    const bodyObserver = new MutationObserver(cleanUp);
+    bodyObserver.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+
+    // MutationObserver on document to catch newly added iframes/elements
+    const docObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (node instanceof HTMLElement) {
+            if (node.classList?.contains("skiptranslate") || node.classList?.contains("goog-te-banner-frame")) {
+              node.style.display = "none";
+              node.style.height = "0";
+              node.style.visibility = "hidden";
+            }
+          }
+        }
       }
-      if (document.body.style.marginTop && document.body.style.marginTop !== "0px") {
-        document.body.style.marginTop = "0px";
-      }
+      cleanUp();
     });
-    observer.observe(document.body, { attributes: true, attributeFilter: ["style"] });
+    docObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+    // Periodic fallback for first few seconds
+    const interval = setInterval(cleanUp, 100);
+    setTimeout(() => clearInterval(interval), 5000);
 
     return () => {
-      observer.disconnect();
+      bodyObserver.disconnect();
+      docObserver.disconnect();
+      clearInterval(interval);
       document.head.removeChild(style);
     };
   }, []);
