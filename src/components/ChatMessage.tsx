@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Check } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import ThinkingLoader from "./ThinkingLoader";
 
@@ -13,6 +13,25 @@ interface ChatMessageProps {
   onLike?: (liked: boolean | null) => void;
   liked?: boolean | null;
 }
+
+// Extract domain from URL
+const getDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace("www.", "");
+  } catch {
+    return url;
+  }
+};
+
+// Get favicon for a domain
+const getFavicon = (url: string) => {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+  } catch {
+    return null;
+  }
+};
 
 const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, onLike, liked }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
@@ -43,7 +62,6 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
     return (
       <div className="flex justify-end mb-4">
         <div className="max-w-[80%]">
-          {/* Attached images above text */}
           {attachedImages && attachedImages.length > 0 && (
             <div className="flex gap-2 mb-2 justify-end">
               {attachedImages.map((img, i) => (
@@ -58,6 +76,16 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
       </div>
     );
   }
+
+  // Collect all links from the content for the sources section
+  const urlRegex = /\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
+  const links: { text: string; url: string }[] = [];
+  let match;
+  while ((match = urlRegex.exec(content)) !== null) {
+    links.push({ text: match[1], url: match[2] });
+  }
+  // Deduplicate by URL
+  const uniqueLinks = links.filter((link, i, arr) => arr.findIndex(l => l.url === link.url) === i);
 
   return (
     <div
@@ -107,6 +135,29 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
             )}
           </div>
+
+          {/* Professional Sources Section */}
+          {!isStreaming && uniqueLinks.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-medium">Sources</p>
+              <div className="flex flex-wrap gap-2">
+                {uniqueLinks.slice(0, 6).map((link, i) => (
+                  <a
+                    key={i}
+                    href={link.url}
+                    onClick={(e) => handleLinkClick(e, link.url)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary/60 hover:bg-secondary border border-border/50 transition-colors group max-w-[200px]"
+                  >
+                    {getFavicon(link.url) && (
+                      <img src={getFavicon(link.url)!} alt="" className="w-3.5 h-3.5 rounded-sm shrink-0" />
+                    )}
+                    <span className="text-[11px] text-muted-foreground truncate">{getDomain(link.url)}</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {!isStreaming && content && (
             <div className="flex items-center gap-1 mt-2">

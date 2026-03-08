@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const plans = [
@@ -14,8 +14,13 @@ const plans = [
     badge: null,
     tier: "starter" as const,
     features: [
+      "250 MC / month",
       "All chat models",
-      "Image generation",
+      "Image generation (50/month)",
+      "Video generation (5/month)",
+      "Code generation + live preview",
+      "Deploy + publish (3 projects)",
+      "GitHub sync",
       "File analysis",
       "Standard support",
     ],
@@ -30,12 +35,17 @@ const plans = [
     badge: "MOST POPULAR",
     tier: "pro" as const,
     features: [
+      "500 MC / month",
       "All AI models access",
-      "Image & Video generation",
-      "Code sandbox + GitHub",
-      "Priority support",
+      "Image generation (500/month)",
+      "Video generation (50/month)",
+      "Code generation + live preview",
+      "Deploy + publish (20 projects)",
+      "GitHub sync + version control",
+      "File analysis",
       "API access",
-      "Social publishing",
+      "Social publishing (10 platforms)",
+      "Priority support",
     ],
   },
   {
@@ -48,15 +58,60 @@ const plans = [
     badge: "PREMIUM",
     tier: "elite" as const,
     features: [
-      "All models (priority)",
-      "Unlimited generations",
-      "Full code IDE + deploy",
+      "1,500 MC / month",
+      "All models (priority speed)",
+      "Unlimited image generation",
+      "Unlimited video generation",
+      "Code generation + live preview",
+      "Unlimited deploy + publish",
+      "GitHub sync + version control",
+      "File analysis",
       "API access + webhooks",
+      "Unlimited social publishing across all platforms",
       "Dedicated support",
-      "Custom integrations",
     ],
   },
 ];
+
+const yearlyFeatureOverrides: Record<string, string[]> = {
+  Starter: [
+    "2,500 MC / year",
+    "All chat models",
+    "Image generation (50/month)",
+    "Video generation (5/month)",
+    "Code generation + live preview",
+    "Deploy + publish (3 projects)",
+    "GitHub sync",
+    "File analysis",
+    "Standard support",
+  ],
+  Pro: [
+    "5,000 MC / year",
+    "All AI models access",
+    "Image generation (500/month)",
+    "Video generation (50/month)",
+    "Code generation + live preview",
+    "Deploy + publish (20 projects)",
+    "GitHub sync + version control",
+    "File analysis",
+    "API access",
+    "Social publishing (10 platforms)",
+    "Priority support",
+  ],
+  Elite: [
+    "15,000 MC / year",
+    "All models (priority speed)",
+    "Unlimited image generation",
+    "Unlimited video generation",
+    "Code generation + live preview",
+    "Unlimited deploy + publish",
+    "GitHub sync + version control",
+    "File analysis",
+    "API access + webhooks",
+    "Unlimited social publishing across all platforms",
+    "Dedicated support",
+  ],
+};
 
 const tierCardStyles = {
   starter: {
@@ -92,7 +147,7 @@ const PricingPage = () => {
       <div className="max-w-5xl mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <h2 className="font-display text-3xl font-bold mb-3 text-foreground">Choose your plan</h2>
-          <p className="text-muted-foreground text-sm mb-6">Scale your AI usage with flexible credit-based pricing</p>
+          <p className="text-muted-foreground text-sm mb-6">One platform. Infinite possibilities.</p>
 
           <div className="inline-flex items-center gap-1 bg-secondary rounded-full p-1">
             <button
@@ -114,8 +169,8 @@ const PricingPage = () => {
         <div className="grid md:grid-cols-3 gap-6 items-center">
           {plans.map((plan, i) => {
             const style = tierCardStyles[plan.tier];
-            const credits = isYearly ? plan.yearlyCredits : plan.monthlyCredits;
             const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
+            const features = isYearly ? yearlyFeatureOverrides[plan.name] : plan.features;
 
             return (
               <motion.div
@@ -139,7 +194,6 @@ const PricingPage = () => {
                 )}
                 <div>
                   <h3 className="font-display font-semibold text-white text-lg">{plan.name}</h3>
-                  <p className="text-xs text-white/60">{credits.toLocaleString()} credits / {isYearly ? "year" : "month"}</p>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="font-display text-3xl font-bold text-white">
@@ -153,9 +207,9 @@ const PricingPage = () => {
                 </button>
 
                 <ul className="space-y-2.5 mt-2">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-white/80">
-                      <Check className={`w-3.5 h-3.5 shrink-0 ${style.checkColor}`} />
+                  {features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm text-white/80">
+                      <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${style.checkColor}`} />
                       {feature}
                     </li>
                   ))}
@@ -164,6 +218,26 @@ const PricingPage = () => {
             );
           })}
         </div>
+
+        {/* Enterprise Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-12 rounded-2xl border border-border bg-card p-8 text-center"
+        >
+          <h3 className="font-display text-xl font-bold text-foreground mb-2">Enterprise</h3>
+          <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">
+            Custom plans for large teams with dedicated infrastructure, SLA guarantees, and priority support.
+          </p>
+          <a
+            href="mailto:support@megsyai.com"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            Contact Sales
+          </a>
+        </motion.div>
       </div>
     </div>
   );

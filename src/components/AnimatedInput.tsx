@@ -49,11 +49,9 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     return () => clearInterval(typeInterval);
   }, [placeholderIndex, value, items]);
 
+  // Enter always creates new line — send only via the send button
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      onSend();
-    }
+    // Do nothing special on Enter — let textarea handle it naturally (new line)
   };
 
   const autoResize = () => {

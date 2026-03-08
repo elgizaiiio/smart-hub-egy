@@ -100,37 +100,46 @@ const MODELS: Record<ModelMode, ModelOption[]> = {
   ],
 };
 
-// Brand icons for chat models
+// Real brand icons for chat models
 const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
+  // Megsy M logo
+  if (modelId.includes("gemini-3-flash")) {
+    return (
+      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+        <span className="text-[8px] font-black text-white leading-none">M</span>
+      </div>
+    );
+  }
+  // Google Gemini - real multi-color star
   if (modelId.includes("gemini")) {
     return (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#4285F4"/>
-        <path d="M12 6l1.5 3.5L17 11l-3.5 1.5L12 16l-1.5-3.5L7 11l3.5-1.5L12 6z" fill="white"/>
+      <svg viewBox="0 0 28 28" className="w-4 h-4" fill="none">
+        <path d="M14 0C14 7.732 7.732 14 0 14c7.732 0 14 6.268 14 14 0-7.732 6.268-14 14-14C20.268 14 14 7.732 14 0z" fill="#4285F4"/>
       </svg>
     );
   }
+  // OpenAI GPT - real OpenAI logo
   if (modelId.includes("gpt")) {
     return (
       <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-        <circle cx="12" cy="12" r="10" fill="#10A37F"/>
-        <path d="M12 7v5l3 3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z" fill="#10A37F"/>
       </svg>
     );
   }
+  // xAI Grok - X logo
   if (modelId.includes("grok")) {
     return (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-        <circle cx="12" cy="12" r="10" fill="currentColor" className="text-foreground"/>
-        <path d="M8 12h8M12 8v8" stroke="hsl(var(--background))" strokeWidth="2" strokeLinecap="round"/>
+      <svg viewBox="0 0 24 24" className="w-4 h-4 text-foreground" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
       </svg>
     );
   }
+  // DeepSeek - blue circle with search icon
   if (modelId.includes("deepseek")) {
     return (
       <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-        <circle cx="12" cy="12" r="10" fill="#4D6BFE"/>
-        <path d="M8 12a4 4 0 108 0 4 4 0 00-8 0z" stroke="white" strokeWidth="1.5"/>
+        <circle cx="12" cy="12" r="11" fill="#4D6BFE"/>
+        <path d="M10.5 7a4.5 4.5 0 0 1 3.19 7.69l2.81 2.81-.71.71-2.81-2.81A4.5 4.5 0 1 1 10.5 7zm0 1a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="white"/>
       </svg>
     );
   }
