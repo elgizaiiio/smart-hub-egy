@@ -125,6 +125,7 @@ const FilesPage = () => {
     }
   };
 
+  const saveMessage = async (convId: string, role: string, content: string) => {
     await supabase.from("messages").insert({
       conversation_id: convId,
       role,

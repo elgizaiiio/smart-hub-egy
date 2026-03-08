@@ -591,10 +591,7 @@ const CodeWorkspace = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
+                    // Enter creates new line, send only via send button
                   }}
                   placeholder="Ask about your project..."
                   rows={1}
