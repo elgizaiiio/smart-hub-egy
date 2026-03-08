@@ -529,7 +529,7 @@
 }
 
 .landing-marquee-track-reverse {
-  animation: landing-marquee-reverse 30s linear infinite;
+  animation: landing-marquee-reverse 65s linear infinite;
 }
 
 .landing-grid-overlay {
