@@ -169,11 +169,6 @@ const ReferralsPage = () => {
         </div>
       </div>
 
-      {/* Withdraw CTA */}
-      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full">
-        Request Withdrawal
-      </FancyButton>
-
       {/* Tabs */}
       <div className="flex bg-secondary/50 rounded-full p-1">
         {(["referrals", "earnings", "withdrawals"] as const).map(t => (
