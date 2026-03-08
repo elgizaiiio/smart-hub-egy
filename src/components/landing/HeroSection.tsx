@@ -38,21 +38,6 @@ const HeroSection = () => {
           and control across 80+ AI models and professional workflows.
         </motion.p>
 
-        {/* Rating */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.35 }}
-          className="mt-5 flex items-center justify-center gap-2"
-        >
-          <div className="flex gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="h-4 w-4 fill-emerald-400 text-emerald-400" />
-            ))}
-          </div>
-          <span className="text-sm font-bold text-foreground">4.8</span>
-          <span className="text-xs text-muted-foreground">based on 92K Ratings</span>
-        </motion.div>
 
         {/* Buttons */}
         <motion.div
