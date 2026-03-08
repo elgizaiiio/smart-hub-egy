@@ -42,7 +42,7 @@ const StickyFeatureTabs = () => {
   const current = tabs[active];
 
   return (
-    <section id="features" className="bg-background py-20 md:py-28">
+    <section id="features" className="bg-background py-14 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
         {/* Header */}
         <motion.div
