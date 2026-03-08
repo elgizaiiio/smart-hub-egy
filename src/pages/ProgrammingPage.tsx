@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Menu, ArrowUp, Globe, Code2, FolderOpen, ShoppingCart, BarChart3, Smartphone, Gamepad2, Layout, Plus, Sparkles } from "lucide-react";
+import { Menu, ArrowUp, Globe, Code2, FolderOpen, ShoppingCart, BarChart3, Smartphone, Gamepad2, Layout, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
