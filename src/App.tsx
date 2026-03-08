@@ -22,7 +22,7 @@ import CustomizationPage from "./pages/CustomizationPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import BillingPage from "./pages/BillingPage";
 import ReferralsPage from "./pages/ReferralsPage";
-import LegalPage from "./pages/LegalPage";
+
 import LanguagePage from "./pages/LanguagePage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import NotFound from "./pages/NotFound";
@@ -83,8 +83,6 @@ const App = () => {
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/terms" element={<LegalPage />} />
-                <Route path="/privacy" element={<LegalPage />} />
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/share/:shareId" element={<SharedChatPage />} />
                 <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />

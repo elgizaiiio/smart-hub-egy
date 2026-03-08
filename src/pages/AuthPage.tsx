@@ -415,8 +415,8 @@ const AuthPage = () => {
 
         <p className="text-[11px] text-white/30 mt-6">
           By continuing, you agree to our{" "}
-          <span className="underline cursor-pointer" onClick={() => navigate("/terms")}>Terms</span> and{" "}
-          <span className="underline cursor-pointer" onClick={() => navigate("/privacy")}>Privacy Policy</span>
+          <a href="https://terms.megsyai.com" target="_blank" rel="noopener noreferrer" className="underline">Terms</a> and{" "}
+          <a href="https://privacy.megsyai.com" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>
         </p>
       </motion.div>
     </div>
