@@ -2,11 +2,8 @@ import { motion } from "framer-motion";
 
 const galleryItems = [
   { src: "/showcase/model-1.jpg", label: "MEGSY V1", model: "megsy", desc: "Hyper-realistic portraits with cinematic depth" },
-  { src: "/showcase/model-2.jpg", label: "FLUX KONTEXT MAX", model: "flux", desc: "Fashion & product photography with studio lighting" },
-  { src: "/showcase/model-3.jpg", label: "RECRAFT V4", model: "recraft", desc: "Fantasy & cinematic concept art generation" },
-  { src: "/showcase/model-4.jpg", label: "IDEOGRAM 3", model: "ideogram", desc: "Natural portrait photography with film grain" },
-  { src: "/showcase/model-5.jpg", label: "HIDREAM I1", model: "hidream", desc: "Ornate detail & jeweled fantasy illustrations" },
   { src: "/showcase/model-6.jpg", label: "NANO BANANA 2", model: "nano", desc: "Classical painting style with atmospheric lighting" },
+  { src: "/showcase/model-2.jpg", label: "FLUX KONTEXT MAX", model: "flux", desc: "The world's leading AI image editing & generation model" },
 ];
 
 const HorizontalGallery = () => {
