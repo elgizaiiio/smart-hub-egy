@@ -21,8 +21,8 @@ const footerLinks = {
     { label: "Support", href: "mailto:support@megsyai.com" },
   ],
   Legal: [
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "https://terms.megsyai.com" },
+    { label: "Privacy Policy", href: "https://privacy.megsyai.com" },
   ],
 };
 
