@@ -289,5 +289,5 @@ export const getImageModelCapability = (modelId: string): ImageModelCapability =
 export const PUBLISH_PLATFORM_TO_APP: Record<PublishPlatform, string> = {
   facebook: "facebook",
   instagram: "instagram",
-  linkedin: "linkedin",
+  youtube: "youtube",
 };
