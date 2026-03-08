@@ -42,7 +42,7 @@ const StickyFeatureTabs = () => {
   const current = tabs[active];
 
   return (
-    <section id="features" className="bg-background py-20 md:py-28">
+    <section id="features" className="bg-background py-14 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
         {/* Header */}
         <motion.div
@@ -52,18 +52,18 @@ const StickyFeatureTabs = () => {
           transition={{ duration: 0.7 }}
           className="mb-12"
         >
-          <h2 className="font-display text-4xl font-black uppercase tracking-tight text-foreground md:text-6xl">
+          <h2 className="font-display text-3xl font-black uppercase tracking-tight text-foreground md:text-6xl">
             WHAT YOU CAN <span className="text-primary">CREATE</span>
           </h2>
         </motion.div>
 
         {/* Tab buttons */}
-        <div className="mb-8 flex flex-wrap gap-3">
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide md:mb-8 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0">
           {tabs.map((tab, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`relative rounded-full px-5 py-2.5 text-sm font-bold uppercase tracking-wider transition-all duration-300 ${
+              className={`relative shrink-0 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 md:px-5 md:py-2.5 md:text-sm ${
                 i === active
                   ? "bg-foreground text-background"
                   : "border border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground"

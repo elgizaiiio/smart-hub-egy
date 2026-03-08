@@ -6,7 +6,7 @@ const CTASection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative overflow-hidden py-32 md:py-48">
+    <section className="relative overflow-hidden py-20 md:py-48">
       <div className="absolute inset-0 bg-gradient-to-b from-purple-600/10 via-transparent to-transparent" />
       <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-600/8 blur-[200px]" />
 
@@ -16,7 +16,7 @@ const CTASection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1 }}
-          className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]"
+          className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]"
         >
           TRUSTED BY
         </motion.h2>
@@ -25,7 +25,7 @@ const CTASection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1, delay: 0.1 }}
-          className="font-display text-[12vw] font-black uppercase italic leading-[0.85] tracking-tighter md:text-[8vw]"
+          className="font-display text-[10vw] font-black uppercase italic leading-[0.85] tracking-tighter md:text-[8vw]"
         >
           <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
             LEADING CREATORS
@@ -37,7 +37,7 @@ const CTASection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="mx-auto mt-8 max-w-2xl text-xl text-white/40 md:text-2xl"
+          className="mx-auto mt-5 max-w-2xl text-base text-white/40 md:mt-8 md:text-2xl"
         >
           Millions of creators and the world's most innovative teams trust Megsy's AI tools to create with speed, polish, and control.
         </motion.p>
@@ -49,7 +49,7 @@ const CTASection = () => {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mt-12"
         >
-          <FancyButton onClick={() => navigate("/auth")} className="px-12 py-5 text-lg">
+          <FancyButton onClick={() => navigate("/auth")} className="px-8 py-4 text-base md:px-12 md:py-5 md:text-lg">
             Start generating
           </FancyButton>
         </motion.div>

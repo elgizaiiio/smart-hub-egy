@@ -39,7 +39,7 @@ const faqs = [
 
 const FAQSection = () => {
   return (
-    <section id="faq" className="relative overflow-hidden py-28 md:py-40">
+    <section id="faq" className="relative overflow-hidden py-16 md:py-40">
       <div className="mx-auto max-w-5xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 60 }}
@@ -48,7 +48,7 @@ const FAQSection = () => {
           transition={{ duration: 0.9 }}
           className="mb-16 text-center"
         >
-          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
+          <h2 className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
             FA<span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Qs</span>
           </h2>
           <p className="mt-4 text-xl text-white/40">Everything you need to know about Megsy.</p>
@@ -67,7 +67,7 @@ const FAQSection = () => {
                 value={`faq-${i}`}
                 className="rounded-2xl border border-white/10 bg-white/[0.02] px-7 transition-colors hover:bg-white/[0.04] data-[state=open]:border-purple-500/30"
               >
-                <AccordionTrigger className="py-6 text-left text-lg font-bold text-white hover:no-underline">
+                <AccordionTrigger className="py-4 text-left text-base font-bold text-white hover:no-underline md:py-6 md:text-lg">
                   {faq.q}
                 </AccordionTrigger>
                 <AccordionContent className="pb-6 text-base leading-relaxed text-white/50">

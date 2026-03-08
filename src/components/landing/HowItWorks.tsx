@@ -82,7 +82,7 @@ const POINT_CONFIGS = [
 
 const HowItWorks = () => {
   return (
-    <section id="how-it-works" className="relative overflow-hidden py-28 md:py-44">
+    <section id="how-it-works" className="relative overflow-hidden py-16 md:py-44">
       <div className="mx-auto max-w-7xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 80 }}
@@ -91,10 +91,10 @@ const HowItWorks = () => {
           transition={{ duration: 1 }}
           className="mb-20 text-center"
         >
-          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
+          <h2 className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
             GET STARTED
           </h2>
-          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter md:text-[8vw]">
+          <h2 className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter md:text-[8vw]">
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
               WITH MEGSY
             </span>
@@ -104,7 +104,7 @@ const HowItWorks = () => {
           </p>
         </motion.div>
 
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
           {steps.map((step, i) => {
             const Icon = step.icon;
             return (

@@ -74,7 +74,7 @@ const PricingPreview = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="pricing" className="relative overflow-hidden py-28 md:py-40">
+    <section id="pricing" className="relative overflow-hidden py-16 md:py-40">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 60 }}
@@ -83,7 +83,7 @@ const PricingPreview = () => {
           transition={{ duration: 0.9 }}
           className="mb-16 text-center"
         >
-          <h2 className="font-display text-[12vw] font-black uppercase tracking-tighter leading-[0.85] text-white md:text-[8vw]">
+          <h2 className="font-display text-[10vw] font-black uppercase tracking-tighter leading-[0.85] text-white md:text-[8vw]">
             SIMPLE{" "}
             <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">PRICING</span>
           </h2>
@@ -100,7 +100,7 @@ const PricingPreview = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: i * 0.12 }}
-              className={`relative rounded-3xl border p-9 transition-all duration-300 hover:scale-[1.02] ${plan.cardBorder} ${plan.cardBg} ${
+              className={`relative rounded-2xl border p-6 transition-all duration-300 hover:scale-[1.02] md:rounded-3xl md:p-9 ${plan.cardBorder} ${plan.cardBg} ${
                 plan.highlight ? "shadow-xl shadow-purple-500/10" : ""
               }`}
             >
@@ -111,8 +111,8 @@ const PricingPreview = () => {
               )}
 
               <h3 className={`text-lg font-bold ${plan.nameColor}`}>{plan.name}</h3>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-white">
+              <div className="mt-2 flex items-baseline gap-1 md:mt-3">
+                <span className="text-4xl font-black text-white md:text-5xl">
                   ${plan.price}
                 </span>
                 <span className="text-base text-white/40">{plan.period}</span>

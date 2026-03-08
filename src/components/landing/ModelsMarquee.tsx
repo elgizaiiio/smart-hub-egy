@@ -16,7 +16,7 @@ const ModelsMarquee = () => {
   const items = [...services, ...services];
 
   return (
-    <section id="models" className="relative overflow-hidden py-20">
+    <section id="models" className="relative overflow-hidden py-12 md:py-20">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
@@ -31,7 +31,7 @@ const ModelsMarquee = () => {
       </motion.div>
 
       {/* Logos row */}
-      <div className="mx-auto mb-16 flex max-w-5xl items-center justify-center gap-10 px-6 md:gap-20">
+      <div className="mx-auto mb-10 flex max-w-5xl items-center justify-center gap-6 px-6 md:mb-16 md:gap-20">
         {providers.map((name, i) => (
           <motion.span
             key={name}
@@ -54,7 +54,7 @@ const ModelsMarquee = () => {
         transition={{ duration: 0.8 }}
         className="mb-12 px-6 text-center"
       >
-        <h2 className="font-display text-5xl font-black uppercase tracking-tighter text-foreground md:text-8xl">
+        <h2 className="font-display text-3xl font-black uppercase tracking-tighter text-foreground md:text-8xl">
           EVERYTHING YOU{" "}
           <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">NEED</span>
         </h2>

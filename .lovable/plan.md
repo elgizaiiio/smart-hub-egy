@@ -1,58 +1,41 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-## تحسين تصميم صفحة الهبوط للهاتف
+## ✅ Completed
 
-### المشكلة الحالية
-صفحة الهبوط تستخدم responsive classes أساسية لكن بعض الأقسام تحتاج تحسينات مخصصة للموبايل من حيث المسافات وأحجام النصوص وتوزيع العناصر.
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-### التعديلات المطلوبة (بدون تغيير شكل الديسكتوب)
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-**1. HeroSection.tsx**
-- تصغير النصوص على الموبايل وتقليل المسافات العلوية
-- فيديوهات الـ Hero: تقليل عددها على الموبايل لـ 3 فيديوهات فقط (إخفاء الطرفين) لأنها صغيرة جداً
-- تصغير أزرار CTA على الموبايل
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-**2. LandingNavbar.tsx**
-- تحسين القائمة المنبثقة على الموبايل بمسافات أفضل
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-**3. StickyFeatureTabs.tsx**
-- جعل أزرار التابات قابلة للسكرول أفقياً على الموبايل بدلاً من التفاف
-- تحسين مسافات المحتوى والـ preview
-
-**4. HowItWorks.tsx**
-- تحويل الشبكة لـ 2 أعمدة على الموبايل بدلاً من عمود واحد (حالياً تأخذ العرض الكامل)
-- تقليل حجم النصوص العملاقة
-
-**5. PricingPreview.tsx**
-- تحسين بطاقات الأسعار على الموبايل (تصغير padding وأحجام النصوص)
-- سكرول أفقي اختياري للبطاقات
-
-**6. FAQSection.tsx**
-- تصغير حجم العنوان والنصوص على الموبايل
-
-**7. CTASection.tsx**
-- تقليل padding العلوي والسفلي على الموبايل
-
-**8. LandingFooter.tsx**
-- تحسين توزيع الأعمدة والمسافات
-
-**9. CookieConsent (CSS)**
-- جعل إشعار الكوكيز يأخذ عرض الشاشة على الموبايل مع هوامش جانبية
-
-**10. ModelsMarquee.tsx**
-- تصغير أحجام النصوص والمسافات على الموبايل
-
-### الملفات المتأثرة
-- `src/components/landing/HeroSection.tsx`
-- `src/components/landing/StickyFeatureTabs.tsx`
-- `src/components/landing/HowItWorks.tsx`
-- `src/components/landing/PricingPreview.tsx`
-- `src/components/landing/FAQSection.tsx`
-- `src/components/landing/CTASection.tsx`
-- `src/components/landing/LandingFooter.tsx`
-- `src/components/landing/ModelsMarquee.tsx`
-- `src/index.css` (cookie consent mobile styles)
-
-### ملاحظة
-جميع التعديلات ستكون عبر Tailwind responsive classes (بدون `md:` prefix = موبايل، مع `md:` = ديسكتوب) مما يضمن عدم التأثير على تصميم الكمبيوتر.
-
+### 5. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
