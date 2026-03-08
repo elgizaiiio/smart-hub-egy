@@ -543,7 +543,7 @@ const ImagesPage = () => {
         )}
       </div>
 
-      <div className="shrink-0 px-3 pb-3 pt-1">
+      <div className="shrink-0 px-3 pt-1 bg-background" style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}>
         <div className="max-w-3xl mx-auto">
           {attachedImages.length > 0 && (
             <div className="flex items-center gap-2 px-3 pb-2 overflow-x-auto">
