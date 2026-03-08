@@ -373,6 +373,21 @@
 .fancy-btn .point:nth-child(6) { left:75%; opacity:0.5; animation-duration:1.5s; animation-delay:1.5s; }
 .fancy-btn .point:nth-child(7) { left:88%; opacity:0.9; animation-duration:2.2s; animation-delay:0.2s; }
 .fancy-btn .point:nth-child(8) { left:58%; opacity:0.8; animation-duration:2.25s; animation-delay:0.2s; }
+
+/* HowItWorks card particles */
+.hiw-point {
+  position: absolute;
+  bottom: -10px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: hiw-float linear infinite;
+}
+@keyframes hiw-float {
+  0% { transform: translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(-160px); opacity: 0; }
+}
 .fancy-btn .inner {
   z-index: 2;
   gap: 6px;
