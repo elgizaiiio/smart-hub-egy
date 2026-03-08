@@ -12,6 +12,7 @@ interface ChatMessageProps {
   attachedImages?: string[];
   onLike?: (liked: boolean | null) => void;
   liked?: boolean | null;
+  onShare?: () => void;
 }
 
 // Extract domain from URL
