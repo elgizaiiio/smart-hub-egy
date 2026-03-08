@@ -96,6 +96,8 @@ interface TranslationWrapperProps {
 }
 
 const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
+  const appliedLangRef = useRef<string>("en");
+
   // Initialize Google Translate on mount
   useEffect(() => {
     initGoogleTranslate();
