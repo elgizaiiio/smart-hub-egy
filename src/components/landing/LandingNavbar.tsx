@@ -189,61 +189,47 @@ const LandingNavbar = () => {
                 <AnimatePresence>
                   {openDropdown === item.label && (
                     <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="fixed left-1/2 top-16 z-50 mt-1 -translate-x-1/2"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 top-full z-50 pt-2"
                     >
-                      <div
-                        className="flex max-h-[80vh] overflow-auto overscroll-contain gap-0 rounded-2xl border border-white/[0.06] bg-background p-6 shadow-2xl shadow-black/60"
-                        style={{ width: item.featured ? "min(740px, calc(100vw - 2rem))" : "min(600px, calc(100vw - 2rem))" }}
-                      >
-                        {/* Columns */}
-                        <div className="flex flex-1 gap-6">
-                          {item.columns.map((col) => (
-                            <div key={col.title} className="min-w-[200px] flex-1">
-                              <h4 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                                {col.title}
-                              </h4>
-                              <div className="space-y-1">
-                                {col.items.map((sub) => (
-                                  <button
-                                    key={sub.label}
-                                    onClick={() => handleNav(sub.href)}
-                                    className="group flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-primary/[0.06]"
-                                  >
-                                    <div>
-                                      <div className="text-[14px] font-semibold text-foreground/90 group-hover:text-foreground">
-                                        {sub.label}
-                                      </div>
-                                      <div className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground group-hover:text-foreground/50">
-                                        {sub.desc}
-                                      </div>
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Featured card */}
-                        {item.featured && (
-                          <div className="ml-5 flex w-52 flex-col justify-between rounded-2xl bg-gradient-to-br from-primary via-purple-600 to-cyan-500 p-6">
-                            <div className="mb-6 h-20 w-full rounded-xl bg-white/10 backdrop-blur" />
-                            <div>
-                              <p className="text-base font-black leading-snug text-white whitespace-pre-line">
-                                {item.featured.title}
-                              </p>
+                      <div className="min-w-[280px] rounded-xl border border-border/50 bg-popover p-2 shadow-xl">
+                        {item.columns.map((col) => (
+                          <div key={col.title} className="mb-2 last:mb-0">
+                            <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                              {col.title}
+                            </p>
+                            {col.items.map((sub) => (
                               <button
-                                onClick={() => handleNav(item.featured!.href)}
-                                className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/20 px-5 py-2 text-xs font-bold text-white backdrop-blur transition-colors hover:bg-white/30"
+                                key={sub.label}
+                                onClick={() => handleNav(sub.href)}
+                                className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent"
                               >
-                                {item.featured.cta}
-                                <ArrowRight className="h-3.5 w-3.5" />
+                                <div>
+                                  <div className="text-sm font-medium text-foreground">
+                                    {sub.label}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {sub.desc}
+                                  </div>
+                                </div>
                               </button>
-                            </div>
+                            ))}
+                          </div>
+                        ))}
+                        
+                        {item.featured && (
+                          <div className="mt-2 rounded-lg bg-gradient-to-r from-primary/20 to-purple-500/20 p-3">
+                            <p className="text-xs font-bold text-foreground">{item.featured.title.replace('\n', ' ')}</p>
+                            <button
+                              onClick={() => handleNav(item.featured!.href)}
+                              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                            >
+                              {item.featured.cta}
+                              <ArrowRight className="h-3 w-3" />
+                            </button>
                           </div>
                         )}
                       </div>
