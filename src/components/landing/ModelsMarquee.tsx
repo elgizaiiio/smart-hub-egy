@@ -23,11 +23,9 @@ const services = [
 
 const providers = [
   "Google",
-  "OpenAI",
-  "Anthropic",
-  "Stability AI",
-  "Runway",
-  "Meta",
+  "Amazon",
+  "Supabase",
+  "GitHub",
 ];
 
 const ModelsMarquee = () => {
