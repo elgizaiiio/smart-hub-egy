@@ -74,7 +74,7 @@ const PricingPreview = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="pricing" className="relative overflow-hidden py-28 md:py-40">
+    <section id="pricing" className="relative overflow-hidden py-16 md:py-40">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 60 }}
