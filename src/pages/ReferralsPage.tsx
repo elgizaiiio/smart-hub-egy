@@ -237,7 +237,7 @@ const ReferralsPage = () => {
   const mobileContent = (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-lg mx-auto pb-16">
       <div className="rounded-2xl overflow-hidden">
-        <img src={referralHero} alt="Megsy Referral Program" className="w-full h-auto object-cover" />
+        <img src={referralHero} alt="Megsy Referral Program" className="w-full h-auto object-cover" fetchPriority="high" decoding="async" loading="eager" />
       </div>
       <div className="text-center space-y-4">
         <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">
