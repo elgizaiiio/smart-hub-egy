@@ -61,15 +61,41 @@ const MODEL_NAMES: Record<string, string> = {
   "openai/gpt-5": "GPT-5", "x-ai/grok-3": "Grok 3", "deepseek/deepseek-r1": "DeepSeek R1",
 };
 
-// ---- Persistent session helpers ----
+const CATEGORIES = [
+  { key: "images", label: "🖼 Image Models", emoji: "🖼", models: IMAGE_MODELS },
+  { key: "videos", label: "🎬 Video Models", emoji: "🎬", models: VIDEO_MODELS },
+  { key: "chat", label: "💬 Chat Models", emoji: "💬", models: CHAT_MODELS },
+  { key: "code", label: "💻 Code Models", emoji: "💻", models: CODE_MODELS },
+];
+
+const MODELS_PER_PAGE = 6;
+const USERS_PER_PAGE = 8;
+
+const EDITABLE_FIELDS = [
+  { key: "name", label: "📝 Name" },
+  { key: "credits", label: "💰 Credits (MC)" },
+  { key: "description", label: "📄 Description" },
+  { key: "fal_id", label: "🔗 fal.ai ID" },
+  { key: "openrouter_id", label: "🔗 OpenRouter ID" },
+  { key: "provider", label: "🏷 Provider" },
+  { key: "capabilities", label: "⚡ Capabilities" },
+];
+
+const MC_PRESETS = [5, 10, 25, 50, 100, 500];
+
+// ---- Helpers ----
 interface BotSession {
+  // Media upload flow
   page?: "images" | "videos";
   modelIndex?: number;
   models?: string[];
+  // Admin
   adminAction?: string;
   adminModelId?: string;
   adminField?: string;
   adminUserId?: string;
+  adminPage?: number;
+  adminCategory?: string;
 }
 
 async function loadSession(sb: ReturnType<typeof createClient>, chatId: number): Promise<BotSession | null> {
@@ -87,7 +113,7 @@ async function clearSession(sb: ReturnType<typeof createClient>, chatId: number)
   await sb.from("memories").delete().eq("key", `tg_${chatId}`);
 }
 
-async function callTelegram(token: string, method: string, body: Record<string, unknown>) {
+async function tg(token: string, method: string, body: Record<string, unknown>) {
   const resp = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -96,16 +122,29 @@ async function callTelegram(token: string, method: string, body: Record<string, 
   return resp.json();
 }
 
+async function editOrSend(token: string, chatId: number, msgId: number | undefined, text: string, keyboard: unknown[][], parse_mode = "Markdown") {
+  if (msgId) {
+    const res = await tg(token, "editMessageText", {
+      chat_id: chatId, message_id: msgId, text, parse_mode,
+      reply_markup: JSON.stringify({ inline_keyboard: keyboard }),
+    });
+    if (res.ok) return;
+  }
+  await tg(token, "sendMessage", {
+    chat_id: chatId, text, parse_mode,
+    reply_markup: JSON.stringify({ inline_keyboard: keyboard }),
+  });
+}
+
 async function getExistingMedia(sb: ReturnType<typeof createClient>, models: string[]) {
   const { data } = await sb.from("model_media").select("model_id").in("model_id", models);
   return new Set((data || []).map((r: { model_id: string }) => r.model_id));
 }
 
-// ---- Model config helpers (stored in memories table) ----
-async function getModelConfig(sb: ReturnType<typeof createClient>, modelId: string): Promise<Record<string, string> | null> {
+async function getModelConfig(sb: ReturnType<typeof createClient>, modelId: string): Promise<Record<string, string>> {
   const { data } = await sb.from("memories").select("value").eq("key", `model_config_${modelId}`).maybeSingle();
-  if (!data) return null;
-  try { return JSON.parse(data.value); } catch { return null; }
+  if (!data) return {};
+  try { return JSON.parse(data.value); } catch { return {}; }
 }
 
 async function setModelConfig(sb: ReturnType<typeof createClient>, modelId: string, config: Record<string, string>) {
@@ -113,8 +152,36 @@ async function setModelConfig(sb: ReturnType<typeof createClient>, modelId: stri
   await sb.from("memories").insert({ key: `model_config_${modelId}`, value: JSON.stringify(config) });
 }
 
-function isAdmin(_chatId: number): boolean {
-  return true; // All users can access admin panel
+// ---- Build keyboard helpers ----
+function buildModelListKeyboard(models: string[], page: number, categoryKey: string, actionPrefix: string) {
+  const start = page * MODELS_PER_PAGE;
+  const slice = models.slice(start, start + MODELS_PER_PAGE);
+  const totalPages = Math.ceil(models.length / MODELS_PER_PAGE);
+
+  const rows: { text: string; callback_data: string }[][] = [];
+  // 2 models per row
+  for (let i = 0; i < slice.length; i += 2) {
+    const row: { text: string; callback_data: string }[] = [];
+    row.push({ text: MODEL_NAMES[slice[i]] || slice[i], callback_data: `${actionPrefix}_${slice[i]}` });
+    if (slice[i + 1]) {
+      row.push({ text: MODEL_NAMES[slice[i + 1]] || slice[i + 1], callback_data: `${actionPrefix}_${slice[i + 1]}` });
+    }
+    rows.push(row);
+  }
+
+  // Pagination
+  const navRow: { text: string; callback_data: string }[] = [];
+  if (page > 0) navRow.push({ text: "◀️ Prev", callback_data: `nav_${actionPrefix}_${categoryKey}_${page - 1}` });
+  navRow.push({ text: `${page + 1}/${totalPages}`, callback_data: "noop" });
+  if (page < totalPages - 1) navRow.push({ text: "Next ▶️", callback_data: `nav_${actionPrefix}_${categoryKey}_${page + 1}` });
+  rows.push(navRow);
+
+  rows.push([{ text: "🔙 Back", callback_data: `back_${actionPrefix}_cats` }]);
+  return rows;
+}
+
+function buildCategoryKeyboard(actionPrefix: string) {
+  return CATEGORIES.map(c => [{ text: `${c.emoji} ${c.label.split(" ").slice(1).join(" ")} (${c.models.length})`, callback_data: `cat_${actionPrefix}_${c.key}` }]);
 }
 
 serve(async (req) => {
@@ -132,12 +199,56 @@ serve(async (req) => {
     const message = update.message;
     const callback = update.callback_query;
 
+    // ========================
+    //   CALLBACK QUERIES
+    // ========================
     if (callback) {
       const chatId = callback.message.chat.id;
+      const msgId = callback.message.message_id;
       const data = callback.data;
-      await callTelegram(BOT_TOKEN, "answerCallbackQuery", { callback_query_id: callback.id });
+      await tg(BOT_TOKEN, "answerCallbackQuery", { callback_query_id: callback.id });
 
-      // ---- Media upload flow ----
+      // ---- NOOP ----
+      if (data === "noop") return new Response("OK");
+
+      // ---- MAIN MENU ----
+      if (data === "main_menu") {
+        await clearSession(sb, chatId);
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          "🤖 *Megsy Admin Bot*\n\nChoose an action:",
+          [
+            [{ text: "📸 Upload Media", callback_data: "upload_menu" }],
+            [{ text: "🔧 Edit Models", callback_data: "edit_menu" }],
+            [{ text: "👥 Users", callback_data: "users_menu" }],
+            [{ text: "📊 Stats", callback_data: "admin_stats" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      // ==== UPLOAD MEDIA FLOW ====
+      if (data === "upload_menu") {
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          "📤 *Upload Media*\n\nChoose category:",
+          [
+            [{ text: "📸 Image Models", callback_data: "page_images" }, { text: "🎬 Video Models", callback_data: "page_videos" }],
+            [{ text: "📊 Upload Status", callback_data: "upload_status" }],
+            [{ text: "🔙 Main Menu", callback_data: "main_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (data === "upload_status") {
+        const imgExisting = await getExistingMedia(sb, IMAGE_MODELS);
+        const vidExisting = await getExistingMedia(sb, VIDEO_MODELS);
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `📊 *Upload Status*\n\n🖼 Images: ${imgExisting.size}/${IMAGE_MODELS.length} ✅\n🎬 Videos: ${vidExisting.size}/${VIDEO_MODELS.length} ✅`,
+          [[{ text: "🔙 Upload Menu", callback_data: "upload_menu" }]]
+        );
+        return new Response("OK");
+      }
+
       if (data === "page_images" || data === "page_videos") {
         const page = data === "page_images" ? "images" : "videos";
         const allModels = page === "images" ? IMAGE_MODELS : VIDEO_MODELS;
@@ -145,7 +256,10 @@ serve(async (req) => {
         const remaining = allModels.filter(m => !existing.has(m));
 
         if (remaining.length === 0) {
-          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `All ${page} models already have media!` });
+          await editOrSend(BOT_TOKEN, chatId, msgId,
+            `✅ All ${page} models already have media!`,
+            [[{ text: "🔙 Upload Menu", callback_data: "upload_menu" }]]
+          );
           return new Response("OK");
         }
 
@@ -154,167 +268,362 @@ serve(async (req) => {
         const modelId = remaining[0];
         const modelName = MODEL_NAMES[modelId] || modelId;
 
-        await callTelegram(BOT_TOKEN, "sendMessage", {
+        await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `*${page === "images" ? "Image" : "Video"} Models*\nRemaining: *${remaining.length}*\n\nModel: *${modelName}*\nID: \`${modelId}\`\n\nSend ${page === "images" ? "an image" : "a video"}:`,
+          text: `*${page === "images" ? "📸 Image" : "🎬 Video"} Upload*\nRemaining: *${remaining.length}*\n\n🎯 Model: *${modelName}*\n\`${modelId}\`\n\nSend ${page === "images" ? "an image" : "a video"}:`,
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
+          reply_markup: JSON.stringify({
+            inline_keyboard: [
+              [{ text: "⏭ Skip", callback_data: "skip_model" }, { text: "❌ Cancel", callback_data: "upload_menu" }],
+            ],
+          }),
         });
         return new Response("OK");
       }
 
       if (data === "skip_model") {
         const session = await loadSession(sb, chatId);
-        if (!session || !session.models) {
-          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "No active session. Press /start" });
+        if (!session?.models) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "No active session. Use /start" });
           return new Response("OK");
         }
         session.modelIndex = (session.modelIndex || 0) + 1;
         if (session.modelIndex >= session.models.length) {
-          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "All models done!" });
           await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: "✅ All models done!",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Upload Menu", callback_data: "upload_menu" }]] }),
+          });
           return new Response("OK");
         }
         await saveSession(sb, chatId, session);
         const modelId = session.models[session.modelIndex];
-        const modelName = MODEL_NAMES[modelId] || modelId;
         const remaining = session.models.length - session.modelIndex;
-        await callTelegram(BOT_TOKEN, "sendMessage", {
+        await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `Skipped.\n\nRemaining: *${remaining}*\n\nModel: *${modelName}*\nID: \`${modelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
-        });
-        return new Response("OK");
-      }
-
-      if (data === "status") {
-        const imgExisting = await getExistingMedia(sb, IMAGE_MODELS);
-        const vidExisting = await getExistingMedia(sb, VIDEO_MODELS);
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: `*Status*\n\nImages: ${imgExisting.size}/${IMAGE_MODELS.length}\nVideos: ${vidExisting.size}/${VIDEO_MODELS.length}`,
-          parse_mode: "Markdown",
-        });
-        return new Response("OK");
-      }
-
-      // ---- Admin callbacks ----
-      if (data === "admin_panel" && isAdmin(chatId)) {
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: "🔧 *Admin Panel*\n\nChoose an action:",
+          text: `⏭ Skipped.\n\nRemaining: *${remaining}*\n\n🎯 Model: *${MODEL_NAMES[modelId] || modelId}*\n\`${modelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({
-            inline_keyboard: [
-              [{ text: "📋 List Models", callback_data: "admin_list_models" }],
-              [{ text: "✏️ Edit Model", callback_data: "admin_edit_model" }],
-              [{ text: "👥 User Credits", callback_data: "admin_users" }],
-              [{ text: "📊 System Stats", callback_data: "admin_stats" }],
-              [{ text: "🔙 Back", callback_data: "back_main" }],
-            ],
+            inline_keyboard: [[{ text: "⏭ Skip", callback_data: "skip_model" }, { text: "❌ Cancel", callback_data: "upload_menu" }]],
           }),
         });
         return new Response("OK");
       }
 
-      if (data === "back_main") {
-        await clearSession(sb, chatId);
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: "*Megsy Admin Bot*\n\nChoose an action:",
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [
-              [{ text: "📸 Image Models", callback_data: "page_images" }, { text: "🎬 Video Models", callback_data: "page_videos" }],
-              [{ text: "📊 Status", callback_data: "status" }],
-              ...(isAdmin(chatId) ? [[{ text: "🔧 Admin Panel", callback_data: "admin_panel" }]] : []),
-            ],
-          }),
-        });
+      // ==== EDIT MODELS ====
+      if (data === "edit_menu") {
+        const cats = buildCategoryKeyboard("edit");
+        cats.push([{ text: "🔙 Main Menu", callback_data: "main_menu" }]);
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          "✏️ *Edit Models*\n\nChoose a category:",
+          cats
+        );
         return new Response("OK");
       }
 
-      if (data === "admin_list_models" && isAdmin(chatId)) {
-        const categories = [
-          { label: "🖼 Image Models", models: IMAGE_MODELS },
-          { label: "🎬 Video Models", models: VIDEO_MODELS },
-          { label: "💬 Chat Models", models: CHAT_MODELS },
-          { label: "💻 Code Models", models: CODE_MODELS },
-        ];
-        let text = "*All Models*\n\n";
-        for (const cat of categories) {
-          text += `*${cat.label}* (${cat.models.length})\n`;
-          for (const m of cat.models.slice(0, 15)) {
-            const config = await getModelConfig(sb, m);
-            const name = config?.name || MODEL_NAMES[m] || m;
-            const provider = config?.provider || "default";
-            const credits = config?.credits || "—";
-            text += `• \`${m}\` → ${name} [${credits} MC] (${provider})\n`;
+      // Category selected for editing
+      if (data.startsWith("cat_edit_")) {
+        const catKey = data.replace("cat_edit_", "");
+        const cat = CATEGORIES.find(c => c.key === catKey);
+        if (!cat) return new Response("OK");
+
+        const kb = buildModelListKeyboard(cat.models, 0, catKey, "emod");
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `✏️ *${cat.label}*\n\nSelect a model to edit:`,
+          kb
+        );
+        return new Response("OK");
+      }
+
+      // Navigation for edit model list
+      if (data.startsWith("nav_emod_")) {
+        const parts = data.replace("nav_emod_", "").split("_");
+        const catKey = parts[0];
+        const page = parseInt(parts[1]) || 0;
+        const cat = CATEGORIES.find(c => c.key === catKey);
+        if (!cat) return new Response("OK");
+
+        const kb = buildModelListKeyboard(cat.models, page, catKey, "emod");
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `✏️ *${cat.label}* — Page ${page + 1}`,
+          kb
+        );
+        return new Response("OK");
+      }
+
+      if (data === "back_emod_cats") {
+        const cats = buildCategoryKeyboard("edit");
+        cats.push([{ text: "🔙 Main Menu", callback_data: "main_menu" }]);
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          "✏️ *Edit Models*\n\nChoose a category:",
+          cats
+        );
+        return new Response("OK");
+      }
+
+      // Model selected for editing
+      if (data.startsWith("emod_")) {
+        const modelId = data.replace("emod_", "");
+        const config = await getModelConfig(sb, modelId);
+        const name = config.name || MODEL_NAMES[modelId] || modelId;
+
+        await saveSession(sb, chatId, { adminAction: "editing_model", adminModelId: modelId });
+
+        const fieldRows = [];
+        for (let i = 0; i < EDITABLE_FIELDS.length; i += 2) {
+          const row: { text: string; callback_data: string }[] = [];
+          const f1 = EDITABLE_FIELDS[i];
+          const val1 = config[f1.key] || "—";
+          row.push({ text: `${f1.label}: ${val1.length > 12 ? val1.slice(0, 12) + "…" : val1}`, callback_data: `efield_${f1.key}` });
+          if (EDITABLE_FIELDS[i + 1]) {
+            const f2 = EDITABLE_FIELDS[i + 1];
+            const val2 = config[f2.key] || "—";
+            row.push({ text: `${f2.label}: ${val2.length > 12 ? val2.slice(0, 12) + "…" : val2}`, callback_data: `efield_${f2.key}` });
           }
-          if (cat.models.length > 15) text += `  ... +${cat.models.length - 15} more\n`;
-          text += "\n";
+          fieldRows.push(row);
         }
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId, text, parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Admin", callback_data: "admin_panel" }]] }),
-        });
+        fieldRows.push([{ text: "🗑 Reset Config", callback_data: `reset_config_${modelId}` }]);
+        fieldRows.push([{ text: "🔙 Back to List", callback_data: "edit_menu" }]);
+
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `🔧 *${name}*\n📌 ID: \`${modelId}\`\n\n` +
+          EDITABLE_FIELDS.map(f => `${f.label}: \`${config[f.key] || "default"}\``).join("\n") +
+          "\n\nTap a field to edit:",
+          fieldRows
+        );
         return new Response("OK");
       }
 
-      if (data === "admin_edit_model" && isAdmin(chatId)) {
-        await saveSession(sb, chatId, { adminAction: "awaiting_model_id" });
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: "✏️ *Edit Model*\n\nSend the model ID you want to edit.\nExample: `megsy-v1-img` or `openai/gpt-5`",
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Cancel", callback_data: "admin_panel" }]] }),
-        });
-        return new Response("OK");
-      }
-
-      if (data?.startsWith("edit_field_") && isAdmin(chatId)) {
-        const field = data.replace("edit_field_", "");
+      // Field selected for editing
+      if (data.startsWith("efield_")) {
+        const field = data.replace("efield_", "");
         const session = await loadSession(sb, chatId);
         if (!session?.adminModelId) return new Response("OK");
 
-        const fieldLabels: Record<string, string> = {
-          name: "Model Name", credits: "MC Cost", description: "Description",
-          provider: "Provider ID (fal/openrouter)", capabilities: "Capabilities",
-          fal_id: "fal.ai Model ID", openrouter_id: "OpenRouter Model ID",
-        };
+        const fieldLabel = EDITABLE_FIELDS.find(f => f.key === field)?.label || field;
 
+        // For credits, show preset buttons
+        if (field === "credits") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
+          const presetRows: { text: string; callback_data: string }[][] = [];
+          const row1: { text: string; callback_data: string }[] = [];
+          const row2: { text: string; callback_data: string }[] = [];
+          MC_PRESETS.forEach((v, i) => {
+            (i < 3 ? row1 : row2).push({ text: `${v} MC`, callback_data: `setval_credits_${v}` });
+          });
+          presetRows.push(row1, row2);
+          presetRows.push([{ text: "✏️ Custom value", callback_data: "custom_credits" }]);
+          presetRows.push([{ text: "🔙 Back", callback_data: `emod_${session.adminModelId}` }]);
+
+          await editOrSend(BOT_TOKEN, chatId, msgId,
+            `💰 *Set MC Cost* for \`${session.adminModelId}\`\n\nChoose a preset or enter custom:`,
+            presetRows
+          );
+          return new Response("OK");
+        }
+
+        // For provider, show preset buttons
+        if (field === "provider") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
+          await editOrSend(BOT_TOKEN, chatId, msgId,
+            `🏷 *Set Provider* for \`${session.adminModelId}\`\n\nChoose provider:`,
+            [
+              [{ text: "fal.ai", callback_data: "setval_provider_fal" }, { text: "OpenRouter", callback_data: "setval_provider_openrouter" }],
+              [{ text: "Internal", callback_data: "setval_provider_internal" }, { text: "Custom", callback_data: "setval_provider_custom" }],
+              [{ text: "🔙 Back", callback_data: `emod_${session.adminModelId}` }],
+            ]
+          );
+          return new Response("OK");
+        }
+
+        // For other fields, ask for text input
         await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: `Enter new *${fieldLabels[field] || field}* for \`${session.adminModelId}\`:`,
-          parse_mode: "Markdown",
-        });
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `${fieldLabel}\n\nEnter new value for \`${session.adminModelId}\`:`,
+          [[{ text: "🔙 Cancel", callback_data: `emod_${session.adminModelId}` }]]
+        );
         return new Response("OK");
       }
 
-      if (data === "admin_users" && isAdmin(chatId)) {
-        await saveSession(sb, chatId, { adminAction: "awaiting_user_email" });
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: "👥 *User Management*\n\nSend user email to look up:",
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Cancel", callback_data: "admin_panel" }]] }),
-        });
+      // Preset value set
+      if (data.startsWith("setval_")) {
+        const parts = data.replace("setval_", "").split("_");
+        const field = parts[0];
+        const value = parts.slice(1).join("_");
+
+        if (value === "custom") {
+          // Ask for text input
+          const session = await loadSession(sb, chatId);
+          if (!session?.adminModelId) return new Response("OK");
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
+          await editOrSend(BOT_TOKEN, chatId, msgId,
+            `✏️ Enter custom *${field}* value for \`${session.adminModelId}\`:`,
+            [[{ text: "🔙 Cancel", callback_data: `emod_${session.adminModelId}` }]]
+          );
+          return new Response("OK");
+        }
+
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+
+        const config = await getModelConfig(sb, session.adminModelId);
+        config[field] = value;
+        await setModelConfig(sb, session.adminModelId, config);
+
+        const name = config.name || MODEL_NAMES[session.adminModelId] || session.adminModelId;
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `✅ *${name}*\n\nUpdated *${field}* → \`${value}\``,
+          [
+            [{ text: "✏️ Edit More", callback_data: `emod_${session.adminModelId}` }],
+            [{ text: "🔙 Edit Menu", callback_data: "edit_menu" }],
+          ]
+        );
+        await saveSession(sb, chatId, { adminAction: "idle" });
         return new Response("OK");
       }
 
-      if (data?.startsWith("user_add_mc_") && isAdmin(chatId)) {
-        const userId = data.replace("user_add_mc_", "");
+      // Reset config
+      if (data.startsWith("reset_config_")) {
+        const modelId = data.replace("reset_config_", "");
+        await sb.from("memories").delete().eq("key", `model_config_${modelId}`);
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `🗑 Config reset for \`${modelId}\``,
+          [
+            [{ text: "✏️ Edit Again", callback_data: `emod_${modelId}` }],
+            [{ text: "🔙 Edit Menu", callback_data: "edit_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      // ==== USERS MANAGEMENT ====
+      if (data === "users_menu") {
+        // Show recent users with pagination
+        await showUsersPage(sb, BOT_TOKEN, chatId, msgId, 0);
+        return new Response("OK");
+      }
+
+      // Users pagination
+      if (data.startsWith("users_page_")) {
+        const page = parseInt(data.replace("users_page_", "")) || 0;
+        await showUsersPage(sb, BOT_TOKEN, chatId, msgId, page);
+        return new Response("OK");
+      }
+
+      // User selected
+      if (data.startsWith("uview_")) {
+        const userId = data.replace("uview_", "");
+        const { data: profile } = await sb.from("profiles").select("*").eq("id", userId).single();
+        if (!profile) {
+          await editOrSend(BOT_TOKEN, chatId, msgId, "❌ User not found.", [[{ text: "🔙 Users", callback_data: "users_menu" }]]);
+          return new Response("OK");
+        }
+
+        await saveSession(sb, chatId, { adminUserId: userId });
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `👤 *${profile.display_name || "User"}*\n\n` +
+          `🆔 \`${profile.id}\`\n` +
+          `💰 MC: *${Number(profile.credits).toFixed(1)}*\n` +
+          `📋 Plan: *${profile.plan}*\n` +
+          `📅 Joined: ${new Date(profile.created_at).toLocaleDateString()}`,
+          [
+            [{ text: "➕ Add MC", callback_data: `uadd_${userId}` }, { text: "➖ Remove MC", callback_data: `usub_${userId}` }],
+            [{ text: "⭐ Set Plan", callback_data: `uplan_${userId}` }],
+            [{ text: "🔙 Users", callback_data: "users_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      // Add MC presets
+      if (data.startsWith("uadd_")) {
+        const userId = data.replace("uadd_", "");
         await saveSession(sb, chatId, { adminAction: "awaiting_mc_amount", adminUserId: userId });
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: "Enter MC amount to add (negative to subtract):",
-        });
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          "➕ *Add MC*\n\nChoose amount:",
+          [
+            [{ text: "+5", callback_data: `mc_add_5_${userId}` }, { text: "+10", callback_data: `mc_add_10_${userId}` }, { text: "+25", callback_data: `mc_add_25_${userId}` }],
+            [{ text: "+50", callback_data: `mc_add_50_${userId}` }, { text: "+100", callback_data: `mc_add_100_${userId}` }, { text: "+500", callback_data: `mc_add_500_${userId}` }],
+            [{ text: "✏️ Custom", callback_data: `mc_custom_add_${userId}` }],
+            [{ text: "🔙 Back", callback_data: `uview_${userId}` }],
+          ]
+        );
         return new Response("OK");
       }
 
-      if (data === "admin_stats" && isAdmin(chatId)) {
+      if (data.startsWith("usub_")) {
+        const userId = data.replace("usub_", "");
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          "➖ *Remove MC*\n\nChoose amount:",
+          [
+            [{ text: "-5", callback_data: `mc_sub_5_${userId}` }, { text: "-10", callback_data: `mc_sub_10_${userId}` }, { text: "-25", callback_data: `mc_sub_25_${userId}` }],
+            [{ text: "-50", callback_data: `mc_sub_50_${userId}` }, { text: "-100", callback_data: `mc_sub_100_${userId}` }],
+            [{ text: "✏️ Custom", callback_data: `mc_custom_sub_${userId}` }],
+            [{ text: "🔙 Back", callback_data: `uview_${userId}` }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      // MC preset applied
+      if (data.startsWith("mc_add_") || data.startsWith("mc_sub_")) {
+        const isAdd = data.startsWith("mc_add_");
+        const rest = data.replace(isAdd ? "mc_add_" : "mc_sub_", "");
+        const idx = rest.indexOf("_");
+        const amount = parseInt(rest.slice(0, idx));
+        const userId = rest.slice(idx + 1);
+        const change = isAdd ? amount : -amount;
+
+        await applyMcChange(sb, BOT_TOKEN, chatId, msgId, userId, change);
+        return new Response("OK");
+      }
+
+      // Custom MC - ask for text input
+      if (data.startsWith("mc_custom_add_") || data.startsWith("mc_custom_sub_")) {
+        const isAdd = data.startsWith("mc_custom_add_");
+        const userId = data.replace(isAdd ? "mc_custom_add_" : "mc_custom_sub_", "");
+        await saveSession(sb, chatId, { adminAction: isAdd ? "awaiting_mc_add" : "awaiting_mc_sub", adminUserId: userId });
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `✏️ Enter ${isAdd ? "amount to add" : "amount to remove"}:`,
+          [[{ text: "🔙 Cancel", callback_data: `uview_${userId}` }]]
+        );
+        return new Response("OK");
+      }
+
+      // Set plan
+      if (data.startsWith("uplan_")) {
+        const userId = data.replace("uplan_", "");
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          "⭐ *Set Plan*\n\nChoose plan:",
+          [
+            [{ text: "Free", callback_data: `setplan_free_${userId}` }, { text: "Starter", callback_data: `setplan_starter_${userId}` }],
+            [{ text: "Pro", callback_data: `setplan_pro_${userId}` }, { text: "Elite", callback_data: `setplan_elite_${userId}` }],
+            [{ text: "🔙 Back", callback_data: `uview_${userId}` }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (data.startsWith("setplan_")) {
+        const rest = data.replace("setplan_", "");
+        const idx = rest.indexOf("_");
+        const plan = rest.slice(0, idx);
+        const userId = rest.slice(idx + 1);
+
+        await sb.from("profiles").update({ plan }).eq("id", userId);
+        const { data: profile } = await sb.from("profiles").select("display_name").eq("id", userId).single();
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `✅ *${profile?.display_name || "User"}* plan set to *${plan}*`,
+          [
+            [{ text: "👤 View User", callback_data: `uview_${userId}` }],
+            [{ text: "🔙 Users", callback_data: "users_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      // ==== STATS ====
+      if (data === "admin_stats") {
         const { count: userCount } = await sb.from("profiles").select("*", { count: "exact", head: true });
         const { count: convCount } = await sb.from("conversations").select("*", { count: "exact", head: true });
         const { count: msgCount } = await sb.from("messages").select("*", { count: "exact", head: true });
@@ -322,104 +631,65 @@ serve(async (req) => {
         const imgMedia = await getExistingMedia(sb, IMAGE_MODELS);
         const vidMedia = await getExistingMedia(sb, VIDEO_MODELS);
 
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: `📊 *System Stats*\n\n` +
-            `👥 Users: ${userCount || 0}\n` +
-            `💬 Conversations: ${convCount || 0}\n` +
-            `📝 Messages: ${msgCount || 0}\n` +
-            `💻 Projects: ${projectCount || 0}\n` +
-            `🖼 Image Media: ${imgMedia.size}/${IMAGE_MODELS.length}\n` +
-            `🎬 Video Media: ${vidMedia.size}/${VIDEO_MODELS.length}`,
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Admin", callback_data: "admin_panel" }]] }),
-        });
+        await editOrSend(BOT_TOKEN, chatId, msgId,
+          `📊 *System Stats*\n\n` +
+          `👥 Users: *${userCount || 0}*\n` +
+          `💬 Conversations: *${convCount || 0}*\n` +
+          `📝 Messages: *${msgCount || 0}*\n` +
+          `💻 Projects: *${projectCount || 0}*\n` +
+          `🖼 Image Media: *${imgMedia.size}/${IMAGE_MODELS.length}*\n` +
+          `🎬 Video Media: *${vidMedia.size}/${VIDEO_MODELS.length}*`,
+          [[{ text: "🔙 Main Menu", callback_data: "main_menu" }]]
+        );
         return new Response("OK");
       }
 
       return new Response("OK");
     }
 
+    // ========================
+    //   TEXT / MEDIA MESSAGES
+    // ========================
     if (message) {
       const chatId = message.chat.id;
       const text = message.text;
 
+      // /start
       if (text === "/start") {
         await clearSession(sb, chatId);
-        await callTelegram(BOT_TOKEN, "sendMessage", {
+        await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: "*Megsy Model Media Bot*\n\nChoose an action:",
+          text: "🤖 *Megsy Admin Bot*\n\nChoose an action:",
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({
             inline_keyboard: [
-              [{ text: "📸 Image Models", callback_data: "page_images" }, { text: "🎬 Video Models", callback_data: "page_videos" }],
-              [{ text: "📊 Status", callback_data: "status" }],
-              ...(isAdmin(chatId) ? [[{ text: "🔧 Admin Panel", callback_data: "admin_panel" }]] : []),
+              [{ text: "📸 Upload Media", callback_data: "upload_menu" }],
+              [{ text: "🔧 Edit Models", callback_data: "edit_menu" }],
+              [{ text: "👥 Users", callback_data: "users_menu" }],
+              [{ text: "📊 Stats", callback_data: "admin_stats" }],
             ],
           }),
         });
         return new Response("OK");
       }
 
-      // ---- Handle admin text input ----
       const session = await loadSession(sb, chatId);
 
-      if (session?.adminAction === "awaiting_model_id" && isAdmin(chatId) && text) {
-        const modelId = text.trim();
-        const allModels = [...IMAGE_MODELS, ...VIDEO_MODELS, ...CHAT_MODELS, ...CODE_MODELS];
-        if (!allModels.includes(modelId)) {
-          await callTelegram(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId,
-            text: `❌ Model \`${modelId}\` not found.\n\nAvailable IDs include: ${allModels.slice(0, 10).map(m => `\`${m}\``).join(", ")}...`,
-            parse_mode: "Markdown",
-          });
-          return new Response("OK");
-        }
-
-        const config = await getModelConfig(sb, modelId) || {};
-        const name = config.name || MODEL_NAMES[modelId] || modelId;
-
-        await saveSession(sb, chatId, { adminAction: "editing_model", adminModelId: modelId });
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: `*Editing: ${name}*\nID: \`${modelId}\`\n\n` +
-            `Name: ${config.name || "default"}\n` +
-            `Credits: ${config.credits || "default"}\n` +
-            `Provider: ${config.provider || "default"}\n` +
-            `fal ID: ${config.fal_id || "—"}\n` +
-            `OpenRouter ID: ${config.openrouter_id || "—"}\n` +
-            `Description: ${config.description || "default"}\n` +
-            `Capabilities: ${config.capabilities || "default"}\n\n` +
-            `Choose what to edit:`,
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [
-              [{ text: "📝 Name", callback_data: "edit_field_name" }, { text: "💰 Credits", callback_data: "edit_field_credits" }],
-              [{ text: "📄 Description", callback_data: "edit_field_description" }],
-              [{ text: "🔗 fal ID", callback_data: "edit_field_fal_id" }, { text: "🔗 OpenRouter ID", callback_data: "edit_field_openrouter_id" }],
-              [{ text: "⚡ Capabilities", callback_data: "edit_field_capabilities" }],
-              [{ text: "🏷 Provider", callback_data: "edit_field_provider" }],
-              [{ text: "🔙 Admin", callback_data: "admin_panel" }],
-            ],
-          }),
-        });
-        return new Response("OK");
-      }
-
-      if (session?.adminAction === "awaiting_field_value" && isAdmin(chatId) && text && session.adminModelId && session.adminField) {
-        const config = await getModelConfig(sb, session.adminModelId) || {};
+      // ---- Handle text input for field values ----
+      if (session?.adminAction === "awaiting_field_value" && text && session.adminModelId && session.adminField) {
+        const config = await getModelConfig(sb, session.adminModelId);
         config[session.adminField] = text.trim();
         await setModelConfig(sb, session.adminModelId, config);
 
         const name = config.name || MODEL_NAMES[session.adminModelId] || session.adminModelId;
-        await callTelegram(BOT_TOKEN, "sendMessage", {
+        await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `✅ Updated *${session.adminField}* for *${name}* to:\n\`${text.trim()}\``,
+          text: `✅ *${name}*\n\nUpdated *${session.adminField}* → \`${text.trim()}\``,
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({
             inline_keyboard: [
-              [{ text: "✏️ Edit More", callback_data: "admin_edit_model" }],
-              [{ text: "🔙 Admin", callback_data: "admin_panel" }],
+              [{ text: "✏️ Edit More", callback_data: `emod_${session.adminModelId}` }],
+              [{ text: "🔙 Edit Menu", callback_data: "edit_menu" }],
             ],
           }),
         });
@@ -427,92 +697,15 @@ serve(async (req) => {
         return new Response("OK");
       }
 
-      if (session?.adminAction === "awaiting_user_email" && isAdmin(chatId) && text) {
-        const email = text.trim().toLowerCase();
-        const { data: profiles } = await sb.from("profiles").select("id, credits, plan, display_name, created_at").limit(5);
-        
-        // We need to search by email in auth - but we can't query auth directly.
-        // Let's search by display_name or just show all matching profiles
-        const { data: allProfiles } = await sb.from("profiles").select("id, credits, plan, display_name, created_at");
-        
-        // Find profile by searching - we'll use a workaround
-        let foundProfile = null;
-        if (allProfiles) {
-          // Try to find by display name containing email prefix
-          const prefix = email.split("@")[0];
-          foundProfile = allProfiles.find(p => 
-            p.display_name?.toLowerCase().includes(prefix) || 
-            p.display_name?.toLowerCase().includes(email)
-          );
-          // If not found, try the first few characters of ID
-          if (!foundProfile && email.length >= 8) {
-            foundProfile = allProfiles.find(p => p.id.startsWith(email));
-          }
-        }
-
-        if (!foundProfile) {
-          // Show recent users instead
-          const recent = (allProfiles || []).slice(0, 10);
-          let text = "❌ User not found by that query.\n\n*Recent Users:*\n";
-          for (const p of recent) {
-            text += `• ${p.display_name || "—"} | ${Number(p.credits).toFixed(0)} MC | ${p.plan}\n  ID: \`${p.id.slice(0, 8)}...\`\n`;
-          }
-          text += "\nTry sending a user ID (first 8+ chars) or display name.";
-          await callTelegram(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId, text, parse_mode: "Markdown",
-            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Admin", callback_data: "admin_panel" }]] }),
-          });
-          return new Response("OK");
-        }
-
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: `👤 *User Found*\n\n` +
-            `Name: ${foundProfile.display_name || "—"}\n` +
-            `ID: \`${foundProfile.id}\`\n` +
-            `MC: ${Number(foundProfile.credits).toFixed(2)}\n` +
-            `Plan: ${foundProfile.plan}\n` +
-            `Joined: ${new Date(foundProfile.created_at).toLocaleDateString()}`,
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [
-              [{ text: "💰 Add/Remove MC", callback_data: `user_add_mc_${foundProfile.id}` }],
-              [{ text: "🔙 Admin", callback_data: "admin_panel" }],
-            ],
-          }),
-        });
-        await saveSession(sb, chatId, { adminAction: "idle" });
-        return new Response("OK");
-      }
-
-      if (session?.adminAction === "awaiting_mc_amount" && isAdmin(chatId) && text && session.adminUserId) {
+      // ---- Handle MC custom amount ----
+      if ((session?.adminAction === "awaiting_mc_add" || session?.adminAction === "awaiting_mc_sub") && text && session.adminUserId) {
         const amount = parseFloat(text.trim());
-        if (isNaN(amount)) {
-          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ Invalid number. Try again:" });
+        if (isNaN(amount) || amount <= 0) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ Enter a valid positive number:" });
           return new Response("OK");
         }
-
-        const { data: profile } = await sb.from("profiles").select("credits, display_name").eq("id", session.adminUserId).single();
-        if (!profile) {
-          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ User not found." });
-          return new Response("OK");
-        }
-
-        const newCredits = Number(profile.credits) + amount;
-        await sb.from("profiles").update({ credits: newCredits }).eq("id", session.adminUserId);
-        await sb.from("credit_transactions").insert({
-          user_id: session.adminUserId,
-          amount: Math.abs(amount),
-          action_type: amount >= 0 ? "admin_add" : "admin_deduct",
-          description: `Admin adjustment: ${amount >= 0 ? "+" : ""}${amount} MC`,
-        });
-
-        await callTelegram(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: `✅ Updated *${profile.display_name || "User"}*\n\nPrevious: ${Number(profile.credits).toFixed(2)} MC\nChange: ${amount >= 0 ? "+" : ""}${amount}\nNew: ${newCredits.toFixed(2)} MC`,
-          parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Admin", callback_data: "admin_panel" }]] }),
-        });
+        const change = session.adminAction === "awaiting_mc_add" ? amount : -amount;
+        await applyMcChange(sb, BOT_TOKEN, chatId, undefined, session.adminUserId, change);
         await saveSession(sb, chatId, { adminAction: "idle" });
         return new Response("OK");
       }
@@ -524,7 +717,7 @@ serve(async (req) => {
         let fileId: string | null = null;
         let mediaType: "image" | "video" = "image";
 
-        if (message.photo && message.photo.length > 0) {
+        if (message.photo?.length > 0) {
           fileId = message.photo[message.photo.length - 1].file_id;
           mediaType = "image";
         } else if (message.video) {
@@ -540,17 +733,17 @@ serve(async (req) => {
         }
 
         if (!fileId) {
-          await callTelegram(BOT_TOKEN, "sendMessage", {
+          await tg(BOT_TOKEN, "sendMessage", {
             chat_id: chatId, text: "Send an image or video only.",
-            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ Skip", callback_data: "skip_model" }, { text: "❌ Cancel", callback_data: "upload_menu" }]] }),
           });
           return new Response("OK");
         }
 
-        const fileInfo = await callTelegram(BOT_TOKEN, "getFile", { file_id: fileId });
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
         const filePath = fileInfo.result?.file_path;
         if (!filePath) {
-          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Failed to download file." });
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Failed to download file." });
           return new Response("OK");
         }
 
@@ -566,7 +759,7 @@ serve(async (req) => {
         });
 
         if (uploadError) {
-          await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `Upload error: ${uploadError.message}` });
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `Upload error: ${uploadError.message}` });
           return new Response("OK");
         }
 
@@ -579,29 +772,33 @@ serve(async (req) => {
         const remaining = session.models.length - session.modelIndex;
 
         if (remaining === 0) {
-          await callTelegram(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId, text: `Uploaded for *${currentModelName}*\n\nAll models done!`, parse_mode: "Markdown",
-            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "📸 Images", callback_data: "page_images" }, { text: "🎬 Videos", callback_data: "page_videos" }]] }),
-          });
           await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ Uploaded for *${currentModelName}*\n\nAll models done!`, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Upload Menu", callback_data: "upload_menu" }]] }),
+          });
           return new Response("OK");
         }
 
         await saveSession(sb, chatId, session);
         const nextModelId = session.models[session.modelIndex];
-        const nextModelName = MODEL_NAMES[nextModelId] || nextModelId;
 
-        await callTelegram(BOT_TOKEN, "sendMessage", {
+        await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `Uploaded for *${currentModelName}*\n\nRemaining: *${remaining}*\n\nNext: *${nextModelName}*\nID: \`${nextModelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
+          text: `✅ *${currentModelName}* done!\n\nRemaining: *${remaining}*\n\n🎯 Next: *${MODEL_NAMES[nextModelId] || nextModelId}*\n\`${nextModelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "Skip", callback_data: "skip_model" }]] }),
+          reply_markup: JSON.stringify({
+            inline_keyboard: [[{ text: "⏭ Skip", callback_data: "skip_model" }, { text: "❌ Cancel", callback_data: "upload_menu" }]],
+          }),
         });
         return new Response("OK");
       }
 
       // Default
-      await callTelegram(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Press /start to begin." });
+      await tg(BOT_TOKEN, "sendMessage", {
+        chat_id: chatId, text: "Press /start to begin.",
+        reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🚀 Start", callback_data: "main_menu" }]] }),
+      });
       return new Response("OK");
     }
 
@@ -613,3 +810,67 @@ serve(async (req) => {
     });
   }
 });
+
+// ---- Helper functions ----
+
+async function showUsersPage(sb: ReturnType<typeof createClient>, token: string, chatId: number, msgId: number | undefined, page: number) {
+  const from = page * USERS_PER_PAGE;
+  const { data: users, count } = await sb.from("profiles")
+    .select("id, display_name, credits, plan, created_at", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, from + USERS_PER_PAGE - 1);
+
+  const total = count || 0;
+  const totalPages = Math.ceil(total / USERS_PER_PAGE) || 1;
+
+  if (!users || users.length === 0) {
+    await editOrSend(token, chatId, msgId, "No users found.", [[{ text: "🔙 Main Menu", callback_data: "main_menu" }]]);
+    return;
+  }
+
+  const rows: { text: string; callback_data: string }[][] = users.map(u => [{
+    text: `${u.display_name || "User"} — ${Number(u.credits).toFixed(0)} MC (${u.plan})`,
+    callback_data: `uview_${u.id}`,
+  }]);
+
+  // Pagination
+  const navRow: { text: string; callback_data: string }[] = [];
+  if (page > 0) navRow.push({ text: "◀️ Prev", callback_data: `users_page_${page - 1}` });
+  navRow.push({ text: `${page + 1}/${totalPages}`, callback_data: "noop" });
+  if (page < totalPages - 1) navRow.push({ text: "Next ▶️", callback_data: `users_page_${page + 1}` });
+  rows.push(navRow);
+  rows.push([{ text: "🔙 Main Menu", callback_data: "main_menu" }]);
+
+  await editOrSend(token, chatId, msgId,
+    `👥 *Users* (${total} total)\n\nSelect a user:`,
+    rows
+  );
+}
+
+async function applyMcChange(sb: ReturnType<typeof createClient>, token: string, chatId: number, msgId: number | undefined, userId: string, change: number) {
+  const { data: profile } = await sb.from("profiles").select("credits, display_name").eq("id", userId).single();
+  if (!profile) {
+    await editOrSend(token, chatId, msgId, "❌ User not found.", [[{ text: "🔙 Users", callback_data: "users_menu" }]]);
+    return;
+  }
+
+  const newCredits = Math.max(0, Number(profile.credits) + change);
+  await sb.from("profiles").update({ credits: newCredits }).eq("id", userId);
+  await sb.from("credit_transactions").insert({
+    user_id: userId,
+    amount: Math.abs(change),
+    action_type: change >= 0 ? "admin_add" : "admin_deduct",
+    description: `Admin: ${change >= 0 ? "+" : ""}${change} MC`,
+  });
+
+  await editOrSend(token, chatId, msgId,
+    `✅ *${profile.display_name || "User"}*\n\n` +
+    `Previous: ${Number(profile.credits).toFixed(1)} MC\n` +
+    `Change: ${change >= 0 ? "+" : ""}${change}\n` +
+    `New: ${newCredits.toFixed(1)} MC`,
+    [
+      [{ text: "👤 View User", callback_data: `uview_${userId}` }],
+      [{ text: "🔙 Users", callback_data: "users_menu" }],
+    ]
+  );
+}
