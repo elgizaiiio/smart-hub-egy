@@ -174,22 +174,6 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
 
-          {showActions && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowActions(false)} />
-              <div className="absolute left-0 top-0 z-50 glass-panel p-1 flex gap-1">
-                <button onClick={() => { handleCopy(); setShowActions(false); }} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent">
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button onClick={() => { onLike?.(true); setShowActions(false); }} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent">
-                  <ThumbsUp className="w-4 h-4" />
-                </button>
-                <button onClick={() => { onLike?.(false); setShowActions(false); }} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent">
-                  <ThumbsDown className="w-4 h-4" />
-                </button>
-              </div>
-            </>
-          )}
         </>
       )}
     </div>
