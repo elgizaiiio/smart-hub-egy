@@ -338,92 +338,89 @@ const ChatPage = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.96 }}
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72 rounded-2xl"
+                      className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64 rounded-2xl"
                     >
                       {/* ATTACH */}
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-2">Attach</p>
-                      <div className="grid grid-cols-3 gap-2 mb-2">
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                            <Camera className="w-4 h-4 text-emerald-500" />
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1.5">Attach</p>
+                      <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                            <Camera className="w-3.5 h-3.5 text-emerald-500" />
                           </div>
-                          <span className="text-[11px] text-foreground font-medium">Camera</span>
+                          <span className="text-[10px] text-foreground font-medium">Camera</span>
                         </button>
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                            <Image className="w-4 h-4 text-blue-500" />
+                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                            <Image className="w-3.5 h-3.5 text-blue-500" />
                           </div>
-                          <span className="text-[11px] text-foreground font-medium">Photos</span>
+                          <span className="text-[10px] text-foreground font-medium">Photos</span>
                         </button>
-                        <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                            <FileUp className="w-4 h-4 text-violet-500" />
+                        <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+                            <FileUp className="w-3.5 h-3.5 text-violet-500" />
                           </div>
-                          <span className="text-[11px] text-foreground font-medium">Files</span>
+                          <span className="text-[10px] text-foreground font-medium">Files</span>
                         </button>
                       </div>
 
                       {/* TOOLS */}
-                      <div className="border-t border-border pt-2 mt-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1">Tools</p>
-                        <button onClick={handleSearchToggle} className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl hover:bg-accent/60 transition-all group">
-                          <div className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
-                            <Globe className="w-4 h-4 text-sky-500" />
+                      <div className="border-t border-border pt-1.5 mt-1">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Tools</p>
+                        <button onClick={handleSearchToggle} className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
+                            <Globe className="w-3.5 h-3.5 text-sky-500" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground font-medium">Web Search</p>
-                            <p className="text-[10px] text-muted-foreground">Search the web for answers</p>
+                            <p className="text-[13px] text-foreground font-medium">Web Search</p>
+                            <p className="text-[10px] text-muted-foreground">Search the web</p>
                           </div>
-                          <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                            <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+                          <div className={`w-8 h-[18px] rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+                            <div className="w-3.5 h-3.5 rounded-full bg-white mx-0.5" />
                           </div>
                         </button>
                       </div>
 
                       {/* MODEL */}
-                      <div className="border-t border-border pt-2 mt-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1.5">Model</p>
+                      <div className="border-t border-border pt-1.5 mt-1">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1">Model</p>
                         <div className="px-1">
                           <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
                         </div>
                       </div>
 
                       {/* MODES */}
-                      <div className="border-t border-border pt-2 mt-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1">Modes</p>
-                        <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all group ${chatMode === "learning" ? "bg-primary/10" : "hover:bg-accent/60"}`}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${chatMode === "learning" ? "bg-primary/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
-                            <GraduationCap className={`w-4 h-4 ${chatMode === "learning" ? "text-primary" : "text-amber-500"}`} />
+                      <div className="border-t border-border pt-1.5 mt-1">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Modes</p>
+                        <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left transition-all group ${chatMode === "learning" ? "bg-primary/10" : "hover:bg-accent/60"}`}>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${chatMode === "learning" ? "bg-primary/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
+                            <GraduationCap className={`w-3.5 h-3.5 ${chatMode === "learning" ? "text-primary" : "text-amber-500"}`} />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm text-foreground font-medium">Learning Mode</p>
-                            <p className="text-[10px] text-muted-foreground">Step-by-step explanations</p>
+                            <p className="text-[13px] text-foreground font-medium">Learning</p>
                           </div>
-                          {chatMode === "learning" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
+                          {chatMode === "learning" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
                         </button>
-                        <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all group ${chatMode === "shopping" ? "bg-primary/10" : "hover:bg-accent/60"}`}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${chatMode === "shopping" ? "bg-primary/20" : "bg-rose-500/10 group-hover:bg-rose-500/20"}`}>
-                            <ShoppingCart className={`w-4 h-4 ${chatMode === "shopping" ? "text-primary" : "text-rose-500"}`} />
+                        <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left transition-all group ${chatMode === "shopping" ? "bg-primary/10" : "hover:bg-accent/60"}`}>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${chatMode === "shopping" ? "bg-primary/20" : "bg-rose-500/10 group-hover:bg-rose-500/20"}`}>
+                            <ShoppingCart className={`w-3.5 h-3.5 ${chatMode === "shopping" ? "text-primary" : "text-rose-500"}`} />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm text-foreground font-medium">Shopping Mode</p>
-                            <p className="text-[10px] text-muted-foreground">Compare & recommend products</p>
+                            <p className="text-[13px] text-foreground font-medium">Shopping</p>
                           </div>
-                          {chatMode === "shopping" && <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
+                          {chatMode === "shopping" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
                         </button>
                       </div>
 
-                      {/* INTEGRATIONS - PRO */}
-                      <div className="border-t border-border pt-2 mt-1">
-                        <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/15 to-yellow-500/15 flex items-center justify-center group-hover:from-amber-500/25 group-hover:to-yellow-500/25 transition-colors">
-                            <Zap className="w-4 h-4 text-amber-500" />
+                      {/* INTEGRATIONS - PREMIUM */}
+                      <div className="border-t border-border pt-1.5 mt-1">
+                        <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400/15 to-amber-600/15 flex items-center justify-center group-hover:from-amber-400/25 group-hover:to-amber-600/25 transition-colors">
+                            <Zap className="w-3.5 h-3.5 text-amber-500" />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm text-foreground font-medium">Integrations</p>
-                            <p className="text-[10px] text-muted-foreground">Connect your apps</p>
+                            <p className="text-[13px] text-foreground font-medium">Integrations</p>
                           </div>
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-500 border border-amber-500/30 font-bold tracking-wide">PRO ✨</span>
+                          <span className="text-[7px] px-1.5 py-[2px] rounded-full bg-gradient-to-r from-amber-400/15 to-amber-600/15 text-amber-400 border border-amber-400/20 font-semibold tracking-widest uppercase">Premium</span>
                         </button>
                       </div>
                     </motion.div>
