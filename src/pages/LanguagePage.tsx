@@ -66,10 +66,7 @@ const LanguagePage = () => {
               className="notranslate w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors duration-150 hover:bg-muted/50"
             >
               <span className="text-sm font-medium text-foreground">{lang.name}</span>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">{lang.native}</span>
-                {isActive && <Check className="w-4 h-4 text-primary flex-shrink-0" strokeWidth={2.5} />}
-              </div>
+              {isActive && <Check className="w-4 h-4 text-primary flex-shrink-0" strokeWidth={2.5} />}
             </button>
           );
         })}
