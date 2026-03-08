@@ -597,10 +597,10 @@ const ImagesPage = () => {
                       </div>
                       <div className="flex-1">
                         <p className="text-[13px] text-foreground font-medium">
-                          {capability.acceptsImages ? "Attach Image" : `${selectedModel.name}`}
+                          {capability.acceptsImages ? "Photos" : `${selectedModel.name}`}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          {capability.acceptsImages ? `Up to ${capability.maxImages} images` : "Text-only model"}
+                          {capability.acceptsImages ? "Choose from gallery" : "Text-only model"}
                         </p>
                       </div>
                     </button>

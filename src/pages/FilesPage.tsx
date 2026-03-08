@@ -398,7 +398,8 @@ const FilesPage = () => {
                           <Image className="w-3.5 h-3.5 text-blue-500" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-[13px] text-foreground font-medium">Image</p>
+                          <p className="text-[13px] text-foreground font-medium">Photos</p>
+                          <p className="text-[10px] text-muted-foreground">Choose from gallery</p>
                         </div>
                       </button>
                       <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
@@ -406,7 +407,8 @@ const FilesPage = () => {
                           <Paperclip className="w-3.5 h-3.5 text-violet-500" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-[13px] text-foreground font-medium">Document</p>
+                          <p className="text-[13px] text-foreground font-medium">Files</p>
+                          <p className="text-[10px] text-muted-foreground">Browse device files</p>
                         </div>
                       </button>
                     </div>
