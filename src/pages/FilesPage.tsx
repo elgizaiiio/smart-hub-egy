@@ -110,7 +110,21 @@ const FilesPage = () => {
     return null;
   };
 
-  const saveMessage = async (convId: string, role: string, content: string) => {
+  const loadOldConversation = async (id: string) => {
+    setConversationId(id);
+    const { data: msgs } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", id)
+      .order("created_at", { ascending: true });
+    if (msgs) {
+      setMessages(msgs.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })));
+    }
+  };
+
     await supabase.from("messages").insert({
       conversation_id: convId,
       role,
