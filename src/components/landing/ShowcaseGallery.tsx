@@ -9,6 +9,9 @@ const categories = [
       { src: "/showcase/img-1.jpg", model: "Megsy V1", type: "image" },
       { src: "/showcase/img-2.jpg", model: "FLUX Kontext Max", type: "image" },
       { src: "/showcase/img-3.jpg", model: "Nano Banana 2", type: "image" },
+      { src: "/showcase/img-4.jpg", model: "Recraft V4", type: "image" },
+      { src: "/showcase/img-5.jpg", model: "Ideogram 3", type: "image" },
+      { src: "/showcase/img-6.jpg", model: "HiDream I1", type: "image" },
     ],
   },
   {
@@ -18,6 +21,9 @@ const categories = [
       { src: "/showcase/vid-1.mp4", model: "Megsy Video", type: "video" },
       { src: "/showcase/vid-2.mp4", model: "Veo 3.1", type: "video" },
       { src: "/showcase/vid-3.mp4", model: "Kling 3.0 Pro", type: "video" },
+      { src: "/showcase/vid-4.mp4", model: "Runway Gen-4", type: "video" },
+      { src: "/showcase/vid-5.mp4", model: "Sora", type: "video" },
+      { src: "/showcase/vid-6.mp4", model: "Pika 2.2", type: "video" },
     ],
   },
 ];
