@@ -29,6 +29,7 @@ import DeleteAccountPage from "./pages/DeleteAccountPage";
 import WithdrawPage from "./pages/WithdrawPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
+import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
 import CookieConsent from "./components/CookieConsent";
 const queryClient = new QueryClient();
 
