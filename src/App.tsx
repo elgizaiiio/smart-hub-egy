@@ -35,6 +35,7 @@ import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SharedChatPage from "./pages/SharedChatPage";
+import ContactPage from "./pages/ContactPage";
 import CookieConsent from "./components/CookieConsent";
 import TranslationWrapper from "./components/TranslationWrapper";
 
