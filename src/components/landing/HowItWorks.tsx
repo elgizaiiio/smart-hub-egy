@@ -114,6 +114,7 @@ const HowItWorks = () => {
                 whileInView={{ opacity: 1, y: 0, scale: 1 }}
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.7, delay: i * 0.1 }}
+                className={i === 4 ? "col-span-2 mx-auto w-1/2 md:col-span-1 md:w-full" : ""}
               >
                 <div
                   className={`group relative h-full overflow-hidden rounded-2xl border ${step.border} ${step.bg} p-6 transition-all duration-300 hover:scale-[1.03] shadow-lg ${step.glowColor} hover:shadow-xl`}
