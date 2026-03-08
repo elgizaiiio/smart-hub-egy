@@ -26,10 +26,11 @@ function triggerTranslate(langCode: string) {
   const trySwitch = () => {
     const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
     if (select) {
+      const { pairs, cleanup } = buildAttributeMirror();
       select.value = gtLang;
       select.dispatchEvent(new Event("change"));
-      // Translate placeholders/titles after Google finishes
-      setTimeout(translateAttributes, 1500);
+      // Copy translated text back to placeholder/title/aria-label
+      setTimeout(() => applyMirroredAttributes(pairs, cleanup), 1800);
       return;
     }
 
@@ -56,57 +57,52 @@ function triggerTranslate(langCode: string) {
   trySwitch();
 }
 
-/**
- * Translate placeholder/title attributes that Google Translate skips.
- * Creates hidden spans with the original text, waits for Google to translate them,
- * then copies the translated text back to the attribute.
- */
-function translateAttributes() {
-  const ATTR_NAMES = ["placeholder", "title", "aria-label"];
-  const container = document.getElementById("gt-attr-mirror");
-  if (container) container.remove();
+type AttrMirrorPair = { el: Element; attr: string; span: HTMLSpanElement };
+
+/** Build hidden mirror nodes so Google can translate input attributes. */
+function buildAttributeMirror() {
+  const ATTR_NAMES = ["placeholder", "title", "aria-label"] as const;
+  const existing = document.getElementById("gt-attr-mirror");
+  if (existing) existing.remove();
 
   const mirror = document.createElement("div");
   mirror.id = "gt-attr-mirror";
   mirror.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;overflow:hidden;height:0;width:0;";
   document.body.appendChild(mirror);
 
-  const pairs: { el: Element; attr: string; span: HTMLSpanElement }[] = [];
-
+  const pairs: AttrMirrorPair[] = [];
   document.querySelectorAll("input, textarea, [title], [aria-label]").forEach((el) => {
-    for (const attr of ATTR_NAMES) {
+    ATTR_NAMES.forEach((attr) => {
       const val = el.getAttribute(attr);
-      if (val && val.trim().length > 0) {
-        // Store original value
-        const dataKey = `data-orig-${attr}`;
-        if (!el.getAttribute(dataKey)) {
-          el.setAttribute(dataKey, val);
-        }
-        const origVal = el.getAttribute(dataKey) || val;
+      if (!val || !val.trim()) return;
 
-        const span = document.createElement("span");
-        span.textContent = origVal;
-        mirror.appendChild(span);
-        pairs.push({ el, attr, span });
+      const dataKey = `data-orig-${attr}`;
+      if (!el.getAttribute(dataKey)) {
+        el.setAttribute(dataKey, val);
       }
-    }
+
+      const span = document.createElement("span");
+      span.textContent = el.getAttribute(dataKey) || val;
+      mirror.appendChild(span);
+      pairs.push({ el, attr, span });
+    });
   });
 
-  if (pairs.length === 0) {
-    mirror.remove();
-    return;
-  }
+  return {
+    pairs,
+    cleanup: () => mirror.remove(),
+  };
+}
 
-  // Wait for Google Translate to translate the mirror spans
-  setTimeout(() => {
-    for (const { el, attr, span } of pairs) {
-      const translated = span.textContent || "";
-      if (translated) {
-        el.setAttribute(attr, translated);
-      }
+/** Copy translated mirror text back into placeholder/title/aria-label. */
+function applyMirroredAttributes(pairs: AttrMirrorPair[], cleanup: () => void) {
+  pairs.forEach(({ el, attr, span }) => {
+    const translated = span.textContent || "";
+    if (translated.trim()) {
+      el.setAttribute(attr, translated);
     }
-    mirror.remove();
-  }, 2000);
+  });
+  cleanup();
 }
 
 function initGoogleTranslate() {
@@ -257,14 +253,49 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     };
   }, []);
 
-  // Re-translate placeholders on SPA route changes
+  // Re-translate dynamic SPA content (new route/content after initial translation)
   useEffect(() => {
-    const lang = localStorage.getItem("language") || "en";
-    if (lang !== "en") {
-      const timer = setTimeout(translateAttributes, 2000);
-      return () => clearTimeout(timer);
-    }
-  });
+    const run = () => {
+      const lang = localStorage.getItem("language") || "en";
+      if (lang !== "en") {
+        triggerTranslate(lang);
+      }
+    };
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRun = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(run, 350);
+    };
+
+    const originalPush = history.pushState;
+    const originalReplace = history.replaceState;
+
+    history.pushState = function (...args) {
+      originalPush.apply(history, args);
+      scheduleRun();
+    };
+
+    history.replaceState = function (...args) {
+      originalReplace.apply(history, args);
+      scheduleRun();
+    };
+
+    window.addEventListener("popstate", scheduleRun);
+    window.addEventListener("hashchange", scheduleRun);
+
+    const contentObserver = new MutationObserver(scheduleRun);
+    contentObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      history.pushState = originalPush;
+      history.replaceState = originalReplace;
+      window.removeEventListener("popstate", scheduleRun);
+      window.removeEventListener("hashchange", scheduleRun);
+      contentObserver.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   return <>{children}</>;
 };
