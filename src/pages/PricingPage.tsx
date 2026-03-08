@@ -16,10 +16,10 @@ const plans = [
     features: [
       "250 MC / month",
       "All chat models",
-      "Image generation (50/month)",
-      "Video generation (5/month)",
+      "Image generation",
+      "Video generation",
       "Code generation + live preview",
-      "Deploy + publish (3 projects)",
+      "Deploy + publish",
       "GitHub sync",
       "File analysis",
       "Standard support",
