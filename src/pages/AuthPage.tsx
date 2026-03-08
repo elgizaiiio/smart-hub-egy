@@ -149,7 +149,8 @@ const AuthPage = () => {
         if (!data?.success) throw new Error(data?.error || "Invalid code");
 
         toast.success("Welcome back!");
-        navigate("/chat");
+        if (redirectUrl) window.location.href = redirectUrl;
+        else navigate("/chat");
       } else {
         // Signup: verify OTP then go to set password
         const { data, error } = await supabase.functions.invoke("otp", {
