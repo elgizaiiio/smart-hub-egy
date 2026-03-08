@@ -563,10 +563,21 @@ Rules:
     }
   };
 
-  const handleRetryPreview = () => {
+  const handleRetryPreview = async () => {
     setPreviewError(false);
-    if (sandbox.previewUrl) {
-      setSandbox(s => ({ ...s, previewUrl: s.previewUrl + "?" + Date.now() }));
+    if (!sandbox.spriteName || !sandbox.previewUrl) return;
+
+    try {
+      await callSandbox({
+        action: "exec",
+        sprite_name: sandbox.spriteName,
+        command: "cd /app && nohup npm run dev > /tmp/dev.log 2>&1 & echo RESTARTED",
+      });
+      await new Promise((r) => setTimeout(r, 2500));
+      setSandbox(s => ({ ...s, previewUrl: `${s.previewUrl}?${Date.now()}` }));
+      toast.success("Preview restarted");
+    } catch {
+      toast.error("Failed to restart preview");
     }
   };
 
