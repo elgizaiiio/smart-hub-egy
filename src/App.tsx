@@ -35,6 +35,7 @@ import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SharedChatPage from "./pages/SharedChatPage";
+import ContactPage from "./pages/ContactPage";
 import CookieConsent from "./components/CookieConsent";
 import TranslationWrapper from "./components/TranslationWrapper";
 
@@ -107,6 +108,7 @@ const App = () => {
                 <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
                 <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/contact" element={<ContactPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
