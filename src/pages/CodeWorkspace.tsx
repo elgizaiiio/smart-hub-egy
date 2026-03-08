@@ -39,9 +39,39 @@ const callSandbox = async (body: Record<string, unknown>) => {
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(err.error || `Sandbox error: ${resp.status}`);
+    throw new Error(err.error || err.message || err.code || `Sandbox error: ${resp.status}`);
   }
   return resp.json();
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const waitForPreviewReady = async (
+  spriteName: string,
+  maxAttempts = 30,
+  intervalMs = 2000,
+  onAttempt?: (attempt: number, maxAttempts: number) => void,
+) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await sleep(intervalMs);
+    onAttempt?.(attempt, maxAttempts);
+
+    try {
+      const healthCheck = await callSandbox({
+        action: "exec",
+        sprite_name: spriteName,
+        command: "cd /app && (curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000 || true)",
+      });
+
+      if (String(healthCheck?.output || "").includes("200")) {
+        return true;
+      }
+    } catch {
+      // Keep polling while sandbox boots
+    }
+  }
+
+  return false;
 };
 
 const callGithub = async (body: Record<string, unknown>) => {
@@ -438,21 +468,23 @@ Rules:
             await writeFilesToSandbox(sb, allFiles);
             updateStep("write", { status: "done" });
 
-            // Step 5: Install
+            // Step 5: Install + start (detached to avoid edge worker CPU limits)
             updateStep("install", { status: "running" });
-            await callSandbox({ action: "exec", sprite_name: sb.spriteName, command: "cd /app && npm install" });
-            updateStep("install", { status: "done" });
-
-            // Step 6: Start
-            updateStep("start", { status: "running" });
-            await callSandbox({ action: "exec", sprite_name: sb.spriteName, command: "cd /app && nohup npm run dev > /tmp/dev.log 2>&1 & echo STARTED" });
-            await new Promise((r) => setTimeout(r, 3500));
-            const healthCheck = await callSandbox({
+            await callSandbox({
               action: "exec",
               sprite_name: sb.spriteName,
-              command: "cd /app && (curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000 || true)",
+              command: "nohup bash -lc 'cd /app && npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo STARTED",
+              detach: true,
             });
-            if (!String(healthCheck?.output || "").includes("200")) {
+            updateStep("install", { status: "done", detail: "Install queued" });
+
+            // Step 6: Wait until preview is actually up
+            updateStep("start", { status: "running", detail: "Waiting for server..." });
+            const isReady = await waitForPreviewReady(sb.spriteName!, 30, 2000, (attempt, max) => {
+              updateStep("start", { detail: `Booting... ${attempt}/${max}` });
+            });
+
+            if (!isReady) {
               const startupLogs = await callSandbox({
                 action: "exec",
                 sprite_name: sb.spriteName,
@@ -460,7 +492,8 @@ Rules:
               });
               throw new Error(`Preview server failed to start: ${String(startupLogs?.output || "").slice(0, 280)}`);
             }
-            updateStep("start", { status: "done" });
+
+            updateStep("start", { status: "done", detail: "Server is live" });
 
             if (savedProjectId) {
               await supabase.from("projects").update({
@@ -571,13 +604,24 @@ Rules:
       await callSandbox({
         action: "exec",
         sprite_name: sandbox.spriteName,
-        command: "cd /app && npm install && nohup npm run dev > /tmp/dev.log 2>&1 & echo RESTARTED",
+        command: "nohup bash -lc 'cd /app && pkill -f \"vite --host 0.0.0.0 --port 3000\" || true; npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo RESTARTED",
+        detach: true,
       });
-      await new Promise((r) => setTimeout(r, 2500));
-      setSandbox(s => ({ ...s, previewUrl: `${s.previewUrl}?${Date.now()}` }));
+
+      const isReady = await waitForPreviewReady(sandbox.spriteName, 25, 2000);
+      if (!isReady) {
+        const restartLogs = await callSandbox({
+          action: "exec",
+          sprite_name: sandbox.spriteName,
+          command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
+        });
+        throw new Error(String(restartLogs?.output || "Preview restart timed out").slice(0, 280));
+      }
+
+      setSandbox((s) => ({ ...s, previewUrl: `${s.previewUrl}?${Date.now()}` }));
       toast.success("Preview restarted");
-    } catch {
-      toast.error("Failed to restart preview");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to restart preview");
     }
   };
 
