@@ -121,7 +121,7 @@ const ReferralsPage = () => {
         </h2>
         <div className="space-y-1">
           <p className="text-base text-muted-foreground">Every subscriber you refer =</p>
-          <p className="text-lg font-semibold text-primary">
+          <p className="text-lg font-semibold" style={{ color: "#FFD700" }}>
             20% every month or every year — Forever
           </p>
         </div>
@@ -170,7 +170,7 @@ const ReferralsPage = () => {
             { step: "3", text: "You earn 20% of every payment, forever" },
           ].map(item => (
             <div key={item.step} className="flex items-center gap-3 py-2.5">
-              <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
+              <span className="w-6 h-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center text-[11px] font-bold text-[#FFD700] shrink-0">
                 {item.step}
               </span>
               <p className="text-sm text-foreground">{item.text}</p>
@@ -212,7 +212,7 @@ const ReferralsPage = () => {
                     <p className="text-sm font-medium text-foreground">User {r.referred_id.substring(0, 8)}...</p>
                     <p className="text-[11px] text-muted-foreground">{formatDate(r.created_at)}</p>
                   </div>
-                  <span className={`text-[11px] font-medium ${r.status === "active" ? "text-primary" : "text-primary"}`} style={r.status === "active" ? { color: "#FFD700" } : {}}>
+                  <span className="text-[11px] font-medium" style={{ color: "#FFD700" }}>
                     {r.status}
                   </span>
                 </div>
@@ -246,10 +246,7 @@ const ReferralsPage = () => {
                     <p className="text-sm font-medium text-foreground">${Number(w.amount).toFixed(2)}</p>
                     <p className="text-[11px] text-muted-foreground">{w.method} — {formatDate(w.created_at)}</p>
                   </div>
-                  <span className={`text-[11px] font-medium ${
-                    w.status === "rejected" ? "text-destructive" :
-                    "text-primary"
-                  }`} style={w.status === "completed" ? { color: "#FFD700" } : {}}>
+                  <span className={`text-[11px] font-medium ${w.status === "rejected" ? "text-destructive" : ""}`} style={w.status !== "rejected" ? { color: "#FFD700" } : {}}>
                     {w.status}
                   </span>
                 </div>
