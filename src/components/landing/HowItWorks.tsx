@@ -1,45 +1,71 @@
 import { motion } from "framer-motion";
+import { UserPlus, Layers, Cpu, Sparkles, Rocket } from "lucide-react";
 
 const steps = [
   {
     number: "01",
     title: "Create Your Account",
-    description: "Sign up in seconds. Get free credits to start exploring all 80+ AI models immediately.",
-    color: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30",
-    numColor: "text-emerald-400",
+    description: "Sign up in seconds and receive free credits to explore all 80+ AI models right away.",
+    bg: "bg-emerald-950/60",
+    border: "border-emerald-500/20 hover:border-emerald-400/40",
+    numColor: "text-emerald-500",
+    titleColor: "text-emerald-100",
+    descColor: "text-emerald-300/60",
     pointColor: "#10b981",
+    glowColor: "shadow-emerald-500/10",
+    icon: UserPlus,
   },
   {
     number: "02",
     title: "Choose Your Tool",
-    description: "Select from AI Chat, Image Generation, Video Creation, Code Building, and 18+ professional image tools.",
-    color: "from-amber-500/20 to-amber-500/5 border-amber-500/30",
-    numColor: "text-amber-400",
+    description: "Pick from Chat, Image Gen, Video Creation, Code Builder, and 18+ pro creative tools.",
+    bg: "bg-amber-950/60",
+    border: "border-amber-500/20 hover:border-amber-400/40",
+    numColor: "text-amber-500",
+    titleColor: "text-amber-100",
+    descColor: "text-amber-300/60",
     pointColor: "#f59e0b",
+    glowColor: "shadow-amber-500/10",
+    icon: Layers,
   },
   {
     number: "03",
     title: "Pick Your Model",
-    description: "Access 80+ AI models including Megsy's flagship models, each optimized for specific creative tasks.",
-    color: "from-rose-500/20 to-rose-500/5 border-rose-500/30",
-    numColor: "text-rose-400",
+    description: "Access 80+ models including Megsy flagships — each fine-tuned for specific creative tasks.",
+    bg: "bg-rose-950/60",
+    border: "border-rose-500/20 hover:border-rose-400/40",
+    numColor: "text-rose-500",
+    titleColor: "text-rose-100",
+    descColor: "text-rose-300/60",
     pointColor: "#f43f5e",
+    glowColor: "shadow-rose-500/10",
+    icon: Cpu,
   },
   {
     number: "04",
     title: "Create & Iterate",
-    description: "Generate, edit, and refine. Use advanced tools to upscale, restyle, and perfect your results.",
-    color: "from-purple-500/20 to-purple-500/5 border-purple-500/30",
-    numColor: "text-purple-400",
+    description: "Generate, edit, and refine your work. Upscale, restyle, and perfect every detail with ease.",
+    bg: "bg-purple-950/60",
+    border: "border-purple-500/20 hover:border-purple-400/40",
+    numColor: "text-purple-500",
+    titleColor: "text-purple-100",
+    descColor: "text-purple-300/60",
     pointColor: "#a855f7",
+    glowColor: "shadow-purple-500/10",
+    icon: Sparkles,
   },
   {
     number: "05",
     title: "Export & Deploy",
-    description: "Download in any format, deploy code projects live, or share directly to social platforms.",
-    color: "from-cyan-500/20 to-cyan-500/5 border-cyan-500/30",
-    numColor: "text-cyan-400",
+    description: "Download in any format, deploy code projects live, or share directly to your platforms.",
+    bg: "bg-cyan-950/60",
+    border: "border-cyan-500/20 hover:border-cyan-400/40",
+    numColor: "text-cyan-500",
+    titleColor: "text-cyan-100",
+    descColor: "text-cyan-300/60",
     pointColor: "#06b6d4",
+    glowColor: "shadow-cyan-500/10",
+    icon: Rocket,
   },
 ];
 
@@ -73,47 +99,55 @@ const HowItWorks = () => {
               WITH MEGSY
             </span>
           </h2>
-          <p className="mx-auto mt-6 max-w-xl text-xl text-white/40">
+          <p className="mx-auto mt-6 max-w-xl text-lg text-white/40 leading-relaxed">
             From signup to deployment in five simple steps.
           </p>
         </motion.div>
 
-        <div className="grid gap-5 md:grid-cols-5">
-          {steps.map((step, i) => (
-            <motion.div
-              key={step.number}
-              initial={{ opacity: 0, y: 80, scale: 0.9 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.7, delay: i * 0.1 }}
-            >
-              <div className={`relative h-full overflow-hidden rounded-3xl border bg-gradient-to-b p-7 transition-transform duration-300 hover:scale-[1.03] ${step.color}`}>
-                {/* Floating particles */}
-                <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                  {POINT_CONFIGS.map((cfg, j) => (
-                    <span
-                      key={j}
-                      className="hiw-point"
-                      style={{
-                        left: cfg.left,
-                        opacity: cfg.opacity,
-                        animationDuration: cfg.duration,
-                        animationDelay: cfg.delay,
-                        backgroundColor: step.pointColor,
-                      }}
-                    />
-                  ))}
+        <div className="grid gap-4 md:grid-cols-5">
+          {steps.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <motion.div
+                key={step.number}
+                initial={{ opacity: 0, y: 80, scale: 0.9 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.7, delay: i * 0.1 }}
+              >
+                <div
+                  className={`group relative h-full overflow-hidden rounded-2xl border ${step.border} ${step.bg} p-6 transition-all duration-300 hover:scale-[1.03] shadow-lg ${step.glowColor} hover:shadow-xl`}
+                >
+                  {/* Floating particles */}
+                  <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-60 group-hover:opacity-100 transition-opacity duration-500">
+                    {POINT_CONFIGS.map((cfg, j) => (
+                      <span
+                        key={j}
+                        className="hiw-point"
+                        style={{
+                          left: cfg.left,
+                          opacity: cfg.opacity,
+                          animationDuration: cfg.duration,
+                          animationDelay: cfg.delay,
+                          backgroundColor: step.pointColor,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="relative z-10 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-4xl font-black leading-none ${step.numColor} opacity-40`}>
+                        {step.number}
+                      </span>
+                      <Icon className={`h-5 w-5 ${step.numColor} opacity-50`} strokeWidth={1.5} />
+                    </div>
+                    <h3 className={`text-base font-bold ${step.titleColor}`}>{step.title}</h3>
+                    <p className={`text-[13px] leading-relaxed ${step.descColor}`}>{step.description}</p>
+                  </div>
                 </div>
-                <div className="relative z-10">
-                  <span className={`text-5xl font-black leading-none ${step.numColor} opacity-60`}>
-                    {step.number}
-                  </span>
-                  <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-white/45">{step.description}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
