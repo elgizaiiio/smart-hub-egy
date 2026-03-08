@@ -125,35 +125,12 @@ const SettingsPage = () => {
             </div>
           </button>
 
-          {/* Quick Actions Grid */}
-          <div className="grid grid-cols-3 gap-2.5 mb-8">
-            {quickActions.map((action, i) => {
-              const Icon = action.icon;
-              return (
-                <motion.button
-                  key={action.label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.05 }}
-                  onClick={() => navigate(action.path)}
-                  className="flex flex-col items-center gap-2 py-4 rounded-2xl hover:bg-muted/40 transition-all active:scale-95"
-                >
-                  <Icon className="w-6 h-6 text-muted-foreground" />
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-foreground">{action.label}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{action.desc}</p>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-
           {/* Referral Fancy Button */}
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.25 }}
-            className="mb-3 flex justify-center"
+            transition={{ delay: 0.15 }}
+            className="mb-4 flex justify-center"
           >
             <button onClick={() => navigate("/settings/referrals")} className="fancy-btn fancy-btn-gold w-full">
               <span className="fold" />
@@ -166,6 +143,29 @@ const SettingsPage = () => {
               </span>
             </button>
           </motion.div>
+
+          {/* Quick Actions Grid */}
+          <div className="grid grid-cols-3 gap-2.5 mb-8">
+            {quickActions.map((action, i) => {
+              const Icon = action.icon;
+              return (
+                <motion.button
+                  key={action.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + i * 0.05 }}
+                  onClick={() => navigate(action.path)}
+                  className="flex flex-col items-center gap-2 py-4 rounded-2xl hover:bg-muted/40 transition-all active:scale-95"
+                >
+                  <Icon className="w-6 h-6 text-muted-foreground" />
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-foreground">{action.label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{action.desc}</p>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
 
           {/* Upgrade Banner — uses FancyButton */}
           {!isPremium && (
