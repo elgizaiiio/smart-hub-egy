@@ -232,7 +232,7 @@ const AuthPage = () => {
     "forgot-password": "We'll send a reset link to your email",
   };
 
-  const OtpInputs = () => (
+  const otpInputsElement = (
     <div className="flex justify-center gap-2.5" onPaste={handleOtpPaste}>
       {otpValues.map((val, i) => (
         <input
