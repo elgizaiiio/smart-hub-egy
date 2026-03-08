@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
+import LandingPage from "./pages/LandingPage";
 import ImagesPage from "./pages/ImagesPage";
 import VideosPage from "./pages/VideosPage";
 import FilesPage from "./pages/FilesPage";
@@ -71,7 +72,8 @@ const App = () => {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/terms" element={<LegalPage />} />
             <Route path="/privacy" element={<LegalPage />} />
-            <Route path="/" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
             <Route path="/images" element={<ProtectedRoute><ImagesPage /></ProtectedRoute>} />
             <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
             <Route path="/files" element={<ProtectedRoute><FilesPage /></ProtectedRoute>} />
