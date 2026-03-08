@@ -4,7 +4,7 @@ import HorizontalGallery from "@/components/landing/HorizontalGallery";
 import StatsMarquee from "@/components/landing/StatsMarquee";
 import StickyFeatureTabs from "@/components/landing/StickyFeatureTabs";
 import ParallaxShowcase from "@/components/landing/ParallaxShowcase";
-import ModelsMarquee from "@/components/landing/ModelsMarquee";
+
 import ShowcaseGallery from "@/components/landing/ShowcaseGallery";
 import HowItWorks from "@/components/landing/HowItWorks";
 import PricingPreview from "@/components/landing/PricingPreview";
@@ -29,7 +29,7 @@ const LandingPage = () => {
 
       <ShowcaseGallery />
 
-      <ModelsMarquee />
+      
 
       <HowItWorks />
 
