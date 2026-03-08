@@ -370,9 +370,9 @@ const ChatPage = () => {
                            <div className="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
                             <Globe className="w-3 h-3 text-sky-500" />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] text-foreground font-medium">Web Search</p>
-                            <p className="text-[10px] text-muted-foreground">Search the web</p>
+                          <div className="flex-1 min-w-0 leading-tight">
+                            <p className="text-[13px] text-foreground font-medium leading-none">Web Search</p>
+                            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Search the web</p>
                           </div>
                           <div className={`w-8 h-[18px] rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
                             <div className="w-3.5 h-3.5 rounded-full bg-white mx-0.5" />
