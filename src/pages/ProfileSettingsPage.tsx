@@ -40,7 +40,8 @@ const ProfileSettingsPage = () => {
         setCredits(Number(profile.credits) || 0);
         setPlan(profile.plan || "free");
         if (profile.display_name) setUserName(profile.display_name);
-        setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
+        const rawUrl = profile.avatar_url || user.user_metadata?.avatar_url || null;
+        setAvatarUrl(rawUrl ? `${rawUrl.split('?')[0]}?t=${Date.now()}` : null);
         setTwoFactorEnabled((profile as any).two_factor_enabled ?? false);
       }
     };
