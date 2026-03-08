@@ -386,6 +386,7 @@ const ChatPage = () => {
             <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
           </div>
         </div>
+        </div>
       </div>
     </AppLayout>
   );
