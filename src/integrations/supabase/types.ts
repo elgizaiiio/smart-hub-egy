@@ -707,6 +707,15 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
+      update_profile_safe: {
+        Args: {
+          p_avatar_url?: string
+          p_display_name?: string
+          p_two_factor_enabled?: boolean
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

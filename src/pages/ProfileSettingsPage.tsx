@@ -62,7 +62,7 @@ const ProfileSettingsPage = () => {
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
       setAvatarUrl(publicUrl);
-      await supabase.from("profiles").update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq("id", userId);
+      await supabase.rpc("update_profile_safe", { p_user_id: userId, p_avatar_url: publicUrl });
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
       toast.success("Profile photo updated");
     } catch (err: any) {
@@ -76,7 +76,7 @@ const ProfileSettingsPage = () => {
   const handleSaveName = async () => {
     if (!nameInput.trim() || !userId) return;
     try {
-      await supabase.from("profiles").update({ display_name: nameInput.trim(), updated_at: new Date().toISOString() }).eq("id", userId);
+      await supabase.rpc("update_profile_safe", { p_user_id: userId, p_display_name: nameInput.trim() });
       await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } });
       setUserName(nameInput.trim());
       setEditingName(false);
@@ -91,7 +91,7 @@ const ProfileSettingsPage = () => {
     setToggling2FA(true);
     try {
       const newVal = !twoFactorEnabled;
-      await supabase.from("profiles").update({ two_factor_enabled: newVal, updated_at: new Date().toISOString() } as any).eq("id", userId);
+      await supabase.rpc("update_profile_safe", { p_user_id: userId, p_two_factor_enabled: newVal });
       setTwoFactorEnabled(newVal);
       toast.success(newVal ? "Two-factor authentication enabled" : "Two-factor authentication disabled");
     } catch {
