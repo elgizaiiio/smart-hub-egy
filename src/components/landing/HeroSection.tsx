@@ -74,7 +74,7 @@ const HeroSection = () => {
       </div>
 
       {/* Floating image cards — Leonardo.ai style spread at bottom */}
-      <div className="relative mt-8 h-[40vh] w-full min-h-[280px] md:h-[45vh]">
+      <div className="relative mt-10 h-[32vh] w-full min-h-[220px] md:h-[38vh]">
         {heroImages.map((img, i) => (
           <motion.div
             key={i}
