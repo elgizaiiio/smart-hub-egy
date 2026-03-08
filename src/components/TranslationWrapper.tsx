@@ -96,20 +96,32 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
   useEffect(() => {
     initGoogleTranslate();
 
-    // Hide Google Translate banner with CSS
     const style = document.createElement("style");
     style.textContent = `
-      .goog-te-banner-frame, .goog-te-balloon-frame { display: none !important; }
-      body { top: 0 !important; }
+      .goog-te-banner-frame, .goog-te-balloon-frame,
+      iframe.goog-te-banner-frame { display: none !important; height: 0 !important; width: 0 !important; visibility: hidden !important; overflow: hidden !important; }
+      body { top: 0 !important; margin-top: 0 !important; position: static !important; }
       .goog-tooltip, .goog-tooltip:hover { display: none !important; }
       .goog-text-highlight { background: none !important; box-shadow: none !important; }
       #google_translate_element { display: none !important; }
-      .skiptranslate { display: none !important; }
-      body { top: 0 !important; position: static !important; }
+      .skiptranslate { display: none !important; height: 0 !important; overflow: hidden !important; }
+      #goog-gt-tt, .goog-te-menu-value { display: none !important; }
     `;
     document.head.appendChild(style);
 
+    // MutationObserver to strip any top/margin-top Google injects on body
+    const observer = new MutationObserver(() => {
+      if (document.body.style.top && document.body.style.top !== "0px") {
+        document.body.style.top = "0px";
+      }
+      if (document.body.style.marginTop && document.body.style.marginTop !== "0px") {
+        document.body.style.marginTop = "0px";
+      }
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ["style"] });
+
     return () => {
+      observer.disconnect();
       document.head.removeChild(style);
     };
   }, []);
