@@ -69,14 +69,22 @@ function translateInputAttributes() {
     return;
   }
 
-  // Google Translate will translate the mirror spans; copy back after delay
-  setTimeout(() => {
-    pairs.forEach(({ el, attr, span }) => {
-      const t = span.textContent?.trim();
-      if (t) el.setAttribute(attr, t);
-    });
-    mirror.remove();
-  }, 2500);
+  // Google Translate will translate the mirror spans; poll until changed then copy back
+  let attempts = 0;
+  const poll = setInterval(() => {
+    attempts++;
+    const hasChanged = pairs.some(
+      ({ el, attr, span }) => span.textContent?.trim() !== (el.getAttribute(`data-orig-${attr}`) || "")
+    );
+    if (hasChanged || attempts >= 15) {
+      clearInterval(poll);
+      pairs.forEach(({ el, attr, span }) => {
+        const t = span.textContent?.trim();
+        if (t) el.setAttribute(attr, t);
+      });
+      mirror.remove();
+    }
+  }, 300);
 }
 
 /* ── Core trigger (one-shot) ───────────────────────────────── */
