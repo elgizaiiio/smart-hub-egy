@@ -17,6 +17,19 @@ import CTASection from "@/components/landing/CTASection";
 import LandingFooter from "@/components/landing/LandingFooter";
 
 const LandingPage = () => {
+  const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/chat", { replace: true });
+      } else {
+        setReady(true);
+      }
+    });
+  }, [navigate]);
+
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.8,
