@@ -167,22 +167,38 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
 
   // Listen for language changes
   useEffect(() => {
-    const handleLangChange = () => {
-      const lang = localStorage.getItem("language") || "en";
-
-      // RTL support
+    const applyLanguage = (lang: string) => {
       const isRtl = RTL_LANGUAGES.includes(lang);
       document.documentElement.dir = isRtl ? "rtl" : "ltr";
       document.documentElement.lang = lang;
 
+      // Avoid repeated translate triggers for the same language
+      if (appliedLangRef.current === lang) {
+        return;
+      }
+      appliedLangRef.current = lang;
       triggerTranslate(lang);
     };
 
+    const handleLangChange = () => {
+      const lang = localStorage.getItem("language") || "en";
+      applyLanguage(lang);
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key && event.key !== "language") return;
+      const lang = event.newValue || localStorage.getItem("language") || "en";
+      applyLanguage(lang);
+    };
+
+    // Sync initial document lang/dir without forcing translate again
+    handleLangChange();
+
     window.addEventListener("languagechange-custom", handleLangChange);
-    window.addEventListener("storage", handleLangChange);
+    window.addEventListener("storage", handleStorageChange);
     return () => {
       window.removeEventListener("languagechange-custom", handleLangChange);
-      window.removeEventListener("storage", handleLangChange);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
 
