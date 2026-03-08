@@ -259,7 +259,7 @@ const ChatPage = () => {
           ) : (
             <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
               {messages.map((msg, i) => (
-                <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} />
+                <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} onShare={msg.role === "assistant" && conversationId ? handleShare : undefined} />
               ))}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
                 <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
