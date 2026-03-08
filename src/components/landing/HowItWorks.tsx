@@ -7,6 +7,7 @@ const steps = [
     description: "Sign up in seconds. Get free credits to start exploring all 80+ AI models immediately.",
     color: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30",
     numColor: "text-emerald-400",
+    pointColor: "#10b981",
   },
   {
     number: "02",
@@ -14,6 +15,7 @@ const steps = [
     description: "Select from AI Chat, Image Generation, Video Creation, Code Building, and 18+ professional image tools.",
     color: "from-amber-500/20 to-amber-500/5 border-amber-500/30",
     numColor: "text-amber-400",
+    pointColor: "#f59e0b",
   },
   {
     number: "03",
@@ -21,6 +23,7 @@ const steps = [
     description: "Access 80+ AI models including Megsy's flagship models, each optimized for specific creative tasks.",
     color: "from-rose-500/20 to-rose-500/5 border-rose-500/30",
     numColor: "text-rose-400",
+    pointColor: "#f43f5e",
   },
   {
     number: "04",
@@ -28,6 +31,7 @@ const steps = [
     description: "Generate, edit, and refine. Use advanced tools to upscale, restyle, and perfect your results.",
     color: "from-purple-500/20 to-purple-500/5 border-purple-500/30",
     numColor: "text-purple-400",
+    pointColor: "#a855f7",
   },
   {
     number: "05",
@@ -35,7 +39,19 @@ const steps = [
     description: "Download in any format, deploy code projects live, or share directly to social platforms.",
     color: "from-cyan-500/20 to-cyan-500/5 border-cyan-500/30",
     numColor: "text-cyan-400",
+    pointColor: "#06b6d4",
   },
+];
+
+const POINT_CONFIGS = [
+  { left: "10%", opacity: 1, duration: "2.35s", delay: "0.2s" },
+  { left: "30%", opacity: 0.7, duration: "2.5s", delay: "0.5s" },
+  { left: "25%", opacity: 0.8, duration: "2.2s", delay: "0.1s" },
+  { left: "44%", opacity: 0.6, duration: "2.05s", delay: "0s" },
+  { left: "50%", opacity: 1, duration: "1.9s", delay: "0s" },
+  { left: "75%", opacity: 0.5, duration: "1.5s", delay: "1.5s" },
+  { left: "88%", opacity: 0.9, duration: "2.2s", delay: "0.2s" },
+  { left: "58%", opacity: 0.8, duration: "2.25s", delay: "0.2s" },
 ];
 
 const HowItWorks = () => {
@@ -71,20 +87,30 @@ const HowItWorks = () => {
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.7, delay: i * 0.1 }}
             >
-              <div className={`fancy-btn h-full !rounded-3xl !cursor-default !p-7 ${step.color}`} style={{ height: "100%" }}>
-                <span className="fold" />
-                <div className="points_wrapper">
-                  {Array.from({ length: 8 }).map((_, j) => (
-                    <span key={j} className="point" />
+              <div className={`relative h-full overflow-hidden rounded-3xl border bg-gradient-to-b p-7 transition-transform duration-300 hover:scale-[1.03] ${step.color}`}>
+                {/* Floating particles */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                  {POINT_CONFIGS.map((cfg, j) => (
+                    <span
+                      key={j}
+                      className="hiw-point"
+                      style={{
+                        left: cfg.left,
+                        opacity: cfg.opacity,
+                        animationDuration: cfg.duration,
+                        animationDelay: cfg.delay,
+                        backgroundColor: step.pointColor,
+                      }}
+                    />
                   ))}
                 </div>
-                <span className="inner !flex !flex-col !items-start !text-left">
+                <div className="relative z-10">
                   <span className={`text-5xl font-black leading-none ${step.numColor} opacity-60`}>
                     {step.number}
                   </span>
                   <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
                   <p className="text-sm leading-relaxed text-white/45">{step.description}</p>
-                </span>
+                </div>
               </div>
             </motion.div>
           ))}
