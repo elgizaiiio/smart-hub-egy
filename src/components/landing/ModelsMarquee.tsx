@@ -81,11 +81,8 @@ const ModelsMarquee = () => {
             {items.map((s, i) => (
               <span
                 key={i}
-                className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-bold uppercase tracking-wider ${
-                  s.highlight ? "text-primary" : "text-muted-foreground/60"
-                }`}
+                className="inline-flex whitespace-nowrap px-4 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground/60"
               >
-                {s.highlight && <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
                 {s.name}
               </span>
             ))}
