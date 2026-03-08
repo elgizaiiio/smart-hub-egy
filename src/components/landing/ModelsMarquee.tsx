@@ -54,7 +54,7 @@ const ModelsMarquee = () => {
         transition={{ duration: 0.8 }}
         className="mb-12 px-6 text-center"
       >
-        <h2 className="font-display text-5xl font-black uppercase tracking-tighter text-foreground md:text-8xl">
+        <h2 className="font-display text-3xl font-black uppercase tracking-tighter text-foreground md:text-8xl">
           EVERYTHING YOU{" "}
           <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">NEED</span>
         </h2>
