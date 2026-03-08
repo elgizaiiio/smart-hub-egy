@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, Share2, ArrowDown } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,43 +46,11 @@ const ChatPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        supabase.from("profiles").select("display_name").eq("id", data.user.id).single().then(({ data: p }) => {
-          if (p?.display_name) setUserName(p.display_name);
-        });
-      }
-    });
-  }, []);
-
-  const handleScroll = useCallback(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setShowScrollBtn(distFromBottom > 200);
-  }, []);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    const name = userName ? `, ${userName}` : "";
-    if (hour < 12) return `صباح الخير${name} ☀️`;
-    if (hour < 18) return `مساء الخير${name} 👋`;
-    return `مساء الخير${name} 🌙`;
-  };
 
   const createOrUpdateConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
@@ -98,10 +66,6 @@ const ChatPage = () => {
 
   const handleLike = async (index: number, liked: boolean | null) => {
     setMessages((prev) => prev.map((m, i) => i === index ? { ...m, liked } : m));
-    const msg = messages[index];
-    if (msg?.id) {
-      await supabase.from("messages").update({ liked }).eq("id", msg.id);
-    }
   };
 
   const loadConversation = async (id: string) => {
@@ -270,11 +234,11 @@ const ChatPage = () => {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
+        <div className="flex-1 overflow-y-auto min-h-0">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-lg">
-                <h2 className="font-display text-2xl md:text-4xl font-bold mb-3 text-foreground">{getGreeting()}</h2>
+                <h2 className="font-display text-2xl md:text-4xl font-bold mb-3 text-foreground">Hey, what's up?</h2>
                 <p className="hidden md:block text-muted-foreground text-sm mb-6">Ask me anything -- I'm here to help with chat, code, images, and more.</p>
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
                   {[{ label: "Images", path: "/images" }, { label: "Videos", path: "/videos" }, { label: "Files", path: "/files" }, { label: "Code", path: "/code" }].map((item) => (
@@ -297,19 +261,6 @@ const ChatPage = () => {
               <div ref={messagesEndRef} />
             </div>
           )}
-          <AnimatePresence>
-            {showScrollBtn && messages.length > 0 && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                onClick={scrollToBottom}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-9 h-9 rounded-full bg-secondary border border-border flex items-center justify-center shadow-lg hover:bg-accent transition-colors"
-              >
-                <ArrowDown className="w-4 h-4 text-foreground" />
-              </motion.button>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* Input */}
