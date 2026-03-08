@@ -180,7 +180,7 @@ const ReferralsPage = () => {
       </div>
 
       {/* Withdraw CTA */}
-      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full">
+      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full fancy-btn-gold">
         Request Withdrawal
       </FancyButton>
 
@@ -212,7 +212,7 @@ const ReferralsPage = () => {
                     <p className="text-sm font-medium text-foreground">User {r.referred_id.substring(0, 8)}...</p>
                     <p className="text-[11px] text-muted-foreground">{formatDate(r.created_at)}</p>
                   </div>
-                  <span className={`text-[11px] font-medium ${r.status === "active" ? "text-green-500" : "text-primary"}`}>
+                  <span className={`text-[11px] font-medium ${r.status === "active" ? "text-primary" : "text-primary"}`} style={r.status === "active" ? { color: "#FFD700" } : {}}>
                     {r.status}
                   </span>
                 </div>
@@ -247,10 +247,9 @@ const ReferralsPage = () => {
                     <p className="text-[11px] text-muted-foreground">{w.method} — {formatDate(w.created_at)}</p>
                   </div>
                   <span className={`text-[11px] font-medium ${
-                    w.status === "completed" ? "text-green-500" :
                     w.status === "rejected" ? "text-destructive" :
                     "text-primary"
-                  }`}>
+                  }`} style={w.status === "completed" ? { color: "#FFD700" } : {}}>
                     {w.status}
                   </span>
                 </div>
