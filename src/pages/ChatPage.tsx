@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, Globe, Puzzle, Search } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
-import { getDefaultModel, getModelsForMode, ModelBrandIcon, type ModelOption } from "@/components/ModelSelector";
+import ModelSelector, { getDefaultModel, type ModelOption } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
 import { streamChat } from "@/lib/streamChat";
@@ -45,7 +45,6 @@ const ChatPage = () => {
   const [searchStatus, setSearchStatus] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -106,24 +105,6 @@ const ChatPage = () => {
   const handleSearchToggle = () => {
     setSearchEnabled(!searchEnabled);
     if (!searchEnabled) setChatMode("normal");
-    setPlusMenuOpen(false);
-  };
-
-  const handleOpenFilesPicker = () => {
-    const input = fileInputRef.current;
-    if (!input) return;
-
-    try {
-      const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
-      if (typeof pickerInput.showPicker === "function") {
-        pickerInput.showPicker();
-      } else {
-        input.click();
-      }
-    } catch {
-      input.click();
-    }
-
     setPlusMenuOpen(false);
   };
 
@@ -195,27 +176,16 @@ const ChatPage = () => {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const isTextFile =
-      file.type.startsWith("text/") ||
-      /\.(txt|md|csv|json|js|ts|py|html|css|xml|yml|yaml|log)$/i.test(file.name);
-
+    const file = e.target.files?.[0]; if (!file) return;
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
       reader.readAsDataURL(file);
-    } else if (isTextFile) {
+    } else {
       const text = await file.text();
       setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: text.slice(0, 5000) }]);
       setInput((prev) => prev + `\n\nFile (${file.name}):\n${text.slice(0, 5000)}`);
-    } else {
-      setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: "" }]);
-      setInput((prev) => prev + `\n\nAttached file: ${file.name}`);
-      toast.success(`${file.name} attached`);
     }
-
     e.target.value = "";
   };
 
@@ -289,7 +259,7 @@ const ChatPage = () => {
               </motion.div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-32">
+            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
               {messages.map((msg, i) => (
                 <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} onShare={msg.role === "assistant" && conversationId ? handleShare : undefined} />
               ))}
@@ -300,25 +270,25 @@ const ChatPage = () => {
               <div ref={messagesEndRef} />
             </div>
           )}
+
+          {/* Scroll to bottom button */}
+          <AnimatePresence>
+            {showScrollBtn && messages.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={scrollToBottom}
+                className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 w-9 h-9 rounded-full bg-secondary border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <ArrowDown className="w-4 h-4" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Scroll to bottom button */}
-        <AnimatePresence>
-          {showScrollBtn && messages.length > 0 && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={scrollToBottom}
-              className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 w-9 h-9 rounded-full bg-secondary border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            >
-              <ArrowDown className="w-4 h-4" />
-            </motion.button>
-          )}
-        </AnimatePresence>
-
-        {/* Fixed Input Footer */}
-        <div className="shrink-0 z-10 px-3 md:px-6 pt-3 pb-4 bg-background" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+        {/* Input */}
+        <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-1">
           <div className="max-w-3xl mx-auto space-y-1.5">
             {/* Active mode badge */}
             <AnimatePresence>
@@ -363,112 +333,47 @@ const ChatPage = () => {
                 {plusMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-1.5 w-[min(260px,calc(100vw-2rem))] max-h-[min(70vh,480px)] overflow-y-auto rounded-2xl"
-                    >
-                      {/* ATTACH */}
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1.5">Attach</p>
-                      <div className="flex items-center gap-2 mb-1.5 px-1">
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                            <Camera className="w-4 h-4 text-emerald-500" />
-                          </div>
-                          <p className="text-[11px] text-muted-foreground font-medium">Camera</p>
+                    <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72">
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                          <Camera className="w-5 h-5 text-muted-foreground" />
+                          <span className="text-[11px] text-foreground">Camera</span>
                         </button>
-                        <button onClick={() => { photoInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                            <Image className="w-4 h-4 text-blue-500" />
-                          </div>
-                          <p className="text-[11px] text-muted-foreground font-medium">Photos</p>
+                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                          <Image className="w-5 h-5 text-muted-foreground" />
+                          <span className="text-[11px] text-foreground">Photos</span>
                         </button>
-                        <button onClick={handleOpenFilesPicker} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                            <FileUp className="w-4 h-4 text-violet-500" />
-                          </div>
-                          <p className="text-[11px] text-muted-foreground font-medium">Files</p>
+                        <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                          <FileUp className="w-5 h-5 text-muted-foreground" />
+                          <span className="text-[11px] text-foreground">Files</span>
                         </button>
                       </div>
-
-                      {/* TOOLS */}
-                      <div className="border-t border-border pt-1.5 mt-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Tools</p>
-                        <button onClick={handleSearchToggle} className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-accent/60 transition-all group">
-                           <div className="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
-                            <Globe className="w-3 h-3 text-sky-500" />
-                          </div>
-                          <div className="flex-1 min-w-0 leading-tight">
-                            <p className="text-[13px] text-foreground font-medium leading-none">Web Search</p>
-                            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Search the web</p>
-                          </div>
-                          <div className={`w-8 h-[18px] rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                            <div className="w-3.5 h-3.5 rounded-full bg-white mx-0.5" />
+                      <div className="border-t border-border pt-2 space-y-1">
+                        <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
+                          <span className="text-sm text-foreground">Web search</span>
+                          <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+                            <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
                           </div>
                         </button>
-                      </div>
-
-                      {/* MODEL - Inline list */}
-                      <div className="border-t border-border pt-1.5 mt-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1">Model</p>
-                        <div className="space-y-0.5 px-0.5">
-                          {getModelsForMode("chat").map((m) => (
-                            <button
-                              key={m.id}
-                              onClick={() => { setSelectedModel(m); }}
-                              className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl transition-all ${
-                                selectedModel.id === m.id
-                                  ? "bg-primary/10 text-foreground"
-                                  : "hover:bg-accent/60 text-muted-foreground"
-                              }`}
-                            >
-                              <ModelBrandIcon modelId={m.id} />
-                              <span className="text-[13px] font-medium flex-1 text-left">{m.name}</span>
-                              {selectedModel.id === m.id && (
-                                <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                              )}
-                            </button>
-                          ))}
+                        <div className="px-3 py-2">
+                          <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
                         </div>
                       </div>
-
-                      {/* MODES */}
-                      <div className="border-t border-border pt-1.5 mt-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Modes</p>
-                        <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left transition-all group ${chatMode === "learning" ? "bg-primary/10" : "hover:bg-accent/60"}`}>
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${chatMode === "learning" ? "bg-primary/20" : "bg-emerald-500/10 group-hover:bg-emerald-500/20"}`}>
-                            <GraduationCap className={`w-3 h-3 ${chatMode === "learning" ? "text-primary" : "text-emerald-500"}`} />
-                          </div>
-                          <div className="flex-1 leading-tight">
-                            <p className="text-[13px] text-foreground font-medium leading-none">Learning</p>
-                            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Learn step by step</p>
-                          </div>
-                          {chatMode === "learning" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
+                      <div className="border-t border-border mt-1 pt-1">
+                        <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
+                        <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                          <span className="text-sm text-foreground">Learning Mode</span>
+                          {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
                         </button>
-                        <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left transition-all group ${chatMode === "shopping" ? "bg-primary/10" : "hover:bg-accent/60"}`}>
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${chatMode === "shopping" ? "bg-primary/20" : "bg-rose-500/10 group-hover:bg-rose-500/20"}`}>
-                            <ShoppingCart className={`w-3 h-3 ${chatMode === "shopping" ? "text-primary" : "text-rose-500"}`} />
-                          </div>
-                          <div className="flex-1 leading-tight">
-                            <p className="text-[13px] text-foreground font-medium leading-none">Shopping</p>
-                            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Find best deals</p>
-                          </div>
-                          {chatMode === "shopping" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
+                        <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                          <span className="text-sm text-foreground">Shopping Mode</span>
+                          {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                         </button>
                       </div>
-
-                      {/* INTEGRATIONS - PREMIUM */}
-                      <div className="border-t border-border pt-1.5 mt-1">
-                        <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-accent/60 transition-all group">
-                           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400/15 to-amber-600/15 flex items-center justify-center group-hover:from-amber-400/25 group-hover:to-amber-600/25 transition-colors">
-                            <Puzzle className="w-3 h-3 text-amber-500" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-[13px] text-foreground font-medium">Integrations</p>
-                          </div>
-                          <span className="text-[7px] px-2 py-[2px] rounded-full bg-gradient-to-r from-amber-500 to-orange-500 font-bold tracking-[0.15em] uppercase text-white">Pro · Premium</span>
+                      <div className="border-t border-border mt-1 pt-1">
+                        <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                          <span className="text-sm text-foreground">Integrations</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
                         </button>
                       </div>
                     </motion.div>
@@ -478,9 +383,8 @@ const ChatPage = () => {
 
               <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} />
             </div>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
+            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
             <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
-            <input ref={photoInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
           </div>
         </div>
       </div>

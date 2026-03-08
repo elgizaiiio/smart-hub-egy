@@ -50,6 +50,3 @@ verify_jwt = false
 
 [functions.oauth-userinfo]
 verify_jwt = false
-
-[functions.contact-form]
-verify_jwt = false

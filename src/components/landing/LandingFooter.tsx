@@ -17,7 +17,7 @@ const footerLinks = {
   ],
   About: [
     { label: "About Us", href: "https://about.megsyai.com" },
-    { label: "Contact", href: "/contact" },
+    { label: "Contact", href: "mailto:support@megsyai.com" },
     { label: "Support", href: "mailto:support@megsyai.com" },
   ],
   Legal: [

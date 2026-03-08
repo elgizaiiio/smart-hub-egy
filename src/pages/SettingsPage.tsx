@@ -125,25 +125,6 @@ const SettingsPage = () => {
             </div>
           </button>
 
-          {/* Referral Fancy Button */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.15 }}
-            className="mb-4 flex justify-center"
-          >
-            <button onClick={() => navigate("/settings/referrals")} className="fancy-btn fancy-btn-gold w-full">
-              <span className="fold" />
-              <div className="points_wrapper">
-                {Array.from({ length: 8 }).map((_, j) => <span key={j} className="point" />)}
-              </div>
-              <span className="inner">
-                <Gift className="w-4 h-4" />
-                Referrals — Earn 20%
-              </span>
-            </button>
-          </motion.div>
-
           {/* Quick Actions Grid */}
           <div className="grid grid-cols-3 gap-2.5 mb-8">
             {quickActions.map((action, i) => {
@@ -153,7 +134,7 @@ const SettingsPage = () => {
                   key={action.label}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.05 }}
+                  transition={{ delay: 0.1 + i * 0.05 }}
                   onClick={() => navigate(action.path)}
                   className="flex flex-col items-center gap-2 py-4 rounded-2xl hover:bg-muted/40 transition-all active:scale-95"
                 >
@@ -166,6 +147,25 @@ const SettingsPage = () => {
               );
             })}
           </div>
+
+          {/* Referral Fancy Button */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25 }}
+            className="mb-3 flex justify-center"
+          >
+            <button onClick={() => navigate("/settings/referrals")} className="fancy-btn fancy-btn-green w-full">
+              <span className="fold" />
+              <div className="points_wrapper">
+                {Array.from({ length: 8 }).map((_, j) => <span key={j} className="point" />)}
+              </div>
+              <span className="inner">
+                <Gift className="w-4 h-4" />
+                Referrals — Earn 20%
+              </span>
+            </button>
+          </motion.div>
 
           {/* Upgrade Banner — uses FancyButton */}
           {!isPremium && (

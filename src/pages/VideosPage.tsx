@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useTranslatedPlaceholders } from "@/hooks/useTranslatedPlaceholders";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Download, Zap, ImageIcon } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,8 +144,6 @@ const VideosPage = () => {
 
   const capability = useMemo(() => getVideoModelCapability(selectedModel.id), [selectedModel.id]);
 
-  const translatedPlaceholders = useTranslatedPlaceholders(PLACEHOLDERS);
-
   useEffect(() => {
     const interval = setInterval(() => setCurrentVideo((p) => (p + 1) % SHOWCASE_VIDEOS.length), 8000);
     return () => clearInterval(interval);
@@ -158,7 +155,7 @@ const VideosPage = () => {
 
   useEffect(() => {
     if (input) return;
-    const target = translatedPlaceholders[placeholderIdx];
+    const target = PLACEHOLDERS[placeholderIdx];
     let i = 0;
     setDisplayedPlaceholder("");
     const t = setInterval(() => {
@@ -167,11 +164,11 @@ const VideosPage = () => {
         i += 1;
       } else {
         clearInterval(t);
-        setTimeout(() => setPlaceholderIdx((p) => (p + 1) % translatedPlaceholders.length), 2500);
+        setTimeout(() => setPlaceholderIdx((p) => (p + 1) % PLACEHOLDERS.length), 2500);
       }
     }, 50);
     return () => clearInterval(t);
-  }, [placeholderIdx, input, translatedPlaceholders]);
+  }, [placeholderIdx, input]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -453,7 +450,7 @@ const VideosPage = () => {
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-violet-500 text-white hover:bg-violet-600 shadow-violet-500/25" />
+        <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-violet-500 text-white hover:bg-violet-600" />
         <div className="w-9" />
       </div>
 
@@ -521,7 +518,7 @@ const VideosPage = () => {
         )}
       </div>
 
-      <div className="shrink-0 px-3 md:px-6 pt-1 pb-4 bg-background" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+      <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="max-w-3xl mx-auto">
           {attachedImages.length > 0 && (
             <div className="flex items-center gap-2 px-3 pb-2 overflow-x-auto">
@@ -549,15 +546,7 @@ const VideosPage = () => {
 
               <AnimatePresence>
                 {menuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64 rounded-2xl"
-                  >
-                    {/* ATTACH */}
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Attach</p>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-60">
                     <button
                       onClick={() => {
                         if (!capability.acceptsImages) {
@@ -568,28 +557,18 @@ const VideosPage = () => {
                         fileInputRef.current?.click();
                         setMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-accent/60 transition-all group"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
                     >
-                      <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                        <ImageIcon className="w-3.5 h-3.5 text-violet-500" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[13px] text-foreground font-medium">
-                          {capability.acceptsImages ? "Attach Image" : `${selectedModel.name}`}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {capability.acceptsImages ? `Up to ${capability.maxImages} images` : "Text-only model"}
-                        </p>
-                      </div>
+                      <Paperclip className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {capability.acceptsImages
+                          ? `Attach Image (${capability.maxImages} max)`
+                          : `${selectedModel.name} (Text-only)`}
+                      </span>
                     </button>
 
-                    {/* PUBLISH TO - PREMIUM */}
-                    <div className="border-t border-border pt-1.5 mt-1.5">
-                      <div className="flex items-center justify-between px-1 mb-0.5">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Publish to</p>
-                        <span className="text-[7px] px-2 py-[2px] rounded-full bg-gradient-to-r from-amber-500 to-orange-500 font-bold tracking-[0.15em] uppercase text-white">Pro · Premium</span>
-                      </div>
-
+                    <div className="border-t border-border mt-1 pt-1">
+                      <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Publish to</p>
                       {PUBLISH_OPTIONS.map(({ platform, Icon, label }) => {
                         const app = PUBLISH_PLATFORM_TO_APP[platform];
                         const isConnected = Boolean(connectedApps[app]);
@@ -597,13 +576,11 @@ const VideosPage = () => {
                           <button
                             key={platform}
                             onClick={() => handlePublish(platform)}
-                            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground"
                           >
-                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center group-hover:bg-accent transition-colors">
-                              <Icon />
-                            </div>
-                            <span className="text-[13px] text-foreground font-medium">{label}</span>
-                            <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-medium ${isConnected ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
+                            <Icon />
+                            <span>{label}</span>
+                            <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${isConnected ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
                               {isLoadingConnections ? "..." : isConnected ? "Connected" : "Connect"}
                             </span>
                           </button>

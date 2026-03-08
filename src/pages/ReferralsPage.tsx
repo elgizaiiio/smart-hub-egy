@@ -115,19 +115,9 @@ const ReferralsPage = () => {
       </div>
 
       {/* Headline */}
-      <div className="text-center space-y-4">
-        <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">
-          20% Forever — No Limits — No Expiry
-        </h2>
-        <div className="space-y-1">
-          <p className="text-base text-muted-foreground">Every subscriber you refer =</p>
-          <p className="text-lg font-semibold" style={{ color: "#FFD700" }}>
-            20% every month and every year — Forever
-          </p>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          Share your link. They subscribe. You earn 20% of their payment — not once, not for a year — forever. No caps. No limits. No expiry. As long as they stay subscribed, you keep earning.
-        </p>
+      <div className="text-center space-y-1.5">
+        <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">Referral Program</h2>
+        <p className="text-sm text-muted-foreground">20% commission on every payment — forever</p>
       </div>
 
       {/* Stats — transparent, no borders */}
@@ -153,8 +143,7 @@ const ReferralsPage = () => {
           </div>
           <button
             onClick={handleCopy}
-            className="p-3 rounded-xl text-black hover:opacity-90 transition-colors shrink-0"
-            style={{ backgroundColor: "#FFD700" }}
+            className="p-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </button>
@@ -171,7 +160,7 @@ const ReferralsPage = () => {
             { step: "3", text: "You earn 20% of every payment, forever" },
           ].map(item => (
             <div key={item.step} className="flex items-center gap-3 py-2.5">
-              <span className="w-6 h-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center text-[11px] font-bold text-[#FFD700] shrink-0">
+              <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
                 {item.step}
               </span>
               <p className="text-sm text-foreground">{item.text}</p>
@@ -181,7 +170,7 @@ const ReferralsPage = () => {
       </div>
 
       {/* Withdraw CTA */}
-      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full fancy-btn-gold">
+      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full">
         Request Withdrawal
       </FancyButton>
 
@@ -213,7 +202,7 @@ const ReferralsPage = () => {
                     <p className="text-sm font-medium text-foreground">User {r.referred_id.substring(0, 8)}...</p>
                     <p className="text-[11px] text-muted-foreground">{formatDate(r.created_at)}</p>
                   </div>
-                  <span className="text-[11px] font-medium" style={{ color: "#FFD700" }}>
+                  <span className={`text-[11px] font-medium ${r.status === "active" ? "text-green-500" : "text-primary"}`}>
                     {r.status}
                   </span>
                 </div>
@@ -247,7 +236,11 @@ const ReferralsPage = () => {
                     <p className="text-sm font-medium text-foreground">${Number(w.amount).toFixed(2)}</p>
                     <p className="text-[11px] text-muted-foreground">{w.method} — {formatDate(w.created_at)}</p>
                   </div>
-                  <span className={`text-[11px] font-medium ${w.status === "rejected" ? "text-destructive" : ""}`} style={w.status !== "rejected" ? { color: "#FFD700" } : {}}>
+                  <span className={`text-[11px] font-medium ${
+                    w.status === "completed" ? "text-green-500" :
+                    w.status === "rejected" ? "text-destructive" :
+                    "text-primary"
+                  }`}>
                     {w.status}
                   </span>
                 </div>

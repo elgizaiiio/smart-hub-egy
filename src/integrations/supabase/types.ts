@@ -14,42 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      contact_submissions: {
-        Row: {
-          ai_reply: string | null
-          created_at: string
-          email: string
-          form_type: string
-          id: string
-          message: string
-          name: string
-          reply_sent: boolean
-          subject: string | null
-        }
-        Insert: {
-          ai_reply?: string | null
-          created_at?: string
-          email: string
-          form_type?: string
-          id?: string
-          message: string
-          name: string
-          reply_sent?: boolean
-          subject?: string | null
-        }
-        Update: {
-          ai_reply?: string | null
-          created_at?: string
-          email?: string
-          form_type?: string
-          id?: string
-          message?: string
-          name?: string
-          reply_sent?: boolean
-          subject?: string | null
-        }
-        Relationships: []
-      }
       conversations: {
         Row: {
           created_at: string

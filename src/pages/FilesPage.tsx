@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, Zap, FileText, Presentation, FileSearch, ImageIcon, Table, FilePlus2 } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,12 +23,12 @@ interface AttachedFile {
 }
 
 const SUGGESTIONS = [
-  { text: "Write a professional report", icon: FileText, color: "text-blue-500", bg: "bg-blue-500/10" },
-  { text: "Create a presentation", icon: Presentation, color: "text-orange-500", bg: "bg-orange-500/10" },
-  { text: "Summarize this document", icon: FileSearch, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { text: "Convert image to PDF", icon: ImageIcon, color: "text-pink-500", bg: "bg-pink-500/10" },
-  { text: "Create a spreadsheet", icon: Table, color: "text-violet-500", bg: "bg-violet-500/10" },
-  { text: "Generate a PDF", icon: FilePlus2, color: "text-cyan-500", bg: "bg-cyan-500/10" },
+  "Write a professional report",
+  "Create a presentation",
+  "Summarize this document",
+  "Convert image to PDF",
+  "Create a spreadsheet",
+  "Generate a PDF",
 ];
 
 const GoogleDriveIcon = () => (
@@ -286,34 +286,22 @@ const FilesPage = () => {
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-xl w-full">
-              {/* Icon */}
-              <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center shadow-lg shadow-primary/5">
-                <FileText className="w-8 h-8 text-primary" />
-              </div>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">Create anything with files</h2>
-              <p className="text-sm md:text-base text-muted-foreground mb-8">Generate documents, analyze files, create presentations and more</p>
-              
-              {/* Suggestion Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {SUGGESTIONS.map((s, i) => {
-                  const Icon = s.icon;
-                  return (
-                    <motion.button
-                      key={i}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.07 }}
-                      onClick={() => setInput(s.text)}
-                      className="flex flex-col items-center gap-2.5 p-4 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm text-center hover:border-primary/30 hover:shadow-md hover:shadow-primary/5 transition-all duration-200 group cursor-pointer"
-                    >
-                      <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
-                        <Icon className={`w-5 h-5 ${s.color}`} />
-                      </div>
-                      <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{s.text}</span>
-                    </motion.button>
-                  );
-                })}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
+              <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-3">Create anything with files</h2>
+              <p className="text-sm text-muted-foreground mb-6">Generate documents, analyze files, create presentations and more</p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                {SUGGESTIONS.map((s, i) => (
+                  <motion.button
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    onClick={() => setInput(s)}
+                    className="px-5 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
+                  >
+                    {s}
+                  </motion.button>
+                ))}
               </div>
             </motion.div>
           </div>
@@ -352,7 +340,7 @@ const FilesPage = () => {
         )}
       </div>
 
-      <div className="sticky bottom-0 z-20 shrink-0 px-3 pt-1 pb-4 bg-background" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+      <div className="sticky bottom-0 z-20 shrink-0 px-3 pb-3 pt-1 bg-background/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto relative">
           {/* Attached files preview */}
           {attachedFiles.length > 0 && (
@@ -377,85 +365,58 @@ const FilesPage = () => {
 
               <AnimatePresence>
                 {menuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64 rounded-2xl"
-                  >
-                    {/* TOOLS */}
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Tools</p>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-60">
+                    {/* Toggle: Web Search */}
                     <button
                       onClick={() => { setSearchEnabled(!searchEnabled); setMenuOpen(false); }}
-                      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-accent/60 transition-all group"
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
                     >
-                      <div className="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
-                        <Globe className="w-3.5 h-3.5 text-sky-500" />
+                      <div className="flex items-center gap-3">
+                        <Globe className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Web search</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-[13px] text-foreground font-medium">Web Search</p>
-                        <p className="text-[10px] text-muted-foreground">Search the web</p>
-                      </div>
-                      <div className={`w-8 h-[18px] rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                        <div className="w-3.5 h-3.5 rounded-full bg-white mx-0.5" />
+                      <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+                        <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
                       </div>
                     </button>
 
-                    {/* ATTACH */}
-                    <div className="border-t border-border pt-1.5 mt-1.5">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Attach</p>
-                      <button onClick={() => { imageInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
-                        <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                          <Image className="w-3.5 h-3.5 text-blue-500" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[13px] text-foreground font-medium">Photos</p>
-                          <p className="text-[10px] text-muted-foreground">Choose from gallery</p>
-                        </div>
-                      </button>
-                      <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
-                        <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                          <Paperclip className="w-3.5 h-3.5 text-violet-500" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[13px] text-foreground font-medium">Files</p>
-                          <p className="text-[10px] text-muted-foreground">Browse device files</p>
-                        </div>
-                      </button>
-                    </div>
+                    <div className="border-t border-border my-1.5" />
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Attach</p>
 
-                    {/* INTEGRATIONS - PREMIUM */}
-                    <div className="border-t border-border pt-1.5 mt-1.5">
-                      <div className="flex items-center justify-between px-1 mb-0.5">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Integrations</p>
-                        <span className="text-[7px] px-2 py-[2px] rounded-full bg-gradient-to-r from-amber-500 to-orange-500 font-bold tracking-[0.15em] uppercase text-white">Pro · Premium</span>
-                      </div>
+                    <button onClick={() => { imageInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                      <Image className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">Image</span>
+                    </button>
+                    <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                      <Paperclip className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">Document</span>
+                    </button>
 
-                      {FILE_INTEGRATIONS.map((app) => {
-                        const IconComp = app.icon;
-                        return (
-                          <button
-                            key={app.name}
-                            onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
-                            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group"
-                          >
-                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center group-hover:bg-accent transition-colors">
-                              <IconComp />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-[13px] text-foreground font-medium">{app.name}</p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                      <button
-                        onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
-                        className="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl hover:bg-accent/60 transition-all text-[11px] text-muted-foreground font-medium"
-                      >
-                        Show more
-                      </button>
-                    </div>
+                    <div className="border-t border-border my-1.5" />
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Integrations</p>
+
+                    {FILE_INTEGRATIONS.map((app) => {
+                      const IconComp = app.icon;
+                      return (
+                        <button
+                          key={app.name}
+                          onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+                        >
+                          <IconComp />
+                          <div className="min-w-0">
+                            <span className="text-sm text-foreground block">{app.name}</span>
+                            <span className="text-[10px] text-muted-foreground">{app.desc}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-xs text-muted-foreground"
+                    >
+                      Show more
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>

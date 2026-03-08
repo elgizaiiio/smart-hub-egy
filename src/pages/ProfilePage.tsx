@@ -4,7 +4,6 @@ import { ArrowLeft, User, Camera, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import AppLayout from "@/layouts/AppLayout";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -114,7 +113,6 @@ const ProfilePage = () => {
   }
 
   return (
-    <AppLayout>
     <div className="min-h-screen bg-background">
       <header className="flex items-center px-4 md:px-6 h-14 border-b border-border">
         <button onClick={() => navigate("/chat")} className="text-muted-foreground hover:text-foreground transition-colors mr-3">
@@ -222,7 +220,6 @@ const ProfilePage = () => {
         </motion.div>
       </div>
     </div>
-    </AppLayout>
   );
 };
 

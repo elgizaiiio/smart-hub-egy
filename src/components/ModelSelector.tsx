@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ModelPickerSheet from "./ModelPickerSheet";
-import deepseekLogo from "@/assets/deepseek-logo.png";
-import grokLogo from "@/assets/grok-logo.png";
 
 export interface ModelOption {
   id: string;
@@ -103,7 +101,7 @@ const MODELS: Record<ModelMode, ModelOption[]> = {
 };
 
 // Real brand icons for chat models
-export const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
+const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
   // Megsy M logo - no background
   if (modelId.includes("gemini-3-flash")) {
     return (
@@ -126,13 +124,23 @@ export const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
       </svg>
     );
   }
-  // xAI Grok - official logo
+  // xAI Grok - ✗ symbol
   if (modelId.includes("grok")) {
-    return <img src={grokLogo} alt="Grok" className="w-5 h-5 object-contain" />;
+    return (
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+    );
   }
-  // DeepSeek - official logo
+  // DeepSeek - whale/dolphin logo
   if (modelId.includes("deepseek")) {
-    return <img src={deepseekLogo} alt="DeepSeek" className="w-5 h-5 object-contain" />;
+    return (
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
+        <circle cx="12" cy="12" r="11" fill="#4D6BFE"/>
+        <path d="M7 13c1-3 4-5 7-5 2 0 3.5 1 4 2.5.5 1.5 0 3-1 4-1 1-2.5 1.5-4 1.5H11l-2 2v-3c-1-.5-2-1.2-2-2z" fill="white"/>
+        <circle cx="14.5" cy="11.5" r="1" fill="#4D6BFE"/>
+      </svg>
+    );
   }
   return <div className="w-4 h-4 rounded-full bg-primary/20" />;
 };
@@ -219,11 +227,10 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, colorClass }: Model
     <>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(true); }}
-        className={`inline-flex items-center gap-2 px-5 py-2 rounded-2xl text-sm font-semibold backdrop-blur-sm shadow-sm transition-all duration-200 active:scale-95 max-w-[200px] ${colorClass || "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+        className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-colors ${colorClass || "bg-primary text-primary-foreground hover:bg-primary/90"}`}
       >
-        <Sparkles className="w-3.5 h-3.5 shrink-0" />
-        <span className="truncate">{selectedModel.name}</span>
-        <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+        {selectedModel.name}
+        <ChevronDown className="w-3 h-3" />
       </button>
 
       <ModelPickerSheet

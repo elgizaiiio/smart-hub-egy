@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { Plus, ArrowUp, Square } from "lucide-react";
-import { useTranslatedPlaceholders } from "@/hooks/useTranslatedPlaceholders";
 
 interface AnimatedInputProps {
   value: string;
@@ -21,7 +20,7 @@ const DEFAULT_PLACEHOLDERS = [
 ];
 
 const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders }: AnimatedInputProps) => {
-  const items = useTranslatedPlaceholders(placeholders || DEFAULT_PLACEHOLDERS);
+  const items = placeholders || DEFAULT_PLACEHOLDERS;
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [isTyping, setIsTyping] = useState(true);
@@ -64,13 +63,6 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
       el.style.height = Math.min(el.scrollHeight, 128) + "px";
     }
   };
-
-  // Reset height when value is cleared (e.g. after sending)
-  useEffect(() => {
-    if (!value && textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-  }, [value]);
 
   return (
     <div className="relative">

@@ -19,23 +19,12 @@ const SlackIcon = () => (
 );
 
 const OutlookIcon = () => (
-  <svg viewBox="0 0 48 48" className="w-5 h-5" fill="none">
-    <defs>
-      <linearGradient id="outlook-grad-1" x1="44" y1="10.5" x2="30" y2="37.5" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#28A8EA"/>
-        <stop offset="1" stopColor="#0078D4"/>
-      </linearGradient>
-      <linearGradient id="outlook-grad-2" x1="15" y1="13" x2="15" y2="37" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#0078D4"/>
-        <stop offset="1" stopColor="#0364B8"/>
-      </linearGradient>
-    </defs>
-    <path d="M28 6H44a2 2 0 0 1 2 2v16L30 28 28 6z" fill="#0364B8"/>
-    <path d="M46 8v16.5L30 34l-2-6V6h16a2 2 0 0 1 2 2z" fill="url(#outlook-grad-1)"/>
-    <path d="M28 6v18l18 10V40a2 2 0 0 1-2 2H28V6z" fill="#0078D4"/>
-    <path d="M28 24v18h16a2 2 0 0 0 2-2V24l-18 0z" fill="#0364B8"/>
-    <rect x="2" y="11" width="26" height="26" rx="3" fill="url(#outlook-grad-2)"/>
-    <path d="M15 18.5c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5 6.5-2.91 6.5-6.5-2.91-6.5-6.5-6.5zm0 10.5c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="white"/>
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+    <path d="M24 7.8v8.4c0 .99-.81 1.8-1.8 1.8H14V6h8.2c.99 0 1.8.81 1.8 1.8z" fill="#0364B8"/>
+    <path d="M14 6v12H3.8c-.99 0-1.8-.81-1.8-1.8V7.8C2 6.81 2.81 6 3.8 6H14z" fill="#0078D4"/>
+    <path d="M14 6v12l10-6V6H14z" fill="#28A8EA"/>
+    <ellipse cx="8" cy="12" rx="3.5" ry="4" fill="#0078D4"/>
+    <ellipse cx="8" cy="12" rx="2.2" ry="2.8" fill="white"/>
   </svg>
 );
 
@@ -316,13 +305,12 @@ const IntegrationsPage = () => {
                         </button>
                       </div>
                     ) : (
-                      <button
+                      <FancyButton
                         onClick={() => handleConnect(integration)}
-                        disabled={loadingApp === integration.id}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50"
+                        className="text-xs px-3 py-1"
                       >
                         {loadingApp === integration.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Connect"}
-                      </button>
+                      </FancyButton>
                     )}
                   </div>
                 );
