@@ -74,14 +74,14 @@ const HeroSection = () => {
       </div>
 
       {/* Floating image cards — Leonardo.ai style spread at bottom */}
-      <div className="relative mt-10 h-[32vh] w-full min-h-[220px] md:h-[38vh]">
+      <div className="relative z-0 mt-14 h-[34vh] w-full min-h-[240px] max-w-[1600px] px-2 md:h-[40vh]">
         {heroImages.map((img, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 80 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.5 + i * 0.08 }}
-            className={`absolute overflow-hidden rounded-2xl border border-border/40 shadow-2xl ${img.style}`}
+            className={`absolute aspect-[4/5] overflow-hidden rounded-2xl border border-border/40 bg-card/20 shadow-2xl ${img.style}`}
           >
             {img.type === "video" ? (
               <video
