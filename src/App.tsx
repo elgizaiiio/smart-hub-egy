@@ -95,6 +95,7 @@ const App = () => {
             <Route path="/settings/withdraw" element={<ProtectedRoute><WithdrawPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
+            <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

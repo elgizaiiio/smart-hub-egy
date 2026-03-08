@@ -39,7 +39,7 @@ const NAV_SECTIONS: NavSection[] = [
       { id: "account", label: "Account", icon: User, path: "/settings/profile" },
       { id: "billing", label: "Billing", icon: CreditCard, path: "/settings/billing" },
       { id: "referrals", label: "Referrals", icon: Gift, path: "/settings/referrals" },
-      { id: "apis", label: "APIs", icon: Code, path: "/settings/apis" },
+      
     ],
   },
   {
