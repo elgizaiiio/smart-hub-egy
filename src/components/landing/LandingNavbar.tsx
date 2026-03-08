@@ -43,6 +43,13 @@ const LandingNavbar = () => {
               key={l.label}
               href={l.href}
               {...((l as any).external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              onClick={(e) => {
+                if (l.href.startsWith("#")) {
+                  e.preventDefault();
+                  const el = document.querySelector(l.href);
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {l.label}
