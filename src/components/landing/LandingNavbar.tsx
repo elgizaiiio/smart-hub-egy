@@ -51,30 +51,45 @@ const navItems: NavItem[] = [
         ],
       },
     ],
-    featured: { title: "Powered by\nMegsy Pro", cta: "Try it free", href: "/auth" },
+    featured: { title: "Powered by\nMegsy Pro", desc: "Experience our most advanced AI model today.", cta: "Try it free", href: "/auth" },
   },
   {
     label: "Products",
     columns: [
       {
-        title: "Tools",
+        title: "Image",
         items: [
-          { label: "AI Chat", desc: "Chat with 80+ AI models", href: "/chat" },
-          { label: "Image Generation", desc: "Create stunning visuals", href: "/images" },
-          { label: "Video Generation", desc: "Generate AI videos", href: "/videos" },
-          { label: "Code Builder", desc: "Build & deploy full-stack apps", href: "/code" },
+          { label: "AI Generator", desc: "Create stunning visuals", href: "/services/images" },
+          { label: "Image Editor", desc: "Modify with precision", href: "/services/images" },
+          { label: "Style Transfer", desc: "Apply unique styles", href: "/services/images" },
         ],
       },
       {
-        title: "Featured Models",
+        title: "Video",
         items: [
-          { label: "Megsy Pro", desc: "Our flagship creative model", href: "/#models" },
-          { label: "GPT-4o", desc: "Advanced reasoning", href: "/#models" },
-          { label: "Claude Sonnet", desc: "Best for code & analysis", href: "/#models" },
-          { label: "Gemini Flash", desc: "Ultra-fast responses", href: "/#models" },
+          { label: "Text to Video", desc: "Generate from scratch", href: "/services/videos" },
+          { label: "Image to Video", desc: "Animate your photos", href: "/services/videos" },
+          { label: "Video Editor", desc: "AI-powered editing", href: "/services/videos" },
+        ],
+      },
+      {
+        title: "Editing",
+        items: [
+          { label: "Magic Erase", desc: "Remove unwanted objects", href: "/services/images" },
+          { label: "Background", desc: "Remove or replace bg", href: "/services/images" },
+          { label: "Inpainting", desc: "Fill missing areas", href: "/services/images" },
+        ],
+      },
+      {
+        title: "Upscaling",
+        items: [
+          { label: "Image Upscale", desc: "Enhance resolution", href: "/services/images" },
+          { label: "Video Enhance", desc: "4K video upscaling", href: "/services/videos" },
+          { label: "Face Restore", desc: "Fix and enhance faces", href: "/services/images" },
         ],
       },
     ],
+    featured: { title: "Reach out to our team", desc: "Got a question about Megsy Pro? We're here to help.", cta: "Submit Request", href: "/contact" },
   },
   {
     label: "Learn",
