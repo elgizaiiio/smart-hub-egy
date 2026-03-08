@@ -125,11 +125,7 @@ const ContactPage = () => {
             transition={{ duration: 1 }}
             className="relative hidden lg:block"
           >
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="relative aspect-square w-full overflow-hidden rounded-3xl bg-purple-600 p-10"
-            >
+            <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-purple-600 p-10">
               <motion.div
                 initial={{ y: 40, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
@@ -153,21 +149,15 @@ const ContactPage = () => {
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: 0.7, type: "spring" }}
                 >
-                  <motion.svg
-                    viewBox="0 0 120 80"
-                    fill="none"
-                    className="h-28 w-40 text-black"
-                    animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  >
+                  <svg viewBox="0 0 120 80" fill="none" className="h-28 w-40 text-black">
                     <rect x="2" y="2" width="116" height="76" rx="8" stroke="currentColor" strokeWidth="5" />
                     <path d="M2 10 L60 50 L118 10" stroke="currentColor" strokeWidth="5" fill="none" />
                     <path d="M2 78 L45 45" stroke="currentColor" strokeWidth="5" />
                     <path d="M118 78 L75 45" stroke="currentColor" strokeWidth="5" />
-                  </motion.svg>
+                  </svg>
                 </motion.div>
               </motion.div>
-            </motion.div>
+            </div>
           </motion.div>
 
           {/* Right: Form Section */}
