@@ -459,8 +459,9 @@ const VideosPage = () => {
 
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
-          <div className="flex flex-col items-center justify-center h-full px-4">
-            <div className="w-full max-w-xs aspect-[9/16] max-h-[50vh] relative rounded-2xl overflow-hidden mb-4 bg-secondary">
+          <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
+            {/* Mobile: single video carousel */}
+            <div className="md:hidden w-full max-w-xs aspect-[9/16] max-h-[50vh] relative rounded-2xl overflow-hidden mb-4 bg-secondary">
               <AnimatePresence mode="wait">
                 <motion.video
                   key={currentVideo}
@@ -475,8 +476,33 @@ const VideosPage = () => {
               </AnimatePresence>
             </div>
 
-            <h2 className="font-display text-lg font-bold text-foreground mb-1">Create Amazing Videos</h2>
-            <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">Describe your idea and let AI bring it to life as a stunning video in seconds</p>
+            {/* Desktop: video grid */}
+            <div className="hidden md:grid grid-cols-4 gap-3 w-full max-w-3xl mb-8">
+              {SHOWCASE_VIDEOS.map((src, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="relative rounded-2xl overflow-hidden group cursor-pointer aspect-[9/16] bg-secondary"
+                >
+                  <video
+                    src={src}
+                    autoPlay muted loop playsInline
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-6 h-6 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center">
+                      <div className="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[8px] border-l-foreground ml-0.5" />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <h2 className="font-display text-lg md:text-2xl font-bold text-foreground mb-1">Create Amazing Videos</h2>
+            <p className="text-xs md:text-sm text-muted-foreground mb-3 text-center max-w-sm">Describe your idea and let AI bring it to life as a stunning video in seconds</p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">

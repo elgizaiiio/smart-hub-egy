@@ -476,8 +476,9 @@ const ImagesPage = () => {
 
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
-          <div className="flex flex-col items-center justify-center h-full px-4">
-            <div className="w-full max-w-xs aspect-[3/4] max-h-[50vh] relative rounded-2xl overflow-hidden mb-4">
+          <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
+            {/* Mobile: single carousel */}
+            <div className="md:hidden w-full max-w-xs aspect-[3/4] max-h-[50vh] relative rounded-2xl overflow-hidden mb-4">
               <AnimatePresence mode="wait">
                 <motion.img
                   key={currentImage}
@@ -497,8 +498,32 @@ const ImagesPage = () => {
               </div>
             </div>
 
-            <h2 className="font-display text-lg font-bold text-foreground mb-1">Create Stunning Images</h2>
-            <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">Turn your imagination into beautiful artwork — just describe what you want to see</p>
+            {/* Desktop: masonry-style grid */}
+            <div className="hidden md:grid grid-cols-3 gap-3 w-full max-w-3xl mb-8">
+              {SHOWCASE_IMAGES.map((src, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className={`relative rounded-2xl overflow-hidden group cursor-pointer ${
+                    i === 0 ? "row-span-2" : ""
+                  }`}
+                >
+                  <img
+                    src={src}
+                    alt={`Showcase ${i + 1}`}
+                    className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+                      i === 0 ? "h-full" : "aspect-square"
+                    }`}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </motion.div>
+              ))}
+            </div>
+
+            <h2 className="font-display text-lg md:text-2xl font-bold text-foreground mb-1">Create Stunning Images</h2>
+            <p className="text-xs md:text-sm text-muted-foreground mb-3 text-center max-w-sm">Turn your imagination into beautiful artwork — just describe what you want to see</p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
