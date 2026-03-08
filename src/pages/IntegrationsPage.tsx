@@ -19,15 +19,23 @@ const SlackIcon = () => (
 );
 
 const OutlookIcon = () => (
-  <svg viewBox="0 0 32 32" className="w-5 h-5" fill="none">
+  <svg viewBox="0 0 48 48" className="w-5 h-5" fill="none">
     <defs>
-      <linearGradient id="outlook-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#0078D4"/>
-        <stop offset="100%" stopColor="#28A8EA"/>
+      <linearGradient id="outlook-grad-1" x1="44" y1="10.5" x2="30" y2="37.5" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#28A8EA"/>
+        <stop offset="1" stopColor="#0078D4"/>
+      </linearGradient>
+      <linearGradient id="outlook-grad-2" x1="15" y1="13" x2="15" y2="37" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#0078D4"/>
+        <stop offset="1" stopColor="#0364B8"/>
       </linearGradient>
     </defs>
-    <rect width="32" height="32" rx="7" fill="url(#outlook-grad)"/>
-    <path d="M16 7c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 14.4c-2.98 0-5.4-2.42-5.4-5.4S13.02 10.6 16 10.6s5.4 2.42 5.4 5.4-2.42 5.4-5.4 5.4z" fill="white"/>
+    <path d="M28 6H44a2 2 0 0 1 2 2v16L30 28 28 6z" fill="#0364B8"/>
+    <path d="M46 8v16.5L30 34l-2-6V6h16a2 2 0 0 1 2 2z" fill="url(#outlook-grad-1)"/>
+    <path d="M28 6v18l18 10V40a2 2 0 0 1-2 2H28V6z" fill="#0078D4"/>
+    <path d="M28 24v18h16a2 2 0 0 0 2-2V24l-18 0z" fill="#0364B8"/>
+    <rect x="2" y="11" width="26" height="26" rx="3" fill="url(#outlook-grad-2)"/>
+    <path d="M15 18.5c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5 6.5-2.91 6.5-6.5-2.91-6.5-6.5-6.5zm0 10.5c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="white"/>
   </svg>
 );
 
