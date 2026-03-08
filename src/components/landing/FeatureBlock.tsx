@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import FancyButton from "@/components/FancyButton";
 
 interface FeatureBlockProps {
   bigText: string;
   title: string;
   description: string;
-  features: string[];
   media: string;
   mediaType?: "image" | "video";
+  accentColor?: string;
   reverse?: boolean;
 }
 
@@ -14,78 +16,88 @@ const FeatureBlock = ({
   bigText,
   title,
   description,
-  features,
   media,
   mediaType = "image",
+  accentColor = "text-purple-500",
   reverse = false,
 }: FeatureBlockProps) => {
+  const navigate = useNavigate();
+
   return (
-    <section className="relative overflow-hidden py-32 md:py-44">
-      {/* Giant background text */}
+    <section className="relative overflow-hidden py-24 md:py-40">
+      {/* Giant background text filling full width */}
       <motion.div
-        initial={{ opacity: 0, x: reverse ? 300 : -300 }}
-        whileInView={{ opacity: 0.04, x: 0 }}
-        viewport={{ once: true, margin: "-120px" }}
-        transition={{ duration: 1.4, ease: "easeOut" }}
-        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 select-none ${reverse ? "right-0" : "left-0"}`}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 1.2 }}
+        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center select-none overflow-hidden"
       >
-        <span className="font-display text-[25vw] font-black uppercase leading-none tracking-tighter text-purple-500">
+        <span className={`font-display text-[28vw] font-black uppercase leading-[0.85] tracking-tighter ${accentColor} opacity-20 md:text-[22vw]`}>
+          {bigText}
+        </span>
+        <span className={`font-display text-[28vw] font-black uppercase leading-[0.85] tracking-tighter ${accentColor} opacity-10 md:text-[22vw]`}>
           {bigText}
         </span>
       </motion.div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <div className={`flex flex-col items-center gap-14 lg:gap-24 ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"}`}>
-          {/* Media */}
+        <div className={`flex flex-col items-center gap-12 lg:gap-20 ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"}`}>
+          {/* Media - large, prominent */}
           <motion.div
-            initial={{ opacity: 0, x: reverse ? 140 : -140, scale: 0.92 }}
-            whileInView={{ opacity: 1, x: 0, scale: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
+            initial={{ opacity: 0, scale: 0.85, y: 60 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 1, ease: "easeOut" }}
             className="w-full flex-1"
           >
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl shadow-purple-500/5">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
               {mediaType === "video" ? (
-                <video src={media} autoPlay loop muted playsInline className="h-auto w-full" />
+                <video
+                  src={media}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="h-auto w-full aspect-video object-cover"
+                />
               ) : (
-                <img src={media} alt={title} className="h-auto w-full object-cover" loading="lazy" />
+                <img
+                  src={media}
+                  alt={title}
+                  className="h-auto w-full aspect-video object-cover"
+                  loading="lazy"
+                />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             </div>
           </motion.div>
 
-          {/* Text */}
+          {/* Text content */}
           <motion.div
-            initial={{ opacity: 0, x: reverse ? -100 : 100 }}
+            initial={{ opacity: 0, x: reverse ? -80 : 80 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 1, delay: 0.15, ease: "easeOut" }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, delay: 0.15 }}
             className="w-full flex-1"
           >
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-purple-400">{title}</p>
-
-            <h2 className="mb-7 font-display text-6xl font-black uppercase leading-[0.85] tracking-tight text-white md:text-8xl">
-              {bigText}
+            <h2 className="mb-6 font-display text-5xl font-black uppercase leading-[0.9] tracking-tight text-white md:text-7xl lg:text-8xl">
+              {title}
             </h2>
 
-            <p className="mb-10 text-base leading-relaxed text-white/45 md:text-lg">{description}</p>
+            <p className="mb-8 text-lg leading-relaxed text-white/50 md:text-xl lg:text-2xl">
+              {description}
+            </p>
 
-            <div className="space-y-5">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={feature}
-                  initial={{ opacity: 0, x: 40 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.25 + index * 0.1 }}
-                  className="flex items-start gap-4"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500/15 border border-purple-500/25 text-sm font-bold text-purple-300">
-                    {index + 1}
-                  </span>
-                  <span className="pt-1 text-sm leading-relaxed text-white/60 md:text-base">{feature}</span>
-                </motion.div>
-              ))}
+            <div className="flex flex-wrap gap-4">
+              <FancyButton onClick={() => navigate("/auth")} className="text-base">
+                Start now
+              </FancyButton>
+              <button
+                onClick={() => navigate("/auth")}
+                className="rounded-full border border-white/20 px-7 py-3 text-sm font-medium text-white/70 transition-all hover:border-white/40 hover:text-white"
+              >
+                Learn more
+              </button>
             </div>
           </motion.div>
         </div>

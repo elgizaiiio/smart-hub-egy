@@ -1,82 +1,157 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 
-const tools = [
+const roles = [
   {
-    title: "AI Image Generator",
-    description: "Create stunning visuals with 20+ specialized models. From photorealistic to artistic styles.",
-    image: "/api-showcase/showcase-1.png",
+    label: "Artists",
+    description: "Bring imagination to life with bold styles, detailed characters, and concept art ready for refinement.",
+    images: [
+      { src: "/api-showcase/showcase-1.png", model: "Megsy V1 Image" },
+      { src: "/api-showcase/showcase-2.jpg", model: "Nano Banana 2" },
+      { src: "/api-showcase/showcase-4.jpg", model: "Recraft V4" },
+    ],
   },
   {
-    title: "AI Video Generator",
-    description: "Transform text and images into cinematic video sequences with Megsy Video engine.",
-    image: "/api-showcase/showcase-2.jpg",
+    label: "Designers",
+    description: "Create product mockups, brand assets, and design explorations at incredible speed.",
+    images: [
+      { src: "/api-showcase/showcase-3.jpg", model: "FLUX Kontext Max" },
+      { src: "/api-showcase/showcase-1.png", model: "Ideogram 3" },
+      { src: "/api-showcase/showcase-2.jpg", model: "Seedream 5 Lite" },
+    ],
   },
   {
-    title: "AI Code Builder",
-    description: "Build, deploy, and iterate on full-stack applications with live preview and GitHub sync.",
-    image: "/api-showcase/showcase-3.jpg",
+    label: "Animators",
+    description: "Turn static ideas into dynamic video content with AI-driven animation and motion tools.",
+    images: [
+      { src: "/api-showcase/showcase-4.jpg", model: "Megsy Video" },
+      { src: "/api-showcase/showcase-3.jpg", model: "Kling 3.0 Pro" },
+      { src: "/api-showcase/showcase-1.png", model: "Veo 3.1" },
+    ],
   },
   {
-    title: "AI Image Tools",
-    description: "18+ professional tools: upscale, relight, remove backgrounds, restore photos, and more.",
-    image: "/api-showcase/showcase-4.jpg",
+    label: "Photographers",
+    description: "Enhance, upscale, and refine photos with professional-grade AI tools.",
+    images: [
+      { src: "/api-showcase/showcase-2.jpg", model: "Megsy V1 Image" },
+      { src: "/api-showcase/showcase-4.jpg", model: "FLUX 2 Pro" },
+      { src: "/api-showcase/showcase-3.jpg", model: "HiDream I1" },
+    ],
   },
   {
-    title: "AI Chat Assistant",
-    description: "Multi-model conversations with web search, file analysis, and persistent memory.",
-    image: "/api-showcase/showcase-1.png",
+    label: "Marketers",
+    description: "Generate campaign visuals, social media content, and ad creatives at scale.",
+    images: [
+      { src: "/api-showcase/showcase-1.png", model: "GPT Image 1.5" },
+      { src: "/api-showcase/showcase-3.jpg", model: "ImagineArt 1.5" },
+      { src: "/api-showcase/showcase-2.jpg", model: "OmniGen2" },
+    ],
+  },
+  {
+    label: "Developers",
+    description: "Build full-stack applications, generate code, and deploy with AI-powered tools.",
+    images: [
+      { src: "/api-showcase/showcase-3.jpg", model: "Megsy V1" },
+      { src: "/api-showcase/showcase-4.jpg", model: "GPT-5" },
+      { src: "/api-showcase/showcase-1.png", model: "DeepSeek R1" },
+    ],
   },
 ];
 
 const ShowcaseGallery = () => {
-  return (
-    <section className="relative overflow-hidden py-28 md:py-36">
-      <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mb-16"
-        >
-          <h2 className="font-display text-6xl font-black uppercase tracking-tighter leading-none text-white md:text-8xl lg:text-9xl">
-            EXPLORE
-          </h2>
-          <h2 className="font-display text-6xl font-black uppercase tracking-tighter leading-none md:text-8xl lg:text-9xl">
-            <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-              MORE AI TOOLS
-            </span>
-          </h2>
-        </motion.div>
+  const [activeRole, setActiveRole] = useState(0);
+  const currentRole = roles[activeRole];
 
-        <div className="scrollbar-hide -mx-6 flex snap-x snap-mandatory gap-6 overflow-x-auto px-6 pb-8">
-          {tools.map((tool, i) => (
-            <motion.div
-              key={tool.title}
-              initial={{ opacity: 0, y: 70, scale: 0.88 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.7, delay: i * 0.12 }}
-              className="group w-[320px] flex-shrink-0 snap-center md:w-[400px]"
+  return (
+    <section className="relative overflow-hidden py-24 md:py-40">
+      {/* Giant "BUILT FOR MAKERS" text */}
+      <motion.div
+        initial={{ opacity: 0, y: 80 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1 }}
+        className="mx-auto max-w-[95vw] px-6 text-center mb-10"
+      >
+        <h2 className="font-display text-[13vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[10vw]">
+          BUILT FOR
+        </h2>
+        <h2 className="font-display text-[13vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[10vw]">
+          <span className="inline-flex items-center gap-[2vw]">
+            {/* Purple icon placeholder */}
+            <span className="inline-flex h-[8vw] w-[6vw] items-center justify-center rounded-2xl bg-purple-500 md:h-[6vw] md:w-[5vw]">
+              <svg viewBox="0 0 24 24" fill="white" className="h-[4vw] w-[4vw] md:h-[3vw] md:w-[3vw]">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+              </svg>
+            </span>
+            MAKERS
+          </span>
+        </h2>
+      </motion.div>
+
+      {/* Role tabs */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7, delay: 0.2 }}
+        className="mx-auto max-w-6xl px-6 mb-6"
+      >
+        <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] p-2 md:gap-0 md:justify-between">
+          {roles.map((role, i) => (
+            <button
+              key={role.label}
+              onClick={() => setActiveRole(i)}
+              className={`rounded-full px-6 py-2.5 text-base font-bold uppercase tracking-wider transition-all md:text-lg ${
+                activeRole === i
+                  ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30"
+                  : "text-white/50 hover:text-white/80"
+              }`}
             >
-              <div className="h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] transition-all duration-500 hover:border-white/20">
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    src={tool.image}
-                    alt={tool.title}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                </div>
-                <div className="p-7">
-                  <h3 className="mb-2 font-display text-xl font-bold text-white">{tool.title}</h3>
-                  <p className="text-sm leading-relaxed text-white/40">{tool.description}</p>
-                </div>
+              {role.label}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Description */}
+      <motion.p
+        key={activeRole}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="mx-auto max-w-2xl px-6 text-center text-lg text-white/50 mb-10"
+      >
+        {currentRole.description}
+      </motion.p>
+
+      {/* Image grid */}
+      <div className="mx-auto max-w-7xl px-6">
+        <motion.div
+          key={activeRole}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="grid grid-cols-1 gap-5 md:grid-cols-3"
+        >
+          {currentRole.images.map((img, i) => (
+            <motion.div
+              key={`${activeRole}-${i}`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className="group relative overflow-hidden rounded-2xl"
+            >
+              <img
+                src={img.src}
+                alt={img.model}
+                className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-6 pt-20">
+                <p className="text-sm font-bold text-white">{img.model}</p>
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
