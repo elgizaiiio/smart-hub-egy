@@ -388,6 +388,26 @@
   white-space: nowrap;
 }
 
+/* Fancy Button Color Variants */
+.fancy-btn-blue {
+  background: linear-gradient(135deg, #3b82f6, #6366f1, #8b5cf6) !important;
+}
+.fancy-btn-blue::after {
+  background: linear-gradient(135deg, #3b82f6, #6366f1, #8b5cf6) !important;
+}
+.fancy-btn-blue .fold {
+  background: linear-gradient(135deg, rgba(99,102,241,0.8), rgba(139,92,246,0.5)) !important;
+}
+.fancy-btn-green {
+  background: linear-gradient(135deg, #10b981, #059669, #047857) !important;
+}
+.fancy-btn-green::after {
+  background: linear-gradient(135deg, #10b981, #059669, #047857) !important;
+}
+.fancy-btn-green .fold {
+  background: linear-gradient(135deg, rgba(5,150,105,0.8), rgba(4,120,87,0.5)) !important;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

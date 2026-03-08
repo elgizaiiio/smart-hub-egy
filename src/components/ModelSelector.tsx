@@ -124,20 +124,21 @@ const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
       </svg>
     );
   }
-  // xAI Grok
+  // xAI Grok - ✗ symbol
   if (modelId.includes("grok")) {
     return (
-      <div className="w-5 h-5 rounded-md bg-foreground flex items-center justify-center">
-        <span className="text-[9px] font-black text-background leading-none tracking-tight">xAI</span>
-      </div>
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
     );
   }
-  // DeepSeek - blue circle with search icon
+  // DeepSeek - whale/dolphin logo
   if (modelId.includes("deepseek")) {
     return (
       <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
         <circle cx="12" cy="12" r="11" fill="#4D6BFE"/>
-        <path d="M10.5 7a4.5 4.5 0 0 1 3.19 7.69l2.81 2.81-.71.71-2.81-2.81A4.5 4.5 0 1 1 10.5 7zm0 1a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill="white"/>
+        <path d="M7 13c1-3 4-5 7-5 2 0 3.5 1 4 2.5.5 1.5 0 3-1 4-1 1-2.5 1.5-4 1.5H11l-2 2v-3c-1-.5-2-1.2-2-2z" fill="white"/>
+        <circle cx="14.5" cy="11.5" r="1" fill="#4D6BFE"/>
       </svg>
     );
   }

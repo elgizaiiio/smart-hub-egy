@@ -49,9 +49,7 @@ const BillingPage = () => {
                 {credits.toFixed(0)} <span className="text-lg font-normal text-white/70">MC</span>
               </p>
             </div>
-            <p className="text-white/80 text-xs font-medium uppercase tracking-wider bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
-              {plan}
-            </p>
+            <div className="w-8" />
           </div>
           <div className="flex items-end justify-between">
             <div>

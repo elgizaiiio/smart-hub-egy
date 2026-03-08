@@ -139,7 +139,7 @@ const SettingsPage = () => {
                   >
                     <button
                       onClick={() => navigate(action.path)}
-                      className="fancy-btn !rounded-2xl !py-4 w-full"
+                      className={`fancy-btn !rounded-2xl !py-4 w-full ${(action as any).variant || ""}`}
                     >
                       <span className="fold" />
                       <div className="points_wrapper">

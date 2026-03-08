@@ -391,19 +391,28 @@ const FilesPage = () => {
                     <div className="border-t border-border my-1.5" />
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Integrations</p>
 
-                    {FILE_INTEGRATIONS.map((app) => (
-                      <button
-                        key={app.name}
-                        onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
-                      >
-                        <span className="text-base">{app.icon}</span>
-                        <div className="min-w-0">
-                          <span className="text-sm text-foreground block">{app.name}</span>
-                          <span className="text-[10px] text-muted-foreground">{app.desc}</span>
-                        </div>
-                      </button>
-                    ))}
+                    {FILE_INTEGRATIONS.map((app) => {
+                      const IconComp = app.icon;
+                      return (
+                        <button
+                          key={app.name}
+                          onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+                        >
+                          <IconComp />
+                          <div className="min-w-0">
+                            <span className="text-sm text-foreground block">{app.name}</span>
+                            <span className="text-[10px] text-muted-foreground">{app.desc}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-xs text-muted-foreground"
+                    >
+                      Show more
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
