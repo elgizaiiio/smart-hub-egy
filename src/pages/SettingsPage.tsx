@@ -125,25 +125,6 @@ const SettingsPage = () => {
             </div>
           </button>
 
-          {/* Referral Fancy Button */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.15 }}
-            className="mb-4 flex justify-center"
-          >
-            <button onClick={() => navigate("/settings/referrals")} className="fancy-btn fancy-btn-gold w-full">
-              <span className="fold" />
-              <div className="points_wrapper">
-                {Array.from({ length: 8 }).map((_, j) => <span key={j} className="point" />)}
-              </div>
-              <span className="inner">
-                <Gift className="w-4 h-4" />
-                Referrals — Earn 20%
-              </span>
-            </button>
-          </motion.div>
-
           {/* Quick Actions Grid */}
           <div className="grid grid-cols-3 gap-2.5 mb-8">
             {quickActions.map((action, i) => {
@@ -166,6 +147,25 @@ const SettingsPage = () => {
               );
             })}
           </div>
+
+          {/* Referral Fancy Button */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 }}
+            className="mb-4 flex justify-center"
+          >
+            <button onClick={() => navigate("/settings/referrals")} className="fancy-btn fancy-btn-gold w-full">
+              <span className="fold" />
+              <div className="points_wrapper">
+                {Array.from({ length: 8 }).map((_, j) => <span key={j} className="point" />)}
+              </div>
+              <span className="inner">
+                <Gift className="w-4 h-4" />
+                Referrals — Earn 20%
+              </span>
+            </button>
+          </motion.div>
 
           {/* Upgrade Banner — uses FancyButton */}
           {!isPremium && (
