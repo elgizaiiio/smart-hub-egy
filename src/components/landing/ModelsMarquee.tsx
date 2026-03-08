@@ -119,7 +119,7 @@ const ModelsMarquee = () => {
                 key={i}
                 className="inline-flex whitespace-nowrap px-4 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground/60"
               >
-                {s.name}
+                {s}
               </span>
             ))}
           </div>
