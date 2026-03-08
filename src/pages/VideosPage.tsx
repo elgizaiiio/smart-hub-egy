@@ -460,25 +460,29 @@ const VideosPage = () => {
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
-            {/* Mobile: 2-column video grid */}
+            {/* Mobile: single rotating showcase */}
             <div className="md:hidden w-full max-w-sm mb-5">
-              <div className="grid grid-cols-2 gap-2.5">
-                {SHOWCASE_VIDEOS.map((src, i) => (
-                  <motion.div
+              <motion.div
+                key={currentVideo}
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative rounded-2xl overflow-hidden aspect-[9/16]"
+              >
+                <video
+                  src={SHOWCASE_VIDEOS[currentVideo]}
+                  autoPlay muted loop playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/60 to-transparent" />
+              </motion.div>
+              <div className="flex justify-center gap-1.5 mt-3">
+                {SHOWCASE_VIDEOS.map((_, i) => (
+                  <button
                     key={i}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className={`relative rounded-xl overflow-hidden bg-secondary ${
-                      i < 2 ? "aspect-[9/16]" : "aspect-square"
-                    }`}
-                  >
-                    <video
-                      src={src}
-                      autoPlay muted loop playsInline
-                      className="w-full h-full object-cover"
-                    />
-                  </motion.div>
+                    onClick={() => setCurrentVideo(i)}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentVideo ? "bg-foreground w-4" : "bg-muted-foreground/30"}`}
+                  />
                 ))}
               </div>
             </div>
