@@ -362,8 +362,8 @@ const ChatPage = () => {
                           </div>
                         </button>
                         <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
-                          <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                            <FileUp className="w-3.5 h-3.5 text-violet-500" />
+                           <div className="w-6 h-6 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+                            <FileUp className="w-3 h-3 text-violet-500" />
                           </div>
                           <div className="flex-1">
                             <p className="text-[13px] text-foreground font-medium">Files</p>
