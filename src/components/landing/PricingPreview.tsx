@@ -68,7 +68,7 @@ const plans = [
       "GitHub sync + version control",
       "File analysis",
       "API access + webhooks",
-      "Unlimited social publishing across all platforms",
+      "Unlimited social publishing",
       "Dedicated support",
     ],
     highlight: false,
