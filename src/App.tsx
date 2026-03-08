@@ -29,6 +29,7 @@ import DeleteAccountPage from "./pages/DeleteAccountPage";
 import WithdrawPage from "./pages/WithdrawPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
+import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
 import CookieConsent from "./components/CookieConsent";
 const queryClient = new QueryClient();
 
@@ -94,6 +95,7 @@ const App = () => {
             <Route path="/settings/withdraw" element={<ProtectedRoute><WithdrawPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
+            <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

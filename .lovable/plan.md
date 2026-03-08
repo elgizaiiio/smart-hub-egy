@@ -1,109 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-# خطة: إدارة OAuth Apps عبر بوت تليجرام
+## ✅ Completed
 
-## الملخص
-بدلاً من صفحة `/settings/apis`، سيتم إدارة تطبيقات OAuth بالكامل من بوت تليجرام الإداري. الأدمن ينشئ/يعدل/يحذف التطبيقات ويحصل على Client ID و Client Secret مباشرة في الشات.
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-## المكونات
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-### 1. جداول قاعدة البيانات (Migration)
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-```sql
--- جدول تطبيقات OAuth
-CREATE TABLE public.oauth_clients (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,  -- المالك (الأدمن الي أنشأه)
-  client_id text UNIQUE NOT NULL,
-  client_secret_hash text NOT NULL,
-  name text NOT NULL,
-  logo_url text,
-  redirect_uris text[] NOT NULL DEFAULT '{}',
-  is_public boolean DEFAULT false,
-  created_at timestamptz DEFAULT now()
-);
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
--- أكواد التفويض المؤقتة (5 دقائق)
-CREATE TABLE public.oauth_codes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code text UNIQUE NOT NULL,
-  client_id text NOT NULL,
-  user_id uuid NOT NULL,
-  redirect_uri text NOT NULL,
-  scope text DEFAULT 'read',
-  used boolean DEFAULT false,
-  expires_at timestamptz NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
--- Access Tokens
-CREATE TABLE public.oauth_tokens (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  access_token text UNIQUE NOT NULL,
-  client_id text NOT NULL,
-  user_id uuid NOT NULL,
-  scope text DEFAULT 'read',
-  expires_at timestamptz NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-```
-
-RLS: كل الجداول تدار عبر service role فقط (البوت والـ Edge Functions).
-
-### 2. تحديث بوت تليجرام
-
-اضافة قسم جديد في القائمة الرئيسية: **🔑 OAuth Apps**
-
-التدفق في البوت:
-```text
-القائمة الرئيسية
-  └─ 🔑 OAuth Apps
-       ├─ ➕ إنشاء تطبيق جديد
-       │    → إدخال اسم التطبيق
-       │    → إدخال Redirect URI
-       │    → يتم إنشاء client_id + client_secret
-       │    → عرضهم للأدمن (مرة واحدة للـ secret)
-       │
-       ├─ 📋 عرض التطبيقات
-       │    → قائمة بكل التطبيقات
-       │    → اضغط على تطبيق لعرض التفاصيل
-       │         ├─ ✏️ تعديل الاسم
-       │         ├─ 🔗 تعديل Redirect URIs
-       │         ├─ 🔄 إعادة توليد Secret
-       │         └─ 🗑 حذف التطبيق
-       │
-       └─ 🔙 رجوع
-```
-
-**الملفات المتأثرة:**
-- `supabase/functions/telegram-bot/index.ts` — إضافة handlers لـ OAuth Apps
-
-### 3. Edge Functions (3 functions جديدة)
-
-| Function | الوظيفة |
-|----------|---------|
-| `oauth-authorize` | ينشئ authorization code بعد موافقة المستخدم |
-| `oauth-token` | يستبدل الكود بـ access token |
-| `oauth-userinfo` | يرجع بيانات المستخدم بناءً على Bearer token |
-
-### 4. صفحة Consent Screen
-
-- `/oauth/authorize` — صفحة React بسيطة
-- تعرض اسم التطبيق + الصلاحيات
-- زر "Allow" و "Deny"
-- لو المستخدم مش مسجل → يروح Auth ويرجع
-
-### 5. تحديثات أخرى
-
-- `src/App.tsx` — إضافة route `/oauth/authorize`
-- `supabase/config.toml` — تسجيل Edge Functions الثلاثة
-- إزالة `/settings/apis` route ومرجعه من `DesktopSettingsLayout`
-
-## ترتيب التنفيذ
-
-1. إنشاء الجداول (migration)
-2. تحديث بوت تليجرام بقسم OAuth Apps
-3. بناء Edge Functions الثلاثة
-4. بناء صفحة `/oauth/authorize`
-5. تحديث App.tsx و config.toml و DesktopSettingsLayout
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists

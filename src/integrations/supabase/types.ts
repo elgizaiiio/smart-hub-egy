@@ -262,6 +262,108 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_clients: {
+        Row: {
+          client_id: string
+          client_secret_hash: string
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          logo_url: string | null
+          name: string
+          redirect_uris: string[]
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          client_secret_hash: string
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          logo_url?: string | null
+          name: string
+          redirect_uris?: string[]
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          client_secret_hash?: string
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          logo_url?: string | null
+          name?: string
+          redirect_uris?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_codes: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          redirect_uri: string
+          scope: string | null
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          redirect_uri: string
+          scope?: string | null
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          redirect_uri?: string
+          scope?: string | null
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_tokens: {
+        Row: {
+          access_token: string
+          client_id: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          scope: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          client_id: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          scope?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          client_id?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          scope?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       otp_codes: {
         Row: {
           code: string
