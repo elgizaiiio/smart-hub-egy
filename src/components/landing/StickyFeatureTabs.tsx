@@ -113,7 +113,7 @@ const StickyFeatureTabs = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
               transition={{ duration: 0.4 }}
-              className="relative aspect-[16/10] overflow-hidden rounded-2xl"
+              className="relative order-1 aspect-[16/10] overflow-hidden rounded-2xl lg:order-2"
             >
               {current.useChat ? (
                 <ChatDemo />
