@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 
-type Step = "email" | "password" | "otp-signup" | "set-password" | "otp-2fa";
+type Step = "email" | "password" | "otp-signup" | "set-password" | "otp-2fa" | "forgot-password";
 
 const AuthPage = () => {
   const [email, setEmail] = useState("");
