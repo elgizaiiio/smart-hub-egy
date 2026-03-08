@@ -79,14 +79,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
   const uniqueLinks = links.filter((link, i, arr) => arr.findIndex(l => l.url === link.url) === i);
 
   return (
-    <div
-      className="mb-6 relative"
-      onMouseDown={handleLongPressStart}
-      onMouseUp={handleLongPressEnd}
-      onMouseLeave={handleLongPressEnd}
-      onTouchStart={handleLongPressStart}
-      onTouchEnd={handleLongPressEnd}
-    >
+    <div className="mb-6 relative">
       {isThinking && !content ? (
         <ThinkingLoader />
       ) : (
