@@ -120,8 +120,9 @@ const ContactPage = () => {
           {/* Left: Giant Typography Graphic */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, rotateY: -15 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 1 }}
             className="relative hidden lg:block"
           >
             <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-purple-600 p-10">
