@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
@@ -56,26 +56,44 @@ const callGithub = async (body: Record<string, unknown>) => {
   return resp.json();
 };
 
-const VITE_TEMPLATE: FileTree = {
+const NEXTJS_TEMPLATE: FileTree = {
   "package.json": JSON.stringify({
     name: "megsy-project",
     private: true,
     version: "0.0.0",
-    type: "module",
-    scripts: { dev: "vite --host 0.0.0.0", build: "vite build", preview: "vite preview" },
-    dependencies: { react: "^18.3.1", "react-dom": "^18.3.1" },
+    scripts: { dev: "next dev", build: "next build", start: "next start" },
+    dependencies: {
+      next: "^14.2.0",
+      react: "^18.3.1",
+      "react-dom": "^18.3.1",
+    },
     devDependencies: {
+      "@types/node": "^20.0.0",
       "@types/react": "^18.3.1",
       "@types/react-dom": "^18.3.1",
-      "@vitejs/plugin-react": "^4.3.1",
-      vite: "^5.4.0",
+      typescript: "^5.4.0",
+      tailwindcss: "^3.4.0",
+      postcss: "^8.4.0",
+      autoprefixer: "^10.4.0",
     },
   }, null, 2),
-  "vite.config.js": `import { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\nexport default defineConfig({ plugins: [react()] })`,
-  "index.html": `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Megsy Project</title></head>\n<body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>\n</html>`,
-  "src/main.jsx": `import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App'\nimport './index.css'\nReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)`,
-  "src/App.jsx": `export default function App() { return <div style={{padding:'2rem',fontFamily:'sans-serif'}}><h1>Hello from Megsy!</h1><p>Your project is ready.</p></div> }`,
-  "src/index.css": `* { margin:0; padding:0; box-sizing:border-box; } body { font-family: system-ui, sans-serif; }`,
+  "next.config.js": `/** @type {import('next').NextConfig} */\nconst nextConfig = {}\nmodule.exports = nextConfig`,
+  "tsconfig.json": JSON.stringify({
+    compilerOptions: {
+      target: "es5", lib: ["dom", "dom.iterable", "esnext"], allowJs: true, skipLibCheck: true,
+      strict: true, noEmit: true, esModuleInterop: true, module: "esnext",
+      moduleResolution: "bundler", resolveJsonModule: true, isolatedModules: true, jsx: "preserve",
+      incremental: true, plugins: [{ name: "next" }],
+      paths: { "@/*": ["./*"] },
+    },
+    include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+    exclude: ["node_modules"],
+  }, null, 2),
+  "tailwind.config.ts": `import type { Config } from 'tailwindcss'\nconst config: Config = {\n  content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx,mdx}'],\n  theme: { extend: {} },\n  plugins: [],\n}\nexport default config`,
+  "postcss.config.js": `module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }`,
+  "app/globals.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\nbody { font-family: system-ui, sans-serif; }`,
+  "app/layout.tsx": `import './globals.css'\nimport { ReactNode } from 'react'\n\nexport const metadata = { title: 'Megsy Project', description: 'Built with Megsy Code' }\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  )\n}`,
+  "app/page.tsx": `export default function Home() {\n  return (\n    <main className=\"min-h-screen flex items-center justify-center\">\n      <h1 className=\"text-4xl font-bold\">Hello from Megsy!</h1>\n    </main>\n  )\n}`,
 };
 
 const DEFAULT_STEPS: () => BuildStep[] = () => [
@@ -211,11 +229,21 @@ const CodeWorkspace = () => {
     let assistantContent = "";
 
     // Always use plan mode for chat - user must explicitly switch
-    const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. The user wants to build something. Analyze their request thoroughly:
-1. Understand the full scope (frontend, backend, database, APIs)
+    const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. You build complete Next.js 14+ applications with:
+- App Router (app/ directory)
+- TypeScript throughout
+- Tailwind CSS for styling
+- API routes (app/api/*/route.ts) for backend logic
+- Server Components by default, Client Components with "use client" when needed
+- Database integration via Supabase or any REST API
+- Authentication patterns if requested
+
+Analyze the user's request thoroughly:
+1. Understand the full scope (frontend, backend, database, APIs, auth)
 2. Outline a detailed plan with file structure, tech stack, and features
 3. Ask clarifying questions if the request is ambiguous
-4. For full-stack apps, plan: Database schema → API endpoints → Frontend components → Styling
+4. Plan: Database schema → API routes → Frontend pages → Components → Styling
+
 Be conversational. Do not use emoji. Respond in the user's language. Keep plans structured and actionable.`;
 
     const allMessages = messages
@@ -329,7 +357,17 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
     abortRef.current = controller;
     let assistantContent = "";
 
-    const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete React+Vite project. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. Include all source files needed. Do NOT include package.json, vite.config.js, index.html, src/main.jsx unless you need to modify the defaults. Output raw JSON only, no markdown.`;
+    const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete Next.js 14+ project. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. 
+
+Rules:
+- Use App Router (app/ directory structure)
+- TypeScript for all files (.ts, .tsx)
+- Tailwind CSS for styling
+- For backend logic, create API routes in app/api/*/route.ts using NextResponse
+- Use "use client" directive only for interactive components
+- Include proper error handling
+- Do NOT include package.json, next.config.js, tsconfig.json, tailwind.config.ts, postcss.config.js, app/layout.tsx, app/globals.css unless you need to modify defaults
+- Output raw JSON only, no markdown.`;
 
     const allMessages = messages
       .filter(m => m.role !== "system")
@@ -367,7 +405,7 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
 
           if (!parsed.files || typeof parsed.files !== "object") throw new Error("Invalid file structure");
 
-          const allFiles = { ...VITE_TEMPLATE, ...parsed.files };
+          const allFiles = { ...NEXTJS_TEMPLATE, ...parsed.files };
           setFiles(allFiles);
           updateStep("parse", { status: "done", detail: `${Object.keys(parsed.files).length} files` });
 
@@ -487,6 +525,38 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
     toast.success("Repository created on GitHub!");
   };
 
+  const handleVercelDeploy = async () => {
+    if (Object.keys(files).length === 0) {
+      toast.error("No project files to deploy. Build the project first.");
+      return;
+    }
+    setMessages(prev => [...prev, { role: "system", content: "Deploying to Vercel...", type: "log" }]);
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/vercel-deploy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({
+          files,
+          project_name: prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "megsy-project",
+        }),
+      });
+      const data = await resp.json();
+      if (data.success && data.url) {
+        setMessages(prev => [
+          ...prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")),
+          { role: "assistant", content: `Deployed to Vercel!\n\n[${data.url}](${data.url})`, type: "status" },
+        ]);
+        toast.success("Deployed to Vercel!");
+      } else {
+        toast.error(data.error || "Vercel deployment failed");
+        setMessages(prev => prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")));
+      }
+    } catch {
+      toast.error("Failed to deploy to Vercel");
+      setMessages(prev => prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")));
+    }
+  };
+
   const handleRetryPreview = () => {
     setPreviewError(false);
     if (sandbox.previewUrl) {
@@ -570,6 +640,7 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
                   open={menuOpen}
                   onClose={() => setMenuOpen(false)}
                   onGitHub={handleGitHubPush}
+                  onVercel={handleVercelDeploy}
                   onSupabase={() => navigate("/settings/integrations")}
                   hasFiles={Object.keys(files).length > 0}
                 />
@@ -678,12 +749,14 @@ const AnimatedPlusMenu = ({
   open,
   onClose,
   onGitHub,
+  onVercel,
   onSupabase,
   hasFiles,
 }: {
   open: boolean;
   onClose: () => void;
   onGitHub: () => void;
+  onVercel: () => void;
   onSupabase: () => void;
   hasFiles: boolean;
 }) => (
@@ -697,7 +770,16 @@ const AnimatedPlusMenu = ({
           exit={{ opacity: 0, y: 10 }}
           className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56"
         >
-          <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Connect</p>
+          <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Deploy</p>
+          <button
+            onClick={() => { onClose(); onVercel(); }}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
+              hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground cursor-not-allowed opacity-50"
+            }`}
+            disabled={!hasFiles}
+          >
+            <Triangle className="w-4 h-4 text-muted-foreground" /> Deploy to Vercel
+          </button>
           <button
             onClick={() => { onClose(); onGitHub(); }}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
@@ -707,6 +789,7 @@ const AnimatedPlusMenu = ({
           >
             <Github className="w-4 h-4 text-muted-foreground" /> Push to GitHub
           </button>
+          <p className="text-[10px] text-muted-foreground uppercase px-3 py-1 mt-1">Connect</p>
           <button
             onClick={() => { onClose(); onSupabase(); }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground"
