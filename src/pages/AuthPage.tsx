@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,73 +6,125 @@ import { toast } from "sonner";
 
 const AuthPage = () => {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [step, setStep] = useState<"email" | "password">("email");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
+  const [step, setStep] = useState<"email" | "otp">("email");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
 
-  const handleContinueWithEmail = async () => {
+  const startCountdown = () => {
+    setCountdown(60);
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOTP = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return;
 
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("check-email", {
-        body: { email: normalizedEmail },
+      const { data, error } = await supabase.functions.invoke("otp", {
+        body: { action: "send", email: normalizedEmail },
       });
 
       if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || "Failed to send code");
 
-      const exists = Boolean(data?.exists);
-      setIsSignUp(!exists);
-      setStep("password");
-    } catch {
-      toast.error("Could not verify email now, please try again.");
+      toast.success("Verification code sent to your email");
+      setStep("otp");
+      startCountdown();
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    } catch (e: any) {
+      toast.error(e.message || "Could not send code");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleAuth = async () => {
-    if (!password.trim()) return;
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    
+    const newValues = [...otpValues];
+    newValues[index] = value.slice(-1);
+    setOtpValues(newValues);
+
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-verify when all 6 digits entered
+    if (newValues.every(v => v !== "") && newValues.join("").length === 6) {
+      handleVerifyOTP(newValues.join(""));
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpValues[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      const newValues = pasted.split("");
+      setOtpValues(newValues);
+      handleVerifyOTP(pasted);
+    }
+  };
+
+  const handleVerifyOTP = async (code: string) => {
     setIsSubmitting(true);
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(),
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) {
-          if (error.message.includes("email rate limit exceeded") || error.message.includes("over_email_send_rate_limit")) {
-            toast.error("Email send limit reached temporarily. Try again later.");
-          } else {
-            toast.error(error.message);
+      const { data, error } = await supabase.functions.invoke("otp", {
+        body: { action: "verify", email: email.trim().toLowerCase(), code },
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || "Invalid code");
+
+      // Use the magic link to sign in
+      if (data.action_link) {
+        // Extract token from action link and verify
+        const url = new URL(data.action_link);
+        const token_hash = url.searchParams.get("token_hash") || url.searchParams.get("token");
+        const type = url.searchParams.get("type") || "magiclink";
+        
+        if (token_hash) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash,
+            type: type as any,
+          });
+          
+          if (verifyError) {
+            // Fallback: try direct URL approach
+            const hashFragment = url.hash;
+            if (hashFragment) {
+              window.location.href = data.action_link;
+              return;
+            }
+            throw new Error(verifyError.message);
           }
+        } else {
+          // Redirect to action link
+          window.location.href = data.action_link;
           return;
         }
-        toast.success("Account created! Check your email.");
-        navigate("/");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
-        if (error) {
-          if (error.message.includes("Invalid login credentials")) {
-            toast.error("Invalid email or password");
-          } else if (error.message.includes("Email not confirmed")) {
-            toast.error("Please confirm your email first");
-          } else {
-            toast.error(error.message);
-          }
-          return;
-        }
-        navigate("/");
       }
-    } catch {
-      toast.error("Something went wrong");
+
+      toast.success(data.is_new ? "Account created!" : "Welcome back!");
+      navigate("/");
+    } catch (e: any) {
+      toast.error(e.message || "Verification failed");
+      setOtpValues(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
     } finally {
       setIsSubmitting(false);
     }
@@ -100,7 +152,7 @@ const AuthPage = () => {
       >
         <h1 className="font-display text-4xl font-bold text-white mb-2">Megsy</h1>
         <p className="text-sm text-white/60 mb-10">
-          {step === "email" ? "Enter your email to continue" : isSignUp ? "Create a new account" : "Welcome back!"}
+          {step === "email" ? "Enter your email to continue" : "Enter the 6-digit code sent to your email"}
         </p>
 
         {step === "email" && (
@@ -130,42 +182,62 @@ const AuthPage = () => {
                 placeholder="email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleContinueWithEmail()}
+                onKeyDown={(e) => e.key === "Enter" && handleSendOTP()}
                 className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/30 transition-colors"
               />
               <button
-                onClick={handleContinueWithEmail}
+                onClick={handleSendOTP}
                 disabled={isSubmitting || !email.trim()}
                 className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
-                {isSubmitting ? "Checking..." : "Continue with Email"}
+                {isSubmitting ? "Sending..." : "Continue with Email"}
               </button>
             </div>
           </>
         )}
 
         <AnimatePresence>
-          {step === "password" && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-              <p className="text-xs text-white/50 mb-2">{email}</p>
-              <p className="text-xs text-white/40">{isSignUp ? "New account detected" : "Existing account detected"}</p>
-              <input
-                type="password"
-                placeholder={isSignUp ? "Create a password" : "Enter your password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAuth()}
-                autoFocus
-                className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/30 transition-colors"
-              />
-              <button
-                onClick={handleAuth}
-                disabled={isSubmitting || !password.trim()}
-                className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
-                {isSubmitting ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
-              </button>
-              <button onClick={() => { setStep("email"); setPassword(""); }} className="text-xs text-white/40 hover:text-white/60">
+          {step === "otp" && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+              <p className="text-xs text-white/50">{email}</p>
+
+              {/* OTP Input */}
+              <div className="flex justify-center gap-2.5" onPaste={handleOtpPaste}>
+                {otpValues.map((val, i) => (
+                  <input
+                    key={i}
+                    ref={el => { inputRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={val}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                    className="w-12 h-14 text-center text-xl font-bold text-white bg-white/10 backdrop-blur-md border border-white/15 rounded-xl outline-none focus:border-primary/60 transition-colors"
+                  />
+                ))}
+              </div>
+
+              {isSubmitting && (
+                <p className="text-xs text-white/50 animate-pulse">Verifying...</p>
+              )}
+
+              {/* Resend */}
+              <div className="pt-2">
+                {countdown > 0 ? (
+                  <p className="text-xs text-white/40">Resend code in {countdown}s</p>
+                ) : (
+                  <button
+                    onClick={handleSendOTP}
+                    disabled={isSubmitting}
+                    className="text-xs text-primary hover:underline disabled:opacity-50"
+                  >
+                    Resend code
+                  </button>
+                )}
+              </div>
+
+              <button onClick={() => { setStep("email"); setOtpValues(["", "", "", "", "", ""]); }} className="text-xs text-white/40 hover:text-white/60">
                 Back
               </button>
             </motion.div>
