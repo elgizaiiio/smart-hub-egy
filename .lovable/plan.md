@@ -1,41 +1,49 @@
 
-# Megsy Platform - Credits + Real Programming + Integrations
 
-## ✅ Completed
+## خطة تحسين سرعة تحميل الصور والفيديوهات
 
-### 1. Credit System
-- Created `credit_transactions` table in Supabase
-- Created `deduct_credits` database function (SECURITY DEFINER)
-- Created `deduct-credits` edge function
-- Created `useCredits` hook for frontend credit checking
-- Updated `generate-image` edge function to deduct credits
-- Updated `generate-video` edge function to deduct credits
-- Updated ImagesPage and VideosPage to check credits before generation
-- Chat remains free
+### المشكلة
+جميع الفيديوهات والصور تُحمّل دفعة واحدة عند فتح الصفحة، مما يبطئ التحميل بشكل كبير.
 
-### 2. Real Programming System (Sprites.dev)
-- Created `sprites-sandbox` edge function for Sprites.dev API management
-- Actions: create, exec, write-file, write-files, status, destroy
-- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
-- Rebuilt `CodeWorkspace.tsx` with:
-  - Plan → Build workflow with credit deduction (5 credits per build)
-  - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Sprite
-  - Real preview via iframe pointing to Sprite URL
-  - Conversation persistence to Supabase
-  - Project saving with files_snapshot
+### الحل
 
-### 3. GitHub Integration
-- Created `github-repo` edge function via Composio
-- Actions: check-connection, create-repo, push-files
-- Push to GitHub button in CodeWorkspace plus menu
-- Creates new repo and pushes all project files
+**1. Lazy Loading للفيديوهات (تحميل عند الظهور فقط)**
+- إنشاء component جديد `LazyVideo` يستخدم `IntersectionObserver`
+- الفيديو لا يبدأ التحميل إلا عندما يقترب المستخدم منه أثناء السكرول
+- يعرض placeholder/skeleton أثناء التحميل
 
-### 4. Database
-- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
-- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
+**2. تطبيق `loading="lazy"` على جميع الصور**
+- الصور في `HorizontalGallery` و `ShowcaseGallery` تستخدم `loading="lazy"` بالفعل جزئياً
+- سنتأكد من تطبيقها على كل الصور خارج الـ viewport الأول
 
-### 5. Secrets Required
-- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
-- `COMPOSIO_API_KEY` ✅ Already exists
-- `FAL_API_KEY` ✅ Already exists
+**3. فيديوهات Hero فقط تُحمّل فوراً**
+- فيديوهات `HeroSection` (5 فيديوهات) تبقى `preload="auto"` لأنها أول شيء يراه المستخدم
+- باقي الفيديوهات في `ParallaxShowcase`، `ShowcaseGallery`، `StickyFeatureTabs` تتحول لـ lazy
+
+**4. `preload="none"` للفيديوهات البعيدة**
+- فيديوهات ShowcaseGallery و ParallaxShowcase تستخدم `preload="none"` بدلاً من `"auto"`
+
+### الملفات المتأثرة
+- **جديد**: `src/components/landing/LazyVideo.tsx` — component يستخدم IntersectionObserver
+- **تعديل**: `ParallaxShowcase.tsx` — استبدال `<video>` بـ `LazyVideo`
+- **تعديل**: `ShowcaseGallery.tsx` — استبدال `<video>` بـ `LazyVideo`
+- **تعديل**: `StickyFeatureTabs.tsx` — استبدال `<video>` بـ `LazyVideo`
+- **تعديل**: `HorizontalGallery.tsx` — التأكد من `loading="lazy"` على كل الصور
+
+### التفاصيل التقنية
+
+```text
+LazyVideo Component:
+┌─────────────────────────┐
+│  IntersectionObserver    │
+│  rootMargin: "200px"     │  ← يبدأ التحميل قبل الظهور بـ 200px
+│                          │
+│  !inView → Skeleton      │
+│   inView → <video>       │
+│           preload="auto" │
+│           autoPlay, loop │
+└─────────────────────────┘
+```
+
+هذا سيقلل وقت التحميل الأولي بشكل كبير لأن الصفحة لن تحمّل إلا فيديوهات الـ Hero فقط عند الفتح.
+
