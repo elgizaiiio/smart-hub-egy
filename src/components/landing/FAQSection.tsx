@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "What plans are available?",
-    a: "We offer three plans: Starter ($25/mo — 250 MC, 50 images, 5 videos), Pro ($49/mo — 500 MC, 500 images, 50 videos), and Elite ($149/mo — 1,500 MC, unlimited images & videos). All plans include access to all chat models. Annual billing is also available at a discount.",
+    a: "We offer three plans: Starter ($25/mo or $199/yr — 250 MC, 3 deployable projects), Pro ($49/mo or $499/yr — 500 MC, 20 projects, API access, social publishing), and Elite ($149/mo or $1,299/yr — 1,500 MC, unlimited deploys, webhooks, dedicated support). All plans include access to all chat models, code generation, and GitHub sync.",
   },
   {
     q: "Can I use Megsy for commercial projects?",
