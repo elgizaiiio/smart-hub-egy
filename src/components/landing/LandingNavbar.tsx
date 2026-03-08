@@ -130,11 +130,23 @@ const LandingNavbar = () => {
 
   const handleMouseEnter = (label: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setOpenDropdown(label);
+    if (!pinned) setOpenDropdown(label);
   };
 
   const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => setOpenDropdown(null), 200);
+    if (!pinned) {
+      timeoutRef.current = setTimeout(() => setOpenDropdown(null), 200);
+    }
+  };
+
+  const handleClick = (label: string) => {
+    if (openDropdown === label && pinned) {
+      setOpenDropdown(null);
+      setPinned(false);
+    } else {
+      setOpenDropdown(label);
+      setPinned(true);
+    }
   };
 
   return (
