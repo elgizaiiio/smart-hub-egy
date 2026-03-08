@@ -69,7 +69,7 @@ const LandingFooter = () => {
 
   return (
     <footer className="border-t border-white/[0.06] bg-black">
-      <div className="mx-auto max-w-7xl px-6 py-16">
+      <div className="mx-auto max-w-7xl px-6 py-10 md:py-16">
         {/* Top: Social icons row */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
