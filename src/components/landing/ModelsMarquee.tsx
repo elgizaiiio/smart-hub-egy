@@ -21,12 +21,13 @@ const services = [
   { name: "Task Automation" },
 ];
 
-const logos = [
-  "DUCATI",
-  "Canva",
-  "Spotify",
-  "Adobe",
-  "Netflix",
+const providers = [
+  "Google",
+  "OpenAI",
+  "Anthropic",
+  "Stability AI",
+  "Runway",
+  "Meta",
 ];
 
 const ModelsMarquee = () => {
@@ -49,9 +50,9 @@ const ModelsMarquee = () => {
 
       {/* Logos row */}
       <div className="mx-auto mb-16 flex max-w-5xl items-center justify-center gap-10 px-6 md:gap-20">
-        {logos.map((logo) => (
-          <span key={logo} className="text-lg font-black uppercase tracking-wider text-foreground/20 md:text-2xl">
-            {logo}
+        {providers.map((name) => (
+          <span key={name} className="text-lg font-black uppercase tracking-wider text-foreground/20 md:text-2xl">
+            {name}
           </span>
         ))}
       </div>
