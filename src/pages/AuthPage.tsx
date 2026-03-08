@@ -323,7 +323,10 @@ const AuthPage = () => {
               >
                 {isSubmitting ? "Signing in..." : "Sign In"}
               </button>
-              <button onClick={resetFlow} className="text-xs text-white/40 hover:text-white/60">Back</button>
+              <div className="flex items-center justify-between">
+                <button onClick={resetFlow} className="text-xs text-white/40 hover:text-white/60">Back</button>
+                <button onClick={() => setStep("forgot-password")} className="text-xs text-primary hover:underline">Forgot password?</button>
+              </div>
             </motion.div>
           )}
 
