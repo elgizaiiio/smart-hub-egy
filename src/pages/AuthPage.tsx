@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 
-type Step = "email" | "password" | "otp-signup" | "set-password" | "otp-2fa";
+type Step = "email" | "password" | "otp-signup" | "set-password" | "otp-2fa" | "forgot-password";
 
 const AuthPage = () => {
   const [email, setEmail] = useState("");
@@ -201,6 +201,21 @@ const AuthPage = () => {
     });
   };
 
+  const handleForgotPassword = async () => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Reset link sent! Check your email.");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to send reset link");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const resetFlow = () => {
     setStep("email");
     setPassword("");
@@ -214,6 +229,7 @@ const AuthPage = () => {
     "otp-signup": "Enter the 6-digit code sent to your email",
     "set-password": "Create a password for your account",
     "otp-2fa": "Enter the 2FA code sent to your email",
+    "forgot-password": "We'll send a reset link to your email",
   };
 
   const OtpInputs = () => (
@@ -322,7 +338,10 @@ const AuthPage = () => {
               >
                 {isSubmitting ? "Signing in..." : "Sign In"}
               </button>
-              <button onClick={resetFlow} className="text-xs text-white/40 hover:text-white/60">Back</button>
+              <div className="flex items-center justify-between">
+                <button onClick={resetFlow} className="text-xs text-white/40 hover:text-white/60">Back</button>
+                <button onClick={() => setStep("forgot-password")} className="text-xs text-primary hover:underline">Forgot password?</button>
+              </div>
             </motion.div>
           )}
 
@@ -375,6 +394,21 @@ const AuthPage = () => {
                 {isSubmitting ? "Creating account..." : "Create Account"}
               </button>
               <button onClick={resetFlow} className="text-xs text-white/40 hover:text-white/60">Back</button>
+            </motion.div>
+          )}
+
+          {/* Step: Forgot Password */}
+          {step === "forgot-password" && (
+            <motion.div key="forgot" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
+              <p className="text-xs text-white/50">{email}</p>
+              <button
+                onClick={handleForgotPassword}
+                disabled={isSubmitting}
+                className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? "Sending..." : "Send Reset Link"}
+              </button>
+              <button onClick={() => setStep("password")} className="text-xs text-white/40 hover:text-white/60">Back to login</button>
             </motion.div>
           )}
         </AnimatePresence>

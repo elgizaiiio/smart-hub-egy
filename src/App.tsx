@@ -30,6 +30,7 @@ import WithdrawPage from "./pages/WithdrawPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import CookieConsent from "./components/CookieConsent";
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => {
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
             <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
