@@ -1,63 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-## تحليل صفحة التخصيص الحالية
+## ✅ Completed
 
-الصفحة الحالية تحتوي على:
-- 4 ثيمات (Pitch Black, Midnight Blue, Light, Warm Sand)
-- 12 لون أكسنت
-- معاينة شات بسيطة
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-## ما ينقصها وما يمكن إضافته لجعلها أكثر جاذبية
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-### 1. ثيمات إضافية مطلوبة
-- **Rose Gold** — ثيم وردي فاخر (مطلوب جداً عند المستخدمين)
-- **Forest Green** — ثيم أخضر داكن هادئ
-- **Amoled Purple** — بنفسجي غامق مع أسود
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-### 2. حجم خط قابل للتعديل (Font Size Slider)
-- سلايدر لتغيير حجم الخط بين صغير / متوسط / كبير
-- يُحفظ في localStorage ويُطبق على `--font-size-base`
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-### 3. شكل فقاعات الشات (Chat Bubble Style)
-- خيارات: Modern (rounded) / Classic (square corners) / Minimal (بدون خلفية)
-- يظهر التأثير مباشرة في معاينة الشات
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
-### 4. تأثير Haptic عند الاختيار
-- أنيميشن scale bounce عند اختيار ثيم أو لون بـ framer-motion
-
-### 5. معاينة محسّنة
-- تحسين معاينة الشات لتشمل أيقونة مستخدم وطابع زمني
-- إضافة معاينة للأزرار والروابط بجانب فقاعات الشات
-
----
-
-## التغييرات التقنية
-
-### `src/index.css`
-- إضافة 3 ثيمات CSS جديدة: `[data-theme="rosegold"]`, `[data-theme="forest"]`, `[data-theme="amoled"]`
-
-### `src/pages/CustomizationPage.tsx`
-- إضافة الثيمات الجديدة لمصفوفة `themes`
-- إضافة قسم **Font Size** بسلايدر (3 مستويات)
-- إضافة قسم **Chat Style** بـ 3 خيارات لشكل الفقاعات
-- تحسين معاينة الشات (أيقونة + وقت)
-- إضافة أنيميشن bounce عند الاختيار
-- حفظ كل الإعدادات في localStorage
-
-### الشكل العام للصفحة بعد التحديث:
-```text
-┌─────────────────────────┐
-│  Theme (6 خيارات 2×3)   │
-├─────────────────────────┤
-│  Accent Color           │
-│  [معاينة شات محسّنة]    │
-│  ● ● ● ● ● ● (ألوان)   │
-├─────────────────────────┤
-│  Font Size              │
-│  [S ——●—— L] سلايدر     │
-├─────────────────────────┤
-│  Chat Style             │
-│  [Modern] [Classic] [Min]│
-└─────────────────────────┘
-```
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
