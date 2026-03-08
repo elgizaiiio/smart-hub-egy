@@ -587,7 +587,7 @@ const VideosPage = () => {
                     <div className="border-t border-border pt-1.5 mt-1.5">
                       <div className="flex items-center justify-between px-1 mb-0.5">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Publish to</p>
-                        <span className="text-[7px] px-2 py-[2px] rounded-full bg-gradient-to-r from-amber-400/10 via-yellow-400/10 to-amber-500/10 border border-amber-400/25 font-bold tracking-[0.15em] uppercase"><span className="text-amber-400">Pro</span><span className="text-amber-500/40 mx-[3px]">·</span><span className="text-amber-500">Premium</span></span>
+                        <span className="text-[7px] px-2 py-[2px] rounded-full bg-gradient-to-r from-amber-500 to-orange-500 font-bold tracking-[0.15em] uppercase text-white">Pro · Premium</span>
                       </div>
 
                       {PUBLISH_OPTIONS.map(({ platform, Icon, label }) => {
