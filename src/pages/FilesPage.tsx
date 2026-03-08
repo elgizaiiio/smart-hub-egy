@@ -30,11 +30,22 @@ const SUGGESTIONS = [
   "Generate a PDF",
 ];
 
+const GoogleDriveIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
+    <path d="M7.71 3.5L1.15 15l3.44 5.96L11.15 9.46 7.71 3.5z" fill="#0066DA"/>
+    <path d="M16.29 3.5H7.71l6.56 11.46h8.58L16.29 3.5z" fill="#00AC47"/>
+    <path d="M1.15 15l3.44 5.96h14.82l3.44-5.96H1.15z" fill="#EA4335"/>
+  </svg>
+);
+const NotionIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+    <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L18.29 2.16c-.42-.326-.98-.7-2.055-.607L3.572 2.573c-.467.047-.56.28-.374.466l1.261 1.17zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.84-.046.933-.56.933-1.167V6.354c0-.606-.233-.933-.746-.886l-15.177.887c-.56.046-.747.326-.747.933z"/>
+  </svg>
+);
+
 const FILE_INTEGRATIONS = [
-  { name: "Google Drive", icon: "📁", desc: "Upload & access files" },
-  { name: "Notion", icon: "📝", desc: "Create & import pages" },
-  { name: "Gmail", icon: "📧", desc: "Attach from email" },
-  { name: "GitHub", icon: "💻", desc: "Import code files" },
+  { name: "Google Drive", icon: GoogleDriveIcon, desc: "Upload & access files" },
+  { name: "Notion", icon: NotionIcon, desc: "Create & import pages" },
 ];
 
 const FILE_PLACEHOLDERS = [
