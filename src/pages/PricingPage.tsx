@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Mail, Building2, Calendar, Zap, Cpu, Infinity, Server, ShieldCheck, Users, Gauge, Clock, HeadphonesIcon, Webhook, Globe, BarChart3, HardDrive, Headset } from "lucide-react";
+import { ArrowLeft, Check, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const plans = [
@@ -149,32 +149,19 @@ const PricingPage = () => {
           <h2 className="font-display text-3xl font-bold mb-3 text-foreground">Choose your plan</h2>
           <p className="text-muted-foreground text-sm mb-6">One platform. Infinite possibilities.</p>
 
-          <div className="relative inline-flex items-center gap-0 rounded-full p-1 bg-muted/50 backdrop-blur-xl border border-border/50 shadow-lg">
-            <motion.div
-              layoutId="pricing-toggle-indicator"
-              className="absolute top-1 bottom-1 rounded-full bg-primary shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
-              style={{ width: isYearly ? "calc(55% - 4px)" : "calc(45% - 4px)" }}
-              animate={{ left: isYearly ? "calc(45% + 2px)" : "4px" }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            />
+          <div className="inline-flex items-center gap-1 bg-secondary rounded-full p-1">
             <button
               onClick={() => setIsYearly(false)}
-              className={`relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold transition-colors duration-200 ${!isYearly ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${!isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
               Monthly
             </button>
             <button
               onClick={() => setIsYearly(true)}
-              className={`relative z-10 inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-colors duration-200 ${isYearly ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-colors ${isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
               <span className="notranslate">Yearly</span>
-              <motion.span
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="notranslate inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 leading-none whitespace-nowrap ring-1 ring-emerald-500/30"
-              >
-                Save 20%
-              </motion.span>
+              <span className="notranslate inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 leading-none whitespace-nowrap">Save</span>
             </button>
           </div>
         </motion.div>
@@ -234,85 +221,22 @@ const PricingPage = () => {
 
         {/* Enterprise Section */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.7 }}
-          className="enterprise-card mt-14 relative rounded-2xl overflow-hidden"
+          transition={{ delay: 0.4 }}
+          className="mt-12 rounded-2xl border border-border bg-card p-8 text-center"
         >
-          {/* Animated gradient border */}
-          <div className="enterprise-border-glow" />
-
-          {/* Inner content */}
-          <div className="relative z-10 rounded-[14px] bg-gradient-to-br from-[hsl(245,40%,12%)] via-[hsl(260,35%,10%)] to-[hsl(220,40%,8%)] p-8 md:p-10">
-            {/* Particles */}
-            <div className="pricing-points-wrapper">
-              {Array.from({ length: 14 }).map((_, j) => (
-                <span key={j} className="pricing-point" />
-              ))}
-            </div>
-
-            {/* Badge */}
-            <motion.span
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.6 }}
-              className="inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1 rounded-full bg-white/10 text-white/70 uppercase tracking-widest mb-6 border border-white/10"
-            >
-              <Building2 className="w-3 h-3" />
-              For Teams & Organizations
-            </motion.span>
-
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
-              {/* Left — Title & Description */}
-              <div className="md:max-w-sm">
-                <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-3">Enterprise</h3>
-                <p className="text-sm text-white/50 leading-relaxed">
-                  Tailored solutions for large teams and organizations. Get dedicated infrastructure, custom integrations, and enterprise-grade security with guaranteed uptime.
-                </p>
-                <div className="flex flex-wrap gap-3 mt-6">
-                  <a
-                    href="mailto:support@megsyai.com"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)]"
-                  >
-                    <Mail className="w-4 h-4" />
-                    Contact Sales
-                  </a>
-                  <a
-                    href="mailto:support@megsyai.com?subject=Book%20a%20Demo"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/15 text-white/70 text-sm font-medium hover:border-white/30 hover:text-white transition-all"
-                  >
-                    <Calendar className="w-4 h-4" />
-                    Book a Demo
-                  </a>
-                </div>
-              </div>
-
-              {/* Right — Features Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
-                {[
-                  { icon: Zap, label: "Custom MC allocation" },
-                  { icon: Cpu, label: "All AI models (priority queue)" },
-                  { icon: Infinity, label: "Unlimited images, videos & deploys" },
-                  { icon: Server, label: "Dedicated infrastructure" },
-                  { icon: ShieldCheck, label: "SSO & SAML authentication" },
-                  { icon: Users, label: "Team management & roles" },
-                  { icon: Gauge, label: "Custom API rate limits" },
-                  { icon: Clock, label: "99.9% uptime SLA guarantee" },
-                  { icon: HeadphonesIcon, label: "Dedicated account manager" },
-                  { icon: Webhook, label: "Custom integrations & webhooks" },
-                  { icon: Globe, label: "Data residency options" },
-                  { icon: BarChart3, label: "Advanced analytics & reporting" },
-                  { icon: HardDrive, label: "On-premise deployment option" },
-                  { icon: Headset, label: "Priority 24/7 support" },
-                ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-2.5 py-1.5 text-sm text-white/70">
-                    <Icon className="w-3.5 h-3.5 shrink-0 text-purple-400/80" />
-                    {label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <h3 className="font-display text-xl font-bold text-foreground mb-2">Enterprise</h3>
+          <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">
+            Custom plans for large teams with dedicated infrastructure, SLA guarantees, and priority support.
+          </p>
+          <a
+            href="mailto:support@megsyai.com"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            Contact Sales
+          </a>
         </motion.div>
       </div>
     </div>

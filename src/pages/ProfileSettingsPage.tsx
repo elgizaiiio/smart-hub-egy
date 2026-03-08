@@ -40,8 +40,7 @@ const ProfileSettingsPage = () => {
         setCredits(Number(profile.credits) || 0);
         setPlan(profile.plan || "free");
         if (profile.display_name) setUserName(profile.display_name);
-        const rawUrl = profile.avatar_url || user.user_metadata?.avatar_url || null;
-        setAvatarUrl(rawUrl ? `${rawUrl.split('?')[0]}?t=${Date.now()}` : null);
+        setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
         setTwoFactorEnabled((profile as any).two_factor_enabled ?? false);
       }
     };
@@ -58,12 +57,11 @@ const ProfileSettingsPage = () => {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
-      const filePath = `${userId}/avatar.${ext}`;
+      const filePath = `${userId}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true, contentType: file.type });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
-      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
-      setAvatarUrl(urlWithCacheBust);
+      setAvatarUrl(publicUrl);
       await supabase.rpc("update_profile_safe", { p_user_id: userId, p_avatar_url: publicUrl });
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
       toast.success("Profile photo updated");

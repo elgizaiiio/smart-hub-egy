@@ -255,7 +255,7 @@ const AuthPage = () => {
       <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover">
         <source src="/videos/auth-bg.mp4" type="video/mp4" />
       </video>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-none" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
