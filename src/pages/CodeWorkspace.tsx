@@ -571,7 +571,7 @@ Rules:
       await callSandbox({
         action: "exec",
         sprite_name: sandbox.spriteName,
-        command: "cd /app && nohup npm run dev > /tmp/dev.log 2>&1 & echo RESTARTED",
+        command: "cd /app && npm install && nohup npm run dev > /tmp/dev.log 2>&1 & echo RESTARTED",
       });
       await new Promise((r) => setTimeout(r, 2500));
       setSandbox(s => ({ ...s, previewUrl: `${s.previewUrl}?${Date.now()}` }));
