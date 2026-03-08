@@ -461,13 +461,13 @@ const VideosPage = () => {
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
             {/* Mobile: single rotating showcase */}
-            <div className="md:hidden w-full max-w-sm mb-5">
+            <div className="md:hidden w-full max-w-[180px] mb-4">
               <motion.div
                 key={currentVideo}
                 initial={{ opacity: 0, scale: 0.97 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="relative rounded-2xl overflow-hidden aspect-[9/16]"
+                className="relative rounded-2xl overflow-hidden aspect-[3/4]"
               >
                 <video
                   src={SHOWCASE_VIDEOS[currentVideo]}
