@@ -24,7 +24,13 @@ const HeroSection = () => {
           className="font-display text-[8vw] uppercase leading-[1] tracking-tight text-foreground md:text-[5.5vw]"
         >
           THE AI CREATIVE SUITE{" "}
-          <span className="text-primary">THAT PUTS YOU IN CONTROL</span>
+          <motion.span
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-block text-primary"
+          >
+            THAT PUTS YOU IN CONTROL
+          </motion.span>
         </motion.h1>
 
         <motion.p

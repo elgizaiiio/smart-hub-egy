@@ -13,9 +13,13 @@ const ParallaxShowcase = () => {
           className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter text-foreground md:text-[6vw]"
         >
           DEPTH OF{" "}
-          <span className="bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+          <motion.span
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-block bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent"
+          >
             CREATION
-          </span>
+          </motion.span>
         </motion.h2>
       </div>
 
