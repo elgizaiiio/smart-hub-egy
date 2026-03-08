@@ -65,7 +65,8 @@ const ProgrammingPage = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <AppLayout onSelectConversation={loadConversation} onNewChat={() => setConversationId(null)} activeConversationId={conversationId}>
+    <div className="h-full flex flex-col bg-background">
       <AppSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
