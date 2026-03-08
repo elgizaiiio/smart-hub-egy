@@ -124,11 +124,31 @@ const ContactPage = () => {
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="sticky top-32"
             >
-              <img
-                src="/contact-graphic.png"
-                alt="Need to contact us?"
-                className="w-full rounded-2xl"
-              />
+              <div className="relative aspect-square w-full overflow-hidden rounded-lg border-[3px] border-purple-500 bg-purple-600">
+                {/* Dense overlapping text */}
+                <div className="absolute inset-0 flex flex-col justify-between p-3 md:p-5">
+                  <div className="flex-1 flex flex-col justify-center leading-[0.85]">
+                    <span className="block font-black text-[22vw] md:text-[8.5vw] uppercase tracking-[-0.06em] text-black/90" style={{ lineHeight: 0.82 }}>
+                      NEED TO
+                    </span>
+                    <span className="block font-black text-[22vw] md:text-[8.5vw] uppercase tracking-[-0.06em] text-black/90" style={{ lineHeight: 0.82 }}>
+                      CONTACT
+                    </span>
+                    <span className="block font-black text-[22vw] md:text-[8.5vw] uppercase tracking-[-0.06em] text-black/90" style={{ lineHeight: 0.82 }}>
+                      US?
+                    </span>
+                  </div>
+                  {/* Envelope icon */}
+                  <div className="flex justify-end">
+                    <svg viewBox="0 0 120 90" fill="none" className="w-[40%] text-black/90">
+                      <rect x="2" y="2" width="116" height="86" rx="4" stroke="currentColor" strokeWidth="5" />
+                      <path d="M2 2 L60 50 L118 2" stroke="currentColor" strokeWidth="5" fill="none" />
+                      <path d="M2 88 L45 50" stroke="currentColor" strokeWidth="5" />
+                      <path d="M118 88 L75 50" stroke="currentColor" strokeWidth="5" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
             {/* Right: Form */}
