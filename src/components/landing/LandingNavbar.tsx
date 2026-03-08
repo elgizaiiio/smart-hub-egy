@@ -38,28 +38,18 @@ const navItems: NavItem[] = [
       {
         title: "Image",
         items: [
-          { label: "AI Image Generator", desc: "Create images from prompts or references", href: "/images" },
-          { label: "Creative Ideation", desc: "Explore visual ideas and directions", href: "/images" },
-          { label: "Background Remover", desc: "Remove and replace image backgrounds", href: "/images" },
-          { label: "Train Your Own Model", desc: "Train custom models for consistency", href: "/images" },
+          { label: "AI Image Generator", desc: "Create images from prompts", href: "/images" },
+          { label: "Creative Ideation", desc: "Explore visual ideas", href: "/images" },
+          { label: "Background Remover", desc: "Remove backgrounds", href: "/images" },
+          { label: "Train Your Model", desc: "Custom model training", href: "/images" },
         ],
       },
       {
-        title: "Video",
+        title: "Video & Editing",
         items: [
-          { label: "AI Video Generator", desc: "Generate motion from images or text", href: "/videos" },
-        ],
-      },
-      {
-        title: "Editing",
-        items: [
-          { label: "Image Editor", desc: "Edit and refine images with AI", href: "/images" },
-        ],
-      },
-      {
-        title: "Upscaling",
-        items: [
-          { label: "Image Upscaler", desc: "Enhance resolution without losing detail", href: "/images" },
+          { label: "AI Video Generator", desc: "Generate motion from images", href: "/videos" },
+          { label: "Image Editor", desc: "Edit images with AI", href: "/images" },
+          { label: "Image Upscaler", desc: "Enhance resolution", href: "/images" },
         ],
       },
     ],
@@ -194,8 +184,8 @@ const LandingNavbar = () => {
                       className="fixed left-1/2 top-16 z-50 mt-1 -translate-x-1/2"
                     >
                       <div
-                        className="mx-auto flex max-h-[80vh] overflow-auto overscroll-contain gap-0 rounded-2xl border border-white/[0.08] bg-[hsl(var(--background))]/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl"
-                        style={{ width: item.featured ? "min(860px, calc(100vw - 2rem))" : "min(680px, calc(100vw - 2rem))" }}
+                        className="flex max-h-[80vh] overflow-auto overscroll-contain gap-0 rounded-2xl border border-white/[0.08] bg-[hsl(var(--background))]/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl"
+                        style={{ width: item.featured ? "min(620px, calc(100vw - 2rem))" : "min(480px, calc(100vw - 2rem))" }}
                       >
                         {/* Columns */}
                         <div className="flex flex-1 gap-8">
