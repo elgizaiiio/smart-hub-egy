@@ -1,48 +1,93 @@
 
-# Megsy Platform - Credits + Real Programming + Integrations
 
-## ✅ Completed
+# تقرير فحص شامل لمنصة Megsy
 
-### 1. Credit System
-- Created `credit_transactions` table in Supabase
-- Created `deduct_credits` database function (SECURITY DEFINER)
-- Created `deduct-credits` edge function
-- Created `useCredits` hook for frontend credit checking
-- Updated `generate-image` edge function to deduct credits
-- Updated `generate-video` edge function to deduct credits
-- Updated ImagesPage and VideosPage to check credits before generation
-- Chat remains free
+## الحالة العامة
+- لا توجد أخطاء في Console
+- لا توجد أخطاء في الشبكة (Network)
+- الكود الأمامي (Frontend) يعمل بشكل سليم
 
-### 2. Real Programming System (Sprites.dev)
-- Created `sprites-sandbox` edge function for Sprites.dev API management
-- Actions: create, exec, write-file, write-files, status, destroy
-- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
-- Rebuilt `CodeWorkspace.tsx` with:
-  - Plan → Build workflow with credit deduction (5 credits per build)
-  - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Sprite
-  - Real preview via iframe pointing to Sprite URL
-  - Conversation persistence to Supabase
-  - Project saving with files_snapshot
+---
 
-### 3. GitHub Integration
-- Created `github-repo` edge function via Composio
-- Actions: check-connection, create-repo, push-files
-- Push to GitHub button in CodeWorkspace plus menu
-- Creates new repo and pushes all project files
+## مشاكل أمنية حرجة (CRITICAL) -- يجب إصلاحها فورا
 
-### 4. Database
-- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
-- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
+تم اكتشاف **8 مشاكل أمنية خطيرة** في سياسات RLS بقاعدة البيانات. كل الجداول التالية مفتوحة لأي شخص (حتى بدون تسجيل دخول):
 
-### 5. OAuth2 "Login with Megsy"
-- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
-- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
-- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
-- Built `/oauth/authorize` consent screen page
-- Updated App.tsx routes and config.toml
+### 1. OAuth tokens مكشوفة للجميع
+جدول `oauth_tokens` -- أي شخص يقدر يقرأ أو يعدل أو يحذف كل access tokens الموجودة.
 
-### 6. Secrets Required
-- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
-- `COMPOSIO_API_KEY` ✅ Already exists
-- `FAL_API_KEY` ✅ Already exists
+### 2. OTP codes مكشوفة للجميع
+جدول `otp_codes` -- أي شخص يقدر يقرأ أكواد OTP والإيميلات المرتبطة بيها (يعني ممكن حد يسرق حساب مستخدم).
+
+### 3. OAuth codes مكشوفة للجميع
+جدول `oauth_codes` -- أي شخص يقدر يقرأ authorization codes.
+
+### 4. OAuth clients مكشوفة للجميع
+جدول `oauth_clients` -- أي شخص يقدر يقرأ client secret hashes ويعدل أو يحذف.
+
+### 5. Memories (إعدادات النظام) مكشوفة
+جدول `memories` -- فيه بيانات تسعير الموديلات وحالة Admin. أي شخص يقدر يعدل أسعار الموديلات.
+
+### 6. المحادثات بدون حماية
+جدول `conversations` -- مفيش `user_id` عليه. أي مستخدم يقدر يكشف أو يحذف أي محادثة لأي مستخدم تاني.
+
+### 7. الرسائل بدون حماية
+جدول `messages` -- أي شخص يقدر يدخل أو يعدل أو يحذف رسائل في أي محادثة.
+
+### 8. Credit transactions مكشوفة
+جدول `credit_transactions` -- أي شخص يقدر يدخل records وهمية ويزود رصيده.
+
+---
+
+## مشاكل أمنية متوسطة (WARN)
+
+- **notifications**: أي شخص يقدر يبعت إشعارات وهمية لأي مستخدم
+- **service_status / service_incidents**: أي شخص يقدر يعدل حالة الخدمة
+- **status_subscribers**: إيميلات المشتركين مكشوفة للجميع
+- **email_logs**: أي شخص يقدر يدخل سجلات إيميلات وهمية
+- **Leaked Password Protection**: معطلة في Auth settings
+
+---
+
+## خطة الإصلاح
+
+### المرحلة 1: إصلاح الجداول الحرجة
+سنغير كل سياسات RLS اللي بتقول `USING (true)` و `WITH CHECK (true)` على الجداول الحساسة:
+
+**الجداول اللي محتاجة service_role فقط** (يتم الوصول ليها من Edge Functions بس):
+- `oauth_tokens`, `oauth_codes`, `oauth_clients` -- حذف سياسة `{public}` واستبدالها بـ `{service_role}`
+- `otp_codes` -- نفس الشيء
+- `credit_transactions` (INSERT) -- service_role فقط
+- `email_logs` (INSERT) -- service_role فقط
+- `notifications` (INSERT) -- service_role فقط
+- `memories` -- service_role فقط
+
+**الجداول اللي محتاجة user-scoped policies**:
+- `conversations` -- إضافة عمود `user_id` وربطه بـ `auth.uid()`
+- `messages` -- تقييد الكتابة للمحادثات اللي المستخدم يملكها
+
+### المرحلة 2: إعدادات Auth
+- تفعيل Leaked Password Protection من Supabase Dashboard
+
+### التأثير على الكود
+إضافة `user_id` لجدول `conversations` يتطلب تعديل:
+- `ChatPage.tsx` -- إضافة `user_id` عند إنشاء محادثة جديدة
+- `AppSidebar.tsx` / `DesktopSidebar.tsx` -- الاستعلام يفلتر تلقائيا بعد RLS
+
+---
+
+## ملخص
+
+```text
++------------------+-------+
+| النوع            | العدد |
++------------------+-------+
+| أخطاء حرجة      |   8   |
+| تحذيرات          |   6   |
+| أخطاء Frontend   |   0   |
+| أخطاء Network    |   0   |
++------------------+-------+
+```
+
+الأولوية القصوى هي إصلاح سياسات RLS -- خصوصا جداول OAuth و OTP لأنها تسمح بسرقة حسابات المستخدمين.
+
