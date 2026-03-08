@@ -122,7 +122,7 @@ const ReferralsPage = () => {
         <div className="space-y-1">
           <p className="text-base text-muted-foreground">Every subscriber you refer =</p>
           <p className="text-lg font-semibold" style={{ color: "#FFD700" }}>
-            20% every month or every year — Forever
+            20% every month and every year — Forever
           </p>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
