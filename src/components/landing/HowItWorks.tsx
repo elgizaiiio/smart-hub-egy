@@ -71,12 +71,20 @@ const HowItWorks = () => {
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.7, delay: i * 0.1 }}
             >
-              <div className={`h-full rounded-3xl border bg-gradient-to-b p-7 transition-transform duration-300 hover:scale-[1.03] ${step.color}`}>
-                <span className={`text-5xl font-black leading-none ${step.numColor} opacity-60`}>
-                  {step.number}
+              <div className={`fancy-btn h-full !rounded-3xl !cursor-default !p-7 ${step.color}`} style={{ height: "100%" }}>
+                <span className="fold" />
+                <div className="points_wrapper">
+                  {Array.from({ length: 8 }).map((_, j) => (
+                    <span key={j} className="point" />
+                  ))}
+                </div>
+                <span className="inner !flex !flex-col !items-start !text-left">
+                  <span className={`text-5xl font-black leading-none ${step.numColor} opacity-60`}>
+                    {step.number}
+                  </span>
+                  <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
+                  <p className="text-sm leading-relaxed text-white/45">{step.description}</p>
                 </span>
-                <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-white/45">{step.description}</p>
               </div>
             </motion.div>
           ))}
