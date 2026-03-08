@@ -96,8 +96,9 @@ const AuthPage = () => {
         await sendOTP();
         setStep("otp-2fa");
       } else {
-        toast.success("Welcome back!");
-        navigate("/chat");
+      toast.success("Welcome back!");
+        if (redirectUrl) window.location.href = redirectUrl;
+        else navigate("/chat");
       }
     } catch (e: any) {
       toast.error(e.message || "Login failed");
