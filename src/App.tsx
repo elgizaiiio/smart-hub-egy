@@ -114,6 +114,11 @@ const App = () => {
                 <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                <Route path="/services/images" element={<ServiceImagesPage />} />
+                <Route path="/services/videos" element={<ServiceVideosPage />} />
+                <Route path="/services/chat" element={<ServiceChatPage />} />
+                <Route path="/services/files" element={<ServiceFilesPage />} />
+                <Route path="/services/code" element={<ServiceCodePage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
