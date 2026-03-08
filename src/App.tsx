@@ -69,7 +69,6 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <CookieConsent />
-        <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/pricing" element={<PricingPage />} />
