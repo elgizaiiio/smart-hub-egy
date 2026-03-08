@@ -144,6 +144,7 @@ export function DesktopSettingsLayout({ children, title, subtitle }: DesktopSett
       </div>
     </div>
     </AppLayout>
+  );
 }
 
 export default DesktopSettingsLayout;
