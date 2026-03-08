@@ -10,13 +10,13 @@ interface ChatMsg {
 
 const conversation: { role: "user" | "assistant"; content: string; delay: number }[] = [
   { role: "user", content: "Hello Megsy! What can you do?", delay: 800 },
-  { role: "assistant", content: "Hey! I can help you with a lot — send emails, search the web, generate images, write code, analyze files, and much more. Just ask!", delay: 400 },
+  { role: "assistant", content: "Hey! I can help you with a lot — send emails, search the web, write code, analyze files, summarize documents, and much more. Just ask!", delay: 400 },
   { role: "user", content: "Send an email to my team about the Q1 report", delay: 2000 },
   { role: "assistant", content: "Done! I've drafted and sent the Q1 report summary to your team (marketing@company.com). Subject: \"Q1 2026 Performance Report\". Want me to attach the spreadsheet too?", delay: 400 },
   { role: "user", content: "Search the web for the latest AI trends in 2026", delay: 2200 },
-  { role: "assistant", content: "Here's what I found:\n\n1. Multimodal AI agents are now standard\n2. Video generation hit photorealistic quality\n3. AI coding assistants write 70% of production code\n4. Real-time translation broke language barriers\n\nWant me to create a summary document?", delay: 400 },
-  { role: "user", content: "Generate a logo for my new startup", delay: 1800 },
-  { role: "assistant", content: "I'd love to help! Tell me your startup name and style preference (minimal, bold, playful?) and I'll generate options using our image models.", delay: 400 },
+  { role: "assistant", content: "Here's what I found:\n\n1. Multimodal AI agents are now standard\n2. AI coding assistants write 70% of production code\n3. Real-time translation broke language barriers\n4. Autonomous research agents are mainstream\n\nWant me to create a summary document?", delay: 400 },
+  { role: "user", content: "Summarize this PDF document for me", delay: 1800 },
+  { role: "assistant", content: "Sure! Just upload the file and I'll give you a clear summary with key takeaways. I can also extract specific data or translate it to another language.", delay: 400 },
 ];
 
 const CHAR_SPEED = 18; // ms per character
