@@ -105,7 +105,9 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
       .goog-te-banner-frame, .goog-te-balloon-frame,
       iframe.goog-te-banner-frame,
       .goog-te-spinner-pos,
-      .goog-te-spinner-animation { display: none !important; height: 0 !important; width: 0 !important; visibility: hidden !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+      .goog-te-spinner-animation,
+      [class*="VIpgJd-ZVi9od-"],
+      [class*="goog-te-spinner"] { display: none !important; height: 0 !important; width: 0 !important; visibility: hidden !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
       body { top: 0px !important; margin-top: 0px !important; position: static !important; }
       html > body { top: 0px !important; }
       .goog-tooltip, .goog-tooltip:hover { display: none !important; }
@@ -113,8 +115,6 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
       #google_translate_element { display: none !important; }
       .skiptranslate { display: none !important; height: 0 !important; overflow: hidden !important; opacity: 0 !important; }
       #goog-gt-tt, .goog-te-menu-value { display: none !important; }
-      .VIpgJd-ZVi9od-ORHb-OEVmcd, .VIpgJd-ZVi9od-SmfZ-OEVmcd,
-      .VIpgJd-ZVi9od-xl07Ob-OEVmcd, .VIpgJd-ZVi9od-aZ2wEe-OEVmcd { display: none !important; }
     `;
     document.head.appendChild(style);
 
