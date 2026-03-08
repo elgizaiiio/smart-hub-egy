@@ -9,7 +9,7 @@ const parallaxItems = [
   { src: "/api-showcase/video-6.mp4", type: "video" as const, label: "CINEMATIC" },
 ];
 
-function ParallaxItem({ item, index }: { item: typeof parallaxItems[0]; index: number }) {
+function ParallaxItem({ item, index }: { item: { src: string; type?: string; label: string }; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
