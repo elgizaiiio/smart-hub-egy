@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const galleryItems = [
   { src: "/showcase/model-1.jpg", label: "MEGSY V1", model: "megsy", desc: "Hyper-realistic portraits with cinematic depth" },
   { src: "/showcase/model-6.jpg", label: "NANO BANANA 2", model: "nano", desc: "Classical painting style with atmospheric lighting" },
   { src: "/showcase/model-2.jpg", label: "FLUX KONTEXT MAX", model: "flux", desc: "The world's leading AI image editing & generation model" },
+  { src: "/showcase/model-3.jpg", label: "RECRAFT V4", model: "recraft", desc: "Precise vector art & design-ready illustrations", mobileOnly: true },
 ];
 
 const HorizontalGallery = () => {
