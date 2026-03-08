@@ -66,12 +66,20 @@ const HowItWorks = () => {
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.7, delay: i * 0.1 }}
             >
-              <div className={`h-full rounded-3xl border bg-gradient-to-b p-7 transition-transform duration-300 hover:scale-[1.03] ${step.color}`}>
-                <span className={`text-5xl font-black leading-none ${step.numColor} opacity-60`}>
-                  {step.number}
-                </span>
-                <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-white/45">{step.description}</p>
+              <div className="blob-card group relative h-full overflow-hidden rounded-3xl transition-transform duration-300 hover:scale-[1.03]">
+                {/* Animated blob */}
+                <div
+                  className="blob-sphere"
+                  style={{ backgroundColor: step.blobColor, animationDelay: `${i * -1}s` }}
+                />
+                {/* Inner card */}
+                <div className="blob-card-inner relative z-10 flex h-full flex-col p-7">
+                  <span className="text-5xl font-black leading-none text-white/20">
+                    {step.number}
+                  </span>
+                  <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
+                  <p className="text-sm leading-relaxed text-white/50">{step.description}</p>
+                </div>
               </div>
             </motion.div>
           ))}
