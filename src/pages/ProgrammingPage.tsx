@@ -114,10 +114,10 @@ const ProgrammingPage = () => {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.4 }}
-              className="mx-auto mb-5 w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center relative"
+              className="mx-auto mb-5 w-18 h-18 md:w-24 md:h-24 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center relative"
             >
               <div className="absolute inset-0 rounded-2xl bg-primary/10 blur-xl" />
-              <span className="relative z-10 text-2xl md:text-3xl font-black leading-none" style={{ background: "linear-gradient(135deg, #C0C0C0, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
+              <span className="relative z-10 text-3xl md:text-4xl font-black leading-none" style={{ background: "linear-gradient(135deg, #C0C0C0, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
             </motion.div>
 
             <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">
