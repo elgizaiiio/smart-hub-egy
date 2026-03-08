@@ -43,10 +43,10 @@ const ParallaxShowcase = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0, x: 60, rotateY: 8 }}
+              animate={{ opacity: 1, x: 0, rotateY: 0 }}
+              exit={{ opacity: 0, x: -60, rotateY: -8 }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
               className="h-full w-full"
             >
               {current.type === "video" ? (
