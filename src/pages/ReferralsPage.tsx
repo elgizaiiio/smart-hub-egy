@@ -180,7 +180,7 @@ const ReferralsPage = () => {
       </div>
 
       {/* Withdraw CTA */}
-      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full">
+      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full fancy-btn-gold">
         Request Withdrawal
       </FancyButton>
 
