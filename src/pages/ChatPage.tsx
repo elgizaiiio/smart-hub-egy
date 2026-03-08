@@ -338,28 +338,28 @@ const ChatPage = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.96 }}
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72 rounded-2xl"
+                      className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64 rounded-2xl"
                     >
                       {/* ATTACH */}
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-2">Attach</p>
-                      <div className="grid grid-cols-3 gap-2 mb-2">
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                            <Camera className="w-4 h-4 text-emerald-500" />
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1.5">Attach</p>
+                      <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                            <Camera className="w-3.5 h-3.5 text-emerald-500" />
                           </div>
-                          <span className="text-[11px] text-foreground font-medium">Camera</span>
+                          <span className="text-[10px] text-foreground font-medium">Camera</span>
                         </button>
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                            <Image className="w-4 h-4 text-blue-500" />
+                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                            <Image className="w-3.5 h-3.5 text-blue-500" />
                           </div>
-                          <span className="text-[11px] text-foreground font-medium">Photos</span>
+                          <span className="text-[10px] text-foreground font-medium">Photos</span>
                         </button>
-                        <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/60 transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                            <FileUp className="w-4 h-4 text-violet-500" />
+                        <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+                            <FileUp className="w-3.5 h-3.5 text-violet-500" />
                           </div>
-                          <span className="text-[11px] text-foreground font-medium">Files</span>
+                          <span className="text-[10px] text-foreground font-medium">Files</span>
                         </button>
                       </div>
 
