@@ -395,8 +395,9 @@ const ChatPage = () => {
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${chatMode === "learning" ? "bg-primary/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
                             <GraduationCap className={`w-3 h-3 ${chatMode === "learning" ? "text-primary" : "text-amber-500"}`} />
                           </div>
-                          <div className="flex-1">
-                            <p className="text-[13px] text-foreground font-medium">Learning</p>
+                          <div className="flex-1 leading-tight">
+                            <p className="text-[13px] text-foreground font-medium leading-none">Learning</p>
+                            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Learn step by step</p>
                           </div>
                           {chatMode === "learning" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
                         </button>
