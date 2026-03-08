@@ -525,11 +525,11 @@
 }
 
 .landing-marquee-track {
-  animation: landing-marquee 60s linear infinite;
+  animation: landing-marquee 120s linear infinite;
 }
 
 .landing-marquee-track-reverse {
-  animation: landing-marquee-reverse 65s linear infinite;
+  animation: landing-marquee-reverse 130s linear infinite;
 }
 
 .landing-grid-overlay {
