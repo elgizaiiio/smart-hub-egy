@@ -1,5 +1,4 @@
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion } from "framer-motion";
 
 const parallaxItems = [
   { src: "/api-showcase/showcase-1.png", label: "CONCEPT ART" },
@@ -10,17 +9,14 @@ const parallaxItems = [
 ];
 
 function ParallaxItem({ item, index }: { item: { src: string; type?: string; label: string }; index: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-
-  const y = useTransform(scrollYProgress, [0, 1], [80, -80]);
-  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.92, 1, 0.92]);
-
   return (
-    <motion.div ref={ref} style={{ y, scale }} className="mx-auto w-full max-w-5xl px-6">
+    <motion.div
+      initial={{ opacity: 0, y: 60, scale: 0.95 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.7, delay: 0.1 }}
+      className="mx-auto w-full max-w-5xl px-6"
+    >
       <div className="group relative overflow-hidden rounded-[2rem] border border-border/40 bg-card/20">
         {item.type === "video" ? (
           <video
