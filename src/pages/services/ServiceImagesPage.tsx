@@ -28,9 +28,6 @@ const ServiceImagesPage = () => {
           transition={{ duration: 0.7 }}
           className="relative z-10 mx-auto max-w-4xl text-center"
         >
-          <span className="mb-4 inline-block rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
-            Powered by Megsy Pro
-          </span>
           <h1 className="font-display mt-4 text-5xl font-black uppercase leading-tight tracking-tight md:text-7xl">
             AI Image<br />
             <span className="text-primary">Generator</span>
