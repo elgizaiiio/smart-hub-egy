@@ -604,13 +604,24 @@ Rules:
       await callSandbox({
         action: "exec",
         sprite_name: sandbox.spriteName,
-        command: "cd /app && npm install && nohup npm run dev > /tmp/dev.log 2>&1 & echo RESTARTED",
+        command: "nohup bash -lc 'cd /app && pkill -f \"vite --host 0.0.0.0 --port 3000\" || true; npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo RESTARTED",
+        detach: true,
       });
-      await new Promise((r) => setTimeout(r, 2500));
-      setSandbox(s => ({ ...s, previewUrl: `${s.previewUrl}?${Date.now()}` }));
+
+      const isReady = await waitForPreviewReady(sandbox.spriteName, 25, 2000);
+      if (!isReady) {
+        const restartLogs = await callSandbox({
+          action: "exec",
+          sprite_name: sandbox.spriteName,
+          command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
+        });
+        throw new Error(String(restartLogs?.output || "Preview restart timed out").slice(0, 280));
+      }
+
+      setSandbox((s) => ({ ...s, previewUrl: `${s.previewUrl}?${Date.now()}` }));
       toast.success("Preview restarted");
-    } catch {
-      toast.error("Failed to restart preview");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to restart preview");
     }
   };
 
