@@ -210,19 +210,27 @@ const LandingNavbar = () => {
                       transition={{ duration: 0.2 }}
                       className="fixed left-0 right-0 top-[64px] flex justify-center z-50 px-6 pointer-events-none"
                     >
-                      <div className="w-full max-w-[1000px] rounded-2xl border border-border/50 bg-background/80 backdrop-blur-3xl p-8 shadow-2xl pointer-events-auto">
+                      <div className="w-full max-w-[1000px] rounded-2xl border border-white/10 bg-black backdrop-blur-3xl p-8 shadow-2xl pointer-events-auto">
                         <div className="flex gap-10">
                           {/* Featured Card (Left) */}
                           {item.featured && (
-                            <div className="w-[280px] shrink-0 rounded-2xl bg-gradient-to-b from-primary/10 to-transparent border border-border/50 p-6 flex flex-col items-start relative overflow-hidden">
-                               <div className="mb-4 rounded-full bg-primary/20 p-3 text-primary">
-                                 {item.label === "Products" ? <Mail className="w-6 h-6" /> : <ArrowRight className="w-6 h-6" />}
+                            <div className="group w-[280px] shrink-0 rounded-2xl border border-white/10 flex flex-col items-start relative overflow-hidden">
+                               {/* Background Image */}
+                               <img 
+                                 src={item.label === "Products" ? "/showcase/img-2.jpg" : "/showcase/img-1.jpg"}
+                                 alt=""
+                                 className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-80 transition-all duration-500"
+                               />
+                               {/* Gradient Overlay */}
+                               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                               {/* Content */}
+                               <div className="relative z-10 p-6 flex flex-col h-full w-full mt-auto">
+                                 <h3 className="text-xl font-bold text-white mb-2 whitespace-pre-line">{item.featured.title}</h3>
+                                 {item.featured.desc && <p className="text-sm text-white/70 mb-6">{item.featured.desc}</p>}
+                                 <button onClick={() => handleNav(item.featured!.href)} className="mt-auto rounded-xl bg-white/10 backdrop-blur-md text-white px-5 py-3 text-sm font-semibold hover:bg-white/20 transition-all w-full border border-white/20">
+                                   {item.featured.cta}
+                                 </button>
                                </div>
-                               <h3 className="text-xl font-bold text-foreground mb-2 whitespace-pre-line">{item.featured.title}</h3>
-                               {item.featured.desc && <p className="text-sm text-muted-foreground mb-6">{item.featured.desc}</p>}
-                               <button onClick={() => handleNav(item.featured!.href)} className="mt-auto rounded-xl bg-foreground text-background px-5 py-3 text-sm font-semibold hover:opacity-90 transition-opacity w-full">
-                                 {item.featured.cta}
-                               </button>
                             </div>
                           )}
 
@@ -230,7 +238,7 @@ const LandingNavbar = () => {
                           <div className="flex-1 grid gap-8" style={{ gridTemplateColumns: `repeat(${item.columns.length}, minmax(0, 1fr))` }}>
                             {item.columns.map((col) => (
                               <div key={col.title}>
-                                <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">
+                                <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/50">
                                   {col.title}
                                 </h4>
                                 <div className="space-y-5">
@@ -240,10 +248,10 @@ const LandingNavbar = () => {
                                       onClick={() => handleNav(sub.href)}
                                       className="group flex flex-col w-full text-left"
                                     >
-                                      <span className="text-[15px] font-semibold text-foreground/90 group-hover:text-primary transition-colors">
+                                      <span className="text-[15px] font-semibold text-white/90 group-hover:text-primary transition-colors">
                                         {sub.label}
                                       </span>
-                                      <span className="text-[13px] text-muted-foreground group-hover:text-muted-foreground/80 transition-colors mt-1">
+                                      <span className="text-[13px] text-white/50 group-hover:text-white/70 transition-colors mt-1">
                                         {sub.desc}
                                       </span>
                                     </button>
