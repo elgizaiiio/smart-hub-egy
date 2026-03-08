@@ -106,86 +106,65 @@ const ReferralsPage = () => {
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const content = (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-lg mx-auto pb-16">
+  const statsBlock = (
+    <div className="grid grid-cols-3 gap-4">
+      {[
+        { label: "Referrals", value: referrals.length.toString() },
+        { label: "Total Earned", value: `$${totalEarned.toFixed(2)}` },
+        { label: "Available", value: `$${availableBalance.toFixed(2)}` },
+      ].map(stat => (
+        <motion.div
+          key={stat.label}
+          whileHover={{ scale: 1.04 }}
+          className="text-center py-5 rounded-2xl bg-muted/20 border border-border/30"
+        >
+          <p className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5">{stat.label}</p>
+        </motion.div>
+      ))}
+    </div>
+  );
 
-      {/* Hero */}
-      <div className="rounded-2xl overflow-hidden">
-        <img src={referralHero} alt="Megsy Referral Program" className="w-full h-auto object-cover" />
-      </div>
-
-      {/* Headline */}
-      <div className="text-center space-y-4">
-        <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">
-          20% Forever — No Limits — No Expiry
-        </h2>
-        <div className="space-y-1">
-          <p className="text-base text-muted-foreground">Every subscriber you refer =</p>
-          <p className="text-lg font-semibold" style={{ color: "#FFD700" }}>
-            20% every month and every year — Forever
-          </p>
+  const linkBlock = (
+    <div className="space-y-2">
+      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Your Referral Link</p>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 px-4 py-3 rounded-xl bg-muted/30 text-sm text-foreground truncate select-all font-mono">
+          {referralLink || "Loading..."}
         </div>
-        <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          Share your link. They subscribe. You earn 20% of their payment — not once, not for a year — forever. No caps. No limits. No expiry. As long as they stay subscribed, you keep earning.
-        </p>
+        <button
+          onClick={handleCopy}
+          className="p-3 rounded-xl text-black hover:opacity-90 transition-colors shrink-0"
+          style={{ backgroundColor: "#FFD700" }}
+        >
+          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        </button>
       </div>
+    </div>
+  );
 
-      {/* Stats — transparent, no borders */}
-      <div className="grid grid-cols-3 gap-4">
+  const howItWorksBlock = (
+    <div className="space-y-3">
+      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">How It Works</p>
+      <div className="space-y-1">
         {[
-          { label: "Referrals", value: referrals.length.toString() },
-          { label: "Total Earned", value: `$${totalEarned.toFixed(2)}` },
-          { label: "Available", value: `$${availableBalance.toFixed(2)}` },
-        ].map(stat => (
-          <div key={stat.label} className="text-center py-3">
-            <p className="text-xl font-bold text-foreground">{stat.value}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">{stat.label}</p>
+          { step: "1", text: "Share your unique referral link" },
+          { step: "2", text: "They sign up and make a purchase" },
+          { step: "3", text: "You earn 20% of every payment, forever" },
+        ].map(item => (
+          <div key={item.step} className="flex items-center gap-3 py-2.5">
+            <span className="w-6 h-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center text-[11px] font-bold text-[#FFD700] shrink-0">
+              {item.step}
+            </span>
+            <p className="text-sm text-foreground">{item.text}</p>
           </div>
         ))}
       </div>
+    </div>
+  );
 
-      {/* Referral Link */}
-      <div className="space-y-2">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Your Referral Link</p>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 px-4 py-3 rounded-xl bg-muted/30 text-sm text-foreground truncate select-all font-mono">
-            {referralLink || "Loading..."}
-          </div>
-          <button
-            onClick={handleCopy}
-            className="p-3 rounded-xl text-black hover:opacity-90 transition-colors shrink-0"
-            style={{ backgroundColor: "#FFD700" }}
-          >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* How it works — clean, no borders */}
-      <div className="space-y-3">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">How It Works</p>
-        <div className="space-y-1">
-          {[
-            { step: "1", text: "Share your unique referral link" },
-            { step: "2", text: "They sign up and make a purchase" },
-            { step: "3", text: "You earn 20% of every payment, forever" },
-          ].map(item => (
-            <div key={item.step} className="flex items-center gap-3 py-2.5">
-              <span className="w-6 h-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center text-[11px] font-bold text-[#FFD700] shrink-0">
-                {item.step}
-              </span>
-              <p className="text-sm text-foreground">{item.text}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Withdraw CTA */}
-      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full fancy-btn-gold">
-        Request Withdrawal
-      </FancyButton>
-
-      {/* Tabs */}
+  const tabsBlock = (
+    <>
       <div className="flex bg-secondary/50 rounded-full p-1">
         {(["referrals", "earnings", "withdrawals"] as const).map(t => (
           <button
@@ -200,7 +179,6 @@ const ReferralsPage = () => {
         ))}
       </div>
 
-      {/* Tab Content */}
       <AnimatePresence mode="wait">
         <motion.div key={activeTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }} className="space-y-1">
           {activeTab === "referrals" && (
@@ -213,14 +191,11 @@ const ReferralsPage = () => {
                     <p className="text-sm font-medium text-foreground">User {r.referred_id.substring(0, 8)}...</p>
                     <p className="text-[11px] text-muted-foreground">{formatDate(r.created_at)}</p>
                   </div>
-                  <span className="text-[11px] font-medium" style={{ color: "#FFD700" }}>
-                    {r.status}
-                  </span>
+                  <span className="text-[11px] font-medium" style={{ color: "#FFD700" }}>{r.status}</span>
                 </div>
               ))
             )
           )}
-
           {activeTab === "earnings" && (
             earnings.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-10">No earnings yet.</p>
@@ -236,7 +211,6 @@ const ReferralsPage = () => {
               ))
             )
           )}
-
           {activeTab === "withdrawals" && (
             withdrawals.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-10">No withdrawal requests yet.</p>
@@ -256,13 +230,81 @@ const ReferralsPage = () => {
           )}
         </motion.div>
       </AnimatePresence>
+    </>
+  );
+
+  // Mobile content — single column
+  const mobileContent = (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-lg mx-auto pb-16">
+      <div className="rounded-2xl overflow-hidden">
+        <img src={referralHero} alt="Megsy Referral Program" className="w-full h-auto object-cover" />
+      </div>
+      <div className="text-center space-y-4">
+        <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">
+          20% Forever — No Limits — No Expiry
+        </h2>
+        <div className="space-y-1">
+          <p className="text-base text-muted-foreground">Every subscriber you refer =</p>
+          <p className="text-lg font-semibold" style={{ color: "#FFD700" }}>20% every month and every year — Forever</p>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+          Share your link. They subscribe. You earn 20% of their payment — not once, not for a year — forever. No caps. No limits. No expiry.
+        </p>
+      </div>
+      {statsBlock}
+      {linkBlock}
+      {howItWorksBlock}
+      <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full fancy-btn-gold">
+        Request Withdrawal
+      </FancyButton>
+      <div className="space-y-4">{tabsBlock}</div>
+    </motion.div>
+  );
+
+  // Desktop content — two-column layout
+  const desktopContent = (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto pb-16">
+      {/* Hero banner — full width */}
+      <div className="rounded-2xl overflow-hidden mb-8">
+        <img src={referralHero} alt="Megsy Referral Program" className="w-full h-52 object-cover" />
+      </div>
+
+      <div className="grid grid-cols-5 gap-8">
+        {/* Left column — info */}
+        <div className="col-span-2 space-y-6">
+          <div className="space-y-3">
+            <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">
+              20% Forever
+            </h2>
+            <p className="text-lg font-semibold" style={{ color: "#FFD700" }}>
+              No Limits — No Expiry
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Share your link. They subscribe. You earn 20% of their payment — forever. No caps. As long as they stay subscribed, you keep earning.
+            </p>
+          </div>
+
+          {linkBlock}
+          {howItWorksBlock}
+
+          <FancyButton onClick={() => navigate("/settings/withdraw")} className="w-full fancy-btn-gold">
+            Request Withdrawal
+          </FancyButton>
+        </div>
+
+        {/* Right column — stats & tabs */}
+        <div className="col-span-3 space-y-6">
+          {statsBlock}
+          <div className="space-y-4">{tabsBlock}</div>
+        </div>
+      </div>
     </motion.div>
   );
 
   if (!isMobile) {
     return (
       <DesktopSettingsLayout title="Referrals" subtitle="Earn commission by inviting friends">
-        {content}
+        {desktopContent}
       </DesktopSettingsLayout>
     );
   }
@@ -276,7 +318,7 @@ const ReferralsPage = () => {
           </button>
           <h1 className="font-display text-lg font-bold text-foreground">Referrals</h1>
         </div>
-        <div className="px-4">{content}</div>
+        <div className="px-4">{mobileContent}</div>
       </div>
     </div>
   );
