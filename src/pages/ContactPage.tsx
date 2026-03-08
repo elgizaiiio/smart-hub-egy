@@ -128,7 +128,8 @@ const ContactPage = () => {
             <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-purple-600 p-10">
               <motion.div
                 initial={{ y: 40, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 0.3 }}
                 className="relative z-10 flex h-full flex-col justify-between"
               >
