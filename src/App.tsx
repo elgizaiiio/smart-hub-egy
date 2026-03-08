@@ -22,7 +22,7 @@ import CustomizationPage from "./pages/CustomizationPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import BillingPage from "./pages/BillingPage";
 import ReferralsPage from "./pages/ReferralsPage";
-import LegalPage from "./pages/LegalPage";
+
 import LanguagePage from "./pages/LanguagePage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import NotFound from "./pages/NotFound";
