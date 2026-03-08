@@ -82,7 +82,7 @@ const POINT_CONFIGS = [
 
 const HowItWorks = () => {
   return (
-    <section id="how-it-works" className="relative overflow-hidden py-28 md:py-44">
+    <section id="how-it-works" className="relative overflow-hidden py-16 md:py-44">
       <div className="mx-auto max-w-7xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 80 }}
