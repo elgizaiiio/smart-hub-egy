@@ -16,7 +16,7 @@ const conversation: { role: "user" | "assistant"; content: string; delay: number
   { role: "user", content: "Add a search bar with filters for genre and artist", delay: 2800 },
   { role: "assistant", content: "Done! Added a search bar with real-time filtering, genre chips (Pop, Rock, Hip-Hop, Jazz, Electronic), and artist suggestions dropdown. Try it out in the preview!", delay: 400 },
   { role: "user", content: "Deploy it to production", delay: 2200 },
-  { role: "assistant", content: "Deployed! 🚀\n\n• Live URL: music-app.vercel.app\n• GitHub repo synced\n• SSL certificate active\n• Build time: 12s\n\nYour app is live and ready to share!", delay: 400 },
+  { role: "assistant", content: "Deployed! 🚀\n\n• Live URL: music-app.megsy.ai\n• GitHub repo synced\n• SSL certificate active\n• Build time: 12s\n\nYour app is live and ready to share!", delay: 400 },
 ];
 
 const CHAR_SPEED = 18;
