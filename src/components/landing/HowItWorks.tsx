@@ -135,12 +135,9 @@ const HowItWorks = () => {
                     ))}
                   </div>
                   <div className="relative z-10 flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <span className={`text-4xl font-black leading-none ${step.numColor} opacity-40`}>
-                        {step.number}
-                      </span>
-                      <Icon className={`h-5 w-5 ${step.numColor} opacity-50`} strokeWidth={1.5} />
-                    </div>
+                    <span className={`text-4xl font-black leading-none ${step.numColor} opacity-40`}>
+                      {step.number}
+                    </span>
                     <h3 className={`text-base font-bold ${step.titleColor}`}>{step.title}</h3>
                     <p className={`text-[13px] leading-relaxed ${step.descColor}`}>{step.description}</p>
                   </div>
