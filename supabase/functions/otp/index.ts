@@ -131,20 +131,10 @@ serve(async (req) => {
 
         if (linkError) throw new Error(linkError.message);
 
-        // Extract tokens from the link
-        const url = new URL(linkData.properties.action_link);
-        const token_hash = url.searchParams.get("token") || url.hash?.split("access_token=")?.[1]?.split("&")?.[0];
-
-        // Verify the OTP token to get a session
-        const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-          type: "magiclink",
-          email: normalizedEmail,
-        });
-
         return new Response(JSON.stringify({ 
           success: true, 
           is_new: false,
-          action_link: linkData.properties.action_link,
+          token_hash: linkData.properties.hashed_token,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -170,7 +160,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           success: true, 
           is_new: true,
-          action_link: linkData.properties.action_link,
+          token_hash: linkData.properties.hashed_token,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
