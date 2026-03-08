@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import Lenis from "lenis";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import HeroSection from "@/components/landing/HeroSection";
 import HorizontalGallery from "@/components/landing/HorizontalGallery";
@@ -13,32 +15,36 @@ import CTASection from "@/components/landing/CTASection";
 import LandingFooter from "@/components/landing/LandingFooter";
 
 const LandingPage = () => {
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.8,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    return () => lenis.destroy();
+  }, []);
+
   return (
     <div data-theme="dark" className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <LandingNavbar />
-
       <HeroSection />
-
       <StatsMarquee />
-
       <HorizontalGallery />
-
       <StickyFeatureTabs />
-
       <ParallaxShowcase />
-
       <ShowcaseGallery />
-
       <ModelsMarquee />
-
       <HowItWorks />
-
       <PricingPreview />
-
       <FAQSection />
-
       <CTASection />
-
       <LandingFooter />
     </div>
   );
