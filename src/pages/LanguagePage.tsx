@@ -10,7 +10,7 @@ const LANGUAGES = [
   { code: "ar", name: "Arabic", native: "العربية" },
   { code: "es", name: "Spanish", native: "Español" },
   { code: "fr", name: "French", native: "Français" },
-  { code: "de", name: "German", native: "Deutsch" },
+  
   { code: "zh", name: "Chinese", native: "中文" },
   { code: "ja", name: "Japanese", native: "日本語" },
   { code: "ko", name: "Korean", native: "한국어" },
