@@ -205,7 +205,6 @@ const LandingNavbar = () => {
                               </h4>
                               <div className="space-y-1">
                                 {col.items.map((sub) => {
-                                  const Icon = sub.icon;
                                   return (
                                     <button
                                       key={sub.label}
