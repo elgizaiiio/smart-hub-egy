@@ -39,7 +39,7 @@ const BillingPage = () => {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
       {/* Visa Card */}
       <div className="relative w-full aspect-[1.7/1] rounded-2xl overflow-hidden shadow-2xl">
-        <img src={visaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={visaBg} alt="" className="absolute inset-0 w-full h-full object-cover" fetchPriority="high" decoding="async" loading="eager" />
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative z-10 flex flex-col justify-between h-full p-6">
           <div className="flex items-start justify-between">
