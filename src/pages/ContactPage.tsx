@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,252 +6,347 @@ import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
-import FancyButton from "@/components/FancyButton";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Send } from "lucide-react";
 
-const contactSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100),
+const supportSchema = z.object({
+  username: z.string().trim().min(1, "Username is required").max(100),
   email: z.string().trim().email("Invalid email address").max(255),
-  subject: z.string().min(1, "Please select a subject"),
-  message: z.string().trim().min(1, "Message is required").max(2000, "Message must be less than 2000 characters"),
+  issue: z.string().trim().min(1, "Please describe your issue").max(2000),
 });
 
-type ContactFormValues = z.infer<typeof contactSchema>;
+const enterpriseSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required").max(100),
+  lastName: z.string().trim().min(1, "Last name is required").max(100),
+  workEmail: z.string().trim().email("Invalid email address").max(255),
+  companyName: z.string().trim().min(1, "Company name is required").max(200),
+  country: z.string().min(1, "Please select a country"),
+  companySize: z.string().min(1, "Please select company size"),
+  needs: z.string().trim().min(1, "Please tell us about your needs").max(2000),
+});
 
-const subjects = [
-  { value: "general", label: "General Inquiry" },
-  { value: "support", label: "Support" },
-  { value: "partnership", label: "Partnership" },
-  { value: "enterprise", label: "Enterprise" },
-  { value: "bug", label: "Bug Report" },
+type SupportFormValues = z.infer<typeof supportSchema>;
+type EnterpriseFormValues = z.infer<typeof enterpriseSchema>;
+
+const countries = [
+  "United States", "United Kingdom", "Germany", "France", "Canada",
+  "Australia", "Japan", "South Korea", "India", "Brazil",
+  "Saudi Arabia", "UAE", "Egypt", "Turkey", "Other",
 ];
 
-const socialLinks = [
-  {
-    label: "X (Twitter)",
-    href: "#",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Instagram",
-    href: "#",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-      </svg>
-    ),
-  },
-  {
-    label: "LinkedIn",
-    href: "#",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-      </svg>
-    ),
-  },
+const companySizes = [
+  "1-10", "11-50", "51-200", "201-1000", "1000+",
 ];
 
 const ContactPage = () => {
-  const form = useForm<ContactFormValues>({
-    resolver: zodResolver(contactSchema),
-    defaultValues: { name: "", email: "", subject: "", message: "" },
+  const [activeTab, setActiveTab] = useState<"support" | "enterprise">("support");
+
+  const supportForm = useForm<SupportFormValues>({
+    resolver: zodResolver(supportSchema),
+    defaultValues: { username: "", email: "", issue: "" },
   });
 
-  const onSubmit = (data: ContactFormValues) => {
-    console.log("Contact form submitted:", { name: data.name, subject: data.subject });
-    toast({
-      title: "Message sent!",
-      description: "We'll get back to you as soon as possible.",
-    });
-    form.reset();
+  const enterpriseForm = useForm<EnterpriseFormValues>({
+    resolver: zodResolver(enterpriseSchema),
+    defaultValues: { firstName: "", lastName: "", workEmail: "", companyName: "", country: "", companySize: "", needs: "" },
+  });
+
+  const onSupportSubmit = (_data: SupportFormValues) => {
+    toast({ title: "Request submitted!", description: "We'll get back to you as soon as possible." });
+    supportForm.reset();
   };
+
+  const onEnterpriseSubmit = (_data: EnterpriseFormValues) => {
+    toast({ title: "Inquiry submitted!", description: "Our enterprise team will contact you shortly." });
+    enterpriseForm.reset();
+  };
+
+  const inputClass = "h-14 rounded-xl border-white/15 bg-transparent text-white placeholder:text-white/30 focus-visible:ring-purple-500/40 focus-visible:border-purple-500/50 text-base";
+  const selectTriggerClass = "h-14 rounded-xl border-white/15 bg-transparent text-white focus:ring-purple-500/40 [&>span]:text-white/30 [&>span]:data-[value]:text-white text-base";
 
   return (
     <div className="min-h-screen bg-black text-white">
       <LandingNavbar />
 
-      <main className="mx-auto max-w-7xl px-6 pb-24 pt-32">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="mb-16 text-center"
-        >
-          <h1 className="font-display text-5xl font-black uppercase tracking-tight md:text-7xl">
-            <span className="bg-gradient-to-r from-purple-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Get in Touch
-            </span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-lg text-lg text-white/40">
-            Have a question, suggestion, or want to collaborate? We'd love to hear from you.
-          </p>
-        </motion.div>
-
-        {/* Grid */}
-        <div className="grid gap-12 lg:grid-cols-5">
-          {/* Form */}
+      <main className="mx-auto max-w-7xl px-6 pb-24 pt-24 md:pt-28">
+        <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* Left: Giant Typography Graphic */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.15 }}
-            className="lg:col-span-3"
+            transition={{ duration: 0.8 }}
+            className="relative hidden lg:block"
           >
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-lg md:p-10">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-white/60">Name</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Your name"
-                              className="border-white/10 bg-white/[0.06] text-white placeholder:text-white/20 focus-visible:ring-purple-500/50"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-white/60">Email</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="email"
-                              placeholder="you@example.com"
-                              className="border-white/10 bg-white/[0.06] text-white placeholder:text-white/20 focus-visible:ring-purple-500/50"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="subject"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-white/60">Subject</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="border-white/10 bg-white/[0.06] text-white focus:ring-purple-500/50 [&>span]:text-white/20 [&>span]:data-[value]:text-white">
-                              <SelectValue placeholder="Select a subject" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="border-white/10 bg-zinc-900">
-                            {subjects.map((s) => (
-                              <SelectItem key={s.value} value={s.value} className="text-white/80 focus:bg-white/10 focus:text-white">
-                                {s.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-white/60">Message</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Tell us what's on your mind..."
-                            rows={6}
-                            className="resize-none border-white/10 bg-white/[0.06] text-white placeholder:text-white/20 focus-visible:ring-purple-500/50"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <button type="submit" className="w-full">
-                    <FancyButton className="w-full gap-2 text-base">
-                      <Send className="h-4 w-4" />
-                      Send Message
-                    </FancyButton>
-                  </button>
-                </form>
-              </Form>
+            <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-purple-600 p-10">
+              <div className="relative z-10 flex h-full flex-col justify-between">
+                <h2 className="font-display text-[5.5vw] font-black uppercase leading-[0.85] tracking-tighter text-black">
+                  NEED
+                  <br />
+                  TO
+                  <br />
+                  CONTACT
+                  <br />
+                  US?
+                </h2>
+                {/* Mail icon */}
+                <div className="absolute bottom-4 right-4">
+                  <svg viewBox="0 0 120 80" fill="none" className="h-28 w-40 text-black">
+                    <rect x="2" y="2" width="116" height="76" rx="8" stroke="currentColor" strokeWidth="5" />
+                    <path d="M2 10 L60 50 L118 10" stroke="currentColor" strokeWidth="5" fill="none" />
+                    <path d="M2 78 L45 45" stroke="currentColor" strokeWidth="5" />
+                    <path d="M118 78 L75 45" stroke="currentColor" strokeWidth="5" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </motion.div>
 
-          {/* Sidebar Info */}
+          {/* Right: Form Section */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="space-y-8 lg:col-span-2"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="flex flex-col"
           >
-            {/* Email Card */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-lg">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10">
-                <Mail className="h-6 w-6 text-purple-400" />
-              </div>
-              <h3 className="mb-2 text-lg font-bold text-white">Email Us</h3>
-              <p className="mb-4 text-sm text-white/30">We typically respond within 24 hours.</p>
-              <a
-                href="mailto:support@megsyai.com"
-                className="text-sm font-medium text-purple-400 transition-colors hover:text-purple-300"
+            <h1 className="mb-8 text-center font-display text-4xl font-black uppercase tracking-tight md:text-5xl">
+              REACH OUT TO OUR TEAM
+            </h1>
+
+            {/* Tab Switcher */}
+            <div className="mx-auto mb-10 flex w-fit rounded-full bg-white/[0.08] p-1.5">
+              <button
+                onClick={() => setActiveTab("support")}
+                className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-all ${
+                  activeTab === "support"
+                    ? "bg-[#39e75f] text-black shadow-lg shadow-green-500/20"
+                    : "text-white/60 hover:text-white"
+                }`}
               >
-                support@megsyai.com
-              </a>
+                Support and billing
+              </button>
+              <button
+                onClick={() => setActiveTab("enterprise")}
+                className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-all ${
+                  activeTab === "enterprise"
+                    ? "bg-[#39e75f] text-black shadow-lg shadow-green-500/20"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                Enterprise sales
+              </button>
             </div>
 
-            {/* Social Card */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-lg">
-              <h3 className="mb-4 text-lg font-bold text-white">Follow Us</h3>
-              <div className="flex gap-4">
-                {socialLinks.map((s) => (
-                  <a
-                    key={s.label}
-                    href={s.href}
-                    aria-label={s.label}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/40 transition-all hover:border-purple-500/30 hover:text-white"
-                  >
-                    {s.icon}
-                  </a>
-                ))}
-              </div>
-            </div>
+            {/* Support Form */}
+            {activeTab === "support" && (
+              <motion.div
+                key="support"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Form {...supportForm}>
+                  <form onSubmit={supportForm.handleSubmit(onSupportSubmit)} className="space-y-5">
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <FormField
+                        control={supportForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="Your Megsy username *" className={inputClass} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={supportForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input type="email" placeholder="Email address *" className={inputClass} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={supportForm.control}
+                      name="issue"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Describe your issue *"
+                              rows={7}
+                              className="resize-none rounded-xl border-white/15 bg-transparent text-white placeholder:text-white/30 focus-visible:ring-purple-500/40 focus-visible:border-purple-500/50 text-base"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <button
+                      type="submit"
+                      className="mx-auto flex rounded-full border border-white/20 bg-white px-10 py-3.5 text-sm font-bold text-black transition-all hover:bg-white/90 hover:shadow-lg"
+                    >
+                      Submit Request
+                    </button>
+                  </form>
+                </Form>
+              </motion.div>
+            )}
 
-            {/* FAQ hint */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-lg">
-              <h3 className="mb-2 text-lg font-bold text-white">Quick Answers</h3>
-              <p className="text-sm text-white/30">
-                Check our{" "}
-                <a href="/#faq" className="text-purple-400 underline underline-offset-2 transition-colors hover:text-purple-300">
-                  FAQ section
-                </a>{" "}
-                for common questions about pricing, features, and more.
-              </p>
-            </div>
+            {/* Enterprise Form */}
+            {activeTab === "enterprise" && (
+              <motion.div
+                key="enterprise"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Form {...enterpriseForm}>
+                  <form onSubmit={enterpriseForm.handleSubmit(onEnterpriseSubmit)} className="space-y-5">
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <FormField
+                        control={enterpriseForm.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="First Name *" className={inputClass} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={enterpriseForm.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="Last Name *" className={inputClass} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <FormField
+                        control={enterpriseForm.control}
+                        name="workEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input type="email" placeholder="Work Email *" className={inputClass} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={enterpriseForm.control}
+                        name="companyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="Company Name *" className={inputClass} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <FormField
+                        control={enterpriseForm.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className={selectTriggerClass}>
+                                  <SelectValue placeholder="Country *" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="border-white/10 bg-zinc-900">
+                                {countries.map((c) => (
+                                  <SelectItem key={c} value={c} className="text-white/80 focus:bg-white/10 focus:text-white">
+                                    {c}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={enterpriseForm.control}
+                        name="companySize"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className={selectTriggerClass}>
+                                  <SelectValue placeholder="Company size *" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="border-white/10 bg-zinc-900">
+                                {companySizes.map((s) => (
+                                  <SelectItem key={s} value={s} className="text-white/80 focus:bg-white/10 focus:text-white">
+                                    {s}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={enterpriseForm.control}
+                      name="needs"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Tell us about your needs *"
+                              rows={7}
+                              className="resize-none rounded-xl border-white/15 bg-transparent text-white placeholder:text-white/30 focus-visible:ring-purple-500/40 focus-visible:border-purple-500/50 text-base"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <button
+                      type="submit"
+                      className="mx-auto flex rounded-full border border-white/20 bg-white px-10 py-3.5 text-sm font-bold text-black transition-all hover:bg-white/90 hover:shadow-lg"
+                    >
+                      Submit Inquiry
+                    </button>
+                  </form>
+                </Form>
+              </motion.div>
+            )}
+
+            {/* Privacy note */}
+            <p className="mt-6 text-center text-xs text-white/25">
+              By submitting this form, I agree to receive updates and marketing communications from Megsy, as outlined in the{" "}
+              <a href="https://privacy.megsyai.com" target="_blank" rel="noopener noreferrer" className="text-white/50 underline underline-offset-2 hover:text-white/70">
+                Privacy & Cookie Policy
+              </a>.
+            </p>
           </motion.div>
         </div>
       </main>
