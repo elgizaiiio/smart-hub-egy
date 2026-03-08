@@ -14,8 +14,9 @@ const tabs = [
   },
   {
     title: "IMAGE GENERATION",
-    description: "20+ image models including FLUX Kontext Max, Recraft V4, Ideogram 3, and Megsy V1. Professional-grade output for concept art, product shots, and brand assets.",
-    video: "/api-showcase/video-2.mp4",
+    description: "Turn words into breathtaking visuals. 20+ world-class models — FLUX Kontext Max, Recraft V4, Ideogram 3, Megsy V1 & more. From cinematic concept art to stunning product shots, create visuals that stop the scroll.",
+    video: "",
+    image: "/api-showcase/image-gen-preview.jpg",
     accent: "bg-primary",
   },
   {
@@ -109,6 +110,14 @@ const StickyFeatureTabs = () => {
             >
               {current.useChat ? (
                 <ChatDemo />
+              ) : current.image ? (
+                <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
+                  <img
+                    src={current.image}
+                    alt={current.title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
               ) : (
                 <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
                   <video
