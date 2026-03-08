@@ -163,7 +163,8 @@ const ContactPage = () => {
           {/* Right: Form Section */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.7, delay: 0.15 }}
             className="flex flex-col"
           >
