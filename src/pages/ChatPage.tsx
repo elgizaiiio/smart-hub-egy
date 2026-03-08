@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, Globe, Zap, Search } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, Globe, Puzzle, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -370,9 +370,9 @@ const ChatPage = () => {
                            <div className="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
                             <Globe className="w-3 h-3 text-sky-500" />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] text-foreground font-medium">Web Search</p>
-                            <p className="text-[10px] text-muted-foreground">Search the web</p>
+                          <div className="flex-1 min-w-0 leading-tight">
+                            <p className="text-[13px] text-foreground font-medium leading-none">Web Search</p>
+                            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Search the web</p>
                           </div>
                           <div className={`w-8 h-[18px] rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
                             <div className="w-3.5 h-3.5 rounded-full bg-white mx-0.5" />
@@ -395,8 +395,9 @@ const ChatPage = () => {
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${chatMode === "learning" ? "bg-primary/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
                             <GraduationCap className={`w-3 h-3 ${chatMode === "learning" ? "text-primary" : "text-amber-500"}`} />
                           </div>
-                          <div className="flex-1">
-                            <p className="text-[13px] text-foreground font-medium">Learning</p>
+                          <div className="flex-1 leading-tight">
+                            <p className="text-[13px] text-foreground font-medium leading-none">Learning</p>
+                            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Learn step by step</p>
                           </div>
                           {chatMode === "learning" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
                         </button>
@@ -404,8 +405,9 @@ const ChatPage = () => {
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${chatMode === "shopping" ? "bg-primary/20" : "bg-rose-500/10 group-hover:bg-rose-500/20"}`}>
                             <ShoppingCart className={`w-3 h-3 ${chatMode === "shopping" ? "text-primary" : "text-rose-500"}`} />
                           </div>
-                          <div className="flex-1">
-                            <p className="text-[13px] text-foreground font-medium">Shopping</p>
+                          <div className="flex-1 leading-tight">
+                            <p className="text-[13px] text-foreground font-medium leading-none">Shopping</p>
+                            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Find best deals</p>
                           </div>
                           {chatMode === "shopping" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
                         </button>
@@ -415,7 +417,7 @@ const ChatPage = () => {
                       <div className="border-t border-border pt-1.5 mt-1">
                         <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-accent/60 transition-all group">
                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400/15 to-amber-600/15 flex items-center justify-center group-hover:from-amber-400/25 group-hover:to-amber-600/25 transition-colors">
-                            <Zap className="w-3 h-3 text-amber-500" />
+                            <Puzzle className="w-3 h-3 text-amber-500" />
                           </div>
                           <div className="flex-1">
                             <p className="text-[13px] text-foreground font-medium">Integrations</p>
