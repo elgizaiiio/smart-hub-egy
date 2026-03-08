@@ -148,6 +148,24 @@ interface TranslationWrapperProps {
 
 const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
   const appliedLangRef = useRef<string>("en");
+  const lastRouteKeyRef = useRef<string>("");
+  const translateLockRef = useRef(false);
+  const lastTranslateAtRef = useRef(0);
+
+  const safeTriggerTranslate = (lang: string) => {
+    const now = Date.now();
+    if (translateLockRef.current) return;
+    if (now - lastTranslateAtRef.current < 1200) return;
+
+    translateLockRef.current = true;
+    lastTranslateAtRef.current = now;
+    triggerTranslate(lang);
+
+    // Unlock after Google finishes DOM work
+    setTimeout(() => {
+      translateLockRef.current = false;
+    }, 1800);
+  };
 
   // Initialize Google Translate on mount
   useEffect(() => {
@@ -228,7 +246,7 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
         return;
       }
       appliedLangRef.current = lang;
-      triggerTranslate(lang);
+      safeTriggerTranslate(lang);
     };
 
     const handleLangChange = () => {
@@ -253,20 +271,27 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     };
   }, []);
 
-  // Re-translate dynamic SPA content (new route/content after initial translation)
+  // Re-translate once per SPA route change (without mutation loops)
   useEffect(() => {
-    const run = () => {
+    const runForCurrentRoute = () => {
       const lang = localStorage.getItem("language") || "en";
-      if (lang !== "en") {
-        triggerTranslate(lang);
-      }
+      if (lang === "en") return;
+
+      const routeKey = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (lastRouteKeyRef.current === routeKey) return;
+
+      lastRouteKeyRef.current = routeKey;
+      safeTriggerTranslate(lang);
     };
 
     let timer: ReturnType<typeof setTimeout> | null = null;
     const scheduleRun = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(run, 350);
+      timer = setTimeout(runForCurrentRoute, 300);
     };
+
+    // Initial route sync
+    scheduleRun();
 
     const originalPush = history.pushState;
     const originalReplace = history.replaceState;
@@ -284,15 +309,11 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     window.addEventListener("popstate", scheduleRun);
     window.addEventListener("hashchange", scheduleRun);
 
-    const contentObserver = new MutationObserver(scheduleRun);
-    contentObserver.observe(document.body, { childList: true, subtree: true });
-
     return () => {
       history.pushState = originalPush;
       history.replaceState = originalReplace;
       window.removeEventListener("popstate", scheduleRun);
       window.removeEventListener("hashchange", scheduleRun);
-      contentObserver.disconnect();
       if (timer) clearTimeout(timer);
     };
   }, []);
