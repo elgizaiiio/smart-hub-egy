@@ -1,66 +1,36 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-const roles = [
+const categories = [
   {
-    label: "Artists",
-    description: "Bring imagination to life with bold styles, detailed characters, and concept art ready for refinement.",
-    images: [
-      { src: "/api-showcase/showcase-1.png", model: "Megsy V1 Image" },
-      { src: "/api-showcase/showcase-2.jpg", model: "Nano Banana 2" },
-      { src: "/api-showcase/showcase-4.jpg", model: "Recraft V4" },
+    label: "Image Models",
+    description: "Generate stunning visuals with the world's most powerful image AI models.",
+    items: [
+      { src: "/showcase/model-1.jpg", model: "Megsy V1", type: "image" },
+      { src: "/showcase/model-2.jpg", model: "FLUX Kontext Max", type: "image" },
+      { src: "/showcase/model-6.jpg", model: "Nano Banana 2", type: "image" },
+      { src: "/showcase/model-3.jpg", model: "Recraft V4", type: "image" },
+      { src: "/showcase/model-4.jpg", model: "Ideogram 3", type: "image" },
+      { src: "/showcase/model-5.jpg", model: "HiDream I1", type: "image" },
     ],
   },
   {
-    label: "Designers",
-    description: "Create product mockups, brand assets, and design explorations at incredible speed.",
-    images: [
-      { src: "/api-showcase/showcase-3.jpg", model: "FLUX Kontext Max" },
-      { src: "/api-showcase/showcase-1.png", model: "Ideogram 3" },
-      { src: "/api-showcase/showcase-2.jpg", model: "Seedream 5 Lite" },
-    ],
-  },
-  {
-    label: "Animators",
-    description: "Turn static ideas into dynamic video content with AI-driven animation and motion tools.",
-    images: [
-      { src: "/api-showcase/showcase-4.jpg", model: "Megsy Video" },
-      { src: "/api-showcase/showcase-3.jpg", model: "Kling 3.0 Pro" },
-      { src: "/api-showcase/showcase-1.png", model: "Veo 3.1" },
-    ],
-  },
-  {
-    label: "Photographers",
-    description: "Enhance, upscale, and refine photos with professional-grade AI tools.",
-    images: [
-      { src: "/api-showcase/showcase-2.jpg", model: "Megsy V1 Image" },
-      { src: "/api-showcase/showcase-4.jpg", model: "FLUX 2 Pro" },
-      { src: "/api-showcase/showcase-3.jpg", model: "HiDream I1" },
-    ],
-  },
-  {
-    label: "Marketers",
-    description: "Generate campaign visuals, social media content, and ad creatives at scale.",
-    images: [
-      { src: "/api-showcase/showcase-1.png", model: "GPT Image 1.5" },
-      { src: "/api-showcase/showcase-3.jpg", model: "ImagineArt 1.5" },
-      { src: "/api-showcase/showcase-2.jpg", model: "OmniGen2" },
-    ],
-  },
-  {
-    label: "Developers",
-    description: "Build full-stack applications, generate code, and deploy with AI-powered tools.",
-    images: [
-      { src: "/api-showcase/showcase-3.jpg", model: "Megsy V1" },
-      { src: "/api-showcase/showcase-4.jpg", model: "GPT-5" },
-      { src: "/api-showcase/showcase-1.png", model: "DeepSeek R1" },
+    label: "Video Models",
+    description: "Create cinematic videos from text or images with cutting-edge video AI.",
+    items: [
+      { src: "/api-showcase/video-1.mp4", model: "Megsy Video", type: "video" },
+      { src: "/api-showcase/video-2.mp4", model: "Veo 3.1", type: "video" },
+      { src: "/api-showcase/video-3.mp4", model: "Kling 3.0 Pro", type: "video" },
+      { src: "/api-showcase/video-4.mp4", model: "Runway Gen-4", type: "video" },
+      { src: "/api-showcase/video-5.mp4", model: "Sora", type: "video" },
+      { src: "/api-showcase/video-6.mp4", model: "Pika 2.2", type: "video" },
     ],
   },
 ];
 
 const ShowcaseGallery = () => {
-  const [activeRole, setActiveRole] = useState(0);
-  const currentRole = roles[activeRole];
+  const [activeTab, setActiveTab] = useState(0);
+  const current = categories[activeTab];
 
   return (
     <section className="relative overflow-hidden py-24 md:py-40">
@@ -76,39 +46,51 @@ const ShowcaseGallery = () => {
         </h2>
       </motion.div>
 
-      <div className="mx-auto mb-6 max-w-6xl px-6">
-        <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-border bg-card/40 p-2 md:justify-between">
-          {roles.map((role, i) => (
+      <div className="mx-auto mb-6 max-w-md px-6">
+        <div className="flex items-center justify-center gap-2 rounded-full border border-border bg-card/40 p-2">
+          {categories.map((cat, i) => (
             <button
-              key={role.label}
-              onClick={() => setActiveRole(i)}
-              className={`rounded-full px-6 py-2.5 text-base font-bold uppercase tracking-wider transition-all md:text-lg ${
-                activeRole === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              key={cat.label}
+              onClick={() => setActiveTab(i)}
+              className={`flex-1 rounded-full px-5 py-2.5 text-sm font-bold uppercase tracking-wider transition-all md:text-base ${
+                activeTab === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {role.label}
+              {cat.label}
             </button>
           ))}
         </div>
       </div>
 
-      <motion.p key={activeRole} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto mb-10 max-w-2xl px-6 text-center text-lg text-muted-foreground">
-        {currentRole.description}
+      <motion.p key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto mb-10 max-w-2xl px-6 text-center text-lg text-muted-foreground">
+        {current.description}
       </motion.p>
 
       <div className="mx-auto max-w-7xl px-6">
-        <motion.div key={activeRole} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {currentRole.images.map((img, i) => (
+        <motion.div key={activeTab} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-5">
+          {current.items.map((item, i) => (
             <motion.div
-              key={`${activeRole}-${i}`}
+              key={`${activeTab}-${i}`}
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.45, delay: i * 0.08 }}
               className="group relative overflow-hidden rounded-2xl border border-border"
             >
-              <img src={img.src} alt={img.model} className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/85 to-transparent p-6 pt-20">
-                <p className="text-sm font-bold text-foreground">{img.model}</p>
+              {item.type === "video" ? (
+                <video
+                  src={item.src}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  className="aspect-[4/5] w-full object-cover"
+                />
+              ) : (
+                <img src={item.src} alt={item.model} className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+              )}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/85 to-transparent p-4 pt-16 md:p-6 md:pt-20">
+                <p className="text-xs font-bold text-foreground md:text-sm">{item.model}</p>
               </div>
             </motion.div>
           ))}
