@@ -1,48 +1,54 @@
 
-# Megsy Platform - Credits + Real Programming + Integrations
 
-## ✅ Completed
+# إصلاح شامل لكل الثغرات الأمنية
 
-### 1. Credit System
-- Created `credit_transactions` table in Supabase
-- Created `deduct_credits` database function (SECURITY DEFINER)
-- Created `deduct-credits` edge function
-- Created `useCredits` hook for frontend credit checking
-- Updated `generate-image` edge function to deduct credits
-- Updated `generate-video` edge function to deduct credits
-- Updated ImagesPage and VideosPage to check credits before generation
-- Chat remains free
+## المشكلة الأساسية
+السياسات اللي اتعملت في الـ migration السابق اتسمت "Service role manages X" لكنها فعليا بتطبق على `{public}` -- يعني أي حد يقدر يوصلها. محتاجين نحذفها ونعمل سياسات جديدة تطبق على `service_role` فقط.
 
-### 2. Real Programming System (Sprites.dev)
-- Created `sprites-sandbox` edge function for Sprites.dev API management
-- Actions: create, exec, write-file, write-files, status, destroy
-- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
-- Rebuilt `CodeWorkspace.tsx` with:
-  - Plan → Build workflow with credit deduction (5 credits per build)
-  - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Sprite
-  - Real preview via iframe pointing to Sprite URL
-  - Conversation persistence to Supabase
-  - Project saving with files_snapshot
+## الثغرات المتبقية (من الفحص الأمني)
 
-### 3. GitHub Integration
-- Created `github-repo` edge function via Composio
-- Actions: check-connection, create-repo, push-files
-- Push to GitHub button in CodeWorkspace plus menu
-- Creates new repo and pushes all project files
+### حرجة (5):
+1. **oauth_tokens** -- أي حد يقدر يقرأ كل الـ access tokens
+2. **oauth_codes** -- أي حد يقدر يقرأ authorization codes
+3. **oauth_clients** -- أي حد يقدر يقرأ client secrets
+4. **otp_codes** -- أي حد يقدر يقرأ أكواد OTP
+5. **profiles UPDATE** -- المستخدم يقدر يغير الـ `plan` والـ `credits` بتاعته بنفسه
 
-### 4. Database
-- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
-- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
+### تحذيرات (3):
+6. **service_incidents** -- INSERT/UPDATE مفتوح للجميع
+7. **service_status** -- INSERT مفتوح للجميع
+8. **memories** -- RLS مفعل بدون أي سياسة
 
-### 5. OAuth2 "Login with Megsy"
-- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
-- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
-- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
-- Built `/oauth/authorize` consent screen page
-- Updated App.tsx routes and config.toml
+## خطة الإصلاح
 
-### 6. Secrets Required
-- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
-- `COMPOSIO_API_KEY` ✅ Already exists
-- `FAL_API_KEY` ✅ Already exists
+### Migration واحد يعمل كل الآتي:
+
+**1. OAuth tables** -- حذف السياسات الحالية وإنشاء سياسات جديدة تطبق على `service_role` فقط:
+```sql
+DROP POLICY "Service role manages oauth_tokens" ON oauth_tokens;
+CREATE POLICY "Only service role" ON oauth_tokens FOR ALL TO service_role USING (true) WITH CHECK (true);
+```
+نفس الشيء لـ `oauth_codes` و `oauth_clients`.
+
+**2. otp_codes** -- نفس المعالجة.
+
+**3. profiles UPDATE** -- تقييد الأعمدة اللي المستخدم يقدر يعدلها:
+- حذف سياسة UPDATE الحالية
+- إنشاء سياسة جديدة تسمح بتعديل `display_name`, `avatar_url`, `two_factor_enabled` فقط
+- إنشاء function `update_profile_safe` كـ SECURITY DEFINER
+
+**4. service_incidents** -- حذف سياسات INSERT/UPDATE وإنشاء بديل لـ `service_role` فقط.
+
+**5. service_status** -- نفس المعالجة.
+
+**6. memories** -- إضافة سياسة `service_role` فقط.
+
+### تعديل الكود
+- **ProfileSettingsPage.tsx** -- استخدام الـ function الجديدة `update_profile_safe` بدل UPDATE المباشر
+
+### إجراء يدوي مطلوب
+- تفعيل **Leaked Password Protection** من Supabase Dashboard
+
+## النتيجة المتوقعة
+بعد التطبيق، الفحص الأمني يرجع **0 أخطاء حرجة** و **0 تحذيرات** (ما عدا Leaked Password اللي محتاج تفعيل يدوي).
+
