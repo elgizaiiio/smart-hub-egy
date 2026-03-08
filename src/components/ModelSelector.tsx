@@ -128,7 +128,7 @@ const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
   }
   // xAI Grok - official logo
   if (modelId.includes("grok")) {
-    return <img src={grokLogo} alt="Grok" className="w-4 h-4 object-contain" />;
+    return <img src={grokLogo} alt="Grok" className="w-5 h-5 object-contain" />;
   }
   // DeepSeek - official logo
   if (modelId.includes("deepseek")) {
