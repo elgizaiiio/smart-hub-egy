@@ -477,28 +477,39 @@ const ImagesPage = () => {
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
-            {/* Mobile: single carousel */}
-            <div className="md:hidden w-full max-w-xs aspect-[3/4] max-h-[50vh] relative rounded-2xl overflow-hidden mb-4">
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={currentImage}
-                  src={SHOWCASE_IMAGES[currentImage]}
-                  alt="AI Generated"
-                  initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.6 }}
-                  className="w-full h-full object-cover"
-                />
-              </AnimatePresence>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                {SHOWCASE_IMAGES.map((_, i) => (
-                  <button key={i} onClick={() => setCurrentImage(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImage ? "bg-primary w-4" : "bg-primary/40"}`} />
-                ))}
+            {/* Mobile: 2-column staggered grid */}
+            <div className="md:hidden w-full max-w-sm mb-5">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="flex flex-col gap-2.5">
+                  {SHOWCASE_IMAGES.filter((_, i) => i % 2 === 0).map((src, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className={`relative rounded-xl overflow-hidden ${i === 0 ? "aspect-[3/4]" : "aspect-square"}`}
+                    >
+                      <img src={src} alt={`Showcase ${i * 2 + 1}`} className="w-full h-full object-cover" />
+                    </motion.div>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-2.5 mt-6">
+                  {SHOWCASE_IMAGES.filter((_, i) => i % 2 === 1).map((src, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 + i * 0.1 }}
+                      className={`relative rounded-xl overflow-hidden ${i === 1 ? "aspect-[3/4]" : "aspect-square"}`}
+                    >
+                      <img src={src} alt={`Showcase ${i * 2 + 2}`} className="w-full h-full object-cover" />
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Desktop: masonry-style grid */}
+            {/* Desktop: masonry grid */}
             <div className="hidden md:grid grid-cols-3 gap-3 w-full max-w-3xl mb-8">
               {SHOWCASE_IMAGES.map((src, i) => (
                 <motion.div

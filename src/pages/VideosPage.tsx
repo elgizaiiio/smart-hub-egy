@@ -460,20 +460,27 @@ const VideosPage = () => {
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
-            {/* Mobile: single video carousel */}
-            <div className="md:hidden w-full max-w-xs aspect-[9/16] max-h-[50vh] relative rounded-2xl overflow-hidden mb-4 bg-secondary">
-              <AnimatePresence mode="wait">
-                <motion.video
-                  key={currentVideo}
-                  src={SHOWCASE_VIDEOS[currentVideo]}
-                  autoPlay muted loop playsInline
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.6 }}
-                  className="w-full h-full object-cover"
-                />
-              </AnimatePresence>
+            {/* Mobile: 2-column video grid */}
+            <div className="md:hidden w-full max-w-sm mb-5">
+              <div className="grid grid-cols-2 gap-2.5">
+                {SHOWCASE_VIDEOS.map((src, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className={`relative rounded-xl overflow-hidden bg-secondary ${
+                      i < 2 ? "aspect-[9/16]" : "aspect-square"
+                    }`}
+                  >
+                    <video
+                      src={src}
+                      autoPlay muted loop playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
+                ))}
+              </div>
             </div>
 
             {/* Desktop: video grid */}
