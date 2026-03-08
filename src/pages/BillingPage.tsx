@@ -55,7 +55,6 @@ const BillingPage = () => {
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-white/50 text-[10px] uppercase tracking-[0.15em]">Powered by</p>
               <p className="text-white text-xl font-bold tracking-wide" style={{ fontFamily: "var(--font-display)" }}>
                 Megsy
               </p>
