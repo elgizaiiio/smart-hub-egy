@@ -1,29 +1,38 @@
-const stats = [
-  "80+ AI Models",
-  "150+ Countries",
-  "4B+ Assets Generated",
-  "20+ Image Models",
-  "10+ Video Models",
-  "5 Chat Models",
-  "18+ Image Tools",
-  "99.9% Uptime",
-  "Sub-second Latency",
+const models = [
+  { name: "Megsy", flagship: true },
+  { name: "GPT-5" },
+  { name: "Gemini" },
+  { name: "FLUX" },
+  { name: "Sora" },
+  { name: "Kling" },
+  { name: "Pika" },
+  { name: "Grok" },
+  { name: "DeepSeek" },
+  { name: "Veo" },
+  { name: "Recraft" },
+  { name: "Ideogram" },
+  { name: "Luma" },
 ];
 
 const StatsMarquee = () => {
-  const items = [...stats, ...stats, ...stats, ...stats];
+  const items = [...models, ...models, ...models, ...models];
 
   return (
-    <section className="relative overflow-hidden border-y border-white/[0.06] bg-white/[0.02] py-5">
+    <section className="relative overflow-hidden border-y border-border/10 bg-background py-8 mt-6">
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-40 bg-gradient-to-r from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-40 bg-gradient-to-l from-background to-transparent" />
       <div className="landing-marquee">
-        <div className="landing-marquee-track">
-          {items.map((s, i) => (
+        <div className="landing-marquee-track" style={{ animationDuration: "60s" }}>
+          {items.map((m, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-4 whitespace-nowrap text-base font-bold uppercase tracking-widest text-white/40 md:text-lg"
+              className={`inline-flex items-center whitespace-nowrap px-8 md:px-12 text-2xl md:text-3xl font-bold tracking-tight ${
+                m.flagship
+                  ? "font-display text-primary text-3xl md:text-4xl"
+                  : "text-muted-foreground/30"
+              }`}
             >
-              {s}
-              <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+              {m.name}
             </span>
           ))}
         </div>
