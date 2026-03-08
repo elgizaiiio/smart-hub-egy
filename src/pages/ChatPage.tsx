@@ -350,7 +350,7 @@ const ChatPage = () => {
                           </div>
                           <p className="text-[11px] text-muted-foreground font-medium">Camera</p>
                         </button>
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
+                        <button onClick={() => { photoInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
                           <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
                             <Image className="w-4 h-4 text-blue-500" />
                           </div>
