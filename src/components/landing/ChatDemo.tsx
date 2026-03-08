@@ -4,29 +4,30 @@ import { useState, useEffect, useRef } from "react";
 interface ChatMsg {
   role: "user" | "assistant";
   content: string;
-  typing?: boolean;
+  displayedContent?: string;
+  isTyping?: boolean;
 }
 
 const conversation: { role: "user" | "assistant"; content: string; delay: number }[] = [
   { role: "user", content: "Hello Megsy! What can you do?", delay: 800 },
-  { role: "assistant", content: "Hey! I can help you with a lot — send emails, search the web, generate images, write code, analyze files, and much more. Just ask!", delay: 2200 },
+  { role: "assistant", content: "Hey! I can help you with a lot — send emails, search the web, generate images, write code, analyze files, and much more. Just ask!", delay: 400 },
   { role: "user", content: "Send an email to my team about the Q1 report", delay: 2000 },
-  { role: "assistant", content: "Done! I've drafted and sent the Q1 report summary to your team (marketing@company.com). Subject: \"Q1 2026 Performance Report\". Want me to attach the spreadsheet too?", delay: 2800 },
+  { role: "assistant", content: "Done! I've drafted and sent the Q1 report summary to your team (marketing@company.com). Subject: \"Q1 2026 Performance Report\". Want me to attach the spreadsheet too?", delay: 400 },
   { role: "user", content: "Search the web for the latest AI trends in 2026", delay: 2200 },
-  { role: "assistant", content: "Here's what I found:\n\n1. Multimodal AI agents are now standard\n2. Video generation hit photorealistic quality\n3. AI coding assistants write 70% of production code\n4. Real-time translation broke language barriers\n\nWant me to create a summary document?", delay: 3200 },
+  { role: "assistant", content: "Here's what I found:\n\n1. Multimodal AI agents are now standard\n2. Video generation hit photorealistic quality\n3. AI coding assistants write 70% of production code\n4. Real-time translation broke language barriers\n\nWant me to create a summary document?", delay: 400 },
   { role: "user", content: "Generate a logo for my new startup", delay: 1800 },
-  { role: "assistant", content: "I'd love to help! Tell me your startup name and style preference (minimal, bold, playful?) and I'll generate options using our image models. You can also switch to Image Generation mode for more control.", delay: 2600 },
+  { role: "assistant", content: "I'd love to help! Tell me your startup name and style preference (minimal, bold, playful?) and I'll generate options using our image models.", delay: 400 },
 ];
+
+const CHAR_SPEED = 18; // ms per character
 
 const ChatDemo = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (currentIndex >= conversation.length) {
-      // Restart after a pause
       const timer = setTimeout(() => {
         setMessages([]);
         setCurrentIndex(0);
@@ -36,33 +37,74 @@ const ChatDemo = () => {
 
     const msg = conversation[currentIndex];
 
-    if (msg.role === "assistant") {
-      setIsTyping(true);
-      const typingTimer = setTimeout(() => {
-        setIsTyping(false);
-        setMessages((prev) => [...prev, { role: msg.role, content: msg.content }]);
+    if (msg.role === "user") {
+      const timer = setTimeout(() => {
+        setMessages((prev) => [...prev, { role: "user", content: msg.content }]);
         setCurrentIndex((i) => i + 1);
       }, msg.delay);
-      return () => clearTimeout(typingTimer);
+      return () => clearTimeout(timer);
     } else {
+      // For assistant: add message with empty displayed content, then typewrite
       const timer = setTimeout(() => {
-        setMessages((prev) => [...prev, { role: msg.role, content: msg.content }]);
-        setCurrentIndex((i) => i + 1);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: msg.content, displayedContent: "", isTyping: true },
+        ]);
       }, msg.delay);
       return () => clearTimeout(timer);
     }
   }, [currentIndex]);
 
+  // Typewriter effect for the last assistant message
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.isTyping) return;
+
+    const fullContent = lastMsg.content;
+    const currentLen = lastMsg.displayedContent?.length ?? 0;
+
+    if (currentLen >= fullContent.length) {
+      // Done typing
+      setMessages((prev) =>
+        prev.map((m, i) =>
+          i === prev.length - 1 ? { ...m, isTyping: false, displayedContent: fullContent } : m
+        )
+      );
+      setCurrentIndex((i) => i + 1);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((m, i) =>
+          i === prev.length - 1
+            ? { ...m, displayedContent: fullContent.slice(0, currentLen + 1) }
+            : m
+        )
+      );
+    }, CHAR_SPEED);
+
+    return () => clearTimeout(timer);
+  }, [messages]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping]);
+  }, [messages]);
+
+  const renderContent = (msg: ChatMsg) => {
+    const text = msg.role === "assistant" ? (msg.displayedContent ?? msg.content) : msg.content;
+    return text.split("\n").map((line, li, arr) => (
+      <span key={li}>
+        {line}
+        {li < arr.length - 1 && <br />}
+      </span>
+    ));
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/30 bg-card/30 backdrop-blur-md">
-
-      {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: "none" }}>
         {messages.map((msg, i) => (
           <motion.div
@@ -73,51 +115,19 @@ const ChatDemo = () => {
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+              className={`max-w-[85%] text-sm leading-relaxed ${
                 msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-muted/50 text-foreground border border-border/20 rounded-bl-md"
+                  ? "rounded-2xl rounded-br-md bg-primary text-primary-foreground px-4 py-2.5"
+                  : "text-foreground/90"
               }`}
             >
-              {msg.content.split("\n").map((line, li) => (
-                <span key={li}>
-                  {line}
-                  {li < msg.content.split("\n").length - 1 && <br />}
-                </span>
-              ))}
+              {renderContent(msg)}
+              {msg.role === "assistant" && msg.isTyping && (
+                <span className="inline-block w-[2px] h-4 bg-primary ml-0.5 animate-pulse align-middle" />
+              )}
             </div>
           </motion.div>
         ))}
-
-        {/* Typing indicator */}
-        <AnimatePresence>
-          {isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="flex justify-start"
-            >
-              <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border/20 bg-muted/50 px-4 py-3">
-                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Input bar */}
-      <div className="border-t border-border/20 px-4 py-3">
-        <div className="flex items-center gap-2 rounded-xl border border-border/30 bg-background/50 px-3 py-2">
-          <span className="flex-1 text-xs text-muted-foreground/40">Message Megsy...</span>
-          <div className="h-6 w-6 rounded-full bg-primary/80 flex items-center justify-center">
-            <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
-            </svg>
-          </div>
-        </div>
       </div>
     </div>
   );
