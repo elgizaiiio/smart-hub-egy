@@ -49,7 +49,7 @@ const CTASection = () => {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mt-12"
         >
-          <FancyButton onClick={() => navigate("/auth")} className="px-12 py-5 text-lg">
+          <FancyButton onClick={() => navigate("/auth")} className="px-8 py-4 text-base md:px-12 md:py-5 md:text-lg">
             Start generating
           </FancyButton>
         </motion.div>

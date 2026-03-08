@@ -31,7 +31,7 @@ const ModelsMarquee = () => {
       </motion.div>
 
       {/* Logos row */}
-      <div className="mx-auto mb-16 flex max-w-5xl items-center justify-center gap-10 px-6 md:gap-20">
+      <div className="mx-auto mb-10 flex max-w-5xl items-center justify-center gap-6 px-6 md:mb-16 md:gap-20">
         {providers.map((name, i) => (
           <motion.span
             key={name}

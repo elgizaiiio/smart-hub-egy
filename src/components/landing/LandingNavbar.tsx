@@ -62,14 +62,14 @@ const LandingNavbar = () => {
       </div>
 
       {mobileOpen && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-t border-border bg-background px-6 py-6 md:hidden">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-t border-border bg-background px-6 py-5 md:hidden">
           {links.map((l) => (
-            <a key={l.label} href={l.href} onClick={() => setMobileOpen(false)} className="block py-2 text-lg font-medium text-muted-foreground hover:text-foreground">
+            <a key={l.label} href={l.href} onClick={() => setMobileOpen(false)} className="block py-3 text-base font-medium text-muted-foreground hover:text-foreground">
               {l.label}
             </a>
           ))}
-          <div className="mt-4 flex flex-col gap-3">
-            <button onClick={() => navigate("/auth")} className="rounded-lg border border-border py-2 text-sm text-foreground">
+          <div className="mt-5 flex flex-col gap-3">
+            <button onClick={() => navigate("/auth")} className="rounded-lg border border-border py-2.5 text-sm font-medium text-foreground">
               Log in
             </button>
             <FancyButton onClick={() => navigate("/auth")}>Start Creating</FancyButton>

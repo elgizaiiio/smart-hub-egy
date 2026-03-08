@@ -111,8 +111,8 @@ const PricingPreview = () => {
               )}
 
               <h3 className={`text-lg font-bold ${plan.nameColor}`}>{plan.name}</h3>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-white">
+              <div className="mt-2 flex items-baseline gap-1 md:mt-3">
+                <span className="text-4xl font-black text-white md:text-5xl">
                   ${plan.price}
                 </span>
                 <span className="text-base text-white/40">{plan.period}</span>

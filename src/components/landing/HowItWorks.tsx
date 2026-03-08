@@ -104,7 +104,7 @@ const HowItWorks = () => {
           </p>
         </motion.div>
 
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
           {steps.map((step, i) => {
             const Icon = step.icon;
             return (

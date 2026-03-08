@@ -76,7 +76,7 @@ const LandingFooter = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-14 flex items-center gap-6"
+          className="mb-8 flex items-center gap-5 md:mb-14 md:gap-6"
         >
           {socialLinks.map((s) => (
             <a

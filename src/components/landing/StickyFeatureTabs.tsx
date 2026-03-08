@@ -52,7 +52,7 @@ const StickyFeatureTabs = () => {
           transition={{ duration: 0.7 }}
           className="mb-12"
         >
-          <h2 className="font-display text-4xl font-black uppercase tracking-tight text-foreground md:text-6xl">
+          <h2 className="font-display text-3xl font-black uppercase tracking-tight text-foreground md:text-6xl">
             WHAT YOU CAN <span className="text-primary">CREATE</span>
           </h2>
         </motion.div>
