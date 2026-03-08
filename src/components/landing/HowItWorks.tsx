@@ -4,37 +4,32 @@ const steps = [
   {
     number: "01",
     title: "Create Your Account",
-    description: "Sign up in seconds. Get free credits to start exploring all 80+ AI models immediately.",
-    color: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30",
-    numColor: "text-emerald-400",
+    description: "Sign up in seconds and get free credits to explore all AI models instantly.",
+    blobColor: "#10b981",
   },
   {
     number: "02",
     title: "Choose Your Tool",
-    description: "Select from AI Chat, Image Generation, Video Creation, Code Building, and 18+ professional image tools.",
-    color: "from-amber-500/20 to-amber-500/5 border-amber-500/30",
-    numColor: "text-amber-400",
+    description: "Pick from Chat, Images, Video, Code, and 18+ professional creative tools.",
+    blobColor: "#f59e0b",
   },
   {
     number: "03",
     title: "Pick Your Model",
-    description: "Access 80+ AI models including Megsy's flagship models, each optimized for specific creative tasks.",
-    color: "from-rose-500/20 to-rose-500/5 border-rose-500/30",
-    numColor: "text-rose-400",
+    description: "Access 80+ AI models, each fine-tuned for specific creative tasks.",
+    blobColor: "#ef4444",
   },
   {
     number: "04",
     title: "Create & Iterate",
-    description: "Generate, edit, and refine. Use advanced tools to upscale, restyle, and perfect your results.",
-    color: "from-purple-500/20 to-purple-500/5 border-purple-500/30",
-    numColor: "text-purple-400",
+    description: "Generate, edit, upscale, restyle — refine until it's perfect.",
+    blobColor: "#8b5cf6",
   },
   {
     number: "05",
     title: "Export & Deploy",
-    description: "Download in any format, deploy code projects live, or share directly to social platforms.",
-    color: "from-cyan-500/20 to-cyan-500/5 border-cyan-500/30",
-    numColor: "text-cyan-400",
+    description: "Download any format, deploy live, or share to social platforms.",
+    blobColor: "#06b6d4",
   },
 ];
 
@@ -71,12 +66,20 @@ const HowItWorks = () => {
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.7, delay: i * 0.1 }}
             >
-              <div className={`h-full rounded-3xl border bg-gradient-to-b p-7 transition-transform duration-300 hover:scale-[1.03] ${step.color}`}>
-                <span className={`text-5xl font-black leading-none ${step.numColor} opacity-60`}>
-                  {step.number}
-                </span>
-                <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-white/45">{step.description}</p>
+              <div className="blob-card group relative h-full overflow-hidden rounded-3xl transition-transform duration-300 hover:scale-[1.03]">
+                {/* Animated blob */}
+                <div
+                  className="blob-sphere"
+                  style={{ backgroundColor: step.blobColor, animationDelay: `${i * -1}s` }}
+                />
+                {/* Inner card */}
+                <div className="blob-card-inner relative z-10 flex h-full flex-col p-7">
+                  <span className="text-5xl font-black leading-none text-white/20">
+                    {step.number}
+                  </span>
+                  <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
+                  <p className="text-sm leading-relaxed text-white/50">{step.description}</p>
+                </div>
               </div>
             </motion.div>
           ))}
