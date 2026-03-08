@@ -28,6 +28,8 @@ function triggerTranslate(langCode: string) {
     if (select) {
       select.value = gtLang;
       select.dispatchEvent(new Event("change"));
+      // Translate placeholders/titles after Google finishes
+      setTimeout(translateAttributes, 1500);
       return;
     }
 
