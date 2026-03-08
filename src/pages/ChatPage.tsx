@@ -342,24 +342,33 @@ const ChatPage = () => {
                     >
                       {/* ATTACH */}
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1.5">Attach</p>
-                      <div className="grid grid-cols-3 gap-1.5 mb-1.5">
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                      <div className="space-y-1 mb-1.5">
+                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
                           <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
                             <Camera className="w-3.5 h-3.5 text-emerald-500" />
                           </div>
-                          <span className="text-[10px] text-foreground font-medium">Camera</span>
+                          <div className="flex-1">
+                            <p className="text-[13px] text-foreground font-medium">Camera</p>
+                            <p className="text-[10px] text-muted-foreground">Take a photo</p>
+                          </div>
                         </button>
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
                           <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
                             <Image className="w-3.5 h-3.5 text-blue-500" />
                           </div>
-                          <span className="text-[10px] text-foreground font-medium">Photos</span>
+                          <div className="flex-1">
+                            <p className="text-[13px] text-foreground font-medium">Photos</p>
+                            <p className="text-[10px] text-muted-foreground">Choose from gallery</p>
+                          </div>
                         </button>
-                        <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 py-2 rounded-xl border border-border hover:bg-accent/60 transition-all group">
+                        <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
                           <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
                             <FileUp className="w-3.5 h-3.5 text-violet-500" />
                           </div>
-                          <span className="text-[10px] text-foreground font-medium">Files</span>
+                          <div className="flex-1">
+                            <p className="text-[13px] text-foreground font-medium">Files</p>
+                            <p className="text-[10px] text-muted-foreground">Browse device files</p>
+                          </div>
                         </button>
                       </div>
 
