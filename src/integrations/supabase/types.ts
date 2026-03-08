@@ -700,6 +700,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_profile_update_safe_policy: {
+        Args: { profile_row: Database["public"]["Tables"]["profiles"]["Row"] }
+        Returns: boolean
+      }
       create_notification: {
         Args: {
           p_message: string
