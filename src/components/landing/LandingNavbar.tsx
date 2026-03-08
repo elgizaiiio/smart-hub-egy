@@ -191,10 +191,10 @@ const LandingNavbar = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.97 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2"
+                      className="absolute left-0 top-full z-50 mt-1"
                     >
-                      <div className="flex gap-0 rounded-2xl border border-white/[0.08] bg-[hsl(var(--background))]/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl"
-                        style={{ minWidth: item.featured ? 680 : 420 }}
+                      <div className="max-h-[80vh] overflow-y-auto flex gap-0 rounded-2xl border border-white/[0.08] bg-[hsl(var(--background))]/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl max-w-[calc(100vw-2rem)]"
+                        style={{ minWidth: item.featured ? 640 : 380 }}
                       >
                         {/* Columns */}
                         <div className="flex flex-1 gap-8">
