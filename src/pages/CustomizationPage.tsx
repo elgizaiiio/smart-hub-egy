@@ -46,12 +46,6 @@ const CustomizationPage = () => {
   const [currentAccent, setCurrentAccent] = useState(() => localStorage.getItem("accent") || "262 60% 55%");
   const [chatStyle, setChatStyle] = useState(() => localStorage.getItem("chatStyle") || "modern");
 
-  useEffect(() => {
-    const sizes = ["14px", "16px", "18px"];
-    document.documentElement.style.setProperty("--font-size-base", sizes[fontSize]);
-    localStorage.setItem("fontSize", String(fontSize));
-  }, [fontSize]);
-
   const handleThemeChange = useCallback((id: string) => {
     document.documentElement.setAttribute("data-theme", id);
     localStorage.setItem("theme", id);
