@@ -34,7 +34,7 @@ const LandingNavbar = () => {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <a href="#" className="font-display text-3xl font-black uppercase tracking-tight text-foreground">
+        <a href="#" className="font-display text-3xl font-black uppercase tracking-tight text-white">
           MEGSY
         </a>
 
