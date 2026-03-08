@@ -12,7 +12,7 @@ const HeroSection = () => {
         {/* Top text — comes from above */}
         <motion.span
           initial={{ opacity: 0, y: -300, rotateX: 60 }}
-          animate={{ opacity: 0.08, y: -120, rotateX: 12 }}
+          animate={{ opacity: 0.15, y: -120, rotateX: 12 }}
           transition={{ duration: 1.6, ease: "easeOut" }}
           className="absolute text-[28vw] font-black uppercase leading-none tracking-tighter text-purple-500"
           style={{ fontFamily: "var(--font-display)" }}
