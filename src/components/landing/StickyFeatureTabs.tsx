@@ -125,14 +125,7 @@ const StickyFeatureTabs = () => {
                 </div>
               ) : (
                 <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
-                  <video
-                    src={current.video}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-full w-full object-cover"
-                  />
+                  <LazyVideo src={current.video} className="h-full w-full" />
                 </div>
               )}
             </motion.div>
