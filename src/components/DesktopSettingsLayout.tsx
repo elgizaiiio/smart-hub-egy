@@ -5,6 +5,7 @@ import {
   User, CreditCard, Gift, Globe, Paintbrush, Activity, Info, LogOut, ChevronRight, Code, Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import AppLayout from "@/layouts/AppLayout";
 
 interface NavItem {
   id: string;
