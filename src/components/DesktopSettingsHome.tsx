@@ -141,6 +141,11 @@ export function DesktopSettingsHome() {
             onClick={() => navigate("/settings/referrals")}
           />
           <QuickAction
+            title="Language"
+            description="Auto-translate UI"
+            onClick={() => navigate("/settings/language")}
+          />
+          <QuickAction
             title="Notifications"
             description="Alerts & email prefs"
             onClick={() => navigate("/settings/notifications")}
