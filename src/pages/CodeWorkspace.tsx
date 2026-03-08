@@ -92,6 +92,8 @@ const CodeWorkspace = () => {
   const [activeTab, setActiveTab] = useState<"chat" | "preview">("chat");
   const [searchParams] = useSearchParams();
   const prompt = searchParams.get("prompt") || "";
+  const paramConversationId = searchParams.get("conversation_id") || "";
+  const paramProjectId = searchParams.get("project_id") || "";
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -103,13 +105,15 @@ const CodeWorkspace = () => {
   const [buildSteps, setBuildSteps] = useState<BuildStep[]>([]);
   const [isBuildActive, setIsBuildActive] = useState(false);
   const [previewError, setPreviewError] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [loadedConversation, setLoadedConversation] = useState(false);
 
   const [sandbox, setSandbox] = useState<SandboxState>({
     spriteName: null, previewUrl: null, status: "idle",
   });
   const [files, setFiles] = useState<FileTree>({});
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [projectId, setProjectId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
+  const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
 
   const { userId, hasEnoughCredits, refreshCredits } = useCredits();
 
@@ -117,11 +121,59 @@ const CodeWorkspace = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, buildSteps]);
 
+  // Load saved conversation messages
   useEffect(() => {
-    if (prompt && messages.length === 0) {
+    if (!paramConversationId || loadedConversation) return;
+    const loadMessages = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("role, content, created_at")
+        .eq("conversation_id", paramConversationId)
+        .order("created_at", { ascending: true });
+      if (data && data.length > 0) {
+        const loaded: ChatMsg[] = data.map(m => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          type: "plan" as const,
+        }));
+        setMessages(loaded);
+      }
+      setLoadedConversation(true);
+    };
+    loadMessages();
+  }, [paramConversationId, loadedConversation]);
+
+  // Load saved project sandbox info
+  useEffect(() => {
+    if (!paramProjectId) return;
+    const loadProject = async () => {
+      const { data } = await supabase
+        .from("projects")
+        .select("fly_app_name, preview_url, status, files_snapshot")
+        .eq("id", paramProjectId)
+        .single();
+      if (data) {
+        if (data.preview_url && data.fly_app_name) {
+          setSandbox({
+            spriteName: data.fly_app_name,
+            previewUrl: data.preview_url,
+            status: data.status === "running" ? "ready" : "idle",
+          });
+        }
+        if (data.files_snapshot && typeof data.files_snapshot === "object") {
+          setFiles(data.files_snapshot as FileTree);
+        }
+      }
+    };
+    loadProject();
+  }, [paramProjectId]);
+
+  // Auto-send initial prompt (only if no conversation loaded)
+  useEffect(() => {
+    if (prompt && messages.length === 0 && !paramConversationId) {
       handleSend(prompt);
     }
-  }, [prompt]);
+  }, [prompt, loadedConversation]);
 
   const updateStep = (stepId: string, updates: Partial<BuildStep>) => {
     setBuildSteps(prev => prev.map(s => s.id === stepId ? { ...s, ...updates } : s));
@@ -545,15 +597,26 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
             </div>
           </div>
         ) : (
-          <div className="h-full">
+          <div className="h-full relative">
             {sandbox.previewUrl && !previewError ? (
-              <iframe
-                src={sandbox.previewUrl}
-                className="w-full h-full border-none"
-                title="Project Preview"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                onError={() => setPreviewError(true)}
-              />
+              <>
+                <iframe
+                  ref={iframeRef}
+                  src={sandbox.previewUrl}
+                  className="w-full h-full border-none"
+                  title="Project Preview"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  onError={() => setPreviewError(true)}
+                />
+                {/* Refresh button overlay */}
+                <button
+                  onClick={handleRetryPreview}
+                  className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm"
+                  title="Reload preview"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </>
             ) : (
               <div className="h-full flex items-center justify-center bg-secondary">
                 <div className="text-center space-y-3">
