@@ -103,7 +103,7 @@ const MODELS: Record<ModelMode, ModelOption[]> = {
 };
 
 // Real brand icons for chat models
-const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
+export const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
   // Megsy M logo - no background
   if (modelId.includes("gemini-3-flash")) {
     return (
