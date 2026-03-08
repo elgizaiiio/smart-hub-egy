@@ -113,6 +113,7 @@ const LandingNavbar = () => {
   const handleNav = (href: string) => {
     setMobileOpen(false);
     setOpenDropdown(null);
+    setPinned(false);
     if (href.startsWith("http")) {
       window.open(href, "_blank");
     } else if (href.startsWith("/#")) {
