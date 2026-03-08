@@ -24,6 +24,7 @@ export type Database = {
           share_id: string | null
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -34,6 +35,7 @@ export type Database = {
           share_id?: string | null
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -44,6 +46,7 @@ export type Database = {
           share_id?: string | null
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -699,6 +702,10 @@ export type Database = {
       mark_notifications_read: {
         Args: { p_notification_ids?: string[]; p_user_id: string }
         Returns: undefined
+      }
+      owns_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
       }
     }
     Enums: {
