@@ -597,15 +597,26 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
             </div>
           </div>
         ) : (
-          <div className="h-full">
+          <div className="h-full relative">
             {sandbox.previewUrl && !previewError ? (
-              <iframe
-                src={sandbox.previewUrl}
-                className="w-full h-full border-none"
-                title="Project Preview"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                onError={() => setPreviewError(true)}
-              />
+              <>
+                <iframe
+                  ref={iframeRef}
+                  src={sandbox.previewUrl}
+                  className="w-full h-full border-none"
+                  title="Project Preview"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  onError={() => setPreviewError(true)}
+                />
+                {/* Refresh button overlay */}
+                <button
+                  onClick={handleRetryPreview}
+                  className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm"
+                  title="Reload preview"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </>
             ) : (
               <div className="h-full flex items-center justify-center bg-secondary">
                 <div className="text-center space-y-3">
