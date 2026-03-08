@@ -35,7 +35,14 @@
 - Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
 - Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-### 5. Secrets Required
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
+
+### 6. Secrets Required
 - `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
 - `COMPOSIO_API_KEY` ✅ Already exists
 - `FAL_API_KEY` ✅ Already exists
