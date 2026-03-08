@@ -65,10 +65,10 @@ const HeroSection = () => {
             Start creating
           </FancyButton>
           <button
-            onClick={() => navigate("/pricing")}
-            className="rounded-full border border-border bg-card/40 px-8 py-3.5 text-sm font-semibold text-foreground/90 backdrop-blur-md transition-all hover:border-foreground/30 hover:bg-card"
+            onClick={() => window.open("https://api.megsyai.com", "_blank")}
+            className="rounded-full border border-border bg-card/40 px-10 py-4 text-base font-semibold text-foreground/90 backdrop-blur-md transition-all hover:border-foreground/30 hover:bg-card"
           >
-            View API & Pricing
+            API Platform
           </button>
         </motion.div>
       </div>
