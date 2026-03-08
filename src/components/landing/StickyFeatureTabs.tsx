@@ -7,7 +7,7 @@ import ChatDemo from "@/components/landing/ChatDemo";
 const tabs = [
   {
     title: "AI CHAT",
-    description: "Access GPT-5, DeepSeek R1, Claude, Gemini, and Megsy's own flagship chat model. Context-aware conversations with memory, file uploads, and real-time web search.",
+    description: "Your ultimate AI companion — powered by GPT-5, Gemini, Claude, DeepSeek R1 & Megsy's own model. Chat naturally, upload files, search the web in real-time, and let AI remember everything. One conversation. Unlimited possibilities.",
     video: "",
     accent: "bg-emerald-500",
     useChat: true,
