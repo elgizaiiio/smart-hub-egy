@@ -525,6 +525,38 @@ Rules:
     toast.success("Repository created on GitHub!");
   };
 
+  const handleVercelDeploy = async () => {
+    if (Object.keys(files).length === 0) {
+      toast.error("No project files to deploy. Build the project first.");
+      return;
+    }
+    setMessages(prev => [...prev, { role: "system", content: "Deploying to Vercel...", type: "log" }]);
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/vercel-deploy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({
+          files,
+          project_name: prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "megsy-project",
+        }),
+      });
+      const data = await resp.json();
+      if (data.success && data.url) {
+        setMessages(prev => [
+          ...prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")),
+          { role: "assistant", content: `Deployed to Vercel!\n\n[${data.url}](${data.url})`, type: "status" },
+        ]);
+        toast.success("Deployed to Vercel!");
+      } else {
+        toast.error(data.error || "Vercel deployment failed");
+        setMessages(prev => prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")));
+      }
+    } catch {
+      toast.error("Failed to deploy to Vercel");
+      setMessages(prev => prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")));
+    }
+  };
+
   const handleRetryPreview = () => {
     setPreviewError(false);
     if (sandbox.previewUrl) {
