@@ -31,7 +31,7 @@ const ModelsMarquee = () => {
       </motion.div>
 
       {/* Logos row */}
-      <div className="mx-auto mb-10 flex max-w-5xl items-center justify-center gap-6 px-6 md:mb-16 md:gap-20">
+      <div className="mx-auto mb-10 flex max-w-5xl items-center justify-center gap-4 px-4 md:mb-16 md:gap-20 md:px-6">
         {providers.map((name, i) => (
           <motion.span
             key={name}
@@ -39,7 +39,7 @@ const ModelsMarquee = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: i * 0.1 }}
-            className="text-lg font-black uppercase tracking-wider text-foreground/20 md:text-2xl"
+            className="text-xs font-black uppercase tracking-wider text-foreground/20 md:text-2xl"
           >
             {name}
           </motion.span>
