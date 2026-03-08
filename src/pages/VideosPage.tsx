@@ -447,13 +447,7 @@ const VideosPage = () => {
           <Menu className="w-5 h-5" />
         </button>
         <ModelSelector mode="videos" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-violet-500 text-white hover:bg-violet-600" />
-        <AnimatePresence>
-          {!hasMessages ? (
-            <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }}>
-              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
-            </motion.div>
-          ) : <div className="w-9" />}
-        </AnimatePresence>
+        <div className="w-9" />
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">

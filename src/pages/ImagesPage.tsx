@@ -466,13 +466,7 @@ const ImagesPage = () => {
           <Menu className="w-5 h-5" />
         </button>
         <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-pink-500 text-white hover:bg-pink-600" />
-        <AnimatePresence>
-          {!hasMessages ? (
-            <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }}>
-              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
-            </motion.div>
-          ) : <div className="w-9" />}
-        </AnimatePresence>
+        <div className="w-9" />
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
