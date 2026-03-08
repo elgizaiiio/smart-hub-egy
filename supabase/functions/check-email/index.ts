@@ -20,16 +20,8 @@ serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      return new Response(JSON.stringify({ error: "Server is not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -37,35 +29,44 @@ serve(async (req) => {
     const normalizedEmail = email.trim().toLowerCase();
     const perPage = 200;
     let page = 1;
-    let exists = false;
+    let existingUser: any = null;
 
-    while (page <= 20 && !exists) {
+    while (page <= 20 && !existingUser) {
       const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-
       if (error) {
-        console.error("listUsers error:", error.message);
         return new Response(JSON.stringify({ error: "Could not verify email" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
       const users = data?.users ?? [];
-      exists = users.some((user) => (user.email ?? "").toLowerCase() === normalizedEmail);
-
+      existingUser = users.find((u) => (u.email ?? "").toLowerCase() === normalizedEmail);
       if (users.length < perPage) break;
       page += 1;
     }
 
-    return new Response(JSON.stringify({ exists }), {
-      status: 200,
+    if (!existingUser) {
+      return new Response(JSON.stringify({ exists: false, two_factor_enabled: false }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check 2FA status from profiles
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("two_factor_enabled")
+      .eq("id", existingUser.id)
+      .single();
+
+    return new Response(JSON.stringify({
+      exists: true,
+      two_factor_enabled: profile?.two_factor_enabled ?? false,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("check-email error:", error);
     return new Response(JSON.stringify({ error: "Unexpected error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
