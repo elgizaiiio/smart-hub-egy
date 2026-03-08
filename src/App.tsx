@@ -36,6 +36,7 @@ import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SharedChatPage from "./pages/SharedChatPage";
 import CookieConsent from "./components/CookieConsent";
+import TranslationWrapper from "./components/TranslationWrapper";
 
 const queryClient = new QueryClient();
 
@@ -70,49 +71,51 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ErrorBoundary>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <OfflineBanner />
-            <CookieConsent />
-            <Routes>
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/terms" element={<LegalPage />} />
-              <Route path="/privacy" element={<LegalPage />} />
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/share/:shareId" element={<SharedChatPage />} />
-              <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-              <Route path="/images" element={<ProtectedRoute><ImagesPage /></ProtectedRoute>} />
-              <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
-              <Route path="/files" element={<ProtectedRoute><FilesPage /></ProtectedRoute>} />
-              <Route path="/code" element={<ProtectedRoute><ProgrammingPage /></ProtectedRoute>} />
-              <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-              <Route path="/settings/customization" element={<ProtectedRoute><CustomizationPage /></ProtectedRoute>} />
-              <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
-              <Route path="/settings/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
-              <Route path="/settings/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
-              <Route path="/settings/language" element={<ProtectedRoute><LanguagePage /></ProtectedRoute>} />
-              <Route path="/settings/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
-              <Route path="/settings/change-email" element={<ProtectedRoute><ChangeEmailPage /></ProtectedRoute>} />
-              <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
-              <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
-              <Route path="/settings/withdraw" element={<ProtectedRoute><WithdrawPage /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-              <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
-              <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </ErrorBoundary>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <TranslationWrapper>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ErrorBoundary>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <OfflineBanner />
+              <CookieConsent />
+              <Routes>
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/terms" element={<LegalPage />} />
+                <Route path="/privacy" element={<LegalPage />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/share/:shareId" element={<SharedChatPage />} />
+                <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                <Route path="/images" element={<ProtectedRoute><ImagesPage /></ProtectedRoute>} />
+                <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
+                <Route path="/files" element={<ProtectedRoute><FilesPage /></ProtectedRoute>} />
+                <Route path="/code" element={<ProtectedRoute><ProgrammingPage /></ProtectedRoute>} />
+                <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                <Route path="/settings/customization" element={<ProtectedRoute><CustomizationPage /></ProtectedRoute>} />
+                <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
+                <Route path="/settings/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
+                <Route path="/settings/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
+                <Route path="/settings/language" element={<ProtectedRoute><LanguagePage /></ProtectedRoute>} />
+                <Route path="/settings/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
+                <Route path="/settings/change-email" element={<ProtectedRoute><ChangeEmailPage /></ProtectedRoute>} />
+                <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+                <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
+                <Route path="/settings/withdraw" element={<ProtectedRoute><WithdrawPage /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
+                <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </ErrorBoundary>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </TranslationWrapper>
   );
 };
 

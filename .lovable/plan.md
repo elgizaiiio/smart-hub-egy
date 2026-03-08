@@ -1,78 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-# خطة تطبيق الترجمة التلقائية بدون مفاتيح وبدون ملفات يدوية
+## ✅ Completed
 
-بعد البحث في GitHub، وجدت 3 مكتبات ممتازة تترجم تلقائياً بدون أي ملفات ترجمة يدوية وبدون مفاتيح API:
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
----
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-## الخيارات المتاحة
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-### 1. `@miracleufo/react-g-translator` ⭐ الأفضل لمشروعك
-- **363+ نجمة** على GitHub
-- مصمم خصيصاً لـ React
-- بدون API key، بدون ملفات ترجمة
-- يترجم صفحات كاملة أو نصوص محددة
-- يترجم placeholder و alt text تلقائياً
-- خفيف جداً (~5KB)
-- يدعم 100+ لغة
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-```jsx
-// الاستخدام بسيط جداً
-import { Translator } from '@miracleufo/react-g-translator';
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
-<Translator from="en" to="ar">
-  <App />
-</Translator>
-```
-
-### 2. `react-auto-google-translate`
-- يلف التطبيق بـ TranslationProvider
-- ترجمة تلقائية عند تغيير اللغة
-- بدون API key
-- أصغر مجتمع (4 نجوم، 235 تحميل)
-
-### 3. `translate.js` (xnx3/translate)
-- **363 نجمة**، الأكثر شهرة
-- سطرين JS فقط
-- لكنه ليس مصمم لـ React (vanilla JS)
-- يضيف select tag للغات (يمكن إخفاؤه)
-
----
-
-## التوصية: `@miracleufo/react-g-translator`
-
-الأنسب لأنه مصمم لـ React، خفيف، وسهل الدمج مع LanguagePage الموجودة.
-
-## خطوات التنفيذ
-
-### 1. تثبيت المكتبة
-- `@miracleufo/react-g-translator`
-
-### 2. إنشاء `TranslationWrapper.tsx`
-- مكون يقرأ اللغة من `localStorage("language")`
-- يلف المحتوى بـ `<Translator from="en" to={currentLang}>`
-- يستمع لتغيير اللغة عبر storage event
-
-### 3. تحديث `App.tsx`
-- لف التطبيق بالكامل بـ `TranslationWrapper`
-- إضافة class `notranslate` على العناصر التي لا نريد ترجمتها (code blocks, أسماء النماذج)
-
-### 4. تحديث `LanguagePage.tsx`
-- عند اختيار لغة جديدة، dispatch storage event لإعلام TranslationWrapper
-- التبديل فوري
-
-### 5. دعم RTL
-- إضافة `dir="rtl"` تلقائياً للعربية والعبرية عند تغيير اللغة
-
-### 6. استثناءات الترجمة
-- إضافة `className="notranslate"` على: أسماء النماذج، code blocks، أسماء المستخدمين، URLs
-
----
-
-## ملاحظات
-- المكتبة تستخدم Google Translate مجاناً بدون API key (غير رسمي)
-- الترجمة سريعة جداً (أقل من ثانية)
-- تعمل مع كل اللغات الـ 30 الموجودة في LanguagePage
-- لا تحتاج أي تعديل على النصوص الحالية في الكود
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
