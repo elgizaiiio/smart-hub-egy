@@ -44,21 +44,28 @@ const navItems: NavItem[] = [
       {
         title: "Image",
         items: [
-          { icon: Image, label: "AI Image Generator", desc: "Create images from prompts or references", href: "/images" },
-          { icon: Sparkles, label: "Creative Ideation", desc: "Explore visual ideas and directions", href: "/images" },
-          { icon: Wand2, label: "Background Remover", desc: "Remove and replace image backgrounds", href: "/images" },
+          { icon: ImagePlus, label: "AI Image Generator", desc: "Create images from prompts or references", href: "/images" },
+          { icon: Lightbulb, label: "Creative Ideation", desc: "Explore visual ideas and directions", href: "/images" },
+          { icon: Eraser, label: "Background Remover", desc: "Remove and replace image backgrounds", href: "/images" },
+          { icon: Palette, label: "Train Your Own Model", desc: "Train custom models for consistency", href: "/images" },
         ],
       },
       {
         title: "Video",
         items: [
-          { icon: Video, label: "AI Video Generator", desc: "Generate motion from images or text", href: "/videos" },
+          { icon: Clapperboard, label: "AI Video Generator", desc: "Generate motion from images or text", href: "/videos" },
         ],
       },
       {
-        title: "Code",
+        title: "Editing",
         items: [
-          { icon: Code, label: "Code Builder", desc: "Build & deploy apps with AI", href: "/code" },
+          { icon: PenTool, label: "Image Editor", desc: "Edit and refine images with AI", href: "/images" },
+        ],
+      },
+      {
+        title: "Upscaling",
+        items: [
+          { icon: ZoomIn, label: "Image Upscaler", desc: "Enhance resolution without losing detail", href: "/images" },
         ],
       },
     ],
@@ -70,25 +77,19 @@ const navItems: NavItem[] = [
       {
         title: "Tools",
         items: [
-          { icon: MessageSquare, label: "AI Chat", desc: "Chat with 80+ AI models", href: "/chat" },
-          { icon: Image, label: "Image Generation", desc: "Create stunning visuals", href: "/images" },
-          { icon: Video, label: "Video Generation", desc: "Generate AI videos", href: "/videos" },
-          { icon: Code, label: "Code Builder", desc: "Build full-stack apps", href: "/code" },
-        ],
-      },
-      {
-        title: "Editing",
-        items: [
-          { icon: Wand2, label: "Image Editor", desc: "Edit and refine images with AI", href: "/images" },
-          { icon: Scaling, label: "Image Upscaler", desc: "Enhance resolution without losing detail", href: "/images" },
+          { icon: MessageCircle, label: "AI Chat", desc: "Chat with 80+ AI models", href: "/chat" },
+          { icon: ImagePlus, label: "Image Generation", desc: "Create stunning visuals", href: "/images" },
+          { icon: Clapperboard, label: "Video Generation", desc: "Generate AI videos", href: "/videos" },
+          { icon: CodeXml, label: "Code Builder", desc: "Build & deploy full-stack apps", href: "/code" },
         ],
       },
       {
         title: "Featured Models",
         items: [
-          { icon: Brain, label: "Megsy Pro", desc: "Our flagship creative model", href: "/#models" },
-          { icon: Brain, label: "GPT-4o", desc: "Advanced reasoning", href: "/#models" },
-          { icon: Brain, label: "Claude Sonnet", desc: "Best for code & analysis", href: "/#models" },
+          { icon: Zap, label: "Megsy Pro", desc: "Our flagship creative model", href: "/#models" },
+          { icon: Cpu, label: "GPT-4o", desc: "Advanced reasoning", href: "/#models" },
+          { icon: BrainCircuit, label: "Claude Sonnet", desc: "Best for code & analysis", href: "/#models" },
+          { icon: Rocket, label: "Gemini Flash", desc: "Ultra-fast responses", href: "/#models" },
         ],
       },
     ],
@@ -99,9 +100,10 @@ const navItems: NavItem[] = [
       {
         title: "Resources",
         items: [
-          { icon: BookOpen, label: "Blog", desc: "Tips, tutorials and updates", href: "#" },
-          { icon: HelpCircle, label: "Support", desc: "Get help from our team", href: "/contact" },
-          { icon: Newspaper, label: "Changelog", desc: "What's new in Megsy", href: "#" },
+          { icon: GraduationCap, label: "Blog", desc: "Tips, tutorials and updates", href: "#" },
+          { icon: LifeBuoy, label: "Support", desc: "Get help from our team", href: "/contact" },
+          { icon: FileText, label: "Changelog", desc: "What's new in Megsy", href: "#" },
+          { icon: Layers, label: "API Docs", desc: "Integrate Megsy into your apps", href: "#" },
         ],
       },
     ],
