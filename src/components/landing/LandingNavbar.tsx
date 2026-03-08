@@ -9,6 +9,7 @@ const links = [
   { label: "How It Works", href: "#how-it-works" },
   { label: "Pricing", href: "#pricing" },
   { label: "About Us", href: "https://about.megsyai.com", external: true },
+  { label: "Contact", href: "/contact" },
   { label: "FAQ", href: "#faq" },
 ];
 
