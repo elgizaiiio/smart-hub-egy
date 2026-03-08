@@ -34,7 +34,7 @@ const getFavicon = (url: string) => {
   }
 };
 
-const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, onLike, liked }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, onLike, liked, onShare }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
