@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Menu, ArrowUp, Globe, Code2, FolderOpen, ShoppingCart, BarChart3, Smartphone, Gamepad2, Layout, Plus, Sparkles } from "lucide-react";
+import { Menu, ArrowUp, Globe, Code2, FolderOpen, ShoppingCart, BarChart3, Smartphone, Gamepad2, Layout, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
@@ -117,7 +117,7 @@ const ProgrammingPage = () => {
               className="mx-auto mb-5 w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center relative"
             >
               <div className="absolute inset-0 rounded-2xl bg-primary/10 blur-xl" />
-              <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-primary relative z-10" />
+              <span className="relative z-10 text-2xl md:text-3xl font-black leading-none" style={{ background: "linear-gradient(135deg, #C0C0C0, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
             </motion.div>
 
             <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">
