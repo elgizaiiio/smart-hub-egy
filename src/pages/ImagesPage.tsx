@@ -478,7 +478,7 @@ const ImagesPage = () => {
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
             {/* Mobile: single rotating showcase */}
-            <div className="md:hidden w-full max-w-[200px] mb-4">
+            <div className="md:hidden w-full max-w-[240px] mb-4">
               <motion.div
                 key={currentImage}
                 initial={{ opacity: 0, scale: 0.97 }}
