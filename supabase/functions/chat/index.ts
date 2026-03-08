@@ -189,7 +189,7 @@ serve(async (req) => {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://egy.app", "X-Title": "egy" } : {}),
+        ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://megsyai.com", "X-Title": "Megsy" } : {}),
       },
       body: JSON.stringify(body),
     });
@@ -303,7 +303,7 @@ serve(async (req) => {
                         headers: {
                           Authorization: `Bearer ${apiKey}`,
                           "Content-Type": "application/json",
-                          ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://egy.app", "X-Title": "egy" } : {}),
+                          ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://megsyai.com", "X-Title": "Megsy" } : {}),
                         },
                         body: JSON.stringify(secondBody),
                       });

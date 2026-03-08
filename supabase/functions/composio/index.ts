@@ -94,7 +94,7 @@ serve(async (req) => {
       const integration = await getOrCreateIntegration(app, headers);
 
       // Initiate connection using v1 API
-      const redirectUri = `${req.headers.get("origin") || "https://smart-hub-egy.lovable.app"}/settings/integrations`;
+      const redirectUri = `${req.headers.get("origin") || "https://megsyai.com"}/settings/integrations`;
       const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts`, {
         method: "POST",
         headers,

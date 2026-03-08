@@ -1,23 +1,41 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-# خطة: تحديث اسم المشروع من "egy" إلى "Megsy"
+## ✅ Completed
 
-## المشكلة
-اسم المشروع القديم "egy" لا يزال موجود في عدة أماكن (index.html، edge functions). المطلوب تغييره إلى "Megsy" في كل مكان.
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-## التغييرات المطلوبة
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-### 1. تحديث `index.html`
-- تغيير العنوان من `egy - AI Platform` إلى `Megsy - AI Platform`
-- تحديث جميع الـ meta tags (description, og:title, twitter:title, author)
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-### 2. تحديث `supabase/functions/chat/index.ts`
-- تغيير `HTTP-Referer` من `https://egy.app` إلى `https://megsyai.com`
-- تغيير `X-Title` من `egy` إلى `Megsy`
-- (موجود في مكانين: السطر 192 والسطر 306)
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-### 3. تحديث `supabase/functions/composio/index.ts`
-- تغيير الـ redirect URI من `smart-hub-egy.lovable.app` إلى الدومين الصحيح
-
-هذه التغييرات بسيطة ومباشرة -- مجرد استبدال نصوص.
-
+### 5. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
