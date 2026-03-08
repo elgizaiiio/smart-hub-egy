@@ -21,13 +21,10 @@ const HeroSection = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="font-display text-[15vw] font-[900] uppercase leading-[0.9] tracking-[-0.04em] text-foreground md:text-[12vw]"
+          className="font-display text-[9vw] uppercase leading-[1] tracking-tight text-foreground md:text-[5.5vw]"
         >
-          THE AI CREATIVE
-          <br />
-          <span className="text-primary">SUITE THAT PUTS</span>
-          <br />
-          YOU IN CONTROL
+          THE AI CREATIVE SUITE{" "}
+          <span className="text-primary">THAT PUTS YOU IN CONTROL</span>
         </motion.h1>
 
         <motion.p

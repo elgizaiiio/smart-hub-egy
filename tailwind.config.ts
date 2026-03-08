@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Space Grotesk", "sans-serif"],
+        display: ["Dela Gothic One", "sans-serif"],
         body: ["Inter", "sans-serif"],
       },
       colors: {
