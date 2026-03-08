@@ -593,7 +593,6 @@ const VideosPage = () => {
               onKeyDown={(e) => {
                 // Enter creates new line, send only via send button
               }}
-              }}
               placeholder={displayedPlaceholder + "│"}
               rows={1}
               className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
