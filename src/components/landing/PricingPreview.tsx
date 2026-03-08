@@ -83,7 +83,7 @@ const PricingPreview = () => {
           transition={{ duration: 0.9 }}
           className="mb-16 text-center"
         >
-          <h2 className="font-display text-[12vw] font-black uppercase tracking-tighter leading-[0.85] text-white md:text-[8vw]">
+          <h2 className="font-display text-[10vw] font-black uppercase tracking-tighter leading-[0.85] text-white md:text-[8vw]">
             SIMPLE{" "}
             <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">PRICING</span>
           </h2>
