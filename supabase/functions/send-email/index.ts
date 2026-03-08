@@ -9,72 +9,72 @@ const corsHeaders = {
 
 const emailTemplates: Record<string, (vars: Record<string, string>) => { subject: string; html: string }> = {
   welcome: (vars) => ({
-    subject: `مرحباً ${vars.name} في Megsy AI! 🎉`,
+    subject: `Welcome to Megsy AI, ${vars.name}! 🎉`,
     html: `
       <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#e5e5e5;border-radius:16px;overflow:hidden">
         <div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:40px 30px;text-align:center">
-          <h1 style="color:#fff;margin:0;font-size:28px">مرحباً في Megsy AI!</h1>
+          <h1 style="color:#fff;margin:0;font-size:28px">Welcome to Megsy AI!</h1>
         </div>
         <div style="padding:30px">
-          <p style="font-size:16px;line-height:1.8">مرحباً <strong>${vars.name}</strong>،</p>
-          <p style="font-size:15px;line-height:1.8">يسعدنا انضمامك! حسابك جاهز مع <strong>10 MC</strong> رصيد مجاني.</p>
+          <p style="font-size:16px;line-height:1.8">Hey <strong>${vars.name}</strong>,</p>
+          <p style="font-size:15px;line-height:1.8">We're thrilled to have you on board! Your account is ready with <strong>10 MC</strong> free credits to get started.</p>
           <div style="text-align:center;margin:30px 0">
-            <a href="${vars.app_url}" style="background:#7c3aed;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">ابدأ الآن</a>
+            <a href="${vars.app_url}" style="background:#7c3aed;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">Get Started</a>
           </div>
-          <p style="font-size:13px;color:#888;text-align:center">Megsy AI - ذكاءك الاصطناعي</p>
+          <p style="font-size:13px;color:#888;text-align:center">Megsy AI — Your AI Assistant</p>
         </div>
       </div>`,
   }),
 
   low_balance: (vars) => ({
-    subject: `⚠️ رصيدك منخفض - ${vars.credits} MC متبقية`,
+    subject: `⚠️ Low Balance — ${vars.credits} MC remaining`,
     html: `
       <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#e5e5e5;border-radius:16px;overflow:hidden">
         <div style="background:linear-gradient(135deg,#f59e0b,#ef4444);padding:30px;text-align:center">
-          <h1 style="color:#fff;margin:0;font-size:24px">⚠️ رصيدك منخفض</h1>
+          <h1 style="color:#fff;margin:0;font-size:24px">⚠️ Low Balance Alert</h1>
         </div>
         <div style="padding:30px">
-          <p style="font-size:16px;line-height:1.8">مرحباً <strong>${vars.name}</strong>،</p>
-          <p style="font-size:15px;line-height:1.8">رصيدك الحالي <strong>${vars.credits} MC</strong>. قم بشحن رصيدك للاستمرار في استخدام جميع الميزات.</p>
+          <p style="font-size:16px;line-height:1.8">Hey <strong>${vars.name}</strong>,</p>
+          <p style="font-size:15px;line-height:1.8">Your current balance is <strong>${vars.credits} MC</strong>. Top up now to keep using all features without interruption.</p>
           <div style="text-align:center;margin:30px 0">
-            <a href="${vars.app_url}/pricing" style="background:#f59e0b;color:#000;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">شحن الرصيد</a>
+            <a href="${vars.app_url}/pricing" style="background:#f59e0b;color:#000;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">Top Up Credits</a>
           </div>
         </div>
       </div>`,
   }),
 
   transaction: (vars) => ({
-    subject: `✅ تأكيد عملية: ${vars.action}`,
+    subject: `✅ Transaction Confirmed: ${vars.action}`,
     html: `
       <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#e5e5e5;border-radius:16px;overflow:hidden">
         <div style="background:linear-gradient(135deg,#10b981,#059669);padding:30px;text-align:center">
-          <h1 style="color:#fff;margin:0;font-size:24px">✅ تأكيد العملية</h1>
+          <h1 style="color:#fff;margin:0;font-size:24px">✅ Transaction Confirmed</h1>
         </div>
         <div style="padding:30px">
-          <p style="font-size:16px;line-height:1.8">مرحباً <strong>${vars.name}</strong>،</p>
-          <p style="font-size:15px;line-height:1.8">تم تنفيذ عملية <strong>${vars.action}</strong> بنجاح.</p>
+          <p style="font-size:16px;line-height:1.8">Hey <strong>${vars.name}</strong>,</p>
+          <p style="font-size:15px;line-height:1.8">Your <strong>${vars.action}</strong> has been processed successfully.</p>
           <div style="background:#1a1a2e;border-radius:10px;padding:16px;margin:20px 0">
-            <p style="margin:4px 0;font-size:14px">المبلغ: <strong>${vars.amount}</strong></p>
-            <p style="margin:4px 0;font-size:14px">الرصيد المتبقي: <strong>${vars.remaining} MC</strong></p>
+            <p style="margin:4px 0;font-size:14px">Amount: <strong>${vars.amount}</strong></p>
+            <p style="margin:4px 0;font-size:14px">Remaining Balance: <strong>${vars.remaining} MC</strong></p>
           </div>
         </div>
       </div>`,
   }),
 
   newsletter: (vars) => ({
-    subject: vars.subject || "📰 أخبار Megsy AI",
+    subject: vars.subject || "📰 Megsy AI Updates",
     html: `
       <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#e5e5e5;border-radius:16px;overflow:hidden">
         <div style="background:linear-gradient(135deg,#7c3aed,#3b82f6);padding:30px;text-align:center">
-          <h1 style="color:#fff;margin:0;font-size:24px">${vars.subject || "أخبار Megsy AI"}</h1>
+          <h1 style="color:#fff;margin:0;font-size:24px">${vars.subject || "Megsy AI Updates"}</h1>
         </div>
         <div style="padding:30px">
           <div style="font-size:15px;line-height:1.8">${vars.content}</div>
           <div style="text-align:center;margin:30px 0">
-            <a href="${vars.app_url}" style="background:#7c3aed;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600">افتح Megsy AI</a>
+            <a href="${vars.app_url}" style="background:#7c3aed;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600">Open Megsy AI</a>
           </div>
           <p style="font-size:12px;color:#666;text-align:center;margin-top:30px">
-            لإلغاء الاشتراك في النشرة، قم بتعديل إعدادات الإشعارات في حسابك.
+            To unsubscribe, update your notification settings in your account.
           </p>
         </div>
       </div>`,
@@ -127,7 +127,6 @@ serve(async (req) => {
 
     await client.close();
 
-    // Log email
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -140,7 +139,6 @@ serve(async (req) => {
       status: "sent",
     });
 
-    // Also create in-app notification if user_id provided
     if (user_id && template) {
       const tpl = emailTemplates[template]?.(variables || {});
       if (tpl) {
@@ -148,7 +146,7 @@ serve(async (req) => {
           p_user_id: user_id,
           p_type: type || "system",
           p_title: tpl.subject.replace(/[🎉⚠️✅📰]/g, "").trim(),
-          p_message: `تم إرسال إيميل: ${tpl.subject}`,
+          p_message: `Email sent: ${tpl.subject}`,
         });
       }
     }
