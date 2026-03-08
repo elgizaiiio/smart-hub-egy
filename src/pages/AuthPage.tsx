@@ -232,7 +232,7 @@ const AuthPage = () => {
     "forgot-password": "We'll send a reset link to your email",
   };
 
-  const OtpInputs = () => (
+  const otpInputsElement = (
     <div className="flex justify-center gap-2.5" onPaste={handleOtpPaste}>
       {otpValues.map((val, i) => (
         <input
@@ -349,7 +349,7 @@ const AuthPage = () => {
           {(step === "otp-signup" || step === "otp-2fa") && (
             <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5">
               <p className="text-xs text-white/50">{email}</p>
-              <OtpInputs />
+              {otpInputsElement}
               {isSubmitting && <p className="text-xs text-white/50 animate-pulse">Verifying...</p>}
               <div className="pt-2">
                 {countdown > 0 ? (
