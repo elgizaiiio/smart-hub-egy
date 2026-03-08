@@ -1,21 +1,20 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
-import { Star } from "lucide-react";
 
-const heroImages = [
-  { src: "/hero/video-1.mp4", type: "video", style: "left-[2%] bottom-[15%] w-[17%] z-[1] rotate-[-7deg]" },
-  { src: "/hero/video-2.mp4", type: "video", style: "left-[19%] bottom-[4%] w-[19%] z-[2] rotate-[-3deg]" },
-  { src: "/hero/video-4.mp4", type: "video", style: "left-[38%] bottom-[0%] w-[24%] z-[3]" },
-  { src: "/hero/video-3.mp4", type: "video", style: "left-[62%] bottom-[4%] w-[19%] z-[2] rotate-[3deg]" },
-  { src: "/hero/bear.mp4", type: "video", style: "left-[81%] bottom-[15%] w-[17%] z-[1] rotate-[7deg]" },
+const heroVideos = [
+  { src: "/hero/video-1.mp4", rotate: -6, y: 40 },
+  { src: "/hero/video-2.mp4", rotate: -3, y: 15 },
+  { src: "/hero/video-4.mp4", rotate: 0, y: 0, center: true },
+  { src: "/hero/video-3.mp4", rotate: 3, y: 15 },
+  { src: "/hero/bear.mp4", rotate: 6, y: 40 },
 ];
 
 const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background pt-20 pb-0">
+    <section className="relative flex min-h-screen flex-col items-center overflow-hidden bg-background pt-24 pb-0">
       {/* Title */}
       <div className="relative z-30 mx-auto w-full px-4 text-center">
         <motion.h1
@@ -41,7 +40,6 @@ const HeroSection = () => {
           and control across 80+ AI models and professional workflows.
         </motion.p>
 
-
         {/* Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -58,39 +56,37 @@ const HeroSection = () => {
         </motion.div>
       </div>
 
-      {/* Floating image cards — Leonardo.ai style spread at bottom */}
-      <div className="relative z-0 mt-14 h-[34vh] w-full min-h-[240px] max-w-[1600px] px-2 md:h-[40vh]">
-        {heroImages.map((img, i) => (
+      {/* Video cards — evenly spaced fan layout */}
+      <div className="relative z-0 mt-10 flex w-full max-w-[1500px] items-end justify-center gap-3 px-4 pb-4 md:gap-5">
+        {heroVideos.map((vid, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 80 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.5 + i * 0.08 }}
-            className={`absolute aspect-[4/5] overflow-hidden rounded-2xl border border-border/40 bg-card/20 shadow-2xl ${img.style}`}
+            initial={{ opacity: 0, y: 100, rotate: vid.rotate }}
+            animate={{ opacity: 1, y: vid.y, rotate: vid.rotate }}
+            transition={{ duration: 0.7, delay: 0.45 + i * 0.1, ease: "easeOut" }}
+            className={`relative overflow-hidden rounded-2xl border border-border/30 shadow-2xl ${
+              vid.center
+                ? "w-[22%] md:w-[20%] z-[3]"
+                : Math.abs(vid.rotate) <= 3
+                ? "w-[19%] md:w-[18%] z-[2]"
+                : "w-[16%] md:w-[15%] z-[1]"
+            }`}
+            style={{ aspectRatio: "3/4" }}
           >
-            {img.type === "video" ? (
-              <video
-                src={img.src}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <img
-                src={img.src}
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            )}
+            <video
+              src={vid.src}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="h-full w-full object-cover"
+            />
           </motion.div>
         ))}
       </div>
 
       {/* Bottom fade */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
     </section>
   );
 };
