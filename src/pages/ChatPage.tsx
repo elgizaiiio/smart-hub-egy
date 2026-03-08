@@ -46,11 +46,43 @@ const ChatPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        supabase.from("profiles").select("display_name").eq("id", data.user.id).single().then(({ data: p }) => {
+          if (p?.display_name) setUserName(p.display_name);
+        });
+      }
+    });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollBtn(distFromBottom > 200);
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    const name = userName ? `, ${userName}` : "";
+    if (hour < 12) return `صباح الخير${name} ☀️`;
+    if (hour < 18) return `مساء الخير${name} 👋`;
+    return `مساء الخير${name} 🌙`;
+  };
 
   const createOrUpdateConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
