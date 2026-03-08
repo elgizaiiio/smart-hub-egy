@@ -496,7 +496,7 @@
 .pricing-point:nth-child(9) { left: 85%; animation-duration: 3.3s; animation-delay: 0.7s; }
 .pricing-point:nth-child(10) { left: 92%; animation-duration: 3.9s; animation-delay: 1.5s; }
 
-/* Landing page marquee animations */
+/* Landing page marquee + hero wall animations */
 @keyframes landing-marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -507,29 +507,60 @@
   100% { transform: translateX(0); }
 }
 
+@keyframes landing-wall-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -12px, 0); }
+}
+
 .landing-marquee {
   overflow: hidden;
   width: 100%;
 }
 
-.landing-marquee-track {
+.landing-marquee-track,
+.landing-marquee-track-reverse {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
   width: max-content;
-  animation: landing-marquee 40s linear infinite;
+}
+
+.landing-marquee-track {
+  animation: landing-marquee 28s linear infinite;
 }
 
 .landing-marquee-track-reverse {
-  display: flex;
-  gap: 2rem;
-  width: max-content;
-  animation: landing-marquee-reverse 40s linear infinite;
+  animation: landing-marquee-reverse 30s linear infinite;
+}
+
+.landing-grid-overlay {
+  background-image:
+    linear-gradient(hsl(var(--border) / 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.28) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black 42%, transparent 88%);
+}
+
+.landing-hero-word {
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  opacity: 0.5;
+  animation: landing-wall-drift 8s ease-in-out infinite;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-marquee-track,
+  .landing-marquee-track-reverse,
+  .landing-hero-word {
+    animation: none !important;
+  }
+}
+
