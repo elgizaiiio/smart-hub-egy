@@ -44,7 +44,7 @@ const LandingNavbar = () => {
               key={l.label}
               href={l.href}
               {...((l as any).external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-white/50 transition-colors hover:text-white"
             >
               {l.label}
             </a>
