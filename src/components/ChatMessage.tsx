@@ -180,6 +180,14 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               >
                 <ThumbsDown className="w-3.5 h-3.5" />
               </button>
+              {onShare && (
+                <button
+                  onClick={onShare}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
 
