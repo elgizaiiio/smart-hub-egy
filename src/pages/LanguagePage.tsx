@@ -54,28 +54,22 @@ const LanguagePage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.25 }}
-      className="max-w-2xl"
+      className="max-w-lg"
     >
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+      <div className="rounded-xl bg-secondary/30 divide-y divide-border overflow-hidden">
         {LANGUAGES.map((lang) => {
           const isActive = currentLang === lang.code;
           return (
             <button
               key={lang.code}
               onClick={() => handleSelect(lang.code)}
-              className={`notranslate relative flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left transition-colors duration-150 ${
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary/50 text-foreground hover:bg-secondary"
-              }`}
+              className="notranslate w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors duration-150 hover:bg-muted/50"
             >
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{lang.name}</p>
-                <p className={`text-[11px] truncate ${isActive ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                  {lang.native}
-                </p>
+              <span className="text-sm font-medium text-foreground">{lang.name}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">{lang.native}</span>
+                {isActive && <Check className="w-4 h-4 text-primary flex-shrink-0" strokeWidth={2.5} />}
               </div>
-              {isActive && <Check className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />}
             </button>
           );
         })}
