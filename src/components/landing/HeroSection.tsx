@@ -1,106 +1,111 @@
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useRef } from "react";
 import FancyButton from "@/components/FancyButton";
+import { Star } from "lucide-react";
 
-const gridItems = [
-  { src: "/api-showcase/showcase-1.png", type: "image" as const },
-  { src: "/api-showcase/video-1.mp4", type: "video" as const },
-  { src: "/api-showcase/showcase-2.jpg", type: "image" as const },
-  { src: "/api-showcase/showcase-3.jpg", type: "image" as const },
-  { src: "/api-showcase/showcase-4.jpg", type: "image" as const },
-  { src: "/api-showcase/video-2.mp4", type: "video" as const },
-  { src: "/api-showcase/showcase-1.png", type: "image" as const },
-  { src: "/api-showcase/video-3.mp4", type: "video" as const },
-  { src: "/api-showcase/showcase-2.jpg", type: "image" as const },
-  { src: "/api-showcase/showcase-4.jpg", type: "image" as const },
-  { src: "/api-showcase/video-4.mp4", type: "video" as const },
-  { src: "/api-showcase/showcase-3.jpg", type: "image" as const },
+const heroImages = [
+  { src: "/api-showcase/showcase-1.png", style: "left-[-4%] bottom-[5%] w-[22%] rotate-[-4deg]" },
+  { src: "/api-showcase/showcase-2.jpg", style: "left-[12%] bottom-[-8%] w-[30%] rotate-[2deg] z-10" },
+  { src: "/api-showcase/video-1.mp4", type: "video", style: "left-[30%] bottom-[-5%] w-[40%] z-20" },
+  { src: "/api-showcase/showcase-3.jpg", style: "right-[12%] bottom-[-8%] w-[30%] rotate-[-2deg] z-10" },
+  { src: "/api-showcase/showcase-4.jpg", style: "right-[-4%] bottom-[5%] w-[22%] rotate-[4deg]" },
 ];
 
 const HeroSection = () => {
   const navigate = useNavigate();
-  const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end start"],
-  });
-
-  const gridScale = useTransform(scrollYProgress, [0, 1], [1, 2.2]);
-  const gridOpacity = useTransform(scrollYProgress, [0, 0.7, 1], [0.35, 0.15, 0]);
-  const contentY = useTransform(scrollYProgress, [0, 1], [0, -120]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
 
   return (
-    <section ref={sectionRef} className="relative min-h-screen overflow-hidden bg-background pt-20">
-      {/* Background grid of media - fills the screen */}
-      <motion.div
-        style={{ scale: gridScale, opacity: gridOpacity }}
-        className="absolute inset-0 grid grid-cols-3 grid-rows-4 gap-2 p-2 md:grid-cols-4 md:grid-rows-3"
-      >
-        {gridItems.map((item, i) => (
-          <div key={i} className="overflow-hidden rounded-xl">
-            {item.type === "video" ? (
-              <video src={item.src} autoPlay loop muted playsInline className="h-full w-full object-cover" />
-            ) : (
-              <img src={item.src} alt="" loading="lazy" className="h-full w-full object-cover" />
-            )}
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background pt-20 pb-0">
+      {/* Title */}
+      <div className="relative z-10 mx-auto max-w-6xl px-6 text-center">
+        <motion.h1
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="font-display text-[9vw] font-black uppercase leading-[0.88] tracking-tighter text-foreground md:text-[5.5vw]"
+        >
+          THE AI CREATIVE SUITE{" "}
+          <span className="text-primary">THAT PUTS YOU IN CONTROL</span>
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg"
+        >
+          Generate images, animate stills, build code, and create with precision
+          and control across 80+ AI models and professional workflows.
+        </motion.p>
+
+        {/* Rating */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35 }}
+          className="mt-5 flex items-center justify-center gap-2"
+        >
+          <div className="flex gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="h-4 w-4 fill-emerald-400 text-emerald-400" />
+            ))}
           </div>
-        ))}
-      </motion.div>
+          <span className="text-sm font-bold text-foreground">4.8</span>
+          <span className="text-xs text-muted-foreground">based on 92K Ratings</span>
+        </motion.div>
 
-      {/* Center hero content */}
-      <motion.div
-        style={{ y: contentY, opacity: contentOpacity }}
-        className="relative z-10 flex min-h-[calc(100vh-5rem)] items-center justify-center px-6"
-      >
-        <div className="mx-auto max-w-4xl text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="font-display text-[13vw] font-black uppercase leading-[0.82] tracking-tighter text-foreground md:text-[8vw]"
+        {/* Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
+        >
+          <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-base">
+            Start creating
+          </FancyButton>
+          <button
+            onClick={() => navigate("/pricing")}
+            className="rounded-full border border-border bg-card/40 px-8 py-3.5 text-sm font-semibold text-foreground/90 backdrop-blur-md transition-all hover:border-foreground/30 hover:bg-card"
           >
-            THE CREATOR
-          </motion.h1>
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-display text-[13vw] font-black uppercase leading-[0.82] tracking-tighter text-primary md:text-[8vw]"
-          >
-            AI PLATFORM
-          </motion.h1>
+            View API & Pricing
+          </button>
+        </motion.div>
+      </div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-            className="mx-auto mt-6 max-w-xl text-base text-muted-foreground md:text-lg"
-          >
-            80+ AI models. Images, videos, code, and chat. One platform for everything you create.
-          </motion.p>
-
+      {/* Floating image cards — Leonardo.ai style spread at bottom */}
+      <div className="relative mt-8 h-[40vh] w-full min-h-[280px] md:h-[45vh]">
+        {heroImages.map((img, i) => (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            key={i}
+            initial={{ opacity: 0, y: 80 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.35 }}
-            className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
+            transition={{ duration: 0.7, delay: 0.5 + i * 0.08 }}
+            className={`absolute overflow-hidden rounded-2xl border border-border/40 shadow-2xl ${img.style}`}
           >
-            <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-lg">
-              Start creating
-            </FancyButton>
-            <button
-              onClick={() => document.getElementById("horizontal-gallery")?.scrollIntoView({ behavior: "smooth" })}
-              className="rounded-full border border-border bg-card/40 px-8 py-3.5 text-sm font-semibold text-foreground/90 backdrop-blur-md transition-all hover:border-foreground/35 hover:bg-card"
-            >
-              Explore Platform
-            </button>
+            {img.type === "video" ? (
+              <video
+                src={img.src}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <img
+                src={img.src}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            )}
           </motion.div>
-        </div>
-      </motion.div>
+        ))}
+      </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
+      {/* Bottom fade */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
     </section>
   );
 };
