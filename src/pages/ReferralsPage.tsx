@@ -170,7 +170,7 @@ const ReferralsPage = () => {
             { step: "3", text: "You earn 20% of every payment, forever" },
           ].map(item => (
             <div key={item.step} className="flex items-center gap-3 py-2.5">
-              <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
+              <span className="w-6 h-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center text-[11px] font-bold text-[#FFD700] shrink-0">
                 {item.step}
               </span>
               <p className="text-sm text-foreground">{item.text}</p>
