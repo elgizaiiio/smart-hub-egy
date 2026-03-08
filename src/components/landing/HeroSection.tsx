@@ -17,7 +17,7 @@ const HeroSection = () => {
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background pt-20 pb-0">
       {/* Title */}
-      <div className="relative z-10 mx-auto max-w-6xl px-6 text-center">
+      <div className="relative z-30 mx-auto max-w-6xl px-6 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
