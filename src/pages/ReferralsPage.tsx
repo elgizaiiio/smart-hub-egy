@@ -115,9 +115,19 @@ const ReferralsPage = () => {
       </div>
 
       {/* Headline */}
-      <div className="text-center space-y-1.5">
-        <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">Referral Program</h2>
-        <p className="text-sm text-muted-foreground">20% commission on every payment — forever</p>
+      <div className="text-center space-y-4">
+        <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">
+          20% Forever — No Limits — No Expiry
+        </h2>
+        <div className="space-y-1">
+          <p className="text-base text-muted-foreground">Every subscriber you refer =</p>
+          <p className="text-lg font-semibold text-primary">
+            20% every month or every year — Forever
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+          Share your link. They subscribe. You earn 20% of their payment — not once, not for a year — forever. No caps. No limits. No expiry. As long as they stay subscribed, you keep earning.
+        </p>
       </div>
 
       {/* Stats — transparent, no borders */}
