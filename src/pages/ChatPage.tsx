@@ -109,6 +109,24 @@ const ChatPage = () => {
     setPlusMenuOpen(false);
   };
 
+  const handleOpenFilesPicker = () => {
+    const input = fileInputRef.current;
+    if (!input) return;
+
+    try {
+      const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+      if (typeof pickerInput.showPicker === "function") {
+        pickerInput.showPicker();
+      } else {
+        input.click();
+      }
+    } catch {
+      input.click();
+    }
+
+    setPlusMenuOpen(false);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const userMsg: Message = { role: "user", content: input };
@@ -177,16 +195,27 @@ const ChatPage = () => {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isTextFile =
+      file.type.startsWith("text/") ||
+      /\.(txt|md|csv|json|js|ts|py|html|css|xml|yml|yaml|log)$/i.test(file.name);
+
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
       reader.readAsDataURL(file);
-    } else {
+    } else if (isTextFile) {
       const text = await file.text();
       setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: text.slice(0, 5000) }]);
       setInput((prev) => prev + `\n\nFile (${file.name}):\n${text.slice(0, 5000)}`);
+    } else {
+      setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: "" }]);
+      setInput((prev) => prev + `\n\nAttached file: ${file.name}`);
+      toast.success(`${file.name} attached`);
     }
+
     e.target.value = "";
   };
 
@@ -356,7 +385,7 @@ const ChatPage = () => {
                           </div>
                           <p className="text-[11px] text-muted-foreground font-medium">Photos</p>
                         </button>
-                        <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
+                        <button onClick={handleOpenFilesPicker} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
                           <div className="w-9 h-9 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
                             <FileUp className="w-4 h-4 text-violet-500" />
                           </div>
@@ -433,7 +462,7 @@ const ChatPage = () => {
 
               <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} />
             </div>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept="*/*" />
+            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
             <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
             <input ref={photoInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
           </div>
