@@ -61,19 +61,6 @@ const ChatDemo = () => {
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/30 bg-card/30 backdrop-blur-md">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border/20 px-4 py-3">
-        <div className="flex gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-destructive/60" />
-          <span className="h-3 w-3 rounded-full bg-amber-500/60" />
-          <span className="h-3 w-3 rounded-full bg-emerald-500/60" />
-        </div>
-        <span className="text-xs font-semibold text-muted-foreground">Megsy AI Chat</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] text-emerald-400">Online</span>
-        </div>
-      </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: "none" }}>
