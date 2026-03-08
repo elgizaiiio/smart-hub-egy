@@ -2,13 +2,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
+import ChatDemo from "@/components/landing/ChatDemo";
 
 const tabs = [
   {
     title: "AI CHAT",
     description: "Access GPT-5, DeepSeek R1, Claude, Gemini, and Megsy's own flagship chat model. Context-aware conversations with memory, file uploads, and real-time web search.",
-    video: "/api-showcase/video-1.mp4",
+    video: "",
     accent: "bg-emerald-500",
+    useChat: true,
   },
   {
     title: "IMAGE GENERATION",
@@ -95,24 +97,32 @@ const StickyFeatureTabs = () => {
             </motion.div>
           </AnimatePresence>
 
-          {/* Video side */}
-          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-border/30">
-            <AnimatePresence mode="wait">
-              <motion.video
-                key={active}
-                initial={{ opacity: 0, scale: 1.05 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.4 }}
-                src={current.video}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            </AnimatePresence>
-          </div>
+          {/* Preview side */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, scale: 1.03 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.4 }}
+              className="relative aspect-[16/10] overflow-hidden rounded-2xl"
+            >
+              {current.useChat ? (
+                <ChatDemo />
+              ) : (
+                <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
+                  <video
+                    src={current.video}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </section>
