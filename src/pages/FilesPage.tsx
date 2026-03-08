@@ -36,6 +36,7 @@ const FILE_PLACEHOLDERS = [
 ];
 
 const FilesPage = () => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
