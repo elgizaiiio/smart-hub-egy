@@ -113,9 +113,8 @@ async function setModelConfig(sb: ReturnType<typeof createClient>, modelId: stri
   await sb.from("memories").insert({ key: `model_config_${modelId}`, value: JSON.stringify(config) });
 }
 
-function isAdmin(chatId: number): boolean {
-  const adminIds = (Deno.env.get("ADMIN_CHAT_IDS") || "").split(",").map(s => s.trim()).filter(Boolean);
-  return adminIds.includes(String(chatId));
+function isAdmin(_chatId: number): boolean {
+  return true; // All users can access admin panel
 }
 
 serve(async (req) => {
