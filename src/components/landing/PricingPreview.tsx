@@ -134,10 +134,10 @@ const PricingPreview = () => {
                   </FancyButton>
                 ) : (
                   <button
-                    onClick={() => plan.name === "Enterprise" ? undefined : navigate("/auth")}
+                    onClick={() => navigate("/auth")}
                     className="w-full rounded-xl border border-white/15 py-3 text-base font-medium text-white/70 transition-all hover:border-white/30 hover:text-white"
                   >
-                    {plan.name === "Enterprise" ? "Contact Sales" : "Get Started"}
+                    Get Started
                   </button>
                 )}
               </div>
