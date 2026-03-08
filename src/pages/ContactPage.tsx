@@ -145,7 +145,8 @@ const ContactPage = () => {
                 <motion.div
                   className="absolute bottom-4 right-4"
                   initial={{ scale: 0, rotate: -45 }}
-                  animate={{ scale: 1, rotate: 0 }}
+                  whileInView={{ scale: 1, rotate: 0 }}
+                  viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: 0.7, type: "spring" }}
                 >
                   <svg viewBox="0 0 120 80" fill="none" className="h-28 w-40 text-black">
