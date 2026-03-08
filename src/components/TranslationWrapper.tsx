@@ -292,10 +292,18 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     };
   }, []);
 
-  // 4. On SPA route change → re-translate input attributes only (no full re-trigger)
+  // 4. On SPA route change or new DOM inputs → re-translate attributes
   useEffect(() => {
     const lang = localStorage.getItem("language") || "en";
     if (lang === "en") return;
+
+    // MutationObserver for new inputs added to the DOM
+    let retranslateTimer: ReturnType<typeof setTimeout> | null = null;
+    const inputObserver = new MutationObserver(() => {
+      if (retranslateTimer) clearTimeout(retranslateTimer);
+      retranslateTimer = setTimeout(translateInputAttributes, 1500);
+    });
+    inputObserver.observe(document.body, { childList: true, subtree: true });
 
     let lastPath = window.location.pathname;
 
@@ -303,7 +311,6 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
       const cur = window.location.pathname;
       if (cur !== lastPath) {
         lastPath = cur;
-        // Just re-translate input attributes for new page content
         setTimeout(translateInputAttributes, 1500);
       }
     };
@@ -321,6 +328,8 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     window.addEventListener("popstate", checkRoute);
 
     return () => {
+      inputObserver.disconnect();
+      if (retranslateTimer) clearTimeout(retranslateTimer);
       history.pushState = origPush;
       history.replaceState = origReplace;
       window.removeEventListener("popstate", checkRoute);
