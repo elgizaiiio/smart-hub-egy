@@ -39,9 +39,39 @@ const callSandbox = async (body: Record<string, unknown>) => {
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(err.error || `Sandbox error: ${resp.status}`);
+    throw new Error(err.error || err.message || err.code || `Sandbox error: ${resp.status}`);
   }
   return resp.json();
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const waitForPreviewReady = async (
+  spriteName: string,
+  maxAttempts = 30,
+  intervalMs = 2000,
+  onAttempt?: (attempt: number, maxAttempts: number) => void,
+) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await sleep(intervalMs);
+    onAttempt?.(attempt, maxAttempts);
+
+    try {
+      const healthCheck = await callSandbox({
+        action: "exec",
+        sprite_name: spriteName,
+        command: "cd /app && (curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000 || true)",
+      });
+
+      if (String(healthCheck?.output || "").includes("200")) {
+        return true;
+      }
+    } catch {
+      // Keep polling while sandbox boots
+    }
+  }
+
+  return false;
 };
 
 const callGithub = async (body: Record<string, unknown>) => {

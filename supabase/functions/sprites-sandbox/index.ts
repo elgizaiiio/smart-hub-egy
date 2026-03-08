@@ -15,7 +15,7 @@ serve(async (req) => {
     if (!SPRITES_TOKEN) throw new Error("SPRITES_TOKEN not configured");
 
     const body = await req.json();
-    const { action, sprite_name, file_path, file_content, command } = body;
+    const { action, sprite_name, file_path, file_content, command, detach } = body;
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${SPRITES_TOKEN}`,
