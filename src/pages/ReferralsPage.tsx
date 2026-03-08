@@ -153,7 +153,8 @@ const ReferralsPage = () => {
           </div>
           <button
             onClick={handleCopy}
-            className="p-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+            className="p-3 rounded-xl text-black hover:opacity-90 transition-colors shrink-0"
+            style={{ backgroundColor: "#FFD700" }}
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </button>
