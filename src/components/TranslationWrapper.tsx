@@ -257,6 +257,15 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     };
   }, []);
 
+  // Re-translate placeholders on SPA route changes
+  useEffect(() => {
+    const lang = localStorage.getItem("language") || "en";
+    if (lang !== "en") {
+      const timer = setTimeout(translateAttributes, 2000);
+      return () => clearTimeout(timer);
+    }
+  });
+
   return <>{children}</>;
 };
 
