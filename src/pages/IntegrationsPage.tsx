@@ -198,11 +198,36 @@ const IntegrationsPage = () => {
       });
       if (error) throw error;
       if (data?.redirectUrl) {
-        window.open(data.redirectUrl, "_blank", "width=600,height=700");
+        const authWindow = window.open(data.redirectUrl, "_blank", "width=600,height=700");
+        if (!authWindow) {
+          toast.error("Please allow popups to connect.");
+          return;
+        }
         toast.success(`Opening ${integration.name} authorization...`);
-        setTimeout(() => loadConnections(), 5000);
-        setTimeout(() => loadConnections(), 10000);
-        setTimeout(() => loadConnections(), 20000);
+        // Poll for connection status after auth window opens
+        const pollInterval = setInterval(async () => {
+          try {
+            const { data: checkData } = await supabase.functions.invoke("composio", {
+              body: { action: "list-connections", userId: "default" },
+            });
+            const items = checkData?.items || checkData || [];
+            if (Array.isArray(items)) {
+              const found = items.find((item: any) => {
+                const appName = (item.appName || item.appUniqueId || "").toLowerCase();
+                return appName === integration.app && item.status === "ACTIVE";
+              });
+              if (found) {
+                clearInterval(pollInterval);
+                setConnectedApps(prev => ({ ...prev, [integration.app]: found.id }));
+                toast.success(`${integration.name} connected!`);
+                setLoadingApp(null);
+              }
+            }
+          } catch {}
+        }, 3000);
+        // Stop polling after 60s
+        setTimeout(() => { clearInterval(pollInterval); setLoadingApp(null); }, 60000);
+        return;
       } else if (data?.connectionStatus === "ACTIVE") {
         toast.success(`${integration.name} connected!`);
         setConnectedApps(prev => ({ ...prev, [integration.app]: data.id }));
@@ -211,6 +236,28 @@ const IntegrationsPage = () => {
       }
     } catch (e: any) {
       toast.error(`Failed to connect ${integration.name}: ${e.message || "Unknown error"}`);
+    } finally {
+      setLoadingApp(null);
+    }
+  };
+
+  const handleDisconnect = async (integration: typeof integrations[0]) => {
+    const connectionId = connectedApps[integration.app];
+    if (!connectionId) return;
+    setLoadingApp(integration.id);
+    try {
+      const { error } = await supabase.functions.invoke("composio", {
+        body: { action: "disconnect", connectionId, userId: "default" },
+      });
+      if (error) throw error;
+      setConnectedApps(prev => {
+        const next = { ...prev };
+        delete next[integration.app];
+        return next;
+      });
+      toast.success(`${integration.name} disconnected.`);
+    } catch (e: any) {
+      toast.error(`Failed to disconnect: ${e.message || "Unknown error"}`);
     } finally {
       setLoadingApp(null);
     }
