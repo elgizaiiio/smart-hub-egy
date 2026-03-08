@@ -60,9 +60,9 @@ const SettingsPage = () => {
   const isPremium = plan !== "free";
 
   const quickActions = [
-    { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
-    { icon: Globe2, label: "Language", desc: "App language", path: "/settings/language" },
-    { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
+    { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization", fancy: false },
+    { icon: Gift, label: "Referrals", desc: "Invite & earn", path: "/settings/referrals", fancy: true },
+    { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations", fancy: false },
   ];
 
   const menuItems = [
@@ -128,6 +128,31 @@ const SettingsPage = () => {
           <div className="grid grid-cols-3 gap-2.5 mb-8">
             {quickActions.map((action, i) => {
               const Icon = action.icon;
+              if (action.fancy) {
+                return (
+                  <motion.div
+                    key={action.label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
+                    className="flex justify-center"
+                  >
+                    <button
+                      onClick={() => navigate(action.path)}
+                      className="fancy-btn !rounded-2xl !py-4 w-full"
+                    >
+                      <span className="fold" />
+                      <div className="points_wrapper">
+                        {Array.from({ length: 8 }).map((_, j) => <span key={j} className="point" />)}
+                      </div>
+                      <span className="inner flex-col gap-1">
+                        <span className="text-xs font-medium">{action.label}</span>
+                        <span className="text-[10px] opacity-70">{action.desc}</span>
+                      </span>
+                    </button>
+                  </motion.div>
+                );
+              }
               return (
                 <motion.button
                   key={action.label}

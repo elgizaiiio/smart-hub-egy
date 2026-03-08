@@ -23,7 +23,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Preferences",
     items: [
-      { id: "language", label: "Language", icon: Globe, path: "/settings/language" },
       { id: "customization", label: "Customization", icon: Paintbrush, path: "/settings/customization" },
     ],
   },
