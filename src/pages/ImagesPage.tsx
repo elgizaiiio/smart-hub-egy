@@ -470,7 +470,7 @@ const ImagesPage = () => {
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-pink-500 text-white hover:bg-pink-600 shadow-pink-500/25" /> />
+        <ModelSelector mode="images" selectedModel={selectedModel} onModelChange={setSelectedModel} showCategories colorClass="bg-pink-500 text-white hover:bg-pink-600 shadow-pink-500/25" />
         <div className="w-9" />
       </div>
 
