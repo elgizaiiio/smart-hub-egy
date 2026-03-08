@@ -297,6 +297,19 @@ const ChatPage = () => {
               <div ref={messagesEndRef} />
             </div>
           )}
+          <AnimatePresence>
+            {showScrollBtn && messages.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={scrollToBottom}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-9 h-9 rounded-full bg-secondary border border-border flex items-center justify-center shadow-lg hover:bg-accent transition-colors"
+              >
+                <ArrowDown className="w-4 h-4 text-foreground" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Input */}
