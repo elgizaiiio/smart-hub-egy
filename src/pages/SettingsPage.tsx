@@ -69,12 +69,12 @@ const SettingsPage = () => {
     { icon: UserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
     { icon: Gift, label: "Referrals", desc: "Invite & earn 20%", path: "/settings/referrals" },
-    { icon: SquareCode, label: "APIs", desc: "Developer access", path: "/settings/apis" },
+    { icon: SquareCode, label: "APIs", desc: "Developer access", path: "https://api.megsyai.com", external: true },
   ];
 
   const supportItems = [
-    { icon: Radio, label: "System Status", path: "/status" },
-    { icon: CircleHelp, label: "About Megsy", path: "/about" },
+    { icon: Radio, label: "System Status", path: "https://status.megsyai.com", external: true },
+    { icon: CircleHelp, label: "About Megsy", path: "https://about.megsyai.com", external: true },
   ];
 
   return (
@@ -173,7 +173,7 @@ const SettingsPage = () => {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.15 + i * 0.04 }}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => (item as any).external ? window.open(item.path, "_blank") : navigate(item.path)}
                   className="w-full flex items-center gap-3 py-3.5 px-1 text-left hover:bg-muted/30 transition-colors"
                 >
                   <Icon className="w-5 h-5 text-muted-foreground shrink-0" />
@@ -195,7 +195,7 @@ const SettingsPage = () => {
               return (
                 <button
                   key={item.label}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => (item as any).external ? window.open(item.path, "_blank") : navigate(item.path)}
                   className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-muted/30 transition-colors"
                 >
                   <Icon className="w-5 h-5 text-muted-foreground" />

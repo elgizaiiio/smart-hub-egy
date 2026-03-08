@@ -105,8 +105,8 @@ const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
   // Megsy M logo
   if (modelId.includes("gemini-3-flash")) {
     return (
-      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-        <span className="text-[8px] font-black text-white leading-none">M</span>
+      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #C0C0C0, #E8E8E8, #A0A0A0, #D0D0D0)" }}>
+        <span className="text-[10px] font-black leading-none" style={{ background: "linear-gradient(180deg, #555, #222)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
       </div>
     );
   }
@@ -126,12 +126,12 @@ const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
       </svg>
     );
   }
-  // xAI Grok - X logo
+  // xAI Grok
   if (modelId.includes("grok")) {
     return (
-      <svg viewBox="0 0 24 24" className="w-4 h-4 text-foreground" fill="currentColor">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-      </svg>
+      <div className="w-5 h-5 rounded-md bg-foreground flex items-center justify-center">
+        <span className="text-[9px] font-black text-background leading-none tracking-tight">xAI</span>
+      </div>
     );
   }
   // DeepSeek - blue circle with search icon

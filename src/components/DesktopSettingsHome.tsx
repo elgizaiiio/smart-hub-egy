@@ -94,7 +94,7 @@ export function DesktopSettingsHome() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
         <div className="p-5 rounded-xl border border-border">
-          <p className="text-xs text-muted-foreground mb-1">Credits Balance</p>
+          <p className="text-xs text-muted-foreground mb-1">MC Balance</p>
           <p className="text-2xl font-bold text-foreground">
             {credits !== null ? credits.toFixed(2) : "..."}
           </p>

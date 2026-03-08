@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileSpreadsheet, FileText, Presentation, Table } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,10 +22,19 @@ interface AttachedFile {
 }
 
 const SUGGESTIONS = [
-  { title: "Write a professional report" },
-  { title: "Create a presentation" },
-  { title: "Summarize this document" },
-  { title: "Convert image to PDF" },
+  "Write a professional report",
+  "Create a presentation",
+  "Summarize this document",
+  "Convert image to PDF",
+  "Create a spreadsheet",
+  "Generate a PDF",
+];
+
+const FILE_INTEGRATIONS = [
+  { name: "Google Drive", icon: "📁", desc: "Upload & access files" },
+  { name: "Notion", icon: "📝", desc: "Create & import pages" },
+  { name: "Gmail", icon: "📧", desc: "Attach from email" },
+  { name: "GitHub", icon: "💻", desc: "Import code files" },
 ];
 
 const FILE_PLACEHOLDERS = [
@@ -51,6 +60,7 @@ const FilesPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,10 +78,21 @@ const FilesPage = () => {
     return () => clearInterval(t);
   }, [placeholderIdx, input]);
 
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>, type: "file" | "image") => {
     const files = e.target.files;
     if (!files) return;
-    
     Array.from(files).forEach(file => {
       if (file.size > 10 * 1024 * 1024) {
         toast.error(`${file.name} is too large (max 10MB)`);
@@ -79,11 +100,7 @@ const FilesPage = () => {
       }
       const reader = new FileReader();
       reader.onload = () => {
-        setAttachedFiles(prev => [...prev, {
-          name: file.name,
-          type: file.type,
-          data: reader.result as string,
-        }]);
+        setAttachedFiles(prev => [...prev, { name: file.name, type: file.type, data: reader.result as string }]);
         toast.success(`${file.name} attached`);
       };
       reader.readAsDataURL(file);
@@ -98,39 +115,21 @@ const FilesPage = () => {
   const createOrGetConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
     const title = firstMessage.slice(0, 50) || "File Generation";
-    const { data } = await supabase
-      .from("conversations")
-      .insert({ title, mode: "files" })
-      .select("id")
-      .single();
-    if (data) {
-      setConversationId(data.id);
-      return data.id;
-    }
+    const { data } = await supabase.from("conversations").insert({ title, mode: "files" }).select("id").single();
+    if (data) { setConversationId(data.id); return data.id; }
     return null;
   };
 
   const loadOldConversation = async (id: string) => {
     setConversationId(id);
-    const { data: msgs } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: true });
+    const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true });
     if (msgs) {
-      setMessages(msgs.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })));
+      setMessages(msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })));
     }
   };
 
   const saveMessage = async (convId: string, role: string, content: string) => {
-    await supabase.from("messages").insert({
-      conversation_id: convId,
-      role,
-      content,
-    });
+    await supabase.from("messages").insert({ conversation_id: convId, role, content });
   };
 
   const handleGenerate = async () => {
@@ -149,22 +148,12 @@ const FilesPage = () => {
 
     try {
       let prompt = `Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished. Output ONLY the HTML code, no explanations:\n\n${userInput}`;
-      
-      if (files.length > 0) {
-        prompt += `\n\n[User attached ${files.length} file(s): ${files.map(f => f.name).join(", ")}]`;
-      }
+      if (files.length > 0) prompt += `\n\n[User attached ${files.length} file(s): ${files.map(f => f.name).join(", ")}]`;
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: prompt }],
-          model: "google/gemini-3-flash-preview",
-          mode: "files",
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }], model: "google/gemini-3-flash-preview", mode: "files" }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -190,11 +179,7 @@ const FilesPage = () => {
           if (!line.startsWith("data: ")) continue;
           const jsonStr = line.slice(6).trim();
           if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) content += delta;
-          } catch { /* skip */ }
+          try { const parsed = JSON.parse(jsonStr); const delta = parsed.choices?.[0]?.delta?.content; if (delta) content += delta; } catch { /* skip */ }
         }
       }
 
@@ -204,10 +189,7 @@ const FilesPage = () => {
 
       const descResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML document for them. Write a brief, friendly description of what was created and suggest 2-3 improvements. Keep it conversational, 2-3 sentences max. Do not use emoji. Respond in the same language as the user's request.` }],
           model: "google/gemini-3-flash-preview",
@@ -283,22 +265,33 @@ const FilesPage = () => {
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <FancyButton onClick={() => navigate("/pricing")}>
-          Unlock Pro
-        </FancyButton>
+        <AnimatePresence>
+          {!hasMessages && (
+            <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
+              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="w-9" />
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md">
-              <h2 className="font-display text-xl font-bold text-foreground mb-2">Create anything with files</h2>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
+              <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-3">Create anything with files</h2>
               <p className="text-sm text-muted-foreground mb-6">Generate documents, analyze files, create presentations and more</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 {SUGGESTIONS.map((s, i) => (
-                  <motion.button key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} onClick={() => setInput(s.title)} className="p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/50 transition-all text-left">
-                    <p className="text-sm text-foreground">{s.title}</p>
+                  <motion.button
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    onClick={() => setInput(s)}
+                    className="px-5 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
+                  >
+                    {s}
                   </motion.button>
                 ))}
               </div>
@@ -356,68 +349,66 @@ const FilesPage = () => {
             </div>
           )}
 
-          <AnimatePresence>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-60">
-                  {/* Toggle: Web Search */}
-                  <button
-                    onClick={() => { setSearchEnabled(!searchEnabled); setMenuOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Globe className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">Web search</span>
-                    </div>
-                    <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                      <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
-                    </div>
-                  </button>
-
-                  <div className="border-t border-border my-1.5" />
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Attach</p>
-
-                  <button onClick={() => { imageInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                    <Image className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">Image</span>
-                  </button>
-                  <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                    <Paperclip className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">Document</span>
-                  </button>
-
-                  <div className="border-t border-border my-1.5" />
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Generate</p>
-
-                  <button onClick={() => { setInput("Create a professional Word document about "); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">Word Document</span>
-                  </button>
-                  <button onClick={() => { setInput("Create a spreadsheet with "); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                    <Table className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">Spreadsheet</span>
-                  </button>
-                  <button onClick={() => { setInput("Create a presentation about "); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                    <Presentation className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">Presentation</span>
-                  </button>
-                  <button onClick={() => { setInput("Create a PDF report about "); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                    <FileSpreadsheet className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">PDF Report</span>
-                  </button>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
           <div className="flex items-end gap-2 rounded-2xl border border-primary/30 bg-transparent backdrop-blur-md px-3 py-2">
-            <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-              <Plus className="w-5 h-5" />
-            </button>
+            <div ref={menuRef} className="relative">
+              <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                <Plus className="w-5 h-5" />
+              </button>
+
+              <AnimatePresence>
+                {menuOpen && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-60">
+                    {/* Toggle: Web Search */}
+                    <button
+                      onClick={() => { setSearchEnabled(!searchEnabled); setMenuOpen(false); }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Globe className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Web search</span>
+                      </div>
+                      <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+                        <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+                      </div>
+                    </button>
+
+                    <div className="border-t border-border my-1.5" />
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Attach</p>
+
+                    <button onClick={() => { imageInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                      <Image className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">Image</span>
+                    </button>
+                    <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                      <Paperclip className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">Document</span>
+                    </button>
+
+                    <div className="border-t border-border my-1.5" />
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Integrations</p>
+
+                    {FILE_INTEGRATIONS.map((app) => (
+                      <button
+                        key={app.name}
+                        onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+                      >
+                        <span className="text-base">{app.icon}</span>
+                        <div className="min-w-0">
+                          <span className="text-sm text-foreground block">{app.name}</span>
+                          <span className="text-[10px] text-muted-foreground">{app.desc}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { /* Enter creates new line naturally, no send on Enter */ }}
+              onKeyDown={() => { /* Enter creates new line naturally */ }}
               placeholder={displayedPlaceholder + "│"}
               rows={1}
               className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"

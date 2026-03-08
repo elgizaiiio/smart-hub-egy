@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CreditCard } from "lucide-react";
+import FancyButton from "@/components/FancyButton";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -97,12 +98,12 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             className="fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-sidebar flex flex-col border-r border-sidebar-border"
           >
             <div className="p-3">
-              <button
+              <FancyButton
                 onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
-                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="w-full"
               >
                 + New chat
-              </button>
+              </FancyButton>
             </div>
 
             {/* Services */}
@@ -164,7 +165,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             <div className="p-3 space-y-2">
               <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-sidebar-foreground">MC</span>
+                  <span className="text-sm font-medium text-sidebar-foreground">MC Balance</span>
                   <span className="text-xs text-muted-foreground">{credits.toFixed(0)}</span>
                 </div>
                 <div className="w-full h-2 bg-sidebar-accent rounded-full overflow-hidden">

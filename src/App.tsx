@@ -18,12 +18,6 @@ import CustomizationPage from "./pages/CustomizationPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import BillingPage from "./pages/BillingPage";
 import ReferralsPage from "./pages/ReferralsPage";
-import ApisPage from "./pages/ApisPage";
-import ApiLandingPage from "./pages/ApiLandingPage";
-import ApiDocsPage from "./pages/ApiDocsPage";
-import ApiModelsPage from "./pages/ApiModelsPage";
-import StatusPage from "./pages/StatusPage";
-import AboutPage from "./pages/AboutPage";
 import LegalPage from "./pages/LegalPage";
 import LanguagePage from "./pages/LanguagePage";
 import IntegrationsPage from "./pages/IntegrationsPage";
@@ -73,9 +67,6 @@ const App = () => {
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/api" element={<ApiLandingPage />} />
-            <Route path="/api/docs" element={<ApiDocsPage />} />
-            <Route path="/api/models" element={<ApiModelsPage />} />
             <Route path="/terms" element={<LegalPage />} />
             <Route path="/privacy" element={<LegalPage />} />
             <Route path="/" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
@@ -89,10 +80,8 @@ const App = () => {
             <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
             <Route path="/settings/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
             <Route path="/settings/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
-            <Route path="/settings/apis" element={<ProtectedRoute><ApisPage /></ProtectedRoute>} />
             <Route path="/settings/language" element={<ProtectedRoute><LanguagePage /></ProtectedRoute>} />
             <Route path="/settings/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
-            <Route path="/status" element={<ProtectedRoute><StatusPage /></ProtectedRoute>} />
             <Route path="/settings/change-email" element={<ProtectedRoute><ChangeEmailPage /></ProtectedRoute>} />
             <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
             <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />

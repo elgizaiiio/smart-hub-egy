@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import FancyButton from "@/components/FancyButton";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -304,13 +305,12 @@ const IntegrationsPage = () => {
                         </button>
                       </div>
                     ) : (
-                      <button
+                      <FancyButton
                         onClick={() => handleConnect(integration)}
-                        disabled={loadingApp === integration.id}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        className="text-xs px-3 py-1"
                       >
                         {loadingApp === integration.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Connect"}
-                      </button>
+                      </FancyButton>
                     )}
                   </div>
                 );
