@@ -67,9 +67,6 @@ const App = () => {
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/api" element={<ApiLandingPage />} />
-            <Route path="/api/docs" element={<ApiDocsPage />} />
-            <Route path="/api/models" element={<ApiModelsPage />} />
             <Route path="/terms" element={<LegalPage />} />
             <Route path="/privacy" element={<LegalPage />} />
             <Route path="/" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
