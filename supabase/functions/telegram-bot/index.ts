@@ -91,6 +91,10 @@ interface BotSession {
   adminModelId?: string;
   adminField?: string;
   adminUserId?: string;
+  // OAuth session fields
+  oauthStep?: string;
+  oauthAppName?: string;
+  oauthAppId?: string;
 }
 
 // ---- Helpers ----
@@ -177,12 +181,31 @@ function catsKB(prefix: string) {
   }]);
 }
 
+// ---- OAuth Helpers ----
+function generateId(len = 32): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  for (const b of arr) result += chars[b % chars.length];
+  return result;
+}
+
+async function hashSecret(secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(secret);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 // ---- Main Menu ----
 function mainMenuKB() {
   return [
     [{ text: "📸 رفع الوسائط", callback_data: "upload_menu" }],
     [{ text: "✏️ تعديل النماذج", callback_data: "edit_menu" }],
     [{ text: "👥 إدارة المستخدمين", callback_data: "users_menu" }],
+    [{ text: "🔑 OAuth Apps", callback_data: "oauth_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
 }
@@ -513,12 +536,124 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ==================== OAuth Apps ====================
+      if (d === "oauth_menu") {
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId, "🔑 *OAuth Apps*\n\nإدارة تطبيقات تسجيل الدخول:", [
+          [{ text: "➕ إنشاء تطبيق جديد", callback_data: "oauth_create" }],
+          [{ text: "📋 عرض التطبيقات", callback_data: "oauth_list" }],
+          [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d === "oauth_create") {
+        await saveSession(sb, chatId, { oauthStep: "awaiting_name" });
+        await send(BOT_TOKEN, chatId, msgId, "➕ *إنشاء تطبيق OAuth جديد*\n\nأدخل اسم التطبيق:", [
+          [{ text: "🔙 إلغاء", callback_data: "oauth_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d === "oauth_list") {
+        const { data: apps } = await sb.from("oauth_clients").select("*").order("created_at", { ascending: false });
+        if (!apps || apps.length === 0) {
+          await send(BOT_TOKEN, chatId, msgId, "📋 لا توجد تطبيقات OAuth حالياً.", [
+            [{ text: "➕ إنشاء تطبيق", callback_data: "oauth_create" }],
+            [{ text: "🔙 رجوع", callback_data: "oauth_menu" }],
+          ]);
+          return new Response("OK");
+        }
+
+        const rows = apps.map(app => [{
+          text: `${app.name} (${app.client_id.slice(0, 8)}...)`,
+          callback_data: `oapp_${app.id}`,
+        }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: "oauth_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `📋 *تطبيقات OAuth* (${apps.length})`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("oapp_")) {
+        const appId = d.replace("oapp_", "");
+        const { data: app } = await sb.from("oauth_clients").select("*").eq("id", appId).single();
+        if (!app) { await send(BOT_TOKEN, chatId, msgId, "❌ التطبيق غير موجود", [[{ text: "🔙 رجوع", callback_data: "oauth_list" }]]); return new Response("OK"); }
+
+        const uris = (app.redirect_uris || []).join("\n") || "لم يتم تحديد";
+        await send(BOT_TOKEN, chatId, msgId,
+          `🔑 *${app.name}*\n\n` +
+          `📌 Client ID:\n\`${app.client_id}\`\n\n` +
+          `🔗 Redirect URIs:\n${uris}\n\n` +
+          `🔓 Public: ${app.is_public ? "نعم" : "لا"}\n` +
+          `📅 ${new Date(app.created_at).toLocaleDateString("ar-EG")}`,
+          [
+            [{ text: "✏️ تعديل الاسم", callback_data: `oedit_name_${appId}` }],
+            [{ text: "🔗 تعديل Redirect URIs", callback_data: `oedit_uri_${appId}` }],
+            [{ text: "🔄 إعادة توليد Secret", callback_data: `oregen_${appId}` }],
+            [{ text: "🗑 حذف", callback_data: `odel_${appId}` }],
+            [{ text: "🔙 رجوع", callback_data: "oauth_list" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("oedit_name_")) {
+        const appId = d.replace("oedit_name_", "");
+        await saveSession(sb, chatId, { oauthStep: "edit_name", oauthAppId: appId });
+        await send(BOT_TOKEN, chatId, msgId, "✏️ أدخل الاسم الجديد للتطبيق:", [
+          [{ text: "🔙 إلغاء", callback_data: `oapp_${appId}` }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("oedit_uri_")) {
+        const appId = d.replace("oedit_uri_", "");
+        await saveSession(sb, chatId, { oauthStep: "edit_uri", oauthAppId: appId });
+        await send(BOT_TOKEN, chatId, msgId, "🔗 أدخل Redirect URIs الجديدة\n(كل URI في سطر منفصل):", [
+          [{ text: "🔙 إلغاء", callback_data: `oapp_${appId}` }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("oregen_")) {
+        const appId = d.replace("oregen_", "");
+        const newSecret = generateId(48);
+        const hashed = await hashSecret(newSecret);
+        await sb.from("oauth_clients").update({ client_secret_hash: hashed }).eq("id", appId);
+        await send(BOT_TOKEN, chatId, msgId,
+          `🔄 *تم إعادة توليد Client Secret*\n\n⚠️ احفظه الآن — لن يظهر مرة أخرى!\n\n\`${newSecret}\``,
+          [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${appId}` }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("odel_confirm_")) {
+        const appId = d.replace("odel_confirm_", "");
+        await sb.from("oauth_tokens").delete().eq("client_id", appId);
+        await sb.from("oauth_codes").delete().eq("client_id", appId);
+        await sb.from("oauth_clients").delete().eq("id", appId);
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم حذف التطبيق بنجاح.", [
+          [{ text: "🔙 رجوع", callback_data: "oauth_list" }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("odel_")) {
+        const appId = d.replace("odel_", "");
+        await send(BOT_TOKEN, chatId, msgId, "⚠️ *هل أنت متأكد من حذف هذا التطبيق؟*\n\nسيتم حذف كل التوكنات المرتبطة.", [
+          [{ text: "✅ نعم، احذف", callback_data: `odel_confirm_${appId}` }],
+          [{ text: "🔙 إلغاء", callback_data: `oapp_${appId}` }],
+        ]);
+        return new Response("OK");
+      }
+
       // ==================== الإحصائيات ====================
       if (d === "stats") {
         const { count: userCount } = await sb.from("profiles").select("*", { count: "exact", head: true });
         const { count: convCount } = await sb.from("conversations").select("*", { count: "exact", head: true });
         const { count: msgCount } = await sb.from("messages").select("*", { count: "exact", head: true });
         const { count: projectCount } = await sb.from("projects").select("*", { count: "exact", head: true });
+        const { count: oauthCount } = await sb.from("oauth_clients").select("*", { count: "exact", head: true });
         const imgMedia = await getExistingMedia(sb, IMAGE_MODELS);
         const vidMedia = await getExistingMedia(sb, VIDEO_MODELS);
 
@@ -528,6 +663,7 @@ serve(async (req) => {
           `💬 المحادثات: *${convCount || 0}*\n` +
           `📝 الرسائل: *${msgCount || 0}*\n` +
           `💻 المشاريع: *${projectCount || 0}*\n` +
+          `🔑 OAuth Apps: *${oauthCount || 0}*\n` +
           `🖼 وسائط الصور: *${imgMedia.size}/${IMAGE_MODELS.length}*\n` +
           `🎬 وسائط الفيديو: *${vidMedia.size}/${VIDEO_MODELS.length}*`,
           [[{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]]
@@ -555,6 +691,81 @@ serve(async (req) => {
       }
 
       const session = await loadSession(sb, chatId);
+
+      // ---- OAuth text inputs ----
+      if (session?.oauthStep === "awaiting_name" && text) {
+        const appName = text.trim();
+        await saveSession(sb, chatId, { oauthStep: "awaiting_uri", oauthAppName: appName });
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ اسم التطبيق: *${appName}*\n\nالآن أدخل Redirect URI:\n(مثال: \`https://myapp.com/callback\`)`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 إلغاء", callback_data: "oauth_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.oauthStep === "awaiting_uri" && text && session.oauthAppName) {
+        const uris = text.trim().split("\n").map(u => u.trim()).filter(u => u.length > 0);
+        const clientId = `megsy_${generateId(24)}`;
+        const clientSecret = generateId(48);
+        const secretHash = await hashSecret(clientSecret);
+
+        const { data: app, error } = await sb.from("oauth_clients").insert({
+          user_id: "00000000-0000-0000-0000-000000000000",
+          client_id: clientId,
+          client_secret_hash: secretHash,
+          name: session.oauthAppName,
+          redirect_uris: uris,
+        }).select().single();
+
+        if (error) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `❌ خطأ: ${error.message}` });
+          return new Response("OK");
+        }
+
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ *تم إنشاء التطبيق بنجاح!*\n\n` +
+            `📛 الاسم: *${session.oauthAppName}*\n\n` +
+            `📌 Client ID:\n\`${clientId}\`\n\n` +
+            `🔐 Client Secret:\n\`${clientSecret}\`\n\n` +
+            `⚠️ *احفظ الـ Secret الآن — لن يظهر مرة أخرى!*\n\n` +
+            `🔗 Redirect URIs:\n${uris.join("\n")}`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "🔑 عرض التطبيقات", callback_data: "oauth_list" }],
+            [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+          ]}),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.oauthStep === "edit_name" && text && session.oauthAppId) {
+        await sb.from("oauth_clients").update({ name: text.trim() }).eq("id", session.oauthAppId);
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم تحديث الاسم إلى: *${text.trim()}*`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${session.oauthAppId}` }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.oauthStep === "edit_uri" && text && session.oauthAppId) {
+        const uris = text.trim().split("\n").map(u => u.trim()).filter(u => u.length > 0);
+        await sb.from("oauth_clients").update({ redirect_uris: uris }).eq("id", session.oauthAppId);
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم تحديث Redirect URIs:\n${uris.join("\n")}`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${session.oauthAppId}` }]] }),
+        });
+        return new Response("OK");
+      }
 
       // إدخال قيمة حقل
       if (session?.adminAction === "awaiting_value" && text && session.adminModelId && session.adminField) {
