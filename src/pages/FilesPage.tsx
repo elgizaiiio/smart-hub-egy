@@ -252,7 +252,8 @@ const FilesPage = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background">
+    <AppLayout onSelectConversation={loadOldConversation} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} activeConversationId={conversationId}>
+    <div className="h-full flex flex-col bg-background">
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} onSelectConversation={loadOldConversation} activeConversationId={conversationId} currentMode="files" />
 
       {/* Preview Modal */}
