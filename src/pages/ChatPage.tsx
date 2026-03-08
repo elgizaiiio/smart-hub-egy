@@ -364,18 +364,18 @@ const ChatPage = () => {
                       </div>
 
                       {/* TOOLS */}
-                      <div className="border-t border-border pt-2 mt-1">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1">Tools</p>
-                        <button onClick={handleSearchToggle} className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl hover:bg-accent/60 transition-all group">
-                          <div className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
-                            <Globe className="w-4 h-4 text-sky-500" />
+                      <div className="border-t border-border pt-1.5 mt-1">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Tools</p>
+                        <button onClick={handleSearchToggle} className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-accent/60 transition-all group">
+                          <div className="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
+                            <Globe className="w-3.5 h-3.5 text-sky-500" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground font-medium">Web Search</p>
-                            <p className="text-[10px] text-muted-foreground">Search the web for answers</p>
+                            <p className="text-[13px] text-foreground font-medium">Web Search</p>
+                            <p className="text-[10px] text-muted-foreground">Search the web</p>
                           </div>
-                          <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                            <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+                          <div className={`w-8 h-[18px] rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+                            <div className="w-3.5 h-3.5 rounded-full bg-white mx-0.5" />
                           </div>
                         </button>
                       </div>
