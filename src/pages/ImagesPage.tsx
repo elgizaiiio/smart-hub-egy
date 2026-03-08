@@ -478,13 +478,13 @@ const ImagesPage = () => {
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
             {/* Mobile: single rotating showcase */}
-            <div className="md:hidden w-full max-w-sm mb-5">
+            <div className="md:hidden w-full max-w-[200px] mb-4">
               <motion.div
                 key={currentImage}
                 initial={{ opacity: 0, scale: 0.97 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="relative rounded-2xl overflow-hidden aspect-[3/4]"
+                className="relative rounded-2xl overflow-hidden aspect-square"
               >
                 <img src={SHOWCASE_IMAGES[currentImage]} alt="Showcase" className="w-full h-full object-cover" />
                 <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/60 to-transparent" />
