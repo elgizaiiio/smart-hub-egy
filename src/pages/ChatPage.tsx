@@ -288,8 +288,8 @@ const ChatPage = () => {
         </div>
 
         {/* Input */}
-        <div className="shrink-0 px-3 md:px-6 pt-1 pb-4 bg-background" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
-          <div className="max-w-3xl mx-auto space-y-1.5">
+        <div className="shrink-0 px-3 md:px-6 pt-6 pb-4 pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+          <div className="max-w-3xl mx-auto space-y-1.5 pointer-events-auto">
             {/* Active mode badge */}
             <AnimatePresence>
               {chatMode !== "normal" && (
