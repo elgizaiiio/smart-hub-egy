@@ -43,14 +43,6 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleLongPressStart = () => {
-    if (role !== "assistant") return;
-    longPressTimer.current = setTimeout(() => setShowActions(true), 500);
-  };
-
-  const handleLongPressEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-  };
 
   const handleLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
