@@ -37,7 +37,7 @@ const chatStyles = [
   { id: "minimal", label: "Minimal", desc: "No background" },
 ];
 
-const fontSizeLabels = ["Small", "Medium", "Large"];
+
 
 const CustomizationPage = () => {
   const navigate = useNavigate();
