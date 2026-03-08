@@ -492,7 +492,8 @@ const ContactPage = () => {
 
                   <motion.p
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
                     transition={{ delay: 0.6 }}
                     className="mt-6 text-center text-xs text-white/25"
                   >
