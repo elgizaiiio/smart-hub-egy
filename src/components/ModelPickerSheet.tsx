@@ -278,12 +278,10 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                             {media ? (
                               media.media_type === "video" ? (
                                 <>
-                                  <video
+                                <video
                                     src={media.media_url}
                                     className="w-full h-full object-cover"
-                                    muted loop playsInline
-                                    onMouseOver={e => (e.target as HTMLVideoElement).play()}
-                                    onMouseOut={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                                    autoPlay muted loop playsInline
                                   />
                                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <div className="w-9 h-9 rounded-full bg-background/50 backdrop-blur-sm flex items-center justify-center group-hover:opacity-0 transition-opacity">

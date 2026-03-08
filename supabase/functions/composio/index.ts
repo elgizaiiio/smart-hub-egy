@@ -67,7 +67,7 @@ serve(async (req) => {
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
     if (!COMPOSIO_API_KEY) throw new Error("COMPOSIO_API_KEY is not configured");
 
-    const { action, app, userId, tool, args, connectedAccountId } = await req.json();
+    const { action, app, userId, tool, args, connectedAccountId, connectionId } = await req.json();
 
     const headers = {
       "x-api-key": COMPOSIO_API_KEY,
