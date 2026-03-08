@@ -60,9 +60,9 @@ const SettingsPage = () => {
   const isPremium = plan !== "free";
 
   const quickActions = [
-    { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization", fancy: true, variant: "fancy-btn-blue" },
-    { icon: Gift, label: "Referrals", desc: "Invite & earn", path: "/settings/referrals", fancy: true, variant: "" },
-    { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations", fancy: true, variant: "fancy-btn-green" },
+    { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
+    { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
+    { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
   ];
 
   const menuItems = [
