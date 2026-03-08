@@ -1,31 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-## تحسين صفحة البرمجة (ProgrammingPage)
+## ✅ Completed
 
-### التحسينات المطلوبة
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-**1. تصميم بصري احترافي:**
-- إضافة gradient خفيف في الخلفية (radial gradient) لإعطاء عمق
-- أيقونة Code كبيرة متحركة فوق العنوان مع glow effect
-- تحسين textarea ليكون أكبر وأوضح مع backdrop-blur وحدود متوهجة عند التركيز (focus glow)
-- زر الإرسال أكبر مع أنيميشن hover
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-**2. Templates أكثر تنوعاً واحترافية:**
-- إضافة أيقونات مختلفة لكل template (Globe, ShoppingCart, BarChart3, Smartphone, Gamepad2, Layout)
-- توسيع القائمة لـ 6 templates مع وصف قصير لكل واحد
-- تصميم البطاقات كـ cards صغيرة بدلاً من chips مسطحة
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-**3. Projects Grid محسّن:**
-- hover effects أقوى مع glow
-- تحسين المسافات والأبعاد
-- إضافة زر "New Project" في أعلى القسم
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-**4. Responsive كامل:**
-- تحسين المسافات على الموبايل (padding, gap)
-- Templates في عمودين على الموبايل بدلاً من wrap عشوائي
-- Projects grid يتكيف: 1 عمود على الموبايل الصغير، 2 على الموبايل، 3 على التابلت والديسكتوب
-- safe-area-inset-bottom للـ textarea
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
-### الملفات المتأثرة
-- **`src/pages/ProgrammingPage.tsx`** — إعادة بناء الواجهة بالكامل
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
