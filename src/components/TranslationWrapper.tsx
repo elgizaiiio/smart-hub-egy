@@ -26,10 +26,11 @@ function triggerTranslate(langCode: string) {
   const trySwitch = () => {
     const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
     if (select) {
+      const { pairs, cleanup } = buildAttributeMirror();
       select.value = gtLang;
       select.dispatchEvent(new Event("change"));
-      // Translate placeholders/titles after Google finishes
-      setTimeout(translateAttributes, 1500);
+      // Copy translated text back to placeholder/title/aria-label
+      setTimeout(() => applyMirroredAttributes(pairs, cleanup), 1800);
       return;
     }
 
