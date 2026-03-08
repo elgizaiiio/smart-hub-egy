@@ -45,7 +45,7 @@ const HeroSection = () => {
         {/* Bottom — comes from below */}
         <motion.span
           initial={{ opacity: 0, y: 300, rotateX: -60 }}
-          animate={{ opacity: 0.07, y: 140, rotateX: -8 }}
+          animate={{ opacity: 0.14, y: 140, rotateX: -8 }}
           transition={{ duration: 1.6, delay: 0.15, ease: "easeOut" }}
           className="absolute text-[22vw] font-black uppercase leading-none tracking-tighter text-purple-500"
           style={{ fontFamily: "var(--font-display)" }}
