@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle } from "lucide-react";
+import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import BuildTimeline, { BuildStep } from "@/components/BuildTimeline";
 import ReactMarkdown from "react-markdown";
