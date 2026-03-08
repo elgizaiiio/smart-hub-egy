@@ -7,7 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import referralHero from "@/assets/referral-hero.png";
+import referralHero from "@/assets/referral-hero.webp";
 
 interface Referral {
   id: string;
