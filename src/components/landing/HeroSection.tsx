@@ -17,15 +17,18 @@ const HeroSection = () => {
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background pt-20 pb-0">
       {/* Title */}
-      <div className="relative z-30 mx-auto max-w-6xl px-6 text-center">
+      <div className="relative z-30 mx-auto w-full px-4 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="font-display text-[9vw] font-black uppercase leading-[0.88] tracking-tighter text-foreground md:text-[5.5vw]"
+          className="font-display text-[15vw] font-[900] uppercase leading-[0.9] tracking-[-0.04em] text-foreground md:text-[12vw]"
         >
-          THE AI CREATIVE SUITE{" "}
-          <span className="text-primary">THAT PUTS YOU IN CONTROL</span>
+          THE AI CREATIVE
+          <br />
+          <span className="text-primary">SUITE THAT PUTS</span>
+          <br />
+          YOU IN CONTROL
         </motion.h1>
 
         <motion.p
