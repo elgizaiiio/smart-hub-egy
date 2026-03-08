@@ -212,7 +212,7 @@ const ReferralsPage = () => {
                     <p className="text-sm font-medium text-foreground">User {r.referred_id.substring(0, 8)}...</p>
                     <p className="text-[11px] text-muted-foreground">{formatDate(r.created_at)}</p>
                   </div>
-                  <span className={`text-[11px] font-medium ${r.status === "active" ? "text-green-500" : "text-primary"}`}>
+                  <span className={`text-[11px] font-medium ${r.status === "active" ? "text-primary" : "text-primary"}`} style={r.status === "active" ? { color: "#FFD700" } : {}}>
                     {r.status}
                   </span>
                 </div>
