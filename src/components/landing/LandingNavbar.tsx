@@ -1,27 +1,45 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
 
 const links = [
-  { label: "Features", href: "#features" },
-  { label: "Models", href: "#models" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Features", href: "/#features" },
+  { label: "Models", href: "/#models" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Pricing", href: "/#pricing" },
   { label: "About Us", href: "https://about.megsyai.com", external: true },
-  { label: "FAQ", href: "#faq" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
 const LandingNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const handleHashClick = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    const hash = href.replace("/", ""); // e.g. "#features"
+    if (location.pathname === "/") {
+      // Same page - scroll to section
+      const el = document.querySelector(hash);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    } else {
+      // Different page - navigate to landing then scroll
+      navigate("/");
+      setTimeout(() => {
+        const el = document.querySelector(hash);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+    }
+  };
 
   return (
     <motion.nav
@@ -33,7 +51,11 @@ const LandingNavbar = () => {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <a href="#" className="font-display text-3xl font-black uppercase tracking-tight text-foreground">
+        <a
+          href="/"
+          onClick={(e) => { e.preventDefault(); navigate("/"); }}
+          className="font-display text-3xl font-black uppercase tracking-tight text-foreground"
+        >
           MEGSY
         </a>
 
@@ -44,11 +66,7 @@ const LandingNavbar = () => {
               href={l.href}
               {...((l as any).external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               onClick={(e) => {
-                if (l.href.startsWith("#")) {
-                  e.preventDefault();
-                  const el = document.querySelector(l.href);
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                }
+                if (!((l as any).external)) handleHashClick(e, l.href);
               }}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -82,11 +100,7 @@ const LandingNavbar = () => {
               href={l.href}
               onClick={(e) => {
                 setMobileOpen(false);
-                if (l.href.startsWith("#")) {
-                  e.preventDefault();
-                  const el = document.querySelector(l.href);
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                }
+                if (!((l as any).external)) handleHashClick(e, l.href);
               }}
               {...((l as any).external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               className="block py-3 text-base font-medium text-muted-foreground hover:text-foreground"
