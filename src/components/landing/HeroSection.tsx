@@ -4,11 +4,11 @@ import FancyButton from "@/components/FancyButton";
 import { Star } from "lucide-react";
 
 const heroImages = [
-  { src: "/hero/video-1.mp4", type: "video", style: "left-[-2%] bottom-[8%] w-[20%] rotate-[-4deg]" },
-  { src: "/hero/video-2.mp4", type: "video", style: "left-[14%] bottom-[-4%] w-[26%] rotate-[2deg] z-10" },
-  { src: "/hero/bear.mp4", type: "video", style: "left-[50%] -translate-x-1/2 bottom-[-2%] w-[34%] z-20" },
-  { src: "/hero/video-3.mp4", type: "video", style: "right-[14%] bottom-[-4%] w-[26%] rotate-[-2deg] z-10" },
-  { src: "/hero/video-4.mp4", type: "video", style: "right-[-2%] bottom-[8%] w-[20%] rotate-[4deg]" },
+  { src: "/hero/video-1.mp4", type: "video", style: "left-[1%] bottom-[6%] w-[18%] z-0 rotate-[-5deg]" },
+  { src: "/hero/video-2.mp4", type: "video", style: "left-[14%] bottom-[0%] w-[24%] z-10 rotate-[2deg]" },
+  { src: "/hero/bear.mp4", type: "video", style: "left-1/2 -translate-x-1/2 bottom-[2%] w-[32%] z-20" },
+  { src: "/hero/video-3.mp4", type: "video", style: "right-[14%] bottom-[0%] w-[24%] z-10 rotate-[-2deg]" },
+  { src: "/hero/video-4.mp4", type: "video", style: "right-[1%] bottom-[6%] w-[18%] z-0 rotate-[5deg]" },
 ];
 
 const HeroSection = () => {
@@ -17,7 +17,7 @@ const HeroSection = () => {
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background pt-20 pb-0">
       {/* Title */}
-      <div className="relative z-10 mx-auto max-w-6xl px-6 text-center">
+      <div className="relative z-30 mx-auto max-w-6xl px-6 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -74,14 +74,14 @@ const HeroSection = () => {
       </div>
 
       {/* Floating image cards — Leonardo.ai style spread at bottom */}
-      <div className="relative mt-10 h-[32vh] w-full min-h-[220px] md:h-[38vh]">
+      <div className="relative z-0 mt-14 h-[34vh] w-full min-h-[240px] max-w-[1600px] px-2 md:h-[40vh]">
         {heroImages.map((img, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 80 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.5 + i * 0.08 }}
-            className={`absolute overflow-hidden rounded-2xl border border-border/40 shadow-2xl ${img.style}`}
+            className={`absolute aspect-[4/5] overflow-hidden rounded-2xl border border-border/40 bg-card/20 shadow-2xl ${img.style}`}
           >
             {img.type === "video" ? (
               <video
