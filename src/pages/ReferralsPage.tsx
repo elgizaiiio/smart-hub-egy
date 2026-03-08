@@ -304,7 +304,7 @@ const ReferralsPage = () => {
   if (!isMobile) {
     return (
       <DesktopSettingsLayout title="Referrals" subtitle="Earn commission by inviting friends">
-        {content}
+        {desktopContent}
       </DesktopSettingsLayout>
     );
   }
@@ -318,7 +318,7 @@ const ReferralsPage = () => {
           </button>
           <h1 className="font-display text-lg font-bold text-foreground">Referrals</h1>
         </div>
-        <div className="px-4">{content}</div>
+        <div className="px-4">{mobileContent}</div>
       </div>
     </div>
   );
