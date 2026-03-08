@@ -445,7 +445,21 @@ Rules:
 
             // Step 6: Start
             updateStep("start", { status: "running" });
-            await callSandbox({ action: "exec", sprite_name: sb.spriteName, command: "cd /app && npm run dev &" });
+            await callSandbox({ action: "exec", sprite_name: sb.spriteName, command: "cd /app && nohup npm run dev > /tmp/dev.log 2>&1 & echo STARTED" });
+            await new Promise((r) => setTimeout(r, 3500));
+            const healthCheck = await callSandbox({
+              action: "exec",
+              sprite_name: sb.spriteName,
+              command: "cd /app && (curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000 || true)",
+            });
+            if (!String(healthCheck?.output || "").includes("200")) {
+              const startupLogs = await callSandbox({
+                action: "exec",
+                sprite_name: sb.spriteName,
+                command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
+              });
+              throw new Error(`Preview server failed to start: ${String(startupLogs?.output || "").slice(0, 280)}`);
+            }
             updateStep("start", { status: "done" });
 
             if (savedProjectId) {
@@ -459,10 +473,14 @@ Rules:
             setPreviewError(false);
             setActiveTab("preview");
           } catch (sandboxErr) {
-            updateStep("sandbox", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
+            updateStep("start", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
             if (savedProjectId) {
               await supabase.from("projects").update({ status: "ready" }).eq("id", savedProjectId);
             }
+            setMessages(prev => [
+              ...prev,
+              { role: "assistant", content: `Preview start failed: ${sandboxErr instanceof Error ? sandboxErr.message : "Unknown error"}` },
+            ]);
           }
         } catch (e) {
           updateStep("parse", { status: "error", detail: e instanceof Error ? e.message : "Error" });
@@ -545,10 +563,21 @@ Rules:
     }
   };
 
-  const handleRetryPreview = () => {
+  const handleRetryPreview = async () => {
     setPreviewError(false);
-    if (sandbox.previewUrl) {
-      setSandbox(s => ({ ...s, previewUrl: s.previewUrl + "?" + Date.now() }));
+    if (!sandbox.spriteName || !sandbox.previewUrl) return;
+
+    try {
+      await callSandbox({
+        action: "exec",
+        sprite_name: sandbox.spriteName,
+        command: "cd /app && npm install && nohup npm run dev > /tmp/dev.log 2>&1 & echo RESTARTED",
+      });
+      await new Promise((r) => setTimeout(r, 2500));
+      setSandbox(s => ({ ...s, previewUrl: `${s.previewUrl}?${Date.now()}` }));
+      toast.success("Preview restarted");
+    } catch {
+      toast.error("Failed to restart preview");
     }
   };
 

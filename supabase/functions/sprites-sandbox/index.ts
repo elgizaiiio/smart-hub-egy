@@ -44,16 +44,17 @@ serve(async (req) => {
       }
 
       case "exec": {
-        // Execute a command via HTTP POST (non-TTY)
-        const cmdParts = command.split(" ");
-        const cmd = cmdParts[0];
-        const args = cmdParts.slice(1).join(" ");
-        
-        // Use the simple HTTP POST exec endpoint
+        // Execute command via shell so chaining (&&, |, redirects) works reliably
         const url = new URL(`${SPRITES_API}/sprites/${sprite_name}/exec`);
-        url.searchParams.set("cmd", command);
+        url.searchParams.append("cmd", "bash");
+        url.searchParams.append("cmd", "-lc");
+        url.searchParams.append("cmd", command);
         url.searchParams.set("stdin", "false");
-        
+
+        // Keep long-running commands (like dev server) alive after disconnect
+        const keepAlive = command.includes("npm run dev") || command.includes("nohup") ? "24h" : "30m";
+        url.searchParams.set("max_run_after_disconnect", keepAlive);
+
         const resp = await fetch(url.toString(), {
           method: "POST",
           headers,
@@ -62,7 +63,13 @@ serve(async (req) => {
           const err = await resp.text();
           throw new Error(`Exec failed: ${resp.status} ${err}`);
         }
+
         const text = await resp.text();
+        // Surface obvious command errors to caller so UI doesn't mark build as successful
+        if (/not found|command not found|No such file or directory|npm ERR!/i.test(text)) {
+          throw new Error(`Exec command failed: ${text}`);
+        }
+
         result = { output: text, success: true };
         break;
       }
