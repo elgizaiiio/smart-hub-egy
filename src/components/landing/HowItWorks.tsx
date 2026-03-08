@@ -5,31 +5,36 @@ const steps = [
     number: "01",
     title: "Create Your Account",
     description: "Sign up in seconds. Get free credits to start exploring all 80+ AI models immediately.",
-    gradient: "from-emerald-500 to-cyan-400",
+    color: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30",
+    numColor: "text-emerald-400",
   },
   {
     number: "02",
     title: "Choose Your Tool",
     description: "Select from AI Chat, Image Generation, Video Creation, Code Building, and 18+ professional image tools.",
-    gradient: "from-amber-400 to-orange-500",
+    color: "from-amber-500/20 to-amber-500/5 border-amber-500/30",
+    numColor: "text-amber-400",
   },
   {
     number: "03",
     title: "Pick Your Model",
     description: "Access 80+ AI models including Megsy's flagship models, each optimized for specific creative tasks.",
-    gradient: "from-rose-500 to-pink-500",
+    color: "from-rose-500/20 to-rose-500/5 border-rose-500/30",
+    numColor: "text-rose-400",
   },
   {
     number: "04",
     title: "Create & Iterate",
     description: "Generate, edit, and refine. Use advanced tools to upscale, restyle, and perfect your results.",
-    gradient: "from-purple-500 to-violet-500",
+    color: "from-purple-500/20 to-purple-500/5 border-purple-500/30",
+    numColor: "text-purple-400",
   },
   {
     number: "05",
     title: "Export & Deploy",
     description: "Download in any format, deploy code projects live, or share directly to social platforms.",
-    gradient: "from-cyan-400 to-blue-500",
+    color: "from-cyan-500/20 to-cyan-500/5 border-cyan-500/30",
+    numColor: "text-cyan-400",
   },
 ];
 
@@ -44,7 +49,7 @@ const HowItWorks = () => {
           transition={{ duration: 1 }}
           className="mb-20 text-center"
         >
-          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-foreground md:text-[8vw]">
+          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
             GET STARTED
           </h2>
           <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter md:text-[8vw]">
@@ -52,12 +57,12 @@ const HowItWorks = () => {
               WITH MEGSY
             </span>
           </h2>
-          <p className="mx-auto mt-6 max-w-xl text-xl text-muted-foreground">
+          <p className="mx-auto mt-6 max-w-xl text-xl text-white/40">
             From signup to deployment in five simple steps.
           </p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-5">
+        <div className="grid gap-5 md:grid-cols-5">
           {steps.map((step, i) => (
             <motion.div
               key={step.number}
@@ -65,27 +70,13 @@ const HowItWorks = () => {
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.7, delay: i * 0.1 }}
-              className="group"
             >
-              {/* Glowing card container */}
-              <div className="glow-card relative cursor-pointer transition-transform duration-500 hover:-translate-y-4">
-                {/* Gradient border + glow */}
-                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${step.gradient} opacity-80 transition-opacity duration-500 group-hover:opacity-100`} />
-                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${step.gradient} opacity-0 blur-[30px] transition-opacity duration-500 group-hover:opacity-60`} />
-
-                {/* Inner dark background with glass edge */}
-                <div className="absolute inset-[2px] rounded-[14px] bg-background/90 backdrop-blur-sm">
-                  <div className="absolute inset-0 left-0 w-1/2 rounded-[14px] bg-foreground/[0.04]" />
-                </div>
-
-                {/* Content */}
-                <div className="relative z-10 flex h-full flex-col p-7">
-                  <span className={`bg-gradient-to-br ${step.gradient} bg-clip-text text-5xl font-black leading-none text-transparent opacity-70`}>
-                    {step.number}
-                  </span>
-                  <h3 className="mt-4 mb-3 text-lg font-bold text-foreground">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{step.description}</p>
-                </div>
+              <div className={`h-full rounded-3xl border bg-gradient-to-b p-7 transition-transform duration-300 hover:scale-[1.03] ${step.color}`}>
+                <span className={`text-5xl font-black leading-none ${step.numColor} opacity-60`}>
+                  {step.number}
+                </span>
+                <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
+                <p className="text-sm leading-relaxed text-white/45">{step.description}</p>
               </div>
             </motion.div>
           ))}
