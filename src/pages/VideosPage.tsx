@@ -444,7 +444,7 @@ const VideosPage = () => {
         currentMode="videos"
       />
 
-      <div className={`sticky top-0 z-20 flex items-center justify-between px-4 py-2 transition-opacity ${sidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+      <div className={`md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-2 transition-opacity ${sidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
