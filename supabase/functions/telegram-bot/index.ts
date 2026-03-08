@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const IMAGE_MODELS = [
@@ -39,65 +39,61 @@ const MODEL_NAMES: Record<string, string> = {
   "recraft-v4": "Recraft V4", "flux-2-pro": "FLUX 2 Pro", "seedream-4": "Seedream 4.5",
   "grok-imagine": "Grok Imagine", "imagineart-1.5": "ImagineArt 1.5", "fal-hidream-i1": "HiDream I1",
   "fal-aura-v2": "Aura Flow v2", "fal-stable-cascade": "Stable Cascade", "fal-omnigen2": "OmniGen2",
-  "fal-flux-realism": "FLUX Realism", "logo-creator": "Logo Creator", "sticker-maker": "Sticker Maker",
-  "qr-art": "QR Art", "nano-banana-edit": "Nano Banana Edit", "object-remover": "Object Remover",
-  "watermark-remover": "Watermark Remover", "image-extender": "Image Extender",
-  "flux-pro-editor": "FLUX Pro Editor", "image-variations": "Image Variations",
-  "photo-colorizer": "Photo Colorizer", "bg-remover": "BG Remover", "4k-upscaler": "4K Upscaler",
-  "face-enhancer": "Face Enhancer", "creative-upscaler": "Creative Upscaler",
-  "old-photo-restorer": "Old Photo Restorer", "bg-replacer": "BG Replacer",
-  "style-transfer": "Style Transfer", "ai-relighting": "AI Relighting",
-  "photo-to-cartoon": "Photo to Cartoon", "product-photo": "Product Photo", "ai-headshot": "AI Headshot",
-  "megsy-video": "Megsy Video", "veo-3.1": "Google Veo 3.1", "veo-3.1-fast": "Veo 3.1 Fast",
+  "fal-flux-realism": "FLUX Realism", "logo-creator": "صانع الشعارات", "sticker-maker": "صانع الملصقات",
+  "qr-art": "QR فني", "nano-banana-edit": "Nano Banana Edit", "object-remover": "حذف العناصر",
+  "watermark-remover": "حذف العلامة المائية", "image-extender": "توسيع الصورة",
+  "flux-pro-editor": "FLUX Pro Editor", "image-variations": "تنويعات الصورة",
+  "photo-colorizer": "تلوين الصور", "bg-remover": "حذف الخلفية", "4k-upscaler": "تكبير 4K",
+  "face-enhancer": "تحسين الوجه", "creative-upscaler": "تكبير إبداعي",
+  "old-photo-restorer": "ترميم الصور القديمة", "bg-replacer": "تغيير الخلفية",
+  "style-transfer": "نقل الأسلوب", "ai-relighting": "إضاءة ذكية",
+  "photo-to-cartoon": "صورة لكرتون", "product-photo": "صور المنتجات", "ai-headshot": "صور شخصية AI",
+  "megsy-video": "Megsy Video", "veo-3.1": "Google Veo 3.1", "veo-3.1-fast": "Veo 3.1 سريع",
   "kling-3-pro": "Kling 3.0 Pro", "kling-o1": "Kling O1", "openai-sora": "OpenAI Sora",
-  "pika-2.2": "Pika 2.2", "luma-dream": "Luma Dream Machine", "seedance-pro": "Seedance Pro",
+  "pika-2.2": "Pika 2.2", "luma-dream": "Luma Dream", "seedance-pro": "Seedance Pro",
   "wan-2.6": "WAN 2.6", "pixverse-5.5": "PixVerse v5.5", "megsy-video-i2v": "Megsy Video I2V",
   "kling-3-pro-i2v": "Kling 3.0 Pro I2V", "kling-o1-i2v": "Kling O1 I2V",
-  "veo-3.1-fast-i2v": "Veo 3.1 Fast I2V", "openai-sora-i2v": "Sora I2V",
+  "veo-3.1-fast-i2v": "Veo 3.1 سريع I2V", "openai-sora-i2v": "Sora I2V",
   "pixverse-5.5-i2v": "PixVerse I2V", "wan-2.6-i2v": "WAN 2.6 I2V",
-  "wan-flf": "WAN First-Last-Frame", "kling-avatar-pro": "Kling Avatar Pro",
+  "wan-flf": "WAN أول-آخر إطار", "kling-avatar-pro": "Kling Avatar Pro",
   "kling-avatar-std": "Kling Avatar Std", "sadtalker": "SadTalker", "sync-lipsync": "Sync Lipsync V2",
-  "google/gemini-3-flash-preview": "Megsy V1 (Chat)", "google/gemini-2.5-pro": "Gemini 2.5 Pro",
+  "google/gemini-3-flash-preview": "Megsy V1 (محادثة)", "google/gemini-2.5-pro": "Gemini 2.5 Pro",
   "openai/gpt-5": "GPT-5", "x-ai/grok-3": "Grok 3", "deepseek/deepseek-r1": "DeepSeek R1",
 };
 
 const CATEGORIES = [
-  { key: "images", label: "🖼 Image Models", emoji: "🖼", models: IMAGE_MODELS },
-  { key: "videos", label: "🎬 Video Models", emoji: "🎬", models: VIDEO_MODELS },
-  { key: "chat", label: "💬 Chat Models", emoji: "💬", models: CHAT_MODELS },
-  { key: "code", label: "💻 Code Models", emoji: "💻", models: CODE_MODELS },
+  { key: "images", label: "نماذج الصور", emoji: "🖼", models: IMAGE_MODELS },
+  { key: "videos", label: "نماذج الفيديو", emoji: "🎬", models: VIDEO_MODELS },
+  { key: "chat", label: "نماذج المحادثة", emoji: "💬", models: CHAT_MODELS },
+  { key: "code", label: "نماذج البرمجة", emoji: "💻", models: CODE_MODELS },
 ];
 
-const MODELS_PER_PAGE = 6;
+const PER_PAGE = 6;
 const USERS_PER_PAGE = 8;
 
-const EDITABLE_FIELDS = [
-  { key: "name", label: "📝 Name" },
-  { key: "credits", label: "💰 Credits (MC)" },
-  { key: "description", label: "📄 Description" },
-  { key: "fal_id", label: "🔗 fal.ai ID" },
-  { key: "openrouter_id", label: "🔗 OpenRouter ID" },
-  { key: "provider", label: "🏷 Provider" },
-  { key: "capabilities", label: "⚡ Capabilities" },
+const FIELDS = [
+  { key: "name", label: "الاسم" },
+  { key: "credits", label: "التكلفة (MC)" },
+  { key: "description", label: "الوصف" },
+  { key: "fal_id", label: "معرف fal.ai" },
+  { key: "openrouter_id", label: "معرف OpenRouter" },
+  { key: "provider", label: "المزود" },
+  { key: "capabilities", label: "القدرات" },
 ];
 
 const MC_PRESETS = [5, 10, 25, 50, 100, 500];
 
-// ---- Helpers ----
 interface BotSession {
-  // Media upload flow
   page?: "images" | "videos";
   modelIndex?: number;
   models?: string[];
-  // Admin
   adminAction?: string;
   adminModelId?: string;
   adminField?: string;
   adminUserId?: string;
-  adminPage?: number;
-  adminCategory?: string;
 }
 
+// ---- Helpers ----
 async function loadSession(sb: ReturnType<typeof createClient>, chatId: number): Promise<BotSession | null> {
   const { data } = await sb.from("memories").select("value").eq("key", `tg_${chatId}`).maybeSingle();
   if (!data) return null;
@@ -122,7 +118,7 @@ async function tg(token: string, method: string, body: Record<string, unknown>) 
   return resp.json();
 }
 
-async function editOrSend(token: string, chatId: number, msgId: number | undefined, text: string, keyboard: unknown[][], parse_mode = "Markdown") {
+async function send(token: string, chatId: number, msgId: number | undefined, text: string, keyboard: unknown[][], parse_mode = "Markdown") {
   if (msgId) {
     const res = await tg(token, "editMessageText", {
       chat_id: chatId, message_id: msgId, text, parse_mode,
@@ -152,478 +148,373 @@ async function setModelConfig(sb: ReturnType<typeof createClient>, modelId: stri
   await sb.from("memories").insert({ key: `model_config_${modelId}`, value: JSON.stringify(config) });
 }
 
-// ---- Build keyboard helpers ----
-function buildModelListKeyboard(models: string[], page: number, categoryKey: string, actionPrefix: string) {
-  const start = page * MODELS_PER_PAGE;
-  const slice = models.slice(start, start + MODELS_PER_PAGE);
-  const totalPages = Math.ceil(models.length / MODELS_PER_PAGE);
-
+function modelListKB(models: string[], page: number, catKey: string, prefix: string) {
+  const start = page * PER_PAGE;
+  const slice = models.slice(start, start + PER_PAGE);
+  const total = Math.ceil(models.length / PER_PAGE);
   const rows: { text: string; callback_data: string }[][] = [];
-  // 2 models per row
+
   for (let i = 0; i < slice.length; i += 2) {
     const row: { text: string; callback_data: string }[] = [];
-    row.push({ text: MODEL_NAMES[slice[i]] || slice[i], callback_data: `${actionPrefix}_${slice[i]}` });
-    if (slice[i + 1]) {
-      row.push({ text: MODEL_NAMES[slice[i + 1]] || slice[i + 1], callback_data: `${actionPrefix}_${slice[i + 1]}` });
-    }
+    row.push({ text: MODEL_NAMES[slice[i]] || slice[i], callback_data: `${prefix}_${slice[i]}` });
+    if (slice[i + 1]) row.push({ text: MODEL_NAMES[slice[i + 1]] || slice[i + 1], callback_data: `${prefix}_${slice[i + 1]}` });
     rows.push(row);
   }
 
-  // Pagination
-  const navRow: { text: string; callback_data: string }[] = [];
-  if (page > 0) navRow.push({ text: "◀️ Prev", callback_data: `nav_${actionPrefix}_${categoryKey}_${page - 1}` });
-  navRow.push({ text: `${page + 1}/${totalPages}`, callback_data: "noop" });
-  if (page < totalPages - 1) navRow.push({ text: "Next ▶️", callback_data: `nav_${actionPrefix}_${categoryKey}_${page + 1}` });
-  rows.push(navRow);
-
-  rows.push([{ text: "🔙 Back", callback_data: `back_${actionPrefix}_cats` }]);
+  const nav: { text: string; callback_data: string }[] = [];
+  if (page > 0) nav.push({ text: "◀️ السابق", callback_data: `nav_${prefix}_${catKey}_${page - 1}` });
+  nav.push({ text: `${page + 1}/${total}`, callback_data: "noop" });
+  if (page < total - 1) nav.push({ text: "التالي ▶️", callback_data: `nav_${prefix}_${catKey}_${page + 1}` });
+  rows.push(nav);
+  rows.push([{ text: "🔙 رجوع", callback_data: `back_${prefix}_cats` }]);
   return rows;
 }
 
-function buildCategoryKeyboard(actionPrefix: string) {
-  return CATEGORIES.map(c => [{ text: `${c.emoji} ${c.label.split(" ").slice(1).join(" ")} (${c.models.length})`, callback_data: `cat_${actionPrefix}_${c.key}` }]);
+function catsKB(prefix: string) {
+  return CATEGORIES.map(c => [{
+    text: `${c.emoji} ${c.label} (${c.models.length})`,
+    callback_data: `cat_${prefix}_${c.key}`,
+  }]);
+}
+
+// ---- Main Menu ----
+function mainMenuKB() {
+  return [
+    [{ text: "📸 رفع الوسائط", callback_data: "upload_menu" }],
+    [{ text: "✏️ تعديل النماذج", callback_data: "edit_menu" }],
+    [{ text: "👥 إدارة المستخدمين", callback_data: "users_menu" }],
+    [{ text: "📊 الإحصائيات", callback_data: "stats" }],
+  ];
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-  if (!BOT_TOKEN) return new Response("BOT_TOKEN missing", { status: 500 });
+  if (!BOT_TOKEN) return new Response("missing token", { status: 500 });
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const sb = createClient(supabaseUrl, serviceKey);
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   try {
     const update = await req.json();
     const message = update.message;
     const callback = update.callback_query;
 
-    // ========================
-    //   CALLBACK QUERIES
-    // ========================
+    // ==================== CALLBACKS ====================
     if (callback) {
       const chatId = callback.message.chat.id;
       const msgId = callback.message.message_id;
-      const data = callback.data;
+      const d = callback.data;
       await tg(BOT_TOKEN, "answerCallbackQuery", { callback_query_id: callback.id });
 
-      // ---- NOOP ----
-      if (data === "noop") return new Response("OK");
+      if (d === "noop") return new Response("OK");
 
-      // ---- MAIN MENU ----
-      if (data === "main_menu") {
+      // ---- القائمة الرئيسية ----
+      if (d === "main_menu") {
         await clearSession(sb, chatId);
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          "🤖 *Megsy Admin Bot*\n\nChoose an action:",
-          [
-            [{ text: "📸 Upload Media", callback_data: "upload_menu" }],
-            [{ text: "🔧 Edit Models", callback_data: "edit_menu" }],
-            [{ text: "👥 Users", callback_data: "users_menu" }],
-            [{ text: "📊 Stats", callback_data: "admin_stats" }],
-          ]
+        await send(BOT_TOKEN, chatId, msgId, "🤖 *لوحة تحكم Megsy*\n\nاختر عملية:", mainMenuKB());
+        return new Response("OK");
+      }
+
+      // ==================== رفع الوسائط ====================
+      if (d === "upload_menu") {
+        await send(BOT_TOKEN, chatId, msgId, "📤 *رفع الوسائط*\n\nاختر القسم:", [
+          [{ text: "🖼 نماذج الصور", callback_data: "page_images" }, { text: "🎬 نماذج الفيديو", callback_data: "page_videos" }],
+          [{ text: "📊 حالة الرفع", callback_data: "upload_status" }],
+          [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d === "upload_status") {
+        const imgEx = await getExistingMedia(sb, IMAGE_MODELS);
+        const vidEx = await getExistingMedia(sb, VIDEO_MODELS);
+        await send(BOT_TOKEN, chatId, msgId,
+          `📊 *حالة الرفع*\n\n🖼 الصور: ${imgEx.size}/${IMAGE_MODELS.length} ✅\n🎬 الفيديو: ${vidEx.size}/${VIDEO_MODELS.length} ✅`,
+          [[{ text: "🔙 رجوع", callback_data: "upload_menu" }]]
         );
         return new Response("OK");
       }
 
-      // ==== UPLOAD MEDIA FLOW ====
-      if (data === "upload_menu") {
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          "📤 *Upload Media*\n\nChoose category:",
-          [
-            [{ text: "📸 Image Models", callback_data: "page_images" }, { text: "🎬 Video Models", callback_data: "page_videos" }],
-            [{ text: "📊 Upload Status", callback_data: "upload_status" }],
-            [{ text: "🔙 Main Menu", callback_data: "main_menu" }],
-          ]
-        );
-        return new Response("OK");
-      }
-
-      if (data === "upload_status") {
-        const imgExisting = await getExistingMedia(sb, IMAGE_MODELS);
-        const vidExisting = await getExistingMedia(sb, VIDEO_MODELS);
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `📊 *Upload Status*\n\n🖼 Images: ${imgExisting.size}/${IMAGE_MODELS.length} ✅\n🎬 Videos: ${vidExisting.size}/${VIDEO_MODELS.length} ✅`,
-          [[{ text: "🔙 Upload Menu", callback_data: "upload_menu" }]]
-        );
-        return new Response("OK");
-      }
-
-      if (data === "page_images" || data === "page_videos") {
-        const page = data === "page_images" ? "images" : "videos";
-        const allModels = page === "images" ? IMAGE_MODELS : VIDEO_MODELS;
-        const existing = await getExistingMedia(sb, allModels);
-        const remaining = allModels.filter(m => !existing.has(m));
+      if (d === "page_images" || d === "page_videos") {
+        const pg = d === "page_images" ? "images" : "videos";
+        const all = pg === "images" ? IMAGE_MODELS : VIDEO_MODELS;
+        const existing = await getExistingMedia(sb, all);
+        const remaining = all.filter(m => !existing.has(m));
 
         if (remaining.length === 0) {
-          await editOrSend(BOT_TOKEN, chatId, msgId,
-            `✅ All ${page} models already have media!`,
-            [[{ text: "🔙 Upload Menu", callback_data: "upload_menu" }]]
-          );
+          await send(BOT_TOKEN, chatId, msgId, `✅ كل نماذج ${pg === "images" ? "الصور" : "الفيديو"} لديها وسائط بالفعل!`, [[{ text: "🔙 رجوع", callback_data: "upload_menu" }]]);
           return new Response("OK");
         }
 
-        const session: BotSession = { page, modelIndex: 0, models: remaining };
+        const session: BotSession = { page: pg, modelIndex: 0, models: remaining };
         await saveSession(sb, chatId, session);
         const modelId = remaining[0];
-        const modelName = MODEL_NAMES[modelId] || modelId;
-
         await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `*${page === "images" ? "📸 Image" : "🎬 Video"} Upload*\nRemaining: *${remaining.length}*\n\n🎯 Model: *${modelName}*\n\`${modelId}\`\n\nSend ${page === "images" ? "an image" : "a video"}:`,
+          text: `*رفع ${pg === "images" ? "الصور 🖼" : "الفيديو 🎬"}*\nالمتبقي: *${remaining.length}*\n\n🎯 النموذج: *${MODEL_NAMES[modelId] || modelId}*\n\`${modelId}\`\n\nأرسل ${pg === "images" ? "صورة" : "فيديو"}:`,
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [
-              [{ text: "⏭ Skip", callback_data: "skip_model" }, { text: "❌ Cancel", callback_data: "upload_menu" }],
-            ],
-          }),
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "⏭ تخطي", callback_data: "skip_model" }, { text: "❌ إلغاء", callback_data: "upload_menu" }],
+          ]}),
         });
         return new Response("OK");
       }
 
-      if (data === "skip_model") {
+      if (d === "skip_model") {
         const session = await loadSession(sb, chatId);
-        if (!session?.models) {
-          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "No active session. Use /start" });
-          return new Response("OK");
-        }
+        if (!session?.models) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "لا توجد جلسة نشطة. اضغط /start" }); return new Response("OK"); }
         session.modelIndex = (session.modelIndex || 0) + 1;
         if (session.modelIndex >= session.models.length) {
           await clearSession(sb, chatId);
-          await tg(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId, text: "✅ All models done!",
-            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Upload Menu", callback_data: "upload_menu" }]] }),
-          });
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "✅ تم الانتهاء من كل النماذج!", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "upload_menu" }]] }) });
           return new Response("OK");
         }
         await saveSession(sb, chatId, session);
-        const modelId = session.models[session.modelIndex];
-        const remaining = session.models.length - session.modelIndex;
+        const mid = session.models[session.modelIndex];
+        const rem = session.models.length - session.modelIndex;
         await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `⏭ Skipped.\n\nRemaining: *${remaining}*\n\n🎯 Model: *${MODEL_NAMES[modelId] || modelId}*\n\`${modelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
+          text: `⏭ تم التخطي\n\nالمتبقي: *${rem}*\n\n🎯 النموذج: *${MODEL_NAMES[mid] || mid}*\n\`${mid}\`\n\nأرسل ${session.page === "images" ? "صورة" : "فيديو"}:`,
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [[{ text: "⏭ Skip", callback_data: "skip_model" }, { text: "❌ Cancel", callback_data: "upload_menu" }]],
-          }),
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "skip_model" }, { text: "❌ إلغاء", callback_data: "upload_menu" }]] }),
         });
         return new Response("OK");
       }
 
-      // ==== EDIT MODELS ====
-      if (data === "edit_menu") {
-        const cats = buildCategoryKeyboard("edit");
-        cats.push([{ text: "🔙 Main Menu", callback_data: "main_menu" }]);
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          "✏️ *Edit Models*\n\nChoose a category:",
-          cats
-        );
+      // ==================== تعديل النماذج ====================
+      if (d === "edit_menu") {
+        const kb = catsKB("edit");
+        kb.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, "✏️ *تعديل النماذج*\n\nاختر القسم:", kb);
         return new Response("OK");
       }
 
-      // Category selected for editing
-      if (data.startsWith("cat_edit_")) {
-        const catKey = data.replace("cat_edit_", "");
+      if (d.startsWith("cat_edit_")) {
+        const catKey = d.replace("cat_edit_", "");
         const cat = CATEGORIES.find(c => c.key === catKey);
         if (!cat) return new Response("OK");
-
-        const kb = buildModelListKeyboard(cat.models, 0, catKey, "emod");
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `✏️ *${cat.label}*\n\nSelect a model to edit:`,
-          kb
-        );
+        await send(BOT_TOKEN, chatId, msgId, `✏️ *${cat.emoji} ${cat.label}*\n\nاختر نموذج للتعديل:`, modelListKB(cat.models, 0, catKey, "emod"));
         return new Response("OK");
       }
 
-      // Navigation for edit model list
-      if (data.startsWith("nav_emod_")) {
-        const parts = data.replace("nav_emod_", "").split("_");
+      if (d.startsWith("nav_emod_")) {
+        const parts = d.replace("nav_emod_", "").split("_");
         const catKey = parts[0];
         const page = parseInt(parts[1]) || 0;
         const cat = CATEGORIES.find(c => c.key === catKey);
         if (!cat) return new Response("OK");
-
-        const kb = buildModelListKeyboard(cat.models, page, catKey, "emod");
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `✏️ *${cat.label}* — Page ${page + 1}`,
-          kb
-        );
+        await send(BOT_TOKEN, chatId, msgId, `✏️ *${cat.emoji} ${cat.label}* — صفحة ${page + 1}`, modelListKB(cat.models, page, catKey, "emod"));
         return new Response("OK");
       }
 
-      if (data === "back_emod_cats") {
-        const cats = buildCategoryKeyboard("edit");
-        cats.push([{ text: "🔙 Main Menu", callback_data: "main_menu" }]);
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          "✏️ *Edit Models*\n\nChoose a category:",
-          cats
-        );
+      if (d === "back_emod_cats") {
+        const kb = catsKB("edit");
+        kb.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, "✏️ *تعديل النماذج*\n\nاختر القسم:", kb);
         return new Response("OK");
       }
 
-      // Model selected for editing
-      if (data.startsWith("emod_")) {
-        const modelId = data.replace("emod_", "");
+      // نموذج مختار للتعديل
+      if (d.startsWith("emod_")) {
+        const modelId = d.replace("emod_", "");
         const config = await getModelConfig(sb, modelId);
         const name = config.name || MODEL_NAMES[modelId] || modelId;
+        await saveSession(sb, chatId, { adminAction: "editing", adminModelId: modelId });
 
-        await saveSession(sb, chatId, { adminAction: "editing_model", adminModelId: modelId });
-
-        const fieldRows = [];
-        for (let i = 0; i < EDITABLE_FIELDS.length; i += 2) {
+        const fieldRows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < FIELDS.length; i += 2) {
           const row: { text: string; callback_data: string }[] = [];
-          const f1 = EDITABLE_FIELDS[i];
-          const val1 = config[f1.key] || "—";
-          row.push({ text: `${f1.label}: ${val1.length > 12 ? val1.slice(0, 12) + "…" : val1}`, callback_data: `efield_${f1.key}` });
-          if (EDITABLE_FIELDS[i + 1]) {
-            const f2 = EDITABLE_FIELDS[i + 1];
-            const val2 = config[f2.key] || "—";
-            row.push({ text: `${f2.label}: ${val2.length > 12 ? val2.slice(0, 12) + "…" : val2}`, callback_data: `efield_${f2.key}` });
+          const f1 = FIELDS[i];
+          const v1 = config[f1.key] || "—";
+          row.push({ text: `${f1.label}: ${v1.length > 10 ? v1.slice(0, 10) + "…" : v1}`, callback_data: `ef_${f1.key}` });
+          if (FIELDS[i + 1]) {
+            const f2 = FIELDS[i + 1];
+            const v2 = config[f2.key] || "—";
+            row.push({ text: `${f2.label}: ${v2.length > 10 ? v2.slice(0, 10) + "…" : v2}`, callback_data: `ef_${f2.key}` });
           }
           fieldRows.push(row);
         }
-        fieldRows.push([{ text: "🗑 Reset Config", callback_data: `reset_config_${modelId}` }]);
-        fieldRows.push([{ text: "🔙 Back to List", callback_data: "edit_menu" }]);
+        fieldRows.push([{ text: "🗑 إعادة ضبط", callback_data: `reset_${modelId}` }]);
+        fieldRows.push([{ text: "🔙 رجوع", callback_data: "edit_menu" }]);
 
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `🔧 *${name}*\n📌 ID: \`${modelId}\`\n\n` +
-          EDITABLE_FIELDS.map(f => `${f.label}: \`${config[f.key] || "default"}\``).join("\n") +
-          "\n\nTap a field to edit:",
+        await send(BOT_TOKEN, chatId, msgId,
+          `🔧 *${name}*\n📌 \`${modelId}\`\n\n` +
+          FIELDS.map(f => `${f.label}: \`${config[f.key] || "افتراضي"}\``).join("\n") +
+          "\n\nاضغط على الحقل للتعديل:",
           fieldRows
         );
         return new Response("OK");
       }
 
-      // Field selected for editing
-      if (data.startsWith("efield_")) {
-        const field = data.replace("efield_", "");
+      // حقل مختار للتعديل
+      if (d.startsWith("ef_")) {
+        const field = d.replace("ef_", "");
         const session = await loadSession(sb, chatId);
         if (!session?.adminModelId) return new Response("OK");
+        const fieldLabel = FIELDS.find(f => f.key === field)?.label || field;
 
-        const fieldLabel = EDITABLE_FIELDS.find(f => f.key === field)?.label || field;
-
-        // For credits, show preset buttons
         if (field === "credits") {
-          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
-          const presetRows: { text: string; callback_data: string }[][] = [];
-          const row1: { text: string; callback_data: string }[] = [];
-          const row2: { text: string; callback_data: string }[] = [];
-          MC_PRESETS.forEach((v, i) => {
-            (i < 3 ? row1 : row2).push({ text: `${v} MC`, callback_data: `setval_credits_${v}` });
-          });
-          presetRows.push(row1, row2);
-          presetRows.push([{ text: "✏️ Custom value", callback_data: "custom_credits" }]);
-          presetRows.push([{ text: "🔙 Back", callback_data: `emod_${session.adminModelId}` }]);
-
-          await editOrSend(BOT_TOKEN, chatId, msgId,
-            `💰 *Set MC Cost* for \`${session.adminModelId}\`\n\nChoose a preset or enter custom:`,
-            presetRows
-          );
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          await send(BOT_TOKEN, chatId, msgId, `💰 *تحديد تكلفة MC* لـ \`${session.adminModelId}\`\n\nاختر قيمة أو أدخل يدوياً:`, [
+            [{ text: "5 MC", callback_data: "sv_credits_5" }, { text: "10 MC", callback_data: "sv_credits_10" }, { text: "25 MC", callback_data: "sv_credits_25" }],
+            [{ text: "50 MC", callback_data: "sv_credits_50" }, { text: "100 MC", callback_data: "sv_credits_100" }, { text: "500 MC", callback_data: "sv_credits_500" }],
+            [{ text: "✏️ قيمة مخصصة", callback_data: "sv_credits_custom" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
           return new Response("OK");
         }
 
-        // For provider, show preset buttons
         if (field === "provider") {
-          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
-          await editOrSend(BOT_TOKEN, chatId, msgId,
-            `🏷 *Set Provider* for \`${session.adminModelId}\`\n\nChoose provider:`,
-            [
-              [{ text: "fal.ai", callback_data: "setval_provider_fal" }, { text: "OpenRouter", callback_data: "setval_provider_openrouter" }],
-              [{ text: "Internal", callback_data: "setval_provider_internal" }, { text: "Custom", callback_data: "setval_provider_custom" }],
-              [{ text: "🔙 Back", callback_data: `emod_${session.adminModelId}` }],
-            ]
-          );
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          await send(BOT_TOKEN, chatId, msgId, `🏷 *تحديد المزود* لـ \`${session.adminModelId}\`:`, [
+            [{ text: "fal.ai", callback_data: "sv_provider_fal" }, { text: "OpenRouter", callback_data: "sv_provider_openrouter" }],
+            [{ text: "داخلي", callback_data: "sv_provider_internal" }, { text: "مخصص", callback_data: "sv_provider_custom" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
           return new Response("OK");
         }
 
-        // For other fields, ask for text input
-        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `${fieldLabel}\n\nEnter new value for \`${session.adminModelId}\`:`,
-          [[{ text: "🔙 Cancel", callback_data: `emod_${session.adminModelId}` }]]
-        );
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+        await send(BOT_TOKEN, chatId, msgId, `✏️ ${fieldLabel}\n\nأدخل القيمة الجديدة لـ \`${session.adminModelId}\`:`, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
         return new Response("OK");
       }
 
-      // Preset value set
-      if (data.startsWith("setval_")) {
-        const parts = data.replace("setval_", "").split("_");
+      // تعيين قيمة
+      if (d.startsWith("sv_")) {
+        const parts = d.replace("sv_", "").split("_");
         const field = parts[0];
         const value = parts.slice(1).join("_");
-
-        if (value === "custom") {
-          // Ask for text input
-          const session = await loadSession(sb, chatId);
-          if (!session?.adminModelId) return new Response("OK");
-          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_field_value", adminField: field });
-          await editOrSend(BOT_TOKEN, chatId, msgId,
-            `✏️ Enter custom *${field}* value for \`${session.adminModelId}\`:`,
-            [[{ text: "🔙 Cancel", callback_data: `emod_${session.adminModelId}` }]]
-          );
-          return new Response("OK");
-        }
-
         const session = await loadSession(sb, chatId);
         if (!session?.adminModelId) return new Response("OK");
+
+        if (value === "custom") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          await send(BOT_TOKEN, chatId, msgId, `✏️ أدخل قيمة مخصصة لـ *${field}*:`, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
+          return new Response("OK");
+        }
 
         const config = await getModelConfig(sb, session.adminModelId);
         config[field] = value;
         await setModelConfig(sb, session.adminModelId, config);
-
-        const name = config.name || MODEL_NAMES[session.adminModelId] || session.adminModelId;
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `✅ *${name}*\n\nUpdated *${field}* → \`${value}\``,
-          [
-            [{ text: "✏️ Edit More", callback_data: `emod_${session.adminModelId}` }],
-            [{ text: "🔙 Edit Menu", callback_data: "edit_menu" }],
-          ]
-        );
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم تحديث *${field}* → \`${value}\``, [
+          [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
         await saveSession(sb, chatId, { adminAction: "idle" });
         return new Response("OK");
       }
 
-      // Reset config
-      if (data.startsWith("reset_config_")) {
-        const modelId = data.replace("reset_config_", "");
+      // إعادة ضبط
+      if (d.startsWith("reset_")) {
+        const modelId = d.replace("reset_", "");
         await sb.from("memories").delete().eq("key", `model_config_${modelId}`);
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `🗑 Config reset for \`${modelId}\``,
-          [
-            [{ text: "✏️ Edit Again", callback_data: `emod_${modelId}` }],
-            [{ text: "🔙 Edit Menu", callback_data: "edit_menu" }],
-          ]
-        );
+        await send(BOT_TOKEN, chatId, msgId, `🗑 تم إعادة ضبط \`${modelId}\``, [
+          [{ text: "✏️ تعديل", callback_data: `emod_${modelId}` }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
         return new Response("OK");
       }
 
-      // ==== USERS MANAGEMENT ====
-      if (data === "users_menu") {
-        // Show recent users with pagination
+      // ==================== إدارة المستخدمين ====================
+      if (d === "users_menu") {
         await showUsersPage(sb, BOT_TOKEN, chatId, msgId, 0);
         return new Response("OK");
       }
 
-      // Users pagination
-      if (data.startsWith("users_page_")) {
-        const page = parseInt(data.replace("users_page_", "")) || 0;
+      if (d.startsWith("users_page_")) {
+        const page = parseInt(d.replace("users_page_", "")) || 0;
         await showUsersPage(sb, BOT_TOKEN, chatId, msgId, page);
         return new Response("OK");
       }
 
-      // User selected
-      if (data.startsWith("uview_")) {
-        const userId = data.replace("uview_", "");
+      if (d.startsWith("uview_")) {
+        const userId = d.replace("uview_", "");
         const { data: profile } = await sb.from("profiles").select("*").eq("id", userId).single();
-        if (!profile) {
-          await editOrSend(BOT_TOKEN, chatId, msgId, "❌ User not found.", [[{ text: "🔙 Users", callback_data: "users_menu" }]]);
-          return new Response("OK");
-        }
+        if (!profile) { await send(BOT_TOKEN, chatId, msgId, "❌ المستخدم غير موجود", [[{ text: "🔙 رجوع", callback_data: "users_menu" }]]); return new Response("OK"); }
 
         await saveSession(sb, chatId, { adminUserId: userId });
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `👤 *${profile.display_name || "User"}*\n\n` +
+        await send(BOT_TOKEN, chatId, msgId,
+          `👤 *${profile.display_name || "مستخدم"}*\n\n` +
           `🆔 \`${profile.id}\`\n` +
-          `💰 MC: *${Number(profile.credits).toFixed(1)}*\n` +
-          `📋 Plan: *${profile.plan}*\n` +
-          `📅 Joined: ${new Date(profile.created_at).toLocaleDateString()}`,
+          `💰 الرصيد: *${Number(profile.credits).toFixed(1)} MC*\n` +
+          `📋 الخطة: *${profile.plan}*\n` +
+          `📅 تاريخ التسجيل: ${new Date(profile.created_at).toLocaleDateString("ar-EG")}`,
           [
-            [{ text: "➕ Add MC", callback_data: `uadd_${userId}` }, { text: "➖ Remove MC", callback_data: `usub_${userId}` }],
-            [{ text: "⭐ Set Plan", callback_data: `uplan_${userId}` }],
-            [{ text: "🔙 Users", callback_data: "users_menu" }],
+            [{ text: "➕ إضافة رصيد", callback_data: `uadd_${userId}` }, { text: "➖ خصم رصيد", callback_data: `usub_${userId}` }],
+            [{ text: "⭐ تغيير الخطة", callback_data: `uplan_${userId}` }],
+            [{ text: "🔙 المستخدمين", callback_data: "users_menu" }],
           ]
         );
         return new Response("OK");
       }
 
-      // Add MC presets
-      if (data.startsWith("uadd_")) {
-        const userId = data.replace("uadd_", "");
-        await saveSession(sb, chatId, { adminAction: "awaiting_mc_amount", adminUserId: userId });
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          "➕ *Add MC*\n\nChoose amount:",
-          [
-            [{ text: "+5", callback_data: `mc_add_5_${userId}` }, { text: "+10", callback_data: `mc_add_10_${userId}` }, { text: "+25", callback_data: `mc_add_25_${userId}` }],
-            [{ text: "+50", callback_data: `mc_add_50_${userId}` }, { text: "+100", callback_data: `mc_add_100_${userId}` }, { text: "+500", callback_data: `mc_add_500_${userId}` }],
-            [{ text: "✏️ Custom", callback_data: `mc_custom_add_${userId}` }],
-            [{ text: "🔙 Back", callback_data: `uview_${userId}` }],
-          ]
-        );
+      if (d.startsWith("uadd_")) {
+        const userId = d.replace("uadd_", "");
+        await send(BOT_TOKEN, chatId, msgId, "➕ *إضافة رصيد MC*\n\nاختر المبلغ:", [
+          [{ text: "+5", callback_data: `mc_add_5_${userId}` }, { text: "+10", callback_data: `mc_add_10_${userId}` }, { text: "+25", callback_data: `mc_add_25_${userId}` }],
+          [{ text: "+50", callback_data: `mc_add_50_${userId}` }, { text: "+100", callback_data: `mc_add_100_${userId}` }, { text: "+500", callback_data: `mc_add_500_${userId}` }],
+          [{ text: "✏️ مبلغ مخصص", callback_data: `mc_custom_add_${userId}` }],
+          [{ text: "🔙 رجوع", callback_data: `uview_${userId}` }],
+        ]);
         return new Response("OK");
       }
 
-      if (data.startsWith("usub_")) {
-        const userId = data.replace("usub_", "");
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          "➖ *Remove MC*\n\nChoose amount:",
-          [
-            [{ text: "-5", callback_data: `mc_sub_5_${userId}` }, { text: "-10", callback_data: `mc_sub_10_${userId}` }, { text: "-25", callback_data: `mc_sub_25_${userId}` }],
-            [{ text: "-50", callback_data: `mc_sub_50_${userId}` }, { text: "-100", callback_data: `mc_sub_100_${userId}` }],
-            [{ text: "✏️ Custom", callback_data: `mc_custom_sub_${userId}` }],
-            [{ text: "🔙 Back", callback_data: `uview_${userId}` }],
-          ]
-        );
+      if (d.startsWith("usub_")) {
+        const userId = d.replace("usub_", "");
+        await send(BOT_TOKEN, chatId, msgId, "➖ *خصم رصيد MC*\n\nاختر المبلغ:", [
+          [{ text: "-5", callback_data: `mc_sub_5_${userId}` }, { text: "-10", callback_data: `mc_sub_10_${userId}` }, { text: "-25", callback_data: `mc_sub_25_${userId}` }],
+          [{ text: "-50", callback_data: `mc_sub_50_${userId}` }, { text: "-100", callback_data: `mc_sub_100_${userId}` }],
+          [{ text: "✏️ مبلغ مخصص", callback_data: `mc_custom_sub_${userId}` }],
+          [{ text: "🔙 رجوع", callback_data: `uview_${userId}` }],
+        ]);
         return new Response("OK");
       }
 
-      // MC preset applied
-      if (data.startsWith("mc_add_") || data.startsWith("mc_sub_")) {
-        const isAdd = data.startsWith("mc_add_");
-        const rest = data.replace(isAdd ? "mc_add_" : "mc_sub_", "");
+      if (d.startsWith("mc_add_") || d.startsWith("mc_sub_")) {
+        const isAdd = d.startsWith("mc_add_");
+        const rest = d.replace(isAdd ? "mc_add_" : "mc_sub_", "");
         const idx = rest.indexOf("_");
         const amount = parseInt(rest.slice(0, idx));
         const userId = rest.slice(idx + 1);
-        const change = isAdd ? amount : -amount;
-
-        await applyMcChange(sb, BOT_TOKEN, chatId, msgId, userId, change);
+        await applyMcChange(sb, BOT_TOKEN, chatId, msgId, userId, isAdd ? amount : -amount);
         return new Response("OK");
       }
 
-      // Custom MC - ask for text input
-      if (data.startsWith("mc_custom_add_") || data.startsWith("mc_custom_sub_")) {
-        const isAdd = data.startsWith("mc_custom_add_");
-        const userId = data.replace(isAdd ? "mc_custom_add_" : "mc_custom_sub_", "");
-        await saveSession(sb, chatId, { adminAction: isAdd ? "awaiting_mc_add" : "awaiting_mc_sub", adminUserId: userId });
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `✏️ Enter ${isAdd ? "amount to add" : "amount to remove"}:`,
-          [[{ text: "🔙 Cancel", callback_data: `uview_${userId}` }]]
-        );
+      if (d.startsWith("mc_custom_add_") || d.startsWith("mc_custom_sub_")) {
+        const isAdd = d.startsWith("mc_custom_add_");
+        const userId = d.replace(isAdd ? "mc_custom_add_" : "mc_custom_sub_", "");
+        await saveSession(sb, chatId, { adminAction: isAdd ? "mc_add" : "mc_sub", adminUserId: userId });
+        await send(BOT_TOKEN, chatId, msgId, `✏️ أدخل المبلغ ${isAdd ? "المراد إضافته" : "المراد خصمه"}:`, [[{ text: "🔙 إلغاء", callback_data: `uview_${userId}` }]]);
         return new Response("OK");
       }
 
-      // Set plan
-      if (data.startsWith("uplan_")) {
-        const userId = data.replace("uplan_", "");
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          "⭐ *Set Plan*\n\nChoose plan:",
-          [
-            [{ text: "Free", callback_data: `setplan_free_${userId}` }, { text: "Starter", callback_data: `setplan_starter_${userId}` }],
-            [{ text: "Pro", callback_data: `setplan_pro_${userId}` }, { text: "Elite", callback_data: `setplan_elite_${userId}` }],
-            [{ text: "🔙 Back", callback_data: `uview_${userId}` }],
-          ]
-        );
+      if (d.startsWith("uplan_")) {
+        const userId = d.replace("uplan_", "");
+        await send(BOT_TOKEN, chatId, msgId, "⭐ *تغيير الخطة*\n\nاختر الخطة:", [
+          [{ text: "🆓 Free", callback_data: `sp_free_${userId}` }, { text: "⭐ Starter", callback_data: `sp_starter_${userId}` }],
+          [{ text: "💎 Pro", callback_data: `sp_pro_${userId}` }, { text: "👑 Elite", callback_data: `sp_elite_${userId}` }],
+          [{ text: "🔙 رجوع", callback_data: `uview_${userId}` }],
+        ]);
         return new Response("OK");
       }
 
-      if (data.startsWith("setplan_")) {
-        const rest = data.replace("setplan_", "");
+      if (d.startsWith("sp_")) {
+        const rest = d.replace("sp_", "");
         const idx = rest.indexOf("_");
         const plan = rest.slice(0, idx);
         const userId = rest.slice(idx + 1);
-
         await sb.from("profiles").update({ plan }).eq("id", userId);
         const { data: profile } = await sb.from("profiles").select("display_name").eq("id", userId).single();
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `✅ *${profile?.display_name || "User"}* plan set to *${plan}*`,
-          [
-            [{ text: "👤 View User", callback_data: `uview_${userId}` }],
-            [{ text: "🔙 Users", callback_data: "users_menu" }],
-          ]
-        );
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم تغيير خطة *${profile?.display_name || "المستخدم"}* إلى *${plan}*`, [
+          [{ text: "👤 عرض المستخدم", callback_data: `uview_${userId}` }],
+          [{ text: "🔙 المستخدمين", callback_data: "users_menu" }],
+        ]);
         return new Response("OK");
       }
 
-      // ==== STATS ====
-      if (data === "admin_stats") {
+      // ==================== الإحصائيات ====================
+      if (d === "stats") {
         const { count: userCount } = await sb.from("profiles").select("*", { count: "exact", head: true });
         const { count: convCount } = await sb.from("conversations").select("*", { count: "exact", head: true });
         const { count: msgCount } = await sb.from("messages").select("*", { count: "exact", head: true });
@@ -631,15 +522,15 @@ serve(async (req) => {
         const imgMedia = await getExistingMedia(sb, IMAGE_MODELS);
         const vidMedia = await getExistingMedia(sb, VIDEO_MODELS);
 
-        await editOrSend(BOT_TOKEN, chatId, msgId,
-          `📊 *System Stats*\n\n` +
-          `👥 Users: *${userCount || 0}*\n` +
-          `💬 Conversations: *${convCount || 0}*\n` +
-          `📝 Messages: *${msgCount || 0}*\n` +
-          `💻 Projects: *${projectCount || 0}*\n` +
-          `🖼 Image Media: *${imgMedia.size}/${IMAGE_MODELS.length}*\n` +
-          `🎬 Video Media: *${vidMedia.size}/${VIDEO_MODELS.length}*`,
-          [[{ text: "🔙 Main Menu", callback_data: "main_menu" }]]
+        await send(BOT_TOKEN, chatId, msgId,
+          `📊 *إحصائيات النظام*\n\n` +
+          `👥 المستخدمين: *${userCount || 0}*\n` +
+          `💬 المحادثات: *${convCount || 0}*\n` +
+          `📝 الرسائل: *${msgCount || 0}*\n` +
+          `💻 المشاريع: *${projectCount || 0}*\n` +
+          `🖼 وسائط الصور: *${imgMedia.size}/${IMAGE_MODELS.length}*\n` +
+          `🎬 وسائط الفيديو: *${vidMedia.size}/${VIDEO_MODELS.length}*`,
+          [[{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]]
         );
         return new Response("OK");
       }
@@ -647,86 +538,66 @@ serve(async (req) => {
       return new Response("OK");
     }
 
-    // ========================
-    //   TEXT / MEDIA MESSAGES
-    // ========================
+    // ==================== رسائل نصية / وسائط ====================
     if (message) {
       const chatId = message.chat.id;
       const text = message.text;
 
-      // /start
       if (text === "/start") {
         await clearSession(sb, chatId);
         await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: "🤖 *Megsy Admin Bot*\n\nChoose an action:",
+          text: "🤖 *لوحة تحكم Megsy*\n\nمرحباً! اختر عملية:",
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [
-              [{ text: "📸 Upload Media", callback_data: "upload_menu" }],
-              [{ text: "🔧 Edit Models", callback_data: "edit_menu" }],
-              [{ text: "👥 Users", callback_data: "users_menu" }],
-              [{ text: "📊 Stats", callback_data: "admin_stats" }],
-            ],
-          }),
+          reply_markup: JSON.stringify({ inline_keyboard: mainMenuKB() }),
         });
         return new Response("OK");
       }
 
       const session = await loadSession(sb, chatId);
 
-      // ---- Handle text input for field values ----
-      if (session?.adminAction === "awaiting_field_value" && text && session.adminModelId && session.adminField) {
+      // إدخال قيمة حقل
+      if (session?.adminAction === "awaiting_value" && text && session.adminModelId && session.adminField) {
         const config = await getModelConfig(sb, session.adminModelId);
         config[session.adminField] = text.trim();
         await setModelConfig(sb, session.adminModelId, config);
-
-        const name = config.name || MODEL_NAMES[session.adminModelId] || session.adminModelId;
         await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `✅ *${name}*\n\nUpdated *${session.adminField}* → \`${text.trim()}\``,
+          text: `✅ تم تحديث *${session.adminField}* → \`${text.trim()}\``,
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [
-              [{ text: "✏️ Edit More", callback_data: `emod_${session.adminModelId}` }],
-              [{ text: "🔙 Edit Menu", callback_data: "edit_menu" }],
-            ],
-          }),
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+            [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+          ]}),
         });
         await saveSession(sb, chatId, { adminAction: "idle" });
         return new Response("OK");
       }
 
-      // ---- Handle MC custom amount ----
-      if ((session?.adminAction === "awaiting_mc_add" || session?.adminAction === "awaiting_mc_sub") && text && session.adminUserId) {
+      // إدخال MC مخصص
+      if ((session?.adminAction === "mc_add" || session?.adminAction === "mc_sub") && text && session.adminUserId) {
         const amount = parseFloat(text.trim());
         if (isNaN(amount) || amount <= 0) {
-          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ Enter a valid positive number:" });
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ أدخل رقم صحيح موجب:" });
           return new Response("OK");
         }
-        const change = session.adminAction === "awaiting_mc_add" ? amount : -amount;
+        const change = session.adminAction === "mc_add" ? amount : -amount;
         await applyMcChange(sb, BOT_TOKEN, chatId, undefined, session.adminUserId, change);
         await saveSession(sb, chatId, { adminAction: "idle" });
         return new Response("OK");
       }
 
-      // ---- Handle photo/video upload for media management ----
+      // رفع صورة / فيديو
       if (session?.page && session.models) {
         const currentModelId = session.models[session.modelIndex || 0];
         const currentModelName = MODEL_NAMES[currentModelId] || currentModelId;
         let fileId: string | null = null;
         let mediaType: "image" | "video" = "image";
 
-        if (message.photo?.length > 0) {
-          fileId = message.photo[message.photo.length - 1].file_id;
-          mediaType = "image";
-        } else if (message.video) {
-          fileId = message.video.file_id;
-          mediaType = "video";
-        } else if (message.animation) {
-          fileId = message.animation.file_id;
-          mediaType = "video";
-        } else if (message.document) {
+        if (message.photo?.length > 0) { fileId = message.photo[message.photo.length - 1].file_id; mediaType = "image"; }
+        else if (message.video) { fileId = message.video.file_id; mediaType = "video"; }
+        else if (message.animation) { fileId = message.animation.file_id; mediaType = "video"; }
+        else if (message.document) {
           const mime = message.document.mime_type || "";
           if (mime.startsWith("image/")) { fileId = message.document.file_id; mediaType = "image"; }
           else if (mime.startsWith("video/")) { fileId = message.document.file_id; mediaType = "video"; }
@@ -734,18 +605,15 @@ serve(async (req) => {
 
         if (!fileId) {
           await tg(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId, text: "Send an image or video only.",
-            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ Skip", callback_data: "skip_model" }, { text: "❌ Cancel", callback_data: "upload_menu" }]] }),
+            chat_id: chatId, text: "أرسل صورة أو فيديو فقط.",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "skip_model" }, { text: "❌ إلغاء", callback_data: "upload_menu" }]] }),
           });
           return new Response("OK");
         }
 
         const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
         const filePath = fileInfo.result?.file_path;
-        if (!filePath) {
-          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "Failed to download file." });
-          return new Response("OK");
-        }
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل تحميل الملف." }); return new Response("OK"); }
 
         const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
         const fileResp = await fetch(fileUrl);
@@ -758,10 +626,7 @@ serve(async (req) => {
           upsert: true,
         });
 
-        if (uploadError) {
-          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `Upload error: ${uploadError.message}` });
-          return new Response("OK");
-        }
+        if (uploadError) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ في الرفع: ${uploadError.message}` }); return new Response("OK"); }
 
         const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
         await sb.from("model_media").upsert({
@@ -774,30 +639,27 @@ serve(async (req) => {
         if (remaining === 0) {
           await clearSession(sb, chatId);
           await tg(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId, text: `✅ Uploaded for *${currentModelName}*\n\nAll models done!`, parse_mode: "Markdown",
-            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 Upload Menu", callback_data: "upload_menu" }]] }),
+            chat_id: chatId, text: `✅ تم رفع *${currentModelName}*\n\nانتهت كل النماذج!`, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "upload_menu" }]] }),
           });
           return new Response("OK");
         }
 
         await saveSession(sb, chatId, session);
-        const nextModelId = session.models[session.modelIndex];
-
+        const nextId = session.models[session.modelIndex];
         await tg(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `✅ *${currentModelName}* done!\n\nRemaining: *${remaining}*\n\n🎯 Next: *${MODEL_NAMES[nextModelId] || nextModelId}*\n\`${nextModelId}\`\n\nSend ${session.page === "images" ? "an image" : "a video"}:`,
+          text: `✅ تم رفع *${currentModelName}*!\n\nالمتبقي: *${remaining}*\n\n🎯 التالي: *${MODEL_NAMES[nextId] || nextId}*\n\`${nextId}\`\n\nأرسل ${session.page === "images" ? "صورة" : "فيديو"}:`,
           parse_mode: "Markdown",
-          reply_markup: JSON.stringify({
-            inline_keyboard: [[{ text: "⏭ Skip", callback_data: "skip_model" }, { text: "❌ Cancel", callback_data: "upload_menu" }]],
-          }),
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "skip_model" }, { text: "❌ إلغاء", callback_data: "upload_menu" }]] }),
         });
         return new Response("OK");
       }
 
-      // Default
+      // رسالة افتراضية
       await tg(BOT_TOKEN, "sendMessage", {
-        chat_id: chatId, text: "Press /start to begin.",
-        reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🚀 Start", callback_data: "main_menu" }]] }),
+        chat_id: chatId, text: "اضغط /start للبدء.",
+        reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🚀 ابدأ", callback_data: "main_menu" }]] }),
       });
       return new Response("OK");
     }
@@ -811,8 +673,7 @@ serve(async (req) => {
   }
 });
 
-// ---- Helper functions ----
-
+// ---- دوال مساعدة ----
 async function showUsersPage(sb: ReturnType<typeof createClient>, token: string, chatId: number, msgId: number | undefined, page: number) {
   const from = page * USERS_PER_PAGE;
   const { data: users, count } = await sb.from("profiles")
@@ -824,53 +685,45 @@ async function showUsersPage(sb: ReturnType<typeof createClient>, token: string,
   const totalPages = Math.ceil(total / USERS_PER_PAGE) || 1;
 
   if (!users || users.length === 0) {
-    await editOrSend(token, chatId, msgId, "No users found.", [[{ text: "🔙 Main Menu", callback_data: "main_menu" }]]);
+    await send(token, chatId, msgId, "لا يوجد مستخدمين.", [[{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]]);
     return;
   }
 
   const rows: { text: string; callback_data: string }[][] = users.map(u => [{
-    text: `${u.display_name || "User"} — ${Number(u.credits).toFixed(0)} MC (${u.plan})`,
+    text: `${u.display_name || "مستخدم"} — ${Number(u.credits).toFixed(0)} MC (${u.plan})`,
     callback_data: `uview_${u.id}`,
   }]);
 
-  // Pagination
   const navRow: { text: string; callback_data: string }[] = [];
-  if (page > 0) navRow.push({ text: "◀️ Prev", callback_data: `users_page_${page - 1}` });
+  if (page > 0) navRow.push({ text: "◀️ السابق", callback_data: `users_page_${page - 1}` });
   navRow.push({ text: `${page + 1}/${totalPages}`, callback_data: "noop" });
-  if (page < totalPages - 1) navRow.push({ text: "Next ▶️", callback_data: `users_page_${page + 1}` });
+  if (page < totalPages - 1) navRow.push({ text: "التالي ▶️", callback_data: `users_page_${page + 1}` });
   rows.push(navRow);
-  rows.push([{ text: "🔙 Main Menu", callback_data: "main_menu" }]);
+  rows.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
 
-  await editOrSend(token, chatId, msgId,
-    `👥 *Users* (${total} total)\n\nSelect a user:`,
-    rows
-  );
+  await send(token, chatId, msgId, `👥 *المستخدمين* (${total} إجمالي)\n\nاختر مستخدم:`, rows);
 }
 
 async function applyMcChange(sb: ReturnType<typeof createClient>, token: string, chatId: number, msgId: number | undefined, userId: string, change: number) {
   const { data: profile } = await sb.from("profiles").select("credits, display_name").eq("id", userId).single();
-  if (!profile) {
-    await editOrSend(token, chatId, msgId, "❌ User not found.", [[{ text: "🔙 Users", callback_data: "users_menu" }]]);
-    return;
-  }
+  if (!profile) { await send(token, chatId, msgId, "❌ المستخدم غير موجود", [[{ text: "🔙 رجوع", callback_data: "users_menu" }]]); return; }
 
   const newCredits = Math.max(0, Number(profile.credits) + change);
   await sb.from("profiles").update({ credits: newCredits }).eq("id", userId);
   await sb.from("credit_transactions").insert({
-    user_id: userId,
-    amount: Math.abs(change),
+    user_id: userId, amount: Math.abs(change),
     action_type: change >= 0 ? "admin_add" : "admin_deduct",
-    description: `Admin: ${change >= 0 ? "+" : ""}${change} MC`,
+    description: `أدمن: ${change >= 0 ? "+" : ""}${change} MC`,
   });
 
-  await editOrSend(token, chatId, msgId,
-    `✅ *${profile.display_name || "User"}*\n\n` +
-    `Previous: ${Number(profile.credits).toFixed(1)} MC\n` +
-    `Change: ${change >= 0 ? "+" : ""}${change}\n` +
-    `New: ${newCredits.toFixed(1)} MC`,
+  await send(token, chatId, msgId,
+    `✅ *${profile.display_name || "مستخدم"}*\n\n` +
+    `الرصيد السابق: ${Number(profile.credits).toFixed(1)} MC\n` +
+    `التغيير: ${change >= 0 ? "+" : ""}${change}\n` +
+    `الرصيد الجديد: ${newCredits.toFixed(1)} MC`,
     [
-      [{ text: "👤 View User", callback_data: `uview_${userId}` }],
-      [{ text: "🔙 Users", callback_data: "users_menu" }],
+      [{ text: "👤 عرض المستخدم", callback_data: `uview_${userId}` }],
+      [{ text: "🔙 المستخدمين", callback_data: "users_menu" }],
     ]
   );
 }
