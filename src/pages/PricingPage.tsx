@@ -88,14 +88,14 @@ const yearlyFeatureOverrides: Record<string, string[]> = {
   Pro: [
     "5,000 MC / year",
     "All AI models access",
-    "Image generation (500/month)",
-    "Video generation (50/month)",
+    "Image generation",
+    "Video generation",
     "Code generation + live preview",
-    "Deploy + publish (20 projects)",
+    "Deploy + publish",
     "GitHub sync + version control",
     "File analysis",
     "API access",
-    "Social publishing (10 platforms)",
+    "Social publishing",
     "Priority support",
   ],
   Elite: [
