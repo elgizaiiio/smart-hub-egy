@@ -36,6 +36,11 @@ import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SharedChatPage from "./pages/SharedChatPage";
 import ContactPage from "./pages/ContactPage";
+import ServiceImagesPage from "./pages/services/ServiceImagesPage";
+import ServiceVideosPage from "./pages/services/ServiceVideosPage";
+import ServiceChatPage from "./pages/services/ServiceChatPage";
+import ServiceFilesPage from "./pages/services/ServiceFilesPage";
+import ServiceCodePage from "./pages/services/ServiceCodePage";
 import CookieConsent from "./components/CookieConsent";
 import TranslationWrapper from "./components/TranslationWrapper";
 
@@ -109,6 +114,11 @@ const App = () => {
                 <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                <Route path="/services/images" element={<ServiceImagesPage />} />
+                <Route path="/services/videos" element={<ServiceVideosPage />} />
+                <Route path="/services/chat" element={<ServiceChatPage />} />
+                <Route path="/services/files" element={<ServiceFilesPage />} />
+                <Route path="/services/code" element={<ServiceCodePage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

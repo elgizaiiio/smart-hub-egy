@@ -36,24 +36,22 @@ const navItems: NavItem[] = [
     label: "Create",
     columns: [
       {
-        title: "Image",
+        title: "AI Creation",
         items: [
-          { label: "AI Image Generator", desc: "Create images from prompts", href: "/images" },
-          { label: "Creative Ideation", desc: "Explore visual ideas", href: "/images" },
-          { label: "Background Remover", desc: "Remove backgrounds", href: "/images" },
-          { label: "Train Your Model", desc: "Custom model training", href: "/images" },
+          { label: "AI Image Generator", desc: "Create stunning visuals with Megsy Pro", href: "/services/images" },
+          { label: "AI Video Generator", desc: "Generate cinematic videos instantly", href: "/services/videos" },
+          { label: "AI Chat", desc: "Chat with 80+ models including Megsy Pro", href: "/services/chat" },
         ],
       },
       {
-        title: "Video & Editing",
+        title: "Productivity",
         items: [
-          { label: "AI Video Generator", desc: "Generate motion from images", href: "/videos" },
-          { label: "Image Editor", desc: "Edit images with AI", href: "/images" },
-          { label: "Image Upscaler", desc: "Enhance resolution", href: "/images" },
+          { label: "File Analysis", desc: "Upload & analyze documents with AI", href: "/services/files" },
+          { label: "Code Builder", desc: "Build & deploy full-stack apps", href: "/services/code" },
         ],
       },
     ],
-    featured: { title: "New to Megsy?\nLearn the basics.", cta: "Get started", href: "/auth" },
+    featured: { title: "Powered by\nMegsy Pro", cta: "Try it free", href: "/auth" },
   },
   {
     label: "Products",
