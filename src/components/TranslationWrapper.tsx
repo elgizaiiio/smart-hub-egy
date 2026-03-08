@@ -1,4 +1,4 @@
-import { useEffect, ReactNode } from "react";
+import { useEffect, useRef, ReactNode } from "react";
 
 const RTL_LANGUAGES = ["ar", "he"];
 
@@ -20,16 +20,20 @@ declare global {
 
 function triggerTranslate(langCode: string) {
   const gtLang = LANG_MAP[langCode] || langCode;
+  let attempts = 0;
 
-  // Use the Google Translate combo to switch language
+  // Use the Google Translate combo to switch language (limited retries)
   const trySwitch = () => {
     const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
     if (select) {
       select.value = gtLang;
       select.dispatchEvent(new Event("change"));
-    } else {
-      // Retry after a short delay if widget not ready
-      setTimeout(trySwitch, 500);
+      return;
+    }
+
+    attempts += 1;
+    if (attempts < 20) {
+      setTimeout(trySwitch, 300);
     }
   };
 
