@@ -98,6 +98,7 @@ const LandingNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [pinned, setPinned] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -112,6 +113,7 @@ const LandingNavbar = () => {
   const handleNav = (href: string) => {
     setMobileOpen(false);
     setOpenDropdown(null);
+    setPinned(false);
     if (href.startsWith("http")) {
       window.open(href, "_blank");
     } else if (href.startsWith("/#")) {
@@ -129,11 +131,23 @@ const LandingNavbar = () => {
 
   const handleMouseEnter = (label: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setOpenDropdown(label);
+    if (!pinned) setOpenDropdown(label);
   };
 
   const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => setOpenDropdown(null), 200);
+    if (!pinned) {
+      timeoutRef.current = setTimeout(() => setOpenDropdown(null), 200);
+    }
+  };
+
+  const handleClick = (label: string) => {
+    if (openDropdown === label && pinned) {
+      setOpenDropdown(null);
+      setPinned(false);
+    } else {
+      setOpenDropdown(label);
+      setPinned(true);
+    }
   };
 
   return (
@@ -166,8 +180,8 @@ const LandingNavbar = () => {
                 onMouseLeave={handleMouseLeave}
               >
                 <button
-                  className="flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
+                  onClick={() => handleClick(item.label)}
+                  className="flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                   {item.label}
                   <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${openDropdown === item.label ? "rotate-180" : ""}`} />
                 </button>
