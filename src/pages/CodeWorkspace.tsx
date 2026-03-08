@@ -56,44 +56,35 @@ const callGithub = async (body: Record<string, unknown>) => {
   return resp.json();
 };
 
-const NEXTJS_TEMPLATE: FileTree = {
+const VITE_TEMPLATE: FileTree = {
   "package.json": JSON.stringify({
     name: "megsy-project",
     private: true,
     version: "0.0.0",
-    scripts: { dev: "next dev", build: "next build", start: "next start" },
+    type: "module",
+    scripts: { dev: "vite --host 0.0.0.0 --port 3000", build: "vite build", preview: "vite preview" },
     dependencies: {
-      next: "^14.2.0",
       react: "^18.3.1",
       "react-dom": "^18.3.1",
+      "react-router-dom": "^6.30.0",
     },
     devDependencies: {
-      "@types/node": "^20.0.0",
       "@types/react": "^18.3.1",
       "@types/react-dom": "^18.3.1",
-      typescript: "^5.4.0",
+      "@vitejs/plugin-react": "^4.3.1",
+      vite: "^5.4.0",
       tailwindcss: "^3.4.0",
       postcss: "^8.4.0",
       autoprefixer: "^10.4.0",
     },
   }, null, 2),
-  "next.config.js": `/** @type {import('next').NextConfig} */\nconst nextConfig = {}\nmodule.exports = nextConfig`,
-  "tsconfig.json": JSON.stringify({
-    compilerOptions: {
-      target: "es5", lib: ["dom", "dom.iterable", "esnext"], allowJs: true, skipLibCheck: true,
-      strict: true, noEmit: true, esModuleInterop: true, module: "esnext",
-      moduleResolution: "bundler", resolveJsonModule: true, isolatedModules: true, jsx: "preserve",
-      incremental: true, plugins: [{ name: "next" }],
-      paths: { "@/*": ["./*"] },
-    },
-    include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-    exclude: ["node_modules"],
-  }, null, 2),
-  "tailwind.config.ts": `import type { Config } from 'tailwindcss'\nconst config: Config = {\n  content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx,mdx}'],\n  theme: { extend: {} },\n  plugins: [],\n}\nexport default config`,
-  "postcss.config.js": `module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }`,
-  "app/globals.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\nbody { font-family: system-ui, sans-serif; }`,
-  "app/layout.tsx": `import './globals.css'\nimport { ReactNode } from 'react'\n\nexport const metadata = { title: 'Megsy Project', description: 'Built with Megsy Code' }\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  )\n}`,
-  "app/page.tsx": `export default function Home() {\n  return (\n    <main className=\"min-h-screen flex items-center justify-center\">\n      <h1 className=\"text-4xl font-bold\">Hello from Megsy!</h1>\n    </main>\n  )\n}`,
+  "vite.config.js": `import { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\nexport default defineConfig({ plugins: [react()], server: { host: '0.0.0.0', port: 3000 } })`,
+  "index.html": `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Megsy Project</title></head>\n<body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>\n</html>`,
+  "src/main.jsx": `import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App'\nimport './index.css'\nReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)`,
+  "src/App.jsx": `export default function App() { return <div className="min-h-screen flex items-center justify-center bg-gray-50"><h1 className="text-4xl font-bold text-gray-900">Hello from Megsy!</h1></div> }`,
+  "src/index.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\nbody { font-family: system-ui, sans-serif; margin: 0; }`,
+  "tailwind.config.js": `/** @type {import('tailwindcss').Config} */\nexport default {\n  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],\n  theme: { extend: {} },\n  plugins: [],\n}`,
+  "postcss.config.js": `export default { plugins: { tailwindcss: {}, autoprefixer: {} } }`,
 };
 
 const DEFAULT_STEPS: () => BuildStep[] = () => [
@@ -229,20 +220,18 @@ const CodeWorkspace = () => {
     let assistantContent = "";
 
     // Always use plan mode for chat - user must explicitly switch
-    const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. You build complete Next.js 14+ applications with:
-- App Router (app/ directory)
-- TypeScript throughout
+    const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. You build complete React applications with:
+- React + Vite + React Router
 - Tailwind CSS for styling
-- API routes (app/api/*/route.ts) for backend logic
-- Server Components by default, Client Components with "use client" when needed
-- Database integration via Supabase or any REST API
-- Authentication patterns if requested
+- Multiple pages/routes with react-router-dom
+- Component-based architecture
+- Clean, production-ready code
 
 Analyze the user's request thoroughly:
-1. Understand the full scope (frontend, backend, database, APIs, auth)
+1. Understand the full scope (pages, components, features)
 2. Outline a detailed plan with file structure, tech stack, and features
 3. Ask clarifying questions if the request is ambiguous
-4. Plan: Database schema → API routes → Frontend pages → Components → Styling
+4. Plan: Pages → Components → Styling → Interactivity
 
 Be conversational. Do not use emoji. Respond in the user's language. Keep plans structured and actionable.`;
 
@@ -357,16 +346,15 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
     abortRef.current = controller;
     let assistantContent = "";
 
-    const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete Next.js 14+ project. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. 
+    const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete React+Vite project with Tailwind CSS. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. 
 
 Rules:
-- Use App Router (app/ directory structure)
-- TypeScript for all files (.ts, .tsx)
-- Tailwind CSS for styling
-- For backend logic, create API routes in app/api/*/route.ts using NextResponse
-- Use "use client" directive only for interactive components
-- Include proper error handling
-- Do NOT include package.json, next.config.js, tsconfig.json, tailwind.config.ts, postcss.config.js, app/layout.tsx, app/globals.css unless you need to modify defaults
+- Use React with JSX (.jsx files)
+- Use react-router-dom for multi-page apps (BrowserRouter)
+- Tailwind CSS for all styling
+- Keep files in src/ directory
+- Include proper error handling and responsive design
+- Do NOT include package.json, vite.config.js, index.html, src/main.jsx, src/index.css, tailwind.config.js, postcss.config.js unless you need to modify defaults
 - Output raw JSON only, no markdown.`;
 
     const allMessages = messages
@@ -405,7 +393,7 @@ Rules:
 
           if (!parsed.files || typeof parsed.files !== "object") throw new Error("Invalid file structure");
 
-          const allFiles = { ...NEXTJS_TEMPLATE, ...parsed.files };
+          const allFiles = { ...VITE_TEMPLATE, ...parsed.files };
           setFiles(allFiles);
           updateStep("parse", { status: "done", detail: `${Object.keys(parsed.files).length} files` });
 
