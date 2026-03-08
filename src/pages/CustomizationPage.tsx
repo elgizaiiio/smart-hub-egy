@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
-import { ArrowLeft, Check, User, Bot, MessageSquare, Type, Palette } from "lucide-react";
+import { ArrowLeft, Check, User, Bot, MessageSquare, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
-import { Slider } from "@/components/ui/slider";
+
 
 const themes = [
   { id: "dark", label: "Pitch Black", desc: "True black", colors: ["#000000", "#0d0d0d", "#1a1a1a"] },
@@ -37,24 +37,14 @@ const chatStyles = [
   { id: "minimal", label: "Minimal", desc: "No background" },
 ];
 
-const fontSizeLabels = ["Small", "Medium", "Large"];
+
 
 const CustomizationPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("theme") || "dark");
   const [currentAccent, setCurrentAccent] = useState(() => localStorage.getItem("accent") || "262 60% 55%");
-  const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem("fontSize");
-    return saved ? parseInt(saved) : 1;
-  });
   const [chatStyle, setChatStyle] = useState(() => localStorage.getItem("chatStyle") || "modern");
-
-  useEffect(() => {
-    const sizes = ["14px", "16px", "18px"];
-    document.documentElement.style.setProperty("--font-size-base", sizes[fontSize]);
-    localStorage.setItem("fontSize", String(fontSize));
-  }, [fontSize]);
 
   const handleThemeChange = useCallback((id: string) => {
     document.documentElement.setAttribute("data-theme", id);
@@ -208,28 +198,6 @@ const CustomizationPage = () => {
               </motion.button>
             );
           })}
-        </div>
-      </div>
-
-      {/* Font Size */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Type className="w-3.5 h-3.5 text-muted-foreground" />
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Font Size</p>
-        </div>
-        <div className="rounded-2xl bg-muted/30 border border-border/50 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] text-muted-foreground">A</span>
-            <span className="text-xs font-medium text-foreground">{fontSizeLabels[fontSize]}</span>
-            <span className="text-base text-muted-foreground font-bold">A</span>
-          </div>
-          <Slider
-            value={[fontSize]}
-            onValueChange={([v]) => setFontSize(v)}
-            min={0}
-            max={2}
-            step={1}
-          />
         </div>
       </div>
 
