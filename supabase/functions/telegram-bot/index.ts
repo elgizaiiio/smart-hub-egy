@@ -618,6 +618,26 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      if (d.startsWith("oedit_logo_")) {
+        const appId = d.replace("oedit_logo_", "");
+        await saveSession(sb, chatId, { oauthStep: "edit_logo", oauthAppId: appId });
+        await send(BOT_TOKEN, chatId, msgId, "🖼 أرسل صورة الشعار الجديدة للتطبيق:", [
+          [{ text: "🗑 حذف الصورة", callback_data: `odel_logo_${appId}` }],
+          [{ text: "🔙 إلغاء", callback_data: `oapp_${appId}` }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("odel_logo_")) {
+        const appId = d.replace("odel_logo_", "");
+        await sb.from("oauth_clients").update({ logo_url: null }).eq("id", appId);
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم حذف صورة التطبيق.", [
+          [{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${appId}` }],
+        ]);
+        return new Response("OK");
+      }
+
       if (d.startsWith("oregen_")) {
         const appId = d.replace("oregen_", "");
         const newSecret = generateId(48);
