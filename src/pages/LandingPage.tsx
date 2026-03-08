@@ -29,7 +29,7 @@ const LandingPage = () => {
 
       <ShowcaseGallery />
 
-      <ModelsMarquee />
+      
 
       <HowItWorks />
 
