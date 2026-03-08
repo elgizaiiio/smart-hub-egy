@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, Zap } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, Zap, FileText, Presentation, FileSearch, ImageIcon, Table, FilePlus2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,12 +23,12 @@ interface AttachedFile {
 }
 
 const SUGGESTIONS = [
-  "Write a professional report",
-  "Create a presentation",
-  "Summarize this document",
-  "Convert image to PDF",
-  "Create a spreadsheet",
-  "Generate a PDF",
+  { text: "Write a professional report", icon: FileText, color: "text-blue-500", bg: "bg-blue-500/10" },
+  { text: "Create a presentation", icon: Presentation, color: "text-orange-500", bg: "bg-orange-500/10" },
+  { text: "Summarize this document", icon: FileSearch, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { text: "Convert image to PDF", icon: ImageIcon, color: "text-pink-500", bg: "bg-pink-500/10" },
+  { text: "Create a spreadsheet", icon: Table, color: "text-violet-500", bg: "bg-violet-500/10" },
+  { text: "Generate a PDF", icon: FilePlus2, color: "text-cyan-500", bg: "bg-cyan-500/10" },
 ];
 
 const GoogleDriveIcon = () => (
@@ -286,22 +286,34 @@ const FilesPage = () => {
       <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
-              <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-3">Create anything with files</h2>
-              <p className="text-sm text-muted-foreground mb-6">Generate documents, analyze files, create presentations and more</p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                {SUGGESTIONS.map((s, i) => (
-                  <motion.button
-                    key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    onClick={() => setInput(s)}
-                    className="px-5 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
-                  >
-                    {s}
-                  </motion.button>
-                ))}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-xl w-full">
+              {/* Icon */}
+              <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center shadow-lg shadow-primary/5">
+                <FileText className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">Create anything with files</h2>
+              <p className="text-sm md:text-base text-muted-foreground mb-8">Generate documents, analyze files, create presentations and more</p>
+              
+              {/* Suggestion Cards Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {SUGGESTIONS.map((s, i) => {
+                  const Icon = s.icon;
+                  return (
+                    <motion.button
+                      key={i}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.07 }}
+                      onClick={() => setInput(s.text)}
+                      className="flex flex-col items-center gap-2.5 p-4 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm text-center hover:border-primary/30 hover:shadow-md hover:shadow-primary/5 transition-all duration-200 group cursor-pointer"
+                    >
+                      <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                        <Icon className={`w-5 h-5 ${s.color}`} />
+                      </div>
+                      <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{s.text}</span>
+                    </motion.button>
+                  );
+                })}
               </div>
             </motion.div>
           </div>

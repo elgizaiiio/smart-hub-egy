@@ -1,34 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-## تحسين صفحة الملفات لتصميم عالمي واحترافي
+## ✅ Completed
 
-### التغييرات على `src/pages/FilesPage.tsx`
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-**1. تحسين العنوان والوصف:**
-- إضافة أيقونة `FileText` كبيرة متوهجة فوق العنوان مع تأثير gradient خفيف
-- تكبير العنوان على الديسكتوب (`text-3xl md:text-4xl`) مع gradient text
-- تحسين الوصف بحجم أكبر قليلاً وتباعد أفضل
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-**2. تحسين أزرار الاقتراحات:**
-- تحويلها من أزرار نصية مسطحة إلى كروت صغيرة بأيقونات مميزة لكل اقتراح
-- كل اقتراح يحصل على أيقونة مناسبة (FileText للتقارير، Presentation للعروض، FileSearch للتلخيص، ImageIcon للتحويل، Table للجداول، FilePlus للـ PDF)
-- تصميم grid متجاوب: `grid-cols-2` على الموبايل و `sm:grid-cols-3` على الأكبر
-- كل كارت يحتوي على أيقونة ملونة + النص بتنسيق أنيق مع hover effects
-- إضافة `backdrop-blur` و `border` خفيف مع `hover:shadow-md` و `hover:border-primary/30`
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-**3. إبقاء جميع الاقتراحات الستة كما هي:**
-- Write a professional report
-- Create a presentation
-- Summarize this document
-- Convert image to PDF
-- Create a spreadsheet
-- Generate a PDF
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-**4. تحسين التجاوب:**
-- Grid يتكيف من عمودين على الموبايل إلى 3 أعمدة على الشاشات الأكبر
-- تباعد مناسب `gap-3` بين الكروت
-- `max-w-xl` للحاوية لضمان عدم تمددها على الشاشات الكبيرة
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
-### النتيجة
-صفحة ملفات بتصميم عالمي مشابه لأفضل تطبيقات AI، مع كل الاقتراحات الستة معروضة بشكل كروت أنيقة بأيقونات ملونة وتأثيرات hover احترافية.
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
