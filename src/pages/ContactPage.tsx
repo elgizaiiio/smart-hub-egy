@@ -120,14 +120,16 @@ const ContactPage = () => {
           {/* Left: Giant Typography Graphic */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, rotateY: -15 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 1 }}
             className="relative hidden lg:block"
           >
             <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-purple-600 p-10">
               <motion.div
                 initial={{ y: 40, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 0.3 }}
                 className="relative z-10 flex h-full flex-col justify-between"
               >
@@ -143,7 +145,8 @@ const ContactPage = () => {
                 <motion.div
                   className="absolute bottom-4 right-4"
                   initial={{ scale: 0, rotate: -45 }}
-                  animate={{ scale: 1, rotate: 0 }}
+                  whileInView={{ scale: 1, rotate: 0 }}
+                  viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: 0.7, type: "spring" }}
                 >
                   <svg viewBox="0 0 120 80" fill="none" className="h-28 w-40 text-black">
@@ -160,13 +163,15 @@ const ContactPage = () => {
           {/* Right: Form Section */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.7, delay: 0.15 }}
             className="flex flex-col"
           >
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.6 }}
               className="mb-8 text-center font-display text-4xl font-black uppercase tracking-tight md:text-5xl"
             >
@@ -222,7 +227,8 @@ const ContactPage = () => {
                   {/* Tab Switcher */}
                   <motion.div
                     initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
                     transition={{ delay: 0.25, duration: 0.5 }}
                     className="mx-auto mb-10 flex w-fit rounded-full bg-white/[0.08] p-1.5"
                   >
@@ -486,7 +492,8 @@ const ContactPage = () => {
 
                   <motion.p
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
                     transition={{ delay: 0.6 }}
                     className="mt-6 text-center text-xs text-white/25"
                   >
