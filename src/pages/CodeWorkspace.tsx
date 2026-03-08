@@ -286,7 +286,7 @@ const CodeWorkspace = () => {
         return;
       }
       refreshCredits();
-      addLog(`${BUILD_CREDIT_COST} credits deducted.`);
+      addLog(`${BUILD_CREDIT_COST} MC deducted.`);
     }
 
     // Get AI to generate files
