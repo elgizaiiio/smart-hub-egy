@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
-import { ChevronDown, ArrowRight } from "lucide-react";
+import { ChevronDown, ArrowRight, Mail } from "lucide-react";
 /* ── Mega-menu data ── */
 interface SubItem {
   label: string;
@@ -18,7 +18,7 @@ interface MenuColumn {
 interface NavDropdown {
   label: string;
   columns: MenuColumn[];
-  featured?: { title: string; cta: string; href: string };
+  featured?: { title: string; desc?: string; cta: string; href: string };
 }
 
 interface NavLink {
@@ -51,30 +51,45 @@ const navItems: NavItem[] = [
         ],
       },
     ],
-    featured: { title: "Powered by\nMegsy Pro", cta: "Try it free", href: "/auth" },
+    featured: { title: "Powered by\nMegsy Pro", desc: "Experience our most advanced AI model today.", cta: "Try it free", href: "/auth" },
   },
   {
     label: "Products",
     columns: [
       {
-        title: "Tools",
+        title: "Image",
         items: [
-          { label: "AI Chat", desc: "Chat with 80+ AI models", href: "/chat" },
-          { label: "Image Generation", desc: "Create stunning visuals", href: "/images" },
-          { label: "Video Generation", desc: "Generate AI videos", href: "/videos" },
-          { label: "Code Builder", desc: "Build & deploy full-stack apps", href: "/code" },
+          { label: "AI Generator", desc: "Create stunning visuals", href: "/services/images" },
+          { label: "Image Editor", desc: "Modify with precision", href: "/services/images" },
+          { label: "Style Transfer", desc: "Apply unique styles", href: "/services/images" },
         ],
       },
       {
-        title: "Featured Models",
+        title: "Video",
         items: [
-          { label: "Megsy Pro", desc: "Our flagship creative model", href: "/#models" },
-          { label: "GPT-4o", desc: "Advanced reasoning", href: "/#models" },
-          { label: "Claude Sonnet", desc: "Best for code & analysis", href: "/#models" },
-          { label: "Gemini Flash", desc: "Ultra-fast responses", href: "/#models" },
+          { label: "Text to Video", desc: "Generate from scratch", href: "/services/videos" },
+          { label: "Image to Video", desc: "Animate your photos", href: "/services/videos" },
+          { label: "Video Editor", desc: "AI-powered editing", href: "/services/videos" },
+        ],
+      },
+      {
+        title: "Editing",
+        items: [
+          { label: "Magic Erase", desc: "Remove unwanted objects", href: "/services/images" },
+          { label: "Background", desc: "Remove or replace bg", href: "/services/images" },
+          { label: "Inpainting", desc: "Fill missing areas", href: "/services/images" },
+        ],
+      },
+      {
+        title: "Upscaling",
+        items: [
+          { label: "Image Upscale", desc: "Enhance resolution", href: "/services/images" },
+          { label: "Video Enhance", desc: "4K video upscaling", href: "/services/videos" },
+          { label: "Face Restore", desc: "Fix and enhance faces", href: "/services/images" },
         ],
       },
     ],
+    featured: { title: "Reach out to our team", desc: "Got a question about Megsy Pro? We're here to help.", cta: "Submit Request", href: "/contact" },
   },
   {
     label: "Learn",
@@ -189,49 +204,55 @@ const LandingNavbar = () => {
                 <AnimatePresence>
                   {openDropdown === item.label && (
                     <motion.div
-                      initial={{ opacity: 0, y: 6 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 6 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute left-0 top-full z-50 pt-2"
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="fixed left-0 right-0 top-[64px] flex justify-center z-50 px-6 pointer-events-none"
                     >
-                      <div className="min-w-[280px] rounded-xl border border-border/50 bg-popover p-2 shadow-xl">
-                        {item.columns.map((col) => (
-                          <div key={col.title} className="mb-2 last:mb-0">
-                            <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-                              {col.title}
-                            </p>
-                            {col.items.map((sub) => (
-                              <button
-                                key={sub.label}
-                                onClick={() => handleNav(sub.href)}
-                                className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent"
-                              >
-                                <div>
-                                  <div className="text-sm font-medium text-foreground">
-                                    {sub.label}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {sub.desc}
-                                  </div>
+                      <div className="w-full max-w-[1000px] rounded-2xl border border-border/50 bg-background/80 backdrop-blur-3xl p-8 shadow-2xl pointer-events-auto">
+                        <div className="flex gap-10">
+                          {/* Featured Card (Left) */}
+                          {item.featured && (
+                            <div className="w-[280px] shrink-0 rounded-2xl bg-gradient-to-b from-primary/10 to-transparent border border-border/50 p-6 flex flex-col items-start relative overflow-hidden">
+                               <div className="mb-4 rounded-full bg-primary/20 p-3 text-primary">
+                                 {item.label === "Products" ? <Mail className="w-6 h-6" /> : <ArrowRight className="w-6 h-6" />}
+                               </div>
+                               <h3 className="text-xl font-bold text-foreground mb-2 whitespace-pre-line">{item.featured.title}</h3>
+                               {item.featured.desc && <p className="text-sm text-muted-foreground mb-6">{item.featured.desc}</p>}
+                               <button onClick={() => handleNav(item.featured!.href)} className="mt-auto rounded-xl bg-foreground text-background px-5 py-3 text-sm font-semibold hover:opacity-90 transition-opacity w-full">
+                                 {item.featured.cta}
+                               </button>
+                            </div>
+                          )}
+
+                          {/* Columns (Right) */}
+                          <div className="flex-1 grid gap-8" style={{ gridTemplateColumns: `repeat(${item.columns.length}, minmax(0, 1fr))` }}>
+                            {item.columns.map((col) => (
+                              <div key={col.title}>
+                                <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">
+                                  {col.title}
+                                </h4>
+                                <div className="space-y-5">
+                                  {col.items.map((sub) => (
+                                    <button
+                                      key={sub.label}
+                                      onClick={() => handleNav(sub.href)}
+                                      className="group flex flex-col w-full text-left"
+                                    >
+                                      <span className="text-[15px] font-semibold text-foreground/90 group-hover:text-primary transition-colors">
+                                        {sub.label}
+                                      </span>
+                                      <span className="text-[13px] text-muted-foreground group-hover:text-muted-foreground/80 transition-colors mt-1">
+                                        {sub.desc}
+                                      </span>
+                                    </button>
+                                  ))}
                                 </div>
-                              </button>
+                              </div>
                             ))}
                           </div>
-                        ))}
-                        
-                        {item.featured && (
-                          <div className="mt-2 rounded-lg bg-gradient-to-r from-primary/20 to-purple-500/20 p-3">
-                            <p className="text-xs font-bold text-foreground">{item.featured.title.replace('\n', ' ')}</p>
-                            <button
-                              onClick={() => handleNav(item.featured!.href)}
-                              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                            >
-                              {item.featured.cta}
-                              <ArrowRight className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
+                        </div>
                       </div>
                     </motion.div>
                   )}
