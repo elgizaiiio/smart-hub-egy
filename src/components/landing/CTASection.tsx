@@ -6,7 +6,7 @@ const CTASection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative overflow-hidden py-32 md:py-48">
+    <section className="relative overflow-hidden py-20 md:py-48">
       <div className="absolute inset-0 bg-gradient-to-b from-purple-600/10 via-transparent to-transparent" />
       <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-600/8 blur-[200px]" />
 
