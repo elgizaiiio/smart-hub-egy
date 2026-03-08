@@ -56,26 +56,44 @@ const callGithub = async (body: Record<string, unknown>) => {
   return resp.json();
 };
 
-const VITE_TEMPLATE: FileTree = {
+const NEXTJS_TEMPLATE: FileTree = {
   "package.json": JSON.stringify({
     name: "megsy-project",
     private: true,
     version: "0.0.0",
-    type: "module",
-    scripts: { dev: "vite --host 0.0.0.0", build: "vite build", preview: "vite preview" },
-    dependencies: { react: "^18.3.1", "react-dom": "^18.3.1" },
+    scripts: { dev: "next dev", build: "next build", start: "next start" },
+    dependencies: {
+      next: "^14.2.0",
+      react: "^18.3.1",
+      "react-dom": "^18.3.1",
+    },
     devDependencies: {
+      "@types/node": "^20.0.0",
       "@types/react": "^18.3.1",
       "@types/react-dom": "^18.3.1",
-      "@vitejs/plugin-react": "^4.3.1",
-      vite: "^5.4.0",
+      typescript: "^5.4.0",
+      tailwindcss: "^3.4.0",
+      postcss: "^8.4.0",
+      autoprefixer: "^10.4.0",
     },
   }, null, 2),
-  "vite.config.js": `import { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\nexport default defineConfig({ plugins: [react()] })`,
-  "index.html": `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Megsy Project</title></head>\n<body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>\n</html>`,
-  "src/main.jsx": `import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App'\nimport './index.css'\nReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)`,
-  "src/App.jsx": `export default function App() { return <div style={{padding:'2rem',fontFamily:'sans-serif'}}><h1>Hello from Megsy!</h1><p>Your project is ready.</p></div> }`,
-  "src/index.css": `* { margin:0; padding:0; box-sizing:border-box; } body { font-family: system-ui, sans-serif; }`,
+  "next.config.js": `/** @type {import('next').NextConfig} */\nconst nextConfig = {}\nmodule.exports = nextConfig`,
+  "tsconfig.json": JSON.stringify({
+    compilerOptions: {
+      target: "es5", lib: ["dom", "dom.iterable", "esnext"], allowJs: true, skipLibCheck: true,
+      strict: true, noEmit: true, esModuleInterop: true, module: "esnext",
+      moduleResolution: "bundler", resolveJsonModule: true, isolatedModules: true, jsx: "preserve",
+      incremental: true, plugins: [{ name: "next" }],
+      paths: { "@/*": ["./*"] },
+    },
+    include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+    exclude: ["node_modules"],
+  }, null, 2),
+  "tailwind.config.ts": `import type { Config } from 'tailwindcss'\nconst config: Config = {\n  content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx,mdx}'],\n  theme: { extend: {} },\n  plugins: [],\n}\nexport default config`,
+  "postcss.config.js": `module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }`,
+  "app/globals.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\nbody { font-family: system-ui, sans-serif; }`,
+  "app/layout.tsx": `import './globals.css'\nimport { ReactNode } from 'react'\n\nexport const metadata = { title: 'Megsy Project', description: 'Built with Megsy Code' }\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  )\n}`,
+  "app/page.tsx": `export default function Home() {\n  return (\n    <main className=\"min-h-screen flex items-center justify-center\">\n      <h1 className=\"text-4xl font-bold\">Hello from Megsy!</h1>\n    </main>\n  )\n}`,
 };
 
 const DEFAULT_STEPS: () => BuildStep[] = () => [
