@@ -253,14 +253,49 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     };
   }, []);
 
-  // Re-translate placeholders on SPA route changes
+  // Re-translate dynamic SPA content (new route/content after initial translation)
   useEffect(() => {
-    const lang = localStorage.getItem("language") || "en";
-    if (lang !== "en") {
-      const timer = setTimeout(translateAttributes, 2000);
-      return () => clearTimeout(timer);
-    }
-  });
+    const run = () => {
+      const lang = localStorage.getItem("language") || "en";
+      if (lang !== "en") {
+        triggerTranslate(lang);
+      }
+    };
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRun = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(run, 350);
+    };
+
+    const originalPush = history.pushState;
+    const originalReplace = history.replaceState;
+
+    history.pushState = function (...args) {
+      originalPush.apply(history, args);
+      scheduleRun();
+    };
+
+    history.replaceState = function (...args) {
+      originalReplace.apply(history, args);
+      scheduleRun();
+    };
+
+    window.addEventListener("popstate", scheduleRun);
+    window.addEventListener("hashchange", scheduleRun);
+
+    const contentObserver = new MutationObserver(scheduleRun);
+    contentObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      history.pushState = originalPush;
+      history.replaceState = originalReplace;
+      window.removeEventListener("popstate", scheduleRun);
+      window.removeEventListener("hashchange", scheduleRun);
+      contentObserver.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   return <>{children}</>;
 };
