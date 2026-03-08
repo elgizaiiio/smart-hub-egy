@@ -1,4 +1,4 @@
-import { useEffect, ReactNode } from "react";
+import { useEffect, useRef, ReactNode } from "react";
 
 const RTL_LANGUAGES = ["ar", "he"];
 
@@ -20,16 +20,20 @@ declare global {
 
 function triggerTranslate(langCode: string) {
   const gtLang = LANG_MAP[langCode] || langCode;
+  let attempts = 0;
 
-  // Use the Google Translate combo to switch language
+  // Use the Google Translate combo to switch language (limited retries)
   const trySwitch = () => {
     const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
     if (select) {
       select.value = gtLang;
       select.dispatchEvent(new Event("change"));
-    } else {
-      // Retry after a short delay if widget not ready
-      setTimeout(trySwitch, 500);
+      return;
+    }
+
+    attempts += 1;
+    if (attempts < 20) {
+      setTimeout(trySwitch, 300);
     }
   };
 
@@ -92,6 +96,8 @@ interface TranslationWrapperProps {
 }
 
 const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
+  const appliedLangRef = useRef<string>("en");
+
   // Initialize Google Translate on mount
   useEffect(() => {
     initGoogleTranslate();
@@ -101,7 +107,9 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
       .goog-te-banner-frame, .goog-te-balloon-frame,
       iframe.goog-te-banner-frame,
       .goog-te-spinner-pos,
-      .goog-te-spinner-animation { display: none !important; height: 0 !important; width: 0 !important; visibility: hidden !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+      .goog-te-spinner-animation,
+      [class*="VIpgJd-ZVi9od-"],
+      [class*="goog-te-spinner"] { display: none !important; height: 0 !important; width: 0 !important; visibility: hidden !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
       body { top: 0px !important; margin-top: 0px !important; position: static !important; }
       html > body { top: 0px !important; }
       .goog-tooltip, .goog-tooltip:hover { display: none !important; }
@@ -109,8 +117,6 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
       #google_translate_element { display: none !important; }
       .skiptranslate { display: none !important; height: 0 !important; overflow: hidden !important; opacity: 0 !important; }
       #goog-gt-tt, .goog-te-menu-value { display: none !important; }
-      .VIpgJd-ZVi9od-ORHb-OEVmcd, .VIpgJd-ZVi9od-SmfZ-OEVmcd,
-      .VIpgJd-ZVi9od-xl07Ob-OEVmcd, .VIpgJd-ZVi9od-aZ2wEe-OEVmcd { display: none !important; }
     `;
     document.head.appendChild(style);
 
@@ -161,22 +167,38 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
 
   // Listen for language changes
   useEffect(() => {
-    const handleLangChange = () => {
-      const lang = localStorage.getItem("language") || "en";
-
-      // RTL support
+    const applyLanguage = (lang: string) => {
       const isRtl = RTL_LANGUAGES.includes(lang);
       document.documentElement.dir = isRtl ? "rtl" : "ltr";
       document.documentElement.lang = lang;
 
+      // Avoid repeated translate triggers for the same language
+      if (appliedLangRef.current === lang) {
+        return;
+      }
+      appliedLangRef.current = lang;
       triggerTranslate(lang);
     };
 
+    const handleLangChange = () => {
+      const lang = localStorage.getItem("language") || "en";
+      applyLanguage(lang);
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key && event.key !== "language") return;
+      const lang = event.newValue || localStorage.getItem("language") || "en";
+      applyLanguage(lang);
+    };
+
+    // Sync initial document lang/dir without forcing translate again
+    handleLangChange();
+
     window.addEventListener("languagechange-custom", handleLangChange);
-    window.addEventListener("storage", handleLangChange);
+    window.addEventListener("storage", handleStorageChange);
     return () => {
       window.removeEventListener("languagechange-custom", handleLangChange);
-      window.removeEventListener("storage", handleLangChange);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
 
