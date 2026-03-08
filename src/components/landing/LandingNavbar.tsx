@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
 import {
-  Image, Video, Wand2, Scaling, Brain, Sparkles, Code, MessageSquare,
-  ChevronDown, BookOpen, HelpCircle, Newspaper, ArrowRight
+  ImagePlus, Clapperboard, Eraser, ZoomIn, BrainCircuit, Lightbulb,
+  CodeXml, MessageCircle, ChevronDown, GraduationCap, LifeBuoy,
+  FileText, ArrowRight, Palette, PenTool, Layers, Cpu, Zap, Rocket
 } from "lucide-react";
 
 /* ── Mega-menu data ── */
