@@ -677,7 +677,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      service_status_public: {
+        Row: {
+          checked_at: string | null
+          response_time_ms: number | null
+          service_name: string | null
+          status: string | null
+        }
+        Insert: {
+          checked_at?: string | null
+          response_time_ms?: number | null
+          service_name?: string | null
+          status?: string | null
+        }
+        Update: {
+          checked_at?: string | null
+          response_time_ms?: number | null
+          service_name?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_notification: {
