@@ -543,7 +543,7 @@ const ImagesPage = () => {
         )}
       </div>
 
-      <div className="shrink-0 px-3 pt-1 pb-4 bg-background" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+      <div className="shrink-0 px-3 md:px-6 pt-1 pb-4 bg-background" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
         <div className="max-w-3xl mx-auto">
           {attachedImages.length > 0 && (
             <div className="flex items-center gap-2 px-3 pb-2 overflow-x-auto">
@@ -658,8 +658,6 @@ const ImagesPage = () => {
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
             </button>
           </div>
-
-          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} multiple />
 
           <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} multiple />
         </div>

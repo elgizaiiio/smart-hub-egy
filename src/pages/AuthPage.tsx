@@ -244,7 +244,7 @@ const AuthPage = () => {
           value={val}
           onChange={(e) => handleOtpChange(i, e.target.value)}
           onKeyDown={(e) => handleOtpKeyDown(i, e)}
-          className="w-12 h-14 text-center text-xl font-bold text-white bg-white/10 backdrop-blur-md border border-white/15 rounded-xl outline-none focus:border-primary/60 transition-colors"
+          className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold text-white bg-white/10 backdrop-blur-md border border-white/15 rounded-xl outline-none focus:border-primary/60 transition-colors"
         />
       ))}
     </div>

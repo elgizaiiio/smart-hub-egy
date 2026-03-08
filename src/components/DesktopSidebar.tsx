@@ -19,7 +19,7 @@ interface DesktopSidebarProps {
 }
 
 const navItems = [
-  { path: "/", label: "Chat", icon: MessageSquare },
+  { path: "/chat", label: "Chat", icon: MessageSquare },
   { path: "/images", label: "Images", icon: Image },
   { path: "/videos", label: "Videos", icon: Film },
   { path: "/code", label: "Code", icon: Code2 },
@@ -121,7 +121,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       {/* Navigation */}
       <nav className="px-2 space-y-0.5">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || (item.path === "/chat" && location.pathname === "/");
           return (
             <button
               key={item.path}
