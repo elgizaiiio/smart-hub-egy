@@ -63,7 +63,7 @@ const LandingNavbar = () => {
           </FancyButton>
         </div>
 
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-sm font-bold uppercase tracking-wider text-foreground md:hidden">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-sm font-bold uppercase tracking-wider text-white md:hidden">
           {mobileOpen ? "Close" : "Menu"}
         </button>
       </div>
