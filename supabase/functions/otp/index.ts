@@ -160,7 +160,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           success: true, 
           is_new: true,
-          action_link: linkData.properties.action_link,
+          token_hash: linkData.properties.hashed_token,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
