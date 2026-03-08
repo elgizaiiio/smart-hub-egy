@@ -112,7 +112,7 @@ const BillingPage = () => {
         ) : (
           <div className="space-y-1">
             {transactions.map((tx) => {
-              const isCredit = tx.amount > 0;
+              const isCredit = tx.amount < 0;
               return (
                 <div key={tx.id} className="flex items-center gap-3 py-3 px-1">
                   <div className="flex-1 min-w-0">
