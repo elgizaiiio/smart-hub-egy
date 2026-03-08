@@ -76,7 +76,7 @@ const ProgrammingPage = () => {
         currentMode="code"
       />
 
-      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3">
+      <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
           <Menu className="w-5 h-5" />
         </button>
