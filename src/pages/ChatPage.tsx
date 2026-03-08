@@ -224,7 +224,13 @@ const ChatPage = () => {
               </motion.div>
             )}
           </AnimatePresence>
-          <div className="w-9" />
+          {conversationId && hasConversation ? (
+            <button onClick={handleShare} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+              <Share2 className="w-5 h-5" />
+            </button>
+          ) : (
+            <div className="w-9" />
+          )}
         </div>
 
         {/* Messages */}
