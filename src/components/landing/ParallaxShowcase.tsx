@@ -1,5 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 const parallaxItems: { src: string; type?: string; label: string }[] = [
   { src: "/api-showcase/showcase-1.png", label: "CONCEPT ART" },
@@ -9,21 +8,18 @@ const parallaxItems: { src: string; type?: string; label: string }[] = [
   { src: "/api-showcase/video-6.mp4", type: "video", label: "CINEMATIC" },
 ];
 
+const animations = [
+  { initial: { opacity: 0, x: -80 }, animate: { opacity: 1, x: 0 } },
+  { initial: { opacity: 0, x: 80 }, animate: { opacity: 1, x: 0 } },
+  { initial: { opacity: 0, y: 80, scale: 0.9 }, animate: { opacity: 1, y: 0, scale: 1 } },
+  { initial: { opacity: 0, x: -80 }, animate: { opacity: 1, x: 0 } },
+  { initial: { opacity: 0, y: 60, rotateX: 10 }, animate: { opacity: 1, y: 0, rotateX: 0 } },
+];
+
 const ParallaxShowcase = () => {
-  const [active, setActive] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActive((prev) => (prev + 1) % parallaxItems.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const current = parallaxItems[active];
-
   return (
     <section className="py-20 md:py-32">
-      <div className="mx-auto mb-12 max-w-7xl px-6 text-center">
+      <div className="mx-auto mb-16 max-w-7xl px-6 text-center">
         <motion.h2
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -38,47 +34,37 @@ const ParallaxShowcase = () => {
         </motion.h2>
       </div>
 
-      <div className="mx-auto w-full max-w-5xl px-6">
-        <div className="relative aspect-video overflow-hidden rounded-[2rem] border border-border/40 bg-card/20">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              initial={{ opacity: 0, x: 60, rotateY: 8 }}
-              animate={{ opacity: 1, x: 0, rotateY: 0 }}
-              exit={{ opacity: 0, x: -60, rotateY: -8 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-              className="h-full w-full"
-            >
-              {current.type === "video" ? (
+      <div className="flex flex-col gap-16 md:gap-24">
+        {parallaxItems.map((item, i) => (
+          <motion.div
+            key={i}
+            initial={animations[i].initial}
+            whileInView={animations[i].animate}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="mx-auto w-full max-w-5xl px-6"
+          >
+            <div className="group relative overflow-hidden rounded-[2rem] border border-border/40 bg-card/20">
+              {item.type === "video" ? (
                 <video
-                  src={current.src}
+                  src={item.src}
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="h-full w-full object-cover"
+                  className="aspect-video w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               ) : (
                 <img
-                  src={current.src}
-                  alt={current.label}
-                  className="h-full w-full object-cover"
+                  src={item.src}
+                  alt={item.label}
+                  loading="lazy"
+                  className="aspect-video w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Progress bar */}
-          <div className="absolute bottom-0 left-0 right-0 z-10 h-1 bg-border/20">
-            <motion.div
-              key={active}
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 4, ease: "linear" }}
-              className="h-full bg-primary/70"
-            />
-          </div>
-        </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );
