@@ -39,22 +39,19 @@ const faqs = [
 
 const FAQSection = () => {
   return (
-    <section id="faq" className="relative overflow-hidden py-28 md:py-36">
-      <div className="absolute right-10 top-20 h-72 w-72 rounded-full bg-purple-600/10 blur-[120px]" />
-      <div className="absolute bottom-20 left-10 h-56 w-56 rounded-full bg-fuchsia-600/10 blur-[100px]" />
-
-      <div className="relative z-10 mx-auto max-w-4xl px-6">
+    <section id="faq" className="relative overflow-hidden py-28 md:py-40">
+      <div className="mx-auto max-w-5xl px-6">
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.9 }}
           className="mb-16 text-center"
         >
-          <h2 className="font-display text-7xl font-black uppercase tracking-tighter leading-none text-white md:text-9xl">
+          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
             FA<span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Qs</span>
           </h2>
-          <p className="mt-4 text-lg text-white/40">Everything you need to know about Megsy.</p>
+          <p className="mt-4 text-xl text-white/40">Everything you need to know about Megsy.</p>
         </motion.div>
 
         <motion.div
@@ -68,12 +65,12 @@ const FAQSection = () => {
               <AccordionItem
                 key={i}
                 value={`faq-${i}`}
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-6 transition-colors hover:bg-white/[0.04] data-[state=open]:border-purple-500/30"
+                className="rounded-2xl border border-white/10 bg-white/[0.02] px-7 transition-colors hover:bg-white/[0.04] data-[state=open]:border-purple-500/30"
               >
-                <AccordionTrigger className="py-5 text-left font-semibold text-white hover:no-underline">
+                <AccordionTrigger className="py-6 text-left text-lg font-bold text-white hover:no-underline">
                   {faq.q}
                 </AccordionTrigger>
-                <AccordionContent className="pb-5 leading-relaxed text-white/50">
+                <AccordionContent className="pb-6 text-base leading-relaxed text-white/50">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>

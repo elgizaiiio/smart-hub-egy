@@ -5,81 +5,81 @@ const steps = [
     number: "01",
     title: "Create Your Account",
     description: "Sign up in seconds. Get free credits to start exploring all 80+ AI models immediately.",
-    color: "border-emerald-500/30 bg-gradient-to-r from-emerald-500/15 to-emerald-500/5",
+    color: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30",
     numColor: "text-emerald-400",
   },
   {
     number: "02",
     title: "Choose Your Tool",
     description: "Select from AI Chat, Image Generation, Video Creation, Code Building, and 18+ professional image tools.",
-    color: "border-amber-500/30 bg-gradient-to-r from-amber-500/15 to-amber-500/5",
+    color: "from-amber-500/20 to-amber-500/5 border-amber-500/30",
     numColor: "text-amber-400",
   },
   {
     number: "03",
     title: "Pick Your Model",
     description: "Access 80+ AI models including Megsy's flagship models, each optimized for specific creative tasks.",
-    color: "border-rose-500/30 bg-gradient-to-r from-rose-500/15 to-rose-500/5",
+    color: "from-rose-500/20 to-rose-500/5 border-rose-500/30",
     numColor: "text-rose-400",
   },
   {
     number: "04",
     title: "Create & Iterate",
-    description: "Generate, edit, and refine your content. Use advanced tools to upscale, restyle, and perfect results.",
-    color: "border-purple-500/30 bg-gradient-to-r from-purple-500/15 to-purple-500/5",
+    description: "Generate, edit, and refine. Use advanced tools to upscale, restyle, and perfect your results.",
+    color: "from-purple-500/20 to-purple-500/5 border-purple-500/30",
     numColor: "text-purple-400",
   },
   {
     number: "05",
     title: "Export & Deploy",
     description: "Download in any format, deploy code projects live, or share directly to social platforms.",
-    color: "border-cyan-500/30 bg-gradient-to-r from-cyan-500/15 to-cyan-500/5",
+    color: "from-cyan-500/20 to-cyan-500/5 border-cyan-500/30",
     numColor: "text-cyan-400",
   },
 ];
 
 const HowItWorks = () => {
   return (
-    <section id="how-it-works" className="relative overflow-hidden py-28 md:py-36">
+    <section id="how-it-works" className="relative overflow-hidden py-28 md:py-44">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="flex flex-col gap-16 lg:flex-row lg:gap-24">
-          <motion.div
-            initial={{ opacity: 0, x: -80 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.9 }}
-            className="lg:w-1/3 lg:sticky lg:top-32 lg:self-start"
-          >
-            <h2 className="mb-6 font-display text-6xl font-black uppercase tracking-tighter leading-none text-white md:text-8xl">
-              HOW IT{" "}
-              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">WORKS</span>
-            </h2>
-            <p className="text-lg text-white/40">From signup to deployment in five simple steps.</p>
-          </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 80 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1 }}
+          className="mb-20 text-center"
+        >
+          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
+            GET STARTED
+          </h2>
+          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter md:text-[8vw]">
+            <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              WITH MEGSY
+            </span>
+          </h2>
+          <p className="mx-auto mt-6 max-w-xl text-xl text-white/40">
+            From signup to deployment in five simple steps.
+          </p>
+        </motion.div>
 
-          <div className="space-y-6 lg:w-2/3">
-            {steps.map((step, i) => (
-              <motion.div
-                key={step.number}
-                initial={{ opacity: 0, x: 100, rotateY: -8 }}
-                whileInView={{ opacity: 1, x: 0, rotateY: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.8, delay: i * 0.1 }}
-              >
-                <div className={`rounded-2xl border p-8 transition-transform duration-300 hover:scale-[1.02] md:p-10 ${step.color}`}>
-                  <div className="flex items-start gap-6">
-                    <span className={`text-6xl font-black leading-none opacity-60 md:text-7xl ${step.numColor}`}>
-                      {step.number}
-                    </span>
-                    <div>
-                      <h3 className="mb-2 text-xl font-bold text-white md:text-2xl">{step.title}</h3>
-                      <p className="text-sm leading-relaxed text-white/50 md:text-base">{step.description}</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+        <div className="grid gap-5 md:grid-cols-5">
+          {steps.map((step, i) => (
+            <motion.div
+              key={step.number}
+              initial={{ opacity: 0, y: 80, scale: 0.9 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.7, delay: i * 0.1 }}
+            >
+              <div className={`h-full rounded-3xl border bg-gradient-to-b p-7 transition-transform duration-300 hover:scale-[1.03] ${step.color}`}>
+                <span className={`text-5xl font-black leading-none ${step.numColor} opacity-60`}>
+                  {step.number}
+                </span>
+                <h3 className="mt-4 mb-3 text-lg font-bold text-white">{step.title}</h3>
+                <p className="text-sm leading-relaxed text-white/45">{step.description}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

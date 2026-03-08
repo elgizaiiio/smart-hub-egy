@@ -54,20 +54,20 @@ const PricingPreview = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="pricing" className="relative overflow-hidden py-28 md:py-36">
+    <section id="pricing" className="relative overflow-hidden py-28 md:py-40">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.9 }}
           className="mb-16 text-center"
         >
-          <h2 className="font-display text-6xl font-black uppercase tracking-tighter text-white md:text-8xl">
+          <h2 className="font-display text-[12vw] font-black uppercase tracking-tighter leading-[0.85] text-white md:text-[8vw]">
             SIMPLE{" "}
             <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">PRICING</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-white/40">
+          <p className="mx-auto mt-4 max-w-xl text-xl text-white/40">
             Start free, scale as you grow. No hidden fees.
           </p>
         </motion.div>
@@ -76,11 +76,11 @@ const PricingPreview = () => {
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
-              initial={{ opacity: 0, y: 60 }}
+              initial={{ opacity: 0, y: 80 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.12 }}
-              className={`relative rounded-3xl border p-8 ${
+              transition={{ duration: 0.7, delay: i * 0.12 }}
+              className={`relative rounded-3xl border p-9 ${
                 plan.highlight
                   ? "border-purple-500/40 bg-purple-500/[0.08] shadow-xl shadow-purple-500/10"
                   : "border-white/10 bg-white/[0.02]"
@@ -92,33 +92,33 @@ const PricingPreview = () => {
                 </div>
               )}
 
-              <h3 className="text-xl font-bold text-white">{plan.name}</h3>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-4xl font-black text-white">
+              <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-5xl font-black text-white">
                   {plan.price === "Custom" ? "" : "$"}{plan.price}
                 </span>
-                <span className="text-sm text-white/40">{plan.period}</span>
+                <span className="text-base text-white/40">{plan.period}</span>
               </div>
               <p className="mt-2 text-sm text-white/40">{plan.description}</p>
 
-              <ul className="mt-7 space-y-3">
+              <ul className="mt-8 space-y-3">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-white/60">
-                    <Check size={14} className="shrink-0 text-purple-400" />
+                  <li key={f} className="flex items-center gap-3 text-base text-white/60">
+                    <Check size={16} className="shrink-0 text-purple-400" />
                     {f}
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-8">
+              <div className="mt-9">
                 {plan.highlight ? (
-                  <FancyButton onClick={() => navigate("/auth")} className="w-full">
+                  <FancyButton onClick={() => navigate("/auth")} className="w-full py-3 text-base">
                     Get Started
                   </FancyButton>
                 ) : (
                   <button
                     onClick={() => plan.name === "Enterprise" ? undefined : navigate("/auth")}
-                    className="w-full rounded-xl border border-white/15 py-2.5 text-sm font-medium text-white/70 transition-all hover:border-white/30 hover:text-white"
+                    className="w-full rounded-xl border border-white/15 py-3 text-base font-medium text-white/70 transition-all hover:border-white/30 hover:text-white"
                   >
                     {plan.name === "Enterprise" ? "Contact Sales" : "Get Started"}
                   </button>
