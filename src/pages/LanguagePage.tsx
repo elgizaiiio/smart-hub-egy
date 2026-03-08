@@ -10,7 +10,7 @@ const LANGUAGES = [
   { code: "ar", name: "Arabic", native: "العربية" },
   { code: "es", name: "Spanish", native: "Español" },
   { code: "fr", name: "French", native: "Français" },
-  
+  { code: "de", name: "German", native: "Deutsch" },
   { code: "zh", name: "Chinese", native: "中文" },
   { code: "ja", name: "Japanese", native: "日本語" },
   { code: "ko", name: "Korean", native: "한국어" },
@@ -66,10 +66,7 @@ const LanguagePage = () => {
               className="notranslate w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors duration-150 hover:bg-muted/50"
             >
               <span className="text-sm font-medium text-foreground">{lang.name}</span>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">{lang.native}</span>
-                {isActive && <Check className="w-4 h-4 text-primary flex-shrink-0" strokeWidth={2.5} />}
-              </div>
+              {isActive && <Check className="w-4 h-4 text-primary flex-shrink-0" strokeWidth={2.5} />}
             </button>
           );
         })}
