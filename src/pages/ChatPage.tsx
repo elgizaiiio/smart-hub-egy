@@ -181,6 +181,19 @@ const ChatPage = () => {
     reader.readAsDataURL(file); e.target.value = "";
   };
 
+  const handleShare = async () => {
+    if (!conversationId) return;
+    const shareId = Math.random().toString(36).substring(2, 10);
+    const { error } = await supabase
+      .from("conversations")
+      .update({ is_shared: true, share_id: shareId } as any)
+      .eq("id", conversationId);
+    if (error) { toast.error("Failed to share"); return; }
+    const url = `${window.location.origin}/share/${shareId}`;
+    await navigator.clipboard.writeText(url);
+    toast.success("Share link copied!");
+  };
+
   const hasConversation = messages.length > 0;
 
   return (
