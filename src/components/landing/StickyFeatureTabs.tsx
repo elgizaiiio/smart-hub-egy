@@ -112,6 +112,8 @@ const StickyFeatureTabs = () => {
             >
               {current.useChat ? (
                 <ChatDemo />
+              ) : current.useCode ? (
+                <CodeDemo />
               ) : current.image ? (
                 <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/30">
                   <img
