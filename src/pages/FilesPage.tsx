@@ -265,13 +265,6 @@ const FilesPage = () => {
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
-        <AnimatePresence>
-          {!hasMessages && (
-            <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
-            </motion.div>
-          )}
-        </AnimatePresence>
         <div className="w-9" />
       </div>
 

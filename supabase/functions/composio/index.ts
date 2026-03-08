@@ -67,7 +67,7 @@ serve(async (req) => {
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
     if (!COMPOSIO_API_KEY) throw new Error("COMPOSIO_API_KEY is not configured");
 
-    const { action, app, userId, tool, args, connectedAccountId } = await req.json();
+    const { action, app, userId, tool, args, connectedAccountId, connectionId } = await req.json();
 
     const headers = {
       "x-api-key": COMPOSIO_API_KEY,
@@ -148,6 +148,23 @@ serve(async (req) => {
       }
       const data = await resp.json();
       return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Disconnect a connected account
+    if (action === "disconnect") {
+      if (!connectionId) throw new Error("connectionId is required for disconnect action");
+
+      const resp = await fetch(`${COMPOSIO_BASE}/connectedAccounts/${encodeURIComponent(connectionId)}`, {
+        method: "DELETE",
+        headers,
+      });
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error(`Composio disconnect failed [${resp.status}]: ${t}`);
+      }
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
