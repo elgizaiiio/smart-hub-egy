@@ -91,10 +91,10 @@ const HowItWorks = () => {
           transition={{ duration: 1 }}
           className="mb-20 text-center"
         >
-          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
+          <h2 className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
             GET STARTED
           </h2>
-          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter md:text-[8vw]">
+          <h2 className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter md:text-[8vw]">
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
               WITH MEGSY
             </span>
