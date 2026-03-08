@@ -525,7 +525,7 @@
 }
 
 .landing-marquee-track {
-  animation: landing-marquee 28s linear infinite;
+  animation: landing-marquee 60s linear infinite;
 }
 
 .landing-marquee-track-reverse {
