@@ -158,10 +158,10 @@ const PricingPage = () => {
             </button>
             <button
               onClick={() => setIsYearly(true)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-colors ${isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
-              Yearly
-              <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500">Save</span>
+              <span className="notranslate">Yearly</span>
+              <span className="notranslate inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 leading-none whitespace-nowrap">Save</span>
             </button>
           </div>
         </motion.div>
