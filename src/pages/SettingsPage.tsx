@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ChevronRight, Globe2, Brush, Cable, UserRound, CreditCard,
-  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown,
+  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown, Bell,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,7 +68,7 @@ const SettingsPage = () => {
   const menuItems = [
     { icon: UserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
-    
+    { icon: Bell, label: "Notifications", desc: "Alerts & email prefs", path: "/settings/notifications" },
     { icon: SquareCode, label: "APIs", desc: "Developer access", path: "https://api.megsyai.com", external: true },
   ];
 

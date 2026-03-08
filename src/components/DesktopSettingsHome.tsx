@@ -140,6 +140,11 @@ export function DesktopSettingsHome() {
             description="Earn 20% commission"
             onClick={() => navigate("/settings/referrals")}
           />
+          <QuickAction
+            title="Notifications"
+            description="Alerts & email prefs"
+            onClick={() => navigate("/settings/notifications")}
+          />
         </div>
       </div>
 
