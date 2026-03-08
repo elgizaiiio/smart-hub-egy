@@ -238,7 +238,7 @@ const LandingNavbar = () => {
                           <div className="flex-1 grid gap-8" style={{ gridTemplateColumns: `repeat(${item.columns.length}, minmax(0, 1fr))` }}>
                             {item.columns.map((col) => (
                               <div key={col.title}>
-                                <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">
+                                <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/50">
                                   {col.title}
                                 </h4>
                                 <div className="space-y-5">
@@ -248,10 +248,10 @@ const LandingNavbar = () => {
                                       onClick={() => handleNav(sub.href)}
                                       className="group flex flex-col w-full text-left"
                                     >
-                                      <span className="text-[15px] font-semibold text-foreground/90 group-hover:text-primary transition-colors">
+                                      <span className="text-[15px] font-semibold text-white/90 group-hover:text-primary transition-colors">
                                         {sub.label}
                                       </span>
-                                      <span className="text-[13px] text-muted-foreground group-hover:text-muted-foreground/80 transition-colors mt-1">
+                                      <span className="text-[13px] text-white/50 group-hover:text-white/70 transition-colors mt-1">
                                         {sub.desc}
                                       </span>
                                     </button>
