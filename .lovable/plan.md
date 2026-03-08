@@ -1,30 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-## خطة التحسينات الثلاثة
+## ✅ Completed
 
-### 1. إصلاح اختفاء صورة الملف الشخصي
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-**المشكلة**: صفحة `ProfileSettingsPage.tsx` لا تضيف cache-busting parameter (`?t=timestamp`) عند رفع الصورة، بينما `ProfilePage.tsx` تفعل ذلك. هذا يجعل المتصفح يعرض نسخة مخزنة مؤقتاً (cached) قديمة أو فارغة.
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-**الحل**:
-- في `ProfileSettingsPage.tsx` سطر 63: إضافة `?t=Date.now()` بعد `publicUrl`
-- في `ProfileSettingsPage.tsx` سطر 43: عند تحميل الأفاتار من قاعدة البيانات، إضافة cache-busting إذا لم يكن موجوداً
-- توحيد المسار: استخدام `avatar.${ext}` بدلاً من `${Date.now()}.${ext}` لتجنب تراكم ملفات قديمة في Storage
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-### 2. تحسين زر التبديل Monthly/Yearly في صفحة الأسعار
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-**الحالي**: زر بسيط بـ `bg-secondary` و `bg-primary` بدون أي أنيميشن.
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
-**التحسين**: تحويله إلى toggle احترافي مع:
-- خلفية `bg-white/5 backdrop-blur` مع border دقيق
-- مؤشر منزلق متحرك (`motion.div layoutId`) ينتقل بسلاسة بين Monthly و Yearly
-- تأثير glow خفيف على الخيار النشط
-- شارة "Save" متحركة تظهر بـ pulse عند Yearly
-
-### 3. استبدال LinkedIn بـ YouTube في صفحة الصور
-
-**التغيير**: في `ImagesPage.tsx`:
-- استبدال `LinkedInIcon` بـ `YouTubeIcon` مع SVG صحيح
-- تغيير `platform: "linkedin"` إلى `platform: "youtube"` 
-- تحديث رابط المشاركة من LinkedIn sharing URL إلى YouTube (أو رابط upload)
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists

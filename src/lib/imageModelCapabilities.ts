@@ -1,4 +1,4 @@
-export type PublishPlatform = "facebook" | "instagram" | "linkedin";
+export type PublishPlatform = "facebook" | "instagram" | "youtube";
 
 export interface ImageModelCapability {
   acceptsImages: boolean;
@@ -289,5 +289,5 @@ export const getImageModelCapability = (modelId: string): ImageModelCapability =
 export const PUBLISH_PLATFORM_TO_APP: Record<PublishPlatform, string> = {
   facebook: "facebook",
   instagram: "instagram",
-  linkedin: "linkedin",
+  youtube: "youtube",
 };
