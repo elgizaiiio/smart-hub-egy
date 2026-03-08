@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
+import LandingPage from "./pages/LandingPage";
 import ImagesPage from "./pages/ImagesPage";
 import VideosPage from "./pages/VideosPage";
 import FilesPage from "./pages/FilesPage";
