@@ -3,14 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
 import { ChevronDown, ArrowRight } from "lucide-react";
-import {
-  IconImageGen, IconCreative, IconBgRemover, IconTrainModel,
-  IconVideoGen, IconImageEditor, IconUpscaler,
-  IconChat, IconCode,
-  IconBlog, IconSupport, IconChangelog, IconAPI,
-  IconMegsyPro, IconGPT, IconClaude, IconGemini,
-} from "@/components/landing/NavIcons";
-
 /* ── Mega-menu data ── */
 interface SubItem {
   icon: React.ElementType;
