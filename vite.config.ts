@@ -12,9 +12,6 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  define: {
-    'process.env': {},
-  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
