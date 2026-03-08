@@ -143,7 +143,7 @@ export function DesktopSettingsLayout({ children, title, subtitle }: DesktopSett
         <div className="px-8 py-6">{children}</div>
       </div>
     </div>
-  );
+    </AppLayout>
 }
 
 export default DesktopSettingsLayout;
