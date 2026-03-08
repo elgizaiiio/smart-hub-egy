@@ -100,7 +100,7 @@ const PricingPreview = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: i * 0.12 }}
-              className={`relative rounded-3xl border p-9 transition-all duration-300 hover:scale-[1.02] ${plan.cardBorder} ${plan.cardBg} ${
+              className={`relative rounded-2xl border p-6 transition-all duration-300 hover:scale-[1.02] md:rounded-3xl md:p-9 ${plan.cardBorder} ${plan.cardBg} ${
                 plan.highlight ? "shadow-xl shadow-purple-500/10" : ""
               }`}
             >
