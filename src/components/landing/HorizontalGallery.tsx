@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { useRef, useState } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 
 const galleryItems = [
   { src: "/showcase/model-1.jpg", label: "MEGSY V1", model: "megsy", desc: "Hyper-realistic portraits with cinematic depth" },
@@ -11,21 +11,18 @@ const galleryItems = [
 ];
 
 const HorizontalGallery = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"],
+  });
 
-  const handleScroll = () => {
-    if (!scrollRef.current) return;
-    const scrollLeft = scrollRef.current.scrollLeft;
-    const cardWidth = 340 + 24;
-    const index = Math.round(scrollLeft / cardWidth);
-    setActiveIndex(Math.min(index, galleryItems.length - 1));
-  };
+  const x = useTransform(scrollYProgress, [0, 1], ["5%", "-45%"]);
 
   return (
-    <section className="bg-background py-20 md:py-28">
+    <section ref={sectionRef} className="overflow-hidden bg-background py-20 md:py-28">
       {/* Header */}
-      <div className="mx-auto max-w-7xl px-6 md:px-12">
+      <div className="mx-auto max-w-7xl px-6 md:px-12 mb-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -41,22 +38,13 @@ const HorizontalGallery = () => {
         </motion.div>
       </div>
 
-      {/* Scrollable gallery */}
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="mt-10 flex gap-6 overflow-x-auto px-6 pb-6 md:px-12 scrollbar-hide snap-x snap-mandatory"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
+      {/* Scroll-driven horizontal track */}
+      <motion.div style={{ x }} className="flex gap-6 pl-6 md:pl-12 will-change-transform">
         {galleryItems.map((item, i) => (
-          <motion.div
+          <div
             key={i}
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5, delay: i * 0.08 }}
-            className="group relative flex-shrink-0 snap-start cursor-pointer overflow-hidden rounded-2xl border border-border/30"
-            style={{ width: 340, height: 460 }}
+            className="group relative flex-shrink-0 overflow-hidden rounded-2xl border border-border/30"
+            style={{ width: 320, height: 440 }}
           >
             <img
               src={item.src}
@@ -65,48 +53,25 @@ const HorizontalGallery = () => {
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
 
-            {/* Overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-90" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-85" />
 
-            {/* Model badge */}
             {item.model === "megsy" && (
               <div className="absolute top-4 left-4 rounded-full bg-primary/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground backdrop-blur-sm">
                 Megsy Model
               </div>
             )}
 
-            {/* Content */}
             <div className="absolute inset-x-0 bottom-0 p-5">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                0{i + 1}
-              </span>
-              <h3 className="font-display text-xl font-black uppercase tracking-tight text-foreground">
+              <h3 className="font-display text-lg font-black uppercase tracking-tight text-foreground">
                 {item.label}
               </h3>
-              <p className="mt-1 text-sm text-muted-foreground/80 opacity-0 transition-all duration-300 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0">
+              <p className="mt-1 text-sm text-muted-foreground/70 opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
                 {item.desc}
               </p>
             </div>
-          </motion.div>
+          </div>
         ))}
-      </div>
-
-      {/* Scroll indicators */}
-      <div className="mt-6 flex items-center justify-center gap-2">
-        {galleryItems.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              scrollRef.current?.scrollTo({ left: i * (340 + 24), behavior: "smooth" });
-            }}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === activeIndex
-                ? "w-8 bg-primary"
-                : "w-1.5 bg-muted-foreground/20"
-            }`}
-          />
-        ))}
-      </div>
+      </motion.div>
     </section>
   );
 };
