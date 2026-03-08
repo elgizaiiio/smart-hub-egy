@@ -618,6 +618,27 @@ export type Database = {
         }
         Relationships: []
       }
+      status_subscribers: {
+        Row: {
+          channel: string
+          contact: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          channel?: string
+          contact: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          channel?: string
+          contact?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       withdrawal_requests: {
         Row: {
           amount: number
