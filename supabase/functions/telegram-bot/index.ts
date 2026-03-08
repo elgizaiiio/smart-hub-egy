@@ -834,6 +834,7 @@ serve(async (req) => {
           reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${session.oauthAppId}` }]] }),
         });
         return new Response("OK");
+      }
 
       // إدخال قيمة حقل
       if (session?.adminAction === "awaiting_value" && text && session.adminModelId && session.adminField) {
