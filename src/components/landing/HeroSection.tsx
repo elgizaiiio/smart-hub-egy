@@ -6,9 +6,9 @@ import { Star } from "lucide-react";
 const heroImages = [
   { src: "/hero/video-1.mp4", type: "video", style: "left-[2%] bottom-[15%] w-[17%] z-[1] rotate-[-7deg]" },
   { src: "/hero/video-2.mp4", type: "video", style: "left-[19%] bottom-[4%] w-[19%] z-[2] rotate-[-3deg]" },
-  { src: "/hero/bear.mp4", type: "video", style: "left-[38%] bottom-[0%] w-[24%] z-[3]" },
+  { src: "/hero/video-4.mp4", type: "video", style: "left-[38%] bottom-[0%] w-[24%] z-[3]" },
   { src: "/hero/video-3.mp4", type: "video", style: "left-[62%] bottom-[4%] w-[19%] z-[2] rotate-[3deg]" },
-  { src: "/hero/video-4.mp4", type: "video", style: "left-[81%] bottom-[15%] w-[17%] z-[1] rotate-[7deg]" },
+  { src: "/hero/bear.mp4", type: "video", style: "left-[81%] bottom-[15%] w-[17%] z-[1] rotate-[7deg]" },
 ];
 
 const HeroSection = () => {
