@@ -69,12 +69,12 @@ const SettingsPage = () => {
     { icon: UserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
     { icon: Gift, label: "Referrals", desc: "Invite & earn 20%", path: "/settings/referrals" },
-    { icon: SquareCode, label: "APIs", desc: "Developer access", path: "/settings/apis" },
+    { icon: SquareCode, label: "APIs", desc: "Developer access", path: "https://api.megsyai.com", external: true },
   ];
 
   const supportItems = [
-    { icon: Radio, label: "System Status", path: "/status" },
-    { icon: CircleHelp, label: "About Megsy", path: "/about" },
+    { icon: Radio, label: "System Status", path: "https://status.megsyai.com", external: true },
+    { icon: CircleHelp, label: "About Megsy", path: "https://about.megsyai.com", external: true },
   ];
 
   return (
