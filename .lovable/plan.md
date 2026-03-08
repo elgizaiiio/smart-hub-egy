@@ -1,41 +1,36 @@
 
-# Megsy Platform - Credits + Real Programming + Integrations
 
-## ✅ Completed
+# خطة التنفيذ
 
-### 1. Credit System
-- Created `credit_transactions` table in Supabase
-- Created `deduct_credits` database function (SECURITY DEFINER)
-- Created `deduct-credits` edge function
-- Created `useCredits` hook for frontend credit checking
-- Updated `generate-image` edge function to deduct credits
-- Updated `generate-video` edge function to deduct credits
-- Updated ImagesPage and VideosPage to check credits before generation
-- Chat remains free
+## 1. حذف زر الإحالة المكرر من ReferralsPage
+في `ReferralsPage.tsx` سطر 172-175، يوجد زر "Request Withdrawal" باستخدام FancyButton. هذا هو الزر المكرر. سيتم حذفه (الإحالة موجودة بالفعل في SettingsPage).
 
-### 2. Real Programming System (Sprites.dev)
-- Created `sprites-sandbox` edge function for Sprites.dev API management
-- Actions: create, exec, write-file, write-files, status, destroy
-- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
-- Rebuilt `CodeWorkspace.tsx` with:
-  - Plan → Build workflow with credit deduction (5 credits per build)
-  - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Sprite
-  - Real preview via iframe pointing to Sprite URL
-  - Conversation persistence to Supabase
-  - Project saving with files_snapshot
+## 2. إصلاح "Bad Gateway" في Preview
+المشكلة: الـ Preview في CodeWorkspace يعرض iframe لـ Sprites sandbox. الـ Bad Gateway يحدث لأن الـ sandbox إما:
+- لم يتم إنشاؤه بعد
+- انتهت صلاحيته (Sprites sandboxes مؤقتة)
 
-### 3. GitHub Integration
-- Created `github-repo` edge function via Composio
-- Actions: check-connection, create-repo, push-files
-- Push to GitHub button in CodeWorkspace plus menu
-- Creates new repo and pushes all project files
+**الحل**: إضافة fallback UI أفضل عند فشل تحميل الـ iframe مع retry button، وإضافة `onError` handler للـ iframe.
 
-### 4. Database
-- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
-- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
+## 3. تحسين سجل البناء (Build Log) ليشبه الصورة المرجعية
+الصورة المرجعية تشبه واجهة Lovable: عناصر بأيقونات checkmark، عناوين واضحة، وأقسام قابلة للطي.
 
-### 5. Secrets Required
-- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
-- `COMPOSIO_API_KEY` ✅ Already exists
-- `FAL_API_KEY` ✅ Already exists
+**التغييرات في `CodeWorkspace.tsx`**:
+- استبدال سجل الـ `log` messages الحالي (نص بسيط مع spinner) بمكون `BuildTimeline`
+- كل خطوة بناء تظهر كـ timeline item بأيقونة ✓ (مكتمل) أو spinner (جاري) أو ○ (انتظار)
+- تجميع الخطوات: "AI Generation" → "Parsing Files" → "Creating Sandbox" → "Writing Files" → "Installing" → "Building"
+- إضافة "Hide/Show details" toggle
+- زر "Preview" أزرق بارز عند اكتمال البناء
+
+## 4. تحسين AI Agent في صفحة البرمجة
+- **Chat Mode لا يتفعل تلقائياً**: حالياً الوضع الافتراضي `plan` وهو صحيح. المشكلة أن بعد الـ approve يتحول لـ `build` ولا يرجع. سأضيف زر واضح للتبديل بين الأوضاع
+- **تحسين الـ system prompt**: جعل الوكيل أكثر ذكاءً في التخطيط - يسأل أسئلة توضيحية قبل البناء
+- **إضافة ذاكرة المحادثة**: حفظ سياق المشروع بين الرسائل باستخدام جدول `memories` الموجود
+
+## الملفات المتأثرة
+
+| الملف | التغيير |
+|-------|---------|
+| `ReferralsPage.tsx` | حذف زر Withdrawal المكرر |
+| `CodeWorkspace.tsx` | تحسين سجل البناء ليشبه timeline + تحسين AI agent + إصلاح preview fallback |
+
