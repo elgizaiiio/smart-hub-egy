@@ -179,8 +179,8 @@ const LandingNavbar = () => {
                 onMouseLeave={handleMouseLeave}
               >
                 <button
-                  className="flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
+                  onClick={() => handleClick(item.label)}
+                  className="flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                   {item.label}
                   <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${openDropdown === item.label ? "rotate-180" : ""}`} />
                 </button>
