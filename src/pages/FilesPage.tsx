@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -365,58 +365,86 @@ const FilesPage = () => {
 
               <AnimatePresence>
                 {menuOpen && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-60">
-                    {/* Toggle: Web Search */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72 rounded-2xl"
+                  >
+                    {/* TOOLS */}
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1">Tools</p>
                     <button
                       onClick={() => { setSearchEnabled(!searchEnabled); setMenuOpen(false); }}
-                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
+                      className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl hover:bg-accent/60 transition-all group"
                     >
-                      <div className="flex items-center gap-3">
-                        <Globe className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">Web search</span>
+                      <div className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
+                        <Globe className="w-4 h-4 text-sky-500" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-foreground font-medium">Web Search</p>
+                        <p className="text-[10px] text-muted-foreground">Search the web for answers</p>
                       </div>
                       <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
                         <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
                       </div>
                     </button>
 
-                    <div className="border-t border-border my-1.5" />
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Attach</p>
+                    {/* ATTACH */}
+                    <div className="border-t border-border pt-2 mt-2">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1">Attach</p>
+                      <button onClick={() => { imageInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                          <Image className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-foreground font-medium">Image</p>
+                          <p className="text-[10px] text-muted-foreground">Upload from gallery</p>
+                        </div>
+                      </button>
+                      <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-accent/60 transition-all group">
+                        <div className="w-8 h-8 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+                          <Paperclip className="w-4 h-4 text-violet-500" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-foreground font-medium">Document</p>
+                          <p className="text-[10px] text-muted-foreground">PDF, TXT, CSV, DOCX...</p>
+                        </div>
+                      </button>
+                    </div>
 
-                    <button onClick={() => { imageInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                      <Image className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">Image</span>
-                    </button>
-                    <button onClick={() => { fileInputRef.current?.click(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                      <Paperclip className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">Document</span>
-                    </button>
+                    {/* INTEGRATIONS - PRO */}
+                    <div className="border-t border-border pt-2 mt-2">
+                      <div className="flex items-center justify-between px-1 mb-1">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Integrations</p>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-500 border border-amber-500/30 font-bold tracking-wide">PRO ✨</span>
+                      </div>
 
-                    <div className="border-t border-border my-1.5" />
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Integrations</p>
-
-                    {FILE_INTEGRATIONS.map((app) => {
-                      const IconComp = app.icon;
-                      return (
-                        <button
-                          key={app.name}
-                          onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
-                        >
-                          <IconComp />
-                          <div className="min-w-0">
-                            <span className="text-sm text-foreground block">{app.name}</span>
-                            <span className="text-[10px] text-muted-foreground">{app.desc}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                    <button
-                      onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-xs text-muted-foreground"
-                    >
-                      Show more
-                    </button>
+                      {FILE_INTEGRATIONS.map((app) => {
+                        const IconComp = app.icon;
+                        return (
+                          <button
+                            key={app.name}
+                            onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                            className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-accent/60 transition-all group"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-accent transition-colors">
+                              <IconComp />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-foreground font-medium">{app.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{app.desc}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                      <button
+                        onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                        className="w-full flex items-center justify-center gap-1 px-3 py-2 rounded-xl hover:bg-accent/60 transition-all text-xs text-muted-foreground font-medium"
+                      >
+                        Show more
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
