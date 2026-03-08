@@ -33,7 +33,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const [userEmail, setUserEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const currentMode = location.pathname === "/" ? "chat"
     : location.pathname === "/images" ? "images"
@@ -84,23 +84,16 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const initial = userName.charAt(0).toUpperCase() || "U";
 
   return (
-    <>
-      {/* Hover trigger zone - always visible */}
-      <div
-        className="hidden md:block fixed left-0 top-0 bottom-0 w-2 z-50"
-        onMouseEnter={() => setIsHovered(true)}
-      />
-
-      {/* Sidebar */}
-      <aside
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`hidden md:flex flex-col w-[260px] h-[100dvh] bg-sidebar border-r border-sidebar-border shrink-0 fixed left-0 top-0 bottom-0 z-40 transition-transform duration-300 ease-in-out ${
-          isHovered ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* New Chat */}
-        <div className="p-3">
+    <aside
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+      className={`hidden md:flex flex-col h-[100dvh] bg-sidebar border-r border-sidebar-border shrink-0 transition-all duration-200 ease-out overflow-hidden ${
+        expanded ? "w-[260px]" : "w-[52px]"
+      }`}
+    >
+      {/* New Chat - icon only when collapsed */}
+      <div className="p-2">
+        {expanded ? (
           <FancyButton
             onClick={() => {
               onNewChat?.();
@@ -110,64 +103,84 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           >
             + New chat
           </FancyButton>
-        </div>
+        ) : (
+          <button
+            onClick={() => {
+              onNewChat?.();
+              navigate(location.pathname);
+            }}
+            className="w-9 h-9 mx-auto flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors"
+            title="New chat"
+          >
+            <MessageSquare className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
-        {/* Navigation */}
-        <nav className="px-3 space-y-0.5">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/60"
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+      {/* Navigation */}
+      <nav className="px-2 space-y-0.5">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              title={!expanded ? item.label : undefined}
+              className={`w-full flex items-center gap-3 rounded-lg text-sm transition-colors ${
+                expanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
+              } ${
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+              }`}
+            >
+              <item.icon className="w-4 h-4 shrink-0" />
+              {expanded && <span>{item.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
 
-        {/* Separator */}
-        <div className="mx-3 my-2 border-t border-sidebar-border" />
+      {/* Separator */}
+      <div className="mx-2 my-2 border-t border-sidebar-border" />
 
-        {/* Recent conversations */}
-        <div className="flex-1 overflow-y-auto px-3">
-          <div className="sticky top-0 z-10 bg-sidebar py-2">
-            <p className="text-[11px] text-muted-foreground px-3 uppercase tracking-wider">Recent</p>
-          </div>
-          {conversations.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
-          ) : (
-            <div className="space-y-0.5">
-              {conversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => onSelectConversation?.(conv.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
-                    activeConversationId === conv.id
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/60"
-                  }`}
-                >
-                  {conv.title}
-                </button>
-              ))}
+      {/* Recent conversations - only when expanded */}
+      <div className="flex-1 overflow-y-auto px-2">
+        {expanded ? (
+          <>
+            <div className="sticky top-0 z-10 bg-sidebar py-2">
+              <p className="text-[11px] text-muted-foreground px-3 uppercase tracking-wider">Recent</p>
             </div>
-          )}
-        </div>
+            {conversations.length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
+            ) : (
+              <div className="space-y-0.5">
+                {conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => onSelectConversation?.(conv.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
+                      activeConversationId === conv.id
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+                    }`}
+                  >
+                    {conv.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
 
-        {/* Separator */}
-        <div className="mx-3 border-t border-sidebar-border" />
+      {/* Separator */}
+      <div className="mx-2 border-t border-sidebar-border" />
 
-        {/* Bottom section */}
-        <div className="p-3 space-y-2">
-          {/* MC Balance */}
+      {/* Bottom section */}
+      <div className="p-2 space-y-2">
+        {/* MC Balance - only when expanded */}
+        {expanded && (
           <div className="px-2 py-2">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-sm font-medium text-sidebar-foreground">MC Balance</span>
@@ -177,25 +190,32 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
               <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.min((credits / 100) * 100, 100)}%` }} />
             </div>
           </div>
+        )}
 
-          {/* User profile */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/settings/profile")}
-              className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-left hover:bg-sidebar-accent/60 transition-colors"
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
-                  {initial}
-                </div>
-              )}
+        {/* User profile */}
+        <div className={`flex items-center ${expanded ? "gap-3" : "justify-center"}`}>
+          <button
+            onClick={() => navigate("/settings/profile")}
+            className={`flex items-center gap-3 rounded-lg text-left hover:bg-sidebar-accent/60 transition-colors ${
+              expanded ? "flex-1 px-2 py-2.5" : "w-9 h-9 justify-center p-0"
+            }`}
+            title={!expanded ? userName : undefined}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary shrink-0">
+                {initial}
+              </div>
+            )}
+            {expanded && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-sidebar-foreground truncate">{userName}</p>
                 <p className="text-[11px] text-muted-foreground truncate">{userEmail || "Free Plan"}</p>
               </div>
-            </button>
+            )}
+          </button>
+          {expanded && (
             <button
               onClick={handleLogout}
               className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors"
@@ -203,10 +223,10 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
             >
               <LogOut className="w-4 h-4" />
             </button>
-          </div>
+          )}
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   );
 };
 
