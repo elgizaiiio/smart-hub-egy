@@ -281,7 +281,7 @@ const IntegrationsPage = () => {
   };
 
   const isConnected = (app: string) => !!connectedApps[app];
-  const categories = [...new Set(integrations.map(i => i.category))];
+  const categories = ["Essential", "Productivity", "Development", "Social & Marketing", "Business"];
 
   const IntegrationsContent = () => (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-8 max-w-2xl">
