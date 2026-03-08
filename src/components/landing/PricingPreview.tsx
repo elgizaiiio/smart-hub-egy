@@ -5,48 +5,64 @@ import FancyButton from "@/components/FancyButton";
 
 const plans = [
   {
-    name: "Free",
-    price: "0",
-    period: "forever",
-    description: "Perfect for exploring Megsy's capabilities",
+    name: "Starter",
+    price: "25",
+    period: "/month",
+    yearlyPrice: "$2,500/yr",
+    description: "Everything you need to get started with AI creation",
     features: [
-      "50 free credits on signup",
-      "Access to all 80+ models",
-      "Standard generation speed",
+      "250 MC credits/month",
+      "All chat models",
+      "50 image generations",
+      "5 video generations",
+      "Standard speed",
       "Community support",
-      "720p image exports",
     ],
     highlight: false,
+    borderColor: "border-emerald-500/30",
+    bgColor: "bg-emerald-500/[0.06]",
+    badgeColor: "",
+    checkColor: "text-emerald-400",
   },
   {
     name: "Pro",
-    price: "19",
+    price: "49",
     period: "/month",
-    description: "For creators who need more power and speed",
+    yearlyPrice: "$5,000/yr",
+    description: "For serious creators who demand more power",
     features: [
-      "2,000 credits/month",
-      "Priority generation queue",
-      "4K image exports",
-      "HD video generation",
-      "API access",
+      "500 MC credits/month",
+      "All AI models",
+      "500 image generations",
+      "50 video generations",
+      "Priority speed",
       "Priority support",
     ],
     highlight: true,
+    borderColor: "border-purple-500/40",
+    bgColor: "bg-purple-500/[0.08]",
+    badgeColor: "bg-purple-500",
+    checkColor: "text-purple-400",
   },
   {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    description: "For teams and businesses at scale",
+    name: "Elite",
+    price: "149",
+    period: "/month",
+    yearlyPrice: "$15,000/yr",
+    description: "Unlimited creative power for professionals",
     features: [
-      "Unlimited credits",
-      "Dedicated GPU instances",
-      "Custom model fine-tuning",
-      "SSO & team management",
-      "SLA guarantee",
-      "Dedicated account manager",
+      "1,500 MC credits/month",
+      "All AI models",
+      "Unlimited images",
+      "Unlimited videos",
+      "Fastest speed",
+      "Dedicated support",
     ],
     highlight: false,
+    borderColor: "border-amber-500/30",
+    bgColor: "bg-amber-500/[0.06]",
+    badgeColor: "",
+    checkColor: "text-amber-400",
   },
 ];
 
@@ -82,12 +98,12 @@ const PricingPreview = () => {
               transition={{ duration: 0.7, delay: i * 0.12 }}
               className={`relative rounded-3xl border p-9 ${
                 plan.highlight
-                  ? "border-purple-500/40 bg-purple-500/[0.08] shadow-xl shadow-purple-500/10"
-                  : "border-white/10 bg-white/[0.02]"
+                  ? `${plan.borderColor} ${plan.bgColor} shadow-xl shadow-purple-500/10`
+                  : `${plan.borderColor} ${plan.bgColor}`
               }`}
             >
               {plan.highlight && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-purple-500 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white">
+                <div className={`absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full ${plan.badgeColor} px-4 py-1 text-xs font-bold uppercase tracking-wider text-white`}>
                   Most Popular
                 </div>
               )}
@@ -95,16 +111,17 @@ const PricingPreview = () => {
               <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-5xl font-black text-white">
-                  {plan.price === "Custom" ? "" : "$"}{plan.price}
+                  ${plan.price}
                 </span>
                 <span className="text-base text-white/40">{plan.period}</span>
               </div>
+              <p className="mt-1 text-xs text-white/30">or {plan.yearlyPrice} billed yearly</p>
               <p className="mt-2 text-sm text-white/40">{plan.description}</p>
 
               <ul className="mt-8 space-y-3">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-3 text-base text-white/60">
-                    <Check size={16} className="shrink-0 text-purple-400" />
+                    <Check size={16} className={`shrink-0 ${plan.checkColor}`} />
                     {f}
                   </li>
                 ))}
@@ -117,10 +134,10 @@ const PricingPreview = () => {
                   </FancyButton>
                 ) : (
                   <button
-                    onClick={() => plan.name === "Enterprise" ? undefined : navigate("/auth")}
+                    onClick={() => navigate("/auth")}
                     className="w-full rounded-xl border border-white/15 py-3 text-base font-medium text-white/70 transition-all hover:border-white/30 hover:text-white"
                   >
-                    {plan.name === "Enterprise" ? "Contact Sales" : "Get Started"}
+                    Get Started
                   </button>
                 )}
               </div>
