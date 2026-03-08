@@ -33,8 +33,8 @@ const HeroSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg"
         >
-          Generate images, animate stills, build code, and create with precision
-          and control across 80+ AI models and professional workflows.
+          One platform. 80+ AI models. Generate stunning images, bring them to life
+          with video, write production-ready code, and ship faster than ever before.
         </motion.p>
 
         {/* Buttons */}
