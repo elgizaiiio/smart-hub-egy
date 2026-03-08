@@ -18,24 +18,30 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_shared: boolean | null
           mode: string
           model: string | null
+          share_id: string | null
           title: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_shared?: boolean | null
           mode?: string
           model?: string | null
+          share_id?: string | null
           title?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_shared?: boolean | null
           mode?: string
           model?: string | null
+          share_id?: string | null
           title?: string
           updated_at?: string
         }
