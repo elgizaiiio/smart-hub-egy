@@ -274,7 +274,7 @@ const ChatPage = () => {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-lg">
-                <h2 className="font-display text-2xl md:text-4xl font-bold mb-3 text-foreground">Hey, what's up?</h2>
+                <h2 className="font-display text-2xl md:text-4xl font-bold mb-3 text-foreground">{getGreeting()}</h2>
                 <p className="hidden md:block text-muted-foreground text-sm mb-6">Ask me anything -- I'm here to help with chat, code, images, and more.</p>
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
                   {[{ label: "Images", path: "/images" }, { label: "Videos", path: "/videos" }, { label: "Files", path: "/files" }, { label: "Code", path: "/code" }].map((item) => (
