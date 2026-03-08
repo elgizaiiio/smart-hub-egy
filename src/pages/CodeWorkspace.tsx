@@ -640,6 +640,7 @@ Rules:
                   open={menuOpen}
                   onClose={() => setMenuOpen(false)}
                   onGitHub={handleGitHubPush}
+                  onVercel={handleVercelDeploy}
                   onSupabase={() => navigate("/settings/integrations")}
                   hasFiles={Object.keys(files).length > 0}
                 />
