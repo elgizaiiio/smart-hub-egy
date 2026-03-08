@@ -1,4 +1,4 @@
-export type PublishPlatform = "facebook" | "instagram" | "linkedin";
+export type PublishPlatform = "facebook" | "instagram" | "youtube";
 
 export interface ImageModelCapability {
   acceptsImages: boolean;
