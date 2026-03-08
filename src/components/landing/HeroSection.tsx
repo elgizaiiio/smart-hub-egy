@@ -4,11 +4,11 @@ import FancyButton from "@/components/FancyButton";
 import { Star } from "lucide-react";
 
 const heroImages = [
-  { src: "/api-showcase/showcase-1.png", style: "left-[-4%] bottom-[5%] w-[22%] rotate-[-4deg]" },
-  { src: "/api-showcase/showcase-2.jpg", style: "left-[12%] bottom-[-8%] w-[30%] rotate-[2deg] z-10" },
-  { src: "/api-showcase/video-1.mp4", type: "video", style: "left-[30%] bottom-[-5%] w-[40%] z-20" },
-  { src: "/api-showcase/showcase-3.jpg", style: "right-[12%] bottom-[-8%] w-[30%] rotate-[-2deg] z-10" },
-  { src: "/api-showcase/showcase-4.jpg", style: "right-[-4%] bottom-[5%] w-[22%] rotate-[4deg]" },
+  { src: "/hero/video-1.mp4", type: "video", style: "left-[-2%] bottom-[8%] w-[20%] rotate-[-4deg]" },
+  { src: "/hero/video-2.mp4", type: "video", style: "left-[14%] bottom-[-4%] w-[26%] rotate-[2deg] z-10" },
+  { src: "/hero/bear.mp4", type: "video", style: "left-[50%] -translate-x-1/2 bottom-[-2%] w-[34%] z-20" },
+  { src: "/hero/video-3.mp4", type: "video", style: "right-[14%] bottom-[-4%] w-[26%] rotate-[-2deg] z-10" },
+  { src: "/hero/video-4.mp4", type: "video", style: "right-[-2%] bottom-[8%] w-[20%] rotate-[4deg]" },
 ];
 
 const HeroSection = () => {
