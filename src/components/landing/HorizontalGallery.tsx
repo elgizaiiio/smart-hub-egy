@@ -1,33 +1,38 @@
 import { motion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const galleryItems = [
   { src: "/showcase/model-1.jpg", label: "MEGSY V1", model: "megsy", desc: "Hyper-realistic portraits with cinematic depth" },
   { src: "/showcase/model-6.jpg", label: "NANO BANANA 2", model: "nano", desc: "Classical painting style with atmospheric lighting" },
   { src: "/showcase/model-2.jpg", label: "FLUX KONTEXT MAX", model: "flux", desc: "The world's leading AI image editing & generation model" },
+  { src: "/showcase/model-3.jpg", label: "RECRAFT V4", model: "recraft", desc: "Precise vector art & design-ready illustrations", mobileOnly: true },
 ];
 
 const HorizontalGallery = () => {
+  const isMobile = useIsMobile();
+  const items = isMobile ? galleryItems : galleryItems.filter(item => !item.mobileOnly);
+
   return (
-    <section className="bg-background py-20 md:py-28">
+    <section className="bg-background py-14 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="mb-12"
+          className="mb-8 md:mb-12"
         >
-          <h2 className="font-display text-4xl font-black uppercase tracking-tight text-foreground md:text-6xl">
+          <h2 className="font-display text-3xl font-black uppercase tracking-tight text-foreground md:text-6xl">
             IMAGE <span className="text-primary">MODELS</span>
           </h2>
-          <p className="mt-3 max-w-lg text-base text-muted-foreground">
+          <p className="mt-3 max-w-lg text-sm text-muted-foreground md:text-base">
             Explore what each model can create — from hyper-real portraits to epic fantasy worlds.
           </p>
         </motion.div>
 
         {/* Grid layout */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
-          {galleryItems.map((item, i) => (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6">
+          {items.map((item, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0.9 }}
