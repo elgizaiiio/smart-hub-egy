@@ -45,6 +45,7 @@ const ChatPage = () => {
   const [searchStatus, setSearchStatus] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -349,7 +350,7 @@ const ChatPage = () => {
                           </div>
                           <p className="text-[11px] text-muted-foreground font-medium">Camera</p>
                         </button>
-                        <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
+                        <button onClick={() => { photoInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl hover:bg-accent/60 transition-all group">
                           <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
                             <Image className="w-4 h-4 text-blue-500" />
                           </div>
@@ -432,8 +433,9 @@ const ChatPage = () => {
 
               <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} />
             </div>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
+            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept="*/*" />
             <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
+            <input ref={photoInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
           </div>
         </div>
       </div>
