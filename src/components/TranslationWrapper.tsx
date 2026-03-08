@@ -148,6 +148,24 @@ interface TranslationWrapperProps {
 
 const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
   const appliedLangRef = useRef<string>("en");
+  const lastRouteKeyRef = useRef<string>("");
+  const translateLockRef = useRef(false);
+  const lastTranslateAtRef = useRef(0);
+
+  const safeTriggerTranslate = (lang: string) => {
+    const now = Date.now();
+    if (translateLockRef.current) return;
+    if (now - lastTranslateAtRef.current < 1200) return;
+
+    translateLockRef.current = true;
+    lastTranslateAtRef.current = now;
+    triggerTranslate(lang);
+
+    // Unlock after Google finishes DOM work
+    setTimeout(() => {
+      translateLockRef.current = false;
+    }, 1800);
+  };
 
   // Initialize Google Translate on mount
   useEffect(() => {
