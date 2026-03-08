@@ -560,7 +560,7 @@ const CodeWorkspace = () => {
               onClick={handleApprove}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
               
-                  Approve Plan ({BUILD_CREDIT_COST} credits)
+                  Approve Plan ({BUILD_CREDIT_COST} MC)
                 </button>
             }
               <div ref={messagesEndRef} />
