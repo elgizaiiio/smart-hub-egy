@@ -221,7 +221,7 @@ const LandingNavbar = () => {
                                       onClick={() => handleNav(sub.href)}
                                       className="group flex w-full items-start gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-white/[0.06]"
                                     >
-                                      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-purple-400/70 group-hover:text-purple-300" />
+                                      <div className="mt-0.5 shrink-0"><Icon /></div>
                                       <div>
                                         <div className="text-sm font-medium text-white/90 group-hover:text-white">
                                           {sub.label}
