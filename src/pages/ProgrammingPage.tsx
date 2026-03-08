@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Menu, ArrowUp, Globe, Code2, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppSidebar from "@/components/AppSidebar";
+import AppLayout from "@/layouts/AppLayout";
 import FancyButton from "@/components/FancyButton";
 import { supabase } from "@/integrations/supabase/client";
 
