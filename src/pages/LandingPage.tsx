@@ -12,7 +12,7 @@ import LandingFooter from "@/components/landing/LandingFooter";
 
 const LandingPage = () => {
   return (
-    <div data-theme="dark" className="min-h-screen overflow-x-hidden bg-background text-foreground">
+    <div data-theme="dark" className="min-h-screen overflow-x-hidden bg-black text-white">
       <LandingNavbar />
 
       <HeroSection />
@@ -22,100 +22,70 @@ const LandingPage = () => {
       <div id="features">
         <FeatureBlock
           bigText="CONVERSE"
-          bigTextTone="text-primary/15"
           title="AI Chat"
-          description="منصة المحادثة في Megsy مخصصة لتخطيط المشاريع، كتابة المحتوى، تحليل الملفات، وتنفيذ الأفكار المعقدة بسياق طويل ودقة عالية."
+          description="Engage in multi-turn conversations powered by Megsy V1 -- our flagship conversational AI with advanced reasoning, web search, memory, and file analysis capabilities."
           features={[
-            "محادثات متعددة الجولات بسياق ثابت وسريع",
-            "تحليل ملفات وصور داخل نفس نافذة الشات",
-            "استخراج خطط تنفيذ واضحة من أي فكرة",
-            "دعم نماذج reasoning لأسئلة عميقة ومعقدة",
+            "5 powerful chat models including Megsy V1 with superior reasoning",
+            "Built-in web search for real-time information retrieval",
+            "Persistent memory that learns your preferences over time",
+            "Upload and analyze images, documents, and code files",
           ]}
           media="/api-showcase/showcase-1.png"
-          models={[
-            { id: "megsy-v1", name: "Megsy V1" },
-            { id: "openai/gpt-5", name: "GPT-5" },
-            { id: "x-ai/grok-3", name: "Grok 3" },
-          ]}
         />
 
         <FeatureBlock
           bigText="CREATE"
-          bigTextTone="text-primary/18"
           title="Image Generation"
-          description="قسم الصور مصمم للمخرجات التجارية والابداعية: من مفهوم سريع إلى نتائج جاهزة للإعلانات، الهوية، والسوشيال."
+          description="Generate stunning visuals with 20+ specialized image models. From photorealistic portraits to abstract art, Megsy V1 Image leads the pack with unmatched quality and style diversity."
           features={[
-            "20+ نماذج صور بأساليب متعددة",
-            "تبديل سريع بين النماذج أثناء نفس الجلسة",
-            "تحكم أفضل في التركيب، الستايل، وجودة التفاصيل",
-            "دعم سير عمل كامل من Prompt إلى Export",
+            "20+ image generation models including Megsy V1 Image (flagship)",
+            "18+ professional image tools: upscale, relight, restore, and more",
+            "Styles from photorealistic to anime, illustration, and abstract",
+            "Up to 4K resolution output with professional-grade quality",
           ]}
           media="/api-showcase/showcase-2.jpg"
           reverse
-          models={[
-            { id: "megsy-v1-img", name: "Megsy V1 Image" },
-            { id: "flux-2-pro", name: "FLUX 2 Pro" },
-            { id: "gpt-image", name: "GPT Image 1.5" },
-          ]}
         />
 
         <FeatureBlock
           bigText="ANIMATE"
-          bigTextTone="text-primary/14"
           title="Video Generation"
-          description="حوّل النص أو الصور إلى فيديو واقعي بمسارات حركة دقيقة ومخرجات مناسبة للتسويق، المحتوى، والعروض التقديمية."
+          description="Transform text and images into cinematic video sequences. Megsy Video delivers Hollywood-quality motion, physics simulation, and character consistency."
           features={[
-            "Text-to-video و Image-to-video في نفس المنصة",
-            "نماذج سينمائية متعددة الجودة والسرعة",
-            "دعم أول/آخر فريم للتحكم في المشهد",
-            "مسار تصدير بسيط للفيديو النهائي",
+            "10+ video models including Megsy Video (flagship cinematic model)",
+            "Text-to-video and image-to-video generation pipelines",
+            "First-and-last-frame control for precise scene direction",
+            "Avatar animation and professional lip-sync capabilities",
           ]}
           media="/api-showcase/video-1.mp4"
           mediaType="video"
-          models={[
-            { id: "megsy-video", name: "Megsy Video" },
-            { id: "veo-3.1", name: "Veo 3.1" },
-            { id: "openai-sora", name: "Sora" },
-          ]}
         />
 
         <FeatureBlock
           bigText="ENHANCE"
-          bigTextTone="text-primary/16"
           title="Image Tools"
-          description="أدوات احترافية لتحسين الصور بعد التوليد: ترميم، إزالة عناصر، تكبير جودة، تغيير الخلفية، وإخراج جاهز للنشر."
+          description="18+ professional-grade tools to perfect your images after generation. Remove objects, swap backgrounds, upscale to 4K, relight scenes, and restore old photos."
           features={[
-            "18+ أدوات تعديل فعلية داخل نفس الواجهة",
-            "دعم سير قبل/بعد مع نتائج أسرع",
-            "أدوات ترميم وصقل للمنتجات والبورتريه",
-            "مناسبة لفرق التصميم والإعلانات",
+            "Remove objects, watermarks, and backgrounds instantly",
+            "4K upscaling with AI-enhanced detail",
+            "AI relighting and style transfer",
+            "Product photography and professional headshot generation",
           ]}
           media="/api-showcase/showcase-4.jpg"
           reverse
-          models={[
-            { id: "nano-banana-2", name: "Nano Banana 2" },
-            { id: "recraft-v4", name: "Recraft V4" },
-            { id: "fal-omnigen2", name: "OmniGen2" },
-          ]}
         />
 
         <FeatureBlock
           bigText="BUILD"
-          bigTextTone="text-primary/14"
           title="Code & Deploy"
-          description="اكتب واجهات ومشاريع كاملة عبر الحوار، عاين مباشرة، وعدّل بسرعة، ثم انشر المنتج في دقائق بدل ساعات."
+          description="Build full-stack applications through conversation. Write, preview, and deploy production-ready code with live preview, GitHub sync, and one-click deployment."
           features={[
-            "توليد واجهات ومكونات React بسرعة",
-            "معاينة فورية للتعديلات لحظة بلحظة",
-            "تنظيم أفضل لرحلة التطوير من نفس المحادثة",
-            "سير عمل متكامل من الفكرة للنشر",
+            "Real-time code generation with live preview in sandbox",
+            "Support for React, HTML/CSS/JS, and full-stack frameworks",
+            "GitHub repository sync and version control integration",
+            "One-click deployment to Vercel with custom domains",
           ]}
           media="/api-showcase/showcase-3.jpg"
-          models={[
-            { id: "megsy-v1", name: "Megsy V1" },
-            { id: "deepseek/deepseek-r1", name: "DeepSeek R1" },
-            { id: "openai/gpt-5", name: "GPT-5" },
-          ]}
         />
       </div>
 

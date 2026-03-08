@@ -33,26 +33,24 @@ const LandingFooter = () => {
   const navigate = useNavigate();
 
   return (
-    <footer className="relative border-t border-white/[0.06] bg-black">
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
-          {/* Logo column */}
+    <footer className="border-t border-white/[0.06] bg-black">
+      <div className="mx-auto max-w-7xl px-6 py-16">
+        <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-400 via-purple-600 to-purple-800 flex items-center justify-center font-black text-white text-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 via-purple-600 to-purple-800 text-sm font-black text-white">
                 M
               </div>
-              <span className="text-white font-bold text-lg">Megsy</span>
+              <span className="text-lg font-bold text-white">Megsy</span>
             </div>
-            <p className="text-white/30 text-sm leading-relaxed">
+            <p className="text-sm leading-relaxed text-white/30">
               The all-in-one AI creative platform. Create, generate, and deploy with 80+ models.
             </p>
           </div>
 
-          {/* Link columns */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-white font-semibold text-sm mb-4">{title}</h4>
+              <h4 className="mb-4 text-sm font-semibold text-white">{title}</h4>
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link.label}>
@@ -64,7 +62,7 @@ const LandingFooter = () => {
                           navigate(link.href);
                         }
                       }}
-                      className="text-white/30 hover:text-white/60 text-sm transition-colors"
+                      className="text-sm text-white/30 transition-colors hover:text-white/60"
                     >
                       {link.label}
                     </a>
@@ -75,21 +73,12 @@ const LandingFooter = () => {
           ))}
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-16 pt-8 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/20 text-sm">
-            2024-2026 Megsy AI. All rights reserved.
-          </p>
+        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-8 md:flex-row">
+          <p className="text-sm text-white/20">2024-2026 Megsy AI. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-white/20 hover:text-white/40 text-sm transition-colors">
-              Twitter / X
-            </a>
-            <a href="#" className="text-white/20 hover:text-white/40 text-sm transition-colors">
-              Discord
-            </a>
-            <a href="#" className="text-white/20 hover:text-white/40 text-sm transition-colors">
-              GitHub
-            </a>
+            <a href="#" className="text-sm text-white/20 transition-colors hover:text-white/40">Twitter / X</a>
+            <a href="#" className="text-sm text-white/20 transition-colors hover:text-white/40">Discord</a>
+            <a href="#" className="text-sm text-white/20 transition-colors hover:text-white/40">GitHub</a>
           </div>
         </div>
       </div>

@@ -39,42 +39,41 @@ const faqs = [
 
 const FAQSection = () => {
   return (
-    <section id="faq" className="relative py-24 md:py-32 overflow-hidden">
-      {/* Decorative purple shapes */}
-      <div className="absolute top-20 right-10 w-72 h-72 rounded-full bg-purple-600/10 blur-[100px]" />
-      <div className="absolute bottom-20 left-10 w-56 h-56 rounded-full bg-fuchsia-600/8 blur-[80px]" />
+    <section id="faq" className="relative overflow-hidden py-28 md:py-36">
+      <div className="absolute right-10 top-20 h-72 w-72 rounded-full bg-purple-600/10 blur-[120px]" />
+      <div className="absolute bottom-20 left-10 h-56 w-56 rounded-full bg-fuchsia-600/10 blur-[100px]" />
 
-      <div className="max-w-4xl mx-auto px-6 relative z-10">
+      <div className="relative z-10 mx-auto max-w-4xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="mb-16 text-center"
         >
-          <h2 className="text-6xl md:text-8xl lg:text-9xl font-black uppercase tracking-tighter text-white leading-none mb-4">
+          <h2 className="font-display text-7xl font-black uppercase tracking-tighter leading-none text-white md:text-9xl">
             FA<span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Qs</span>
           </h2>
-          <p className="text-white/40 text-lg">Everything you need to know about Megsy.</p>
+          <p className="mt-4 text-lg text-white/40">Everything you need to know about Megsy.</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.15 }}
         >
           <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((faq, i) => (
               <AccordionItem
                 key={i}
                 value={`faq-${i}`}
-                className="border border-white/10 rounded-xl px-6 bg-white/[0.02] hover:bg-white/[0.04] transition-colors data-[state=open]:border-purple-500/30"
+                className="rounded-xl border border-white/10 bg-white/[0.02] px-6 transition-colors hover:bg-white/[0.04] data-[state=open]:border-purple-500/30"
               >
-                <AccordionTrigger className="text-white font-semibold text-left hover:no-underline py-5">
+                <AccordionTrigger className="py-5 text-left font-semibold text-white hover:no-underline">
                   {faq.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-white/50 leading-relaxed pb-5">
+                <AccordionContent className="pb-5 leading-relaxed text-white/50">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>
