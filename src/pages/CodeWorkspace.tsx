@@ -749,12 +749,14 @@ const AnimatedPlusMenu = ({
   open,
   onClose,
   onGitHub,
+  onVercel,
   onSupabase,
   hasFiles,
 }: {
   open: boolean;
   onClose: () => void;
   onGitHub: () => void;
+  onVercel: () => void;
   onSupabase: () => void;
   hasFiles: boolean;
 }) => (
@@ -768,7 +770,16 @@ const AnimatedPlusMenu = ({
           exit={{ opacity: 0, y: 10 }}
           className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56"
         >
-          <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Connect</p>
+          <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Deploy</p>
+          <button
+            onClick={() => { onClose(); onVercel(); }}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
+              hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground cursor-not-allowed opacity-50"
+            }`}
+            disabled={!hasFiles}
+          >
+            <Triangle className="w-4 h-4 text-muted-foreground" /> Deploy to Vercel
+          </button>
           <button
             onClick={() => { onClose(); onGitHub(); }}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
@@ -778,6 +789,7 @@ const AnimatedPlusMenu = ({
           >
             <Github className="w-4 h-4 text-muted-foreground" /> Push to GitHub
           </button>
+          <p className="text-[10px] text-muted-foreground uppercase px-3 py-1 mt-1">Connect</p>
           <button
             onClick={() => { onClose(); onSupabase(); }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground"
