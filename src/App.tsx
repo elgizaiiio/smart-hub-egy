@@ -85,6 +85,7 @@ const App = () => {
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/contact" element={<ContactPage />} />
                 <Route path="/share/:shareId" element={<SharedChatPage />} />
                 <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                 <Route path="/images" element={<ProtectedRoute><ImagesPage /></ProtectedRoute>} />
