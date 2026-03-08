@@ -68,6 +68,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          subject: string
+          to_email: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: string
+          subject: string
+          to_email: string
+          type?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          subject?: string
+          to_email?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       memories: {
         Row: {
           created_at: string
@@ -151,6 +181,84 @@ export type Database = {
           media_url?: string
           model_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          app_credits: boolean
+          app_generation: boolean
+          app_referral: boolean
+          app_system: boolean
+          created_at: string
+          email_low_balance: boolean
+          email_newsletter: boolean
+          email_transactions: boolean
+          email_welcome: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_credits?: boolean
+          app_generation?: boolean
+          app_referral?: boolean
+          app_system?: boolean
+          created_at?: string
+          email_low_balance?: boolean
+          email_newsletter?: boolean
+          email_transactions?: boolean
+          email_welcome?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_credits?: boolean
+          app_generation?: boolean
+          app_referral?: boolean
+          app_system?: boolean
+          created_at?: string
+          email_low_balance?: boolean
+          email_newsletter?: boolean
+          email_transactions?: boolean
+          email_welcome?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -347,6 +455,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_notification: {
+        Args: {
+          p_message: string
+          p_metadata?: Json
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       deduct_credits: {
         Args: {
           p_action_type: string
@@ -355,6 +473,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      mark_notifications_read: {
+        Args: { p_notification_ids?: string[]; p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
