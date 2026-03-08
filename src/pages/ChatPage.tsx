@@ -410,8 +410,8 @@ const ChatPage = () => {
                           {chatMode === "learning" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">ON</span>}
                         </button>
                         <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left transition-all group ${chatMode === "shopping" ? "bg-primary/10" : "hover:bg-accent/60"}`}>
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${chatMode === "shopping" ? "bg-primary/20" : "bg-rose-500/10 group-hover:bg-rose-500/20"}`}>
-                            <ShoppingCart className={`w-3.5 h-3.5 ${chatMode === "shopping" ? "text-primary" : "text-rose-500"}`} />
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${chatMode === "shopping" ? "bg-primary/20" : "bg-rose-500/10 group-hover:bg-rose-500/20"}`}>
+                            <ShoppingCart className={`w-3 h-3 ${chatMode === "shopping" ? "text-primary" : "text-rose-500"}`} />
                           </div>
                           <div className="flex-1">
                             <p className="text-[13px] text-foreground font-medium">Shopping</p>
