@@ -2,11 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
+import { ChevronDown, ArrowRight } from "lucide-react";
 import {
-  ImagePlus, Clapperboard, Eraser, ZoomIn, BrainCircuit, Lightbulb,
-  CodeXml, MessageCircle, ChevronDown, GraduationCap, LifeBuoy,
-  FileText, ArrowRight, Palette, PenTool, Layers, Cpu, Zap, Rocket
-} from "lucide-react";
+  IconImageGen, IconCreative, IconBgRemover, IconTrainModel,
+  IconVideoGen, IconImageEditor, IconUpscaler,
+  IconChat, IconCode,
+  IconBlog, IconSupport, IconChangelog, IconAPI,
+  IconMegsyPro, IconGPT, IconClaude, IconGemini,
+} from "@/components/landing/NavIcons";
 
 /* ── Mega-menu data ── */
 interface SubItem {
@@ -44,28 +47,28 @@ const navItems: NavItem[] = [
       {
         title: "Image",
         items: [
-          { icon: ImagePlus, label: "AI Image Generator", desc: "Create images from prompts or references", href: "/images" },
-          { icon: Lightbulb, label: "Creative Ideation", desc: "Explore visual ideas and directions", href: "/images" },
-          { icon: Eraser, label: "Background Remover", desc: "Remove and replace image backgrounds", href: "/images" },
-          { icon: Palette, label: "Train Your Own Model", desc: "Train custom models for consistency", href: "/images" },
+          { icon: IconImageGen, label: "AI Image Generator", desc: "Create images from prompts or references", href: "/images" },
+          { icon: IconCreative, label: "Creative Ideation", desc: "Explore visual ideas and directions", href: "/images" },
+          { icon: IconBgRemover, label: "Background Remover", desc: "Remove and replace image backgrounds", href: "/images" },
+          { icon: IconTrainModel, label: "Train Your Own Model", desc: "Train custom models for consistency", href: "/images" },
         ],
       },
       {
         title: "Video",
         items: [
-          { icon: Clapperboard, label: "AI Video Generator", desc: "Generate motion from images or text", href: "/videos" },
+          { icon: IconVideoGen, label: "AI Video Generator", desc: "Generate motion from images or text", href: "/videos" },
         ],
       },
       {
         title: "Editing",
         items: [
-          { icon: PenTool, label: "Image Editor", desc: "Edit and refine images with AI", href: "/images" },
+          { icon: IconImageEditor, label: "Image Editor", desc: "Edit and refine images with AI", href: "/images" },
         ],
       },
       {
         title: "Upscaling",
         items: [
-          { icon: ZoomIn, label: "Image Upscaler", desc: "Enhance resolution without losing detail", href: "/images" },
+          { icon: IconUpscaler, label: "Image Upscaler", desc: "Enhance resolution without losing detail", href: "/images" },
         ],
       },
     ],
@@ -77,19 +80,19 @@ const navItems: NavItem[] = [
       {
         title: "Tools",
         items: [
-          { icon: MessageCircle, label: "AI Chat", desc: "Chat with 80+ AI models", href: "/chat" },
-          { icon: ImagePlus, label: "Image Generation", desc: "Create stunning visuals", href: "/images" },
-          { icon: Clapperboard, label: "Video Generation", desc: "Generate AI videos", href: "/videos" },
-          { icon: CodeXml, label: "Code Builder", desc: "Build & deploy full-stack apps", href: "/code" },
+          { icon: IconChat, label: "AI Chat", desc: "Chat with 80+ AI models", href: "/chat" },
+          { icon: IconImageGen, label: "Image Generation", desc: "Create stunning visuals", href: "/images" },
+          { icon: IconVideoGen, label: "Video Generation", desc: "Generate AI videos", href: "/videos" },
+          { icon: IconCode, label: "Code Builder", desc: "Build & deploy full-stack apps", href: "/code" },
         ],
       },
       {
         title: "Featured Models",
         items: [
-          { icon: Zap, label: "Megsy Pro", desc: "Our flagship creative model", href: "/#models" },
-          { icon: Cpu, label: "GPT-4o", desc: "Advanced reasoning", href: "/#models" },
-          { icon: BrainCircuit, label: "Claude Sonnet", desc: "Best for code & analysis", href: "/#models" },
-          { icon: Rocket, label: "Gemini Flash", desc: "Ultra-fast responses", href: "/#models" },
+          { icon: IconMegsyPro, label: "Megsy Pro", desc: "Our flagship creative model", href: "/#models" },
+          { icon: IconGPT, label: "GPT-4o", desc: "Advanced reasoning", href: "/#models" },
+          { icon: IconClaude, label: "Claude Sonnet", desc: "Best for code & analysis", href: "/#models" },
+          { icon: IconGemini, label: "Gemini Flash", desc: "Ultra-fast responses", href: "/#models" },
         ],
       },
     ],
@@ -100,10 +103,10 @@ const navItems: NavItem[] = [
       {
         title: "Resources",
         items: [
-          { icon: GraduationCap, label: "Blog", desc: "Tips, tutorials and updates", href: "#" },
-          { icon: LifeBuoy, label: "Support", desc: "Get help from our team", href: "/contact" },
-          { icon: FileText, label: "Changelog", desc: "What's new in Megsy", href: "#" },
-          { icon: Layers, label: "API Docs", desc: "Integrate Megsy into your apps", href: "#" },
+          { icon: IconBlog, label: "Blog", desc: "Tips, tutorials and updates", href: "#" },
+          { icon: IconSupport, label: "Support", desc: "Get help from our team", href: "/contact" },
+          { icon: IconChangelog, label: "Changelog", desc: "What's new in Megsy", href: "#" },
+          { icon: IconAPI, label: "API Docs", desc: "Integrate Megsy into your apps", href: "#" },
         ],
       },
     ],
