@@ -1,48 +1,20 @@
 
-# Megsy Platform - Credits + Real Programming + Integrations
 
-## ✅ Completed
+## تحسين زر اختيار النموذج في الصور والفيديوهات + مراجعة التجاوب
 
-### 1. Credit System
-- Created `credit_transactions` table in Supabase
-- Created `deduct_credits` database function (SECURITY DEFINER)
-- Created `deduct-credits` edge function
-- Created `useCredits` hook for frontend credit checking
-- Updated `generate-image` edge function to deduct credits
-- Updated `generate-video` edge function to deduct credits
-- Updated ImagesPage and VideosPage to check credits before generation
-- Chat remains free
+### التغييرات
 
-### 2. Real Programming System (Sprites.dev)
-- Created `sprites-sandbox` edge function for Sprites.dev API management
-- Actions: create, exec, write-file, write-files, status, destroy
-- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
-- Rebuilt `CodeWorkspace.tsx` with:
-  - Plan → Build workflow with credit deduction (5 credits per build)
-  - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Sprite
-  - Real preview via iframe pointing to Sprite URL
-  - Conversation persistence to Supabase
-  - Project saving with files_snapshot
+**`src/components/ModelSelector.tsx`** — زر Images/Videos (سطر 220-226):
+- تكبير الحجم: `py-2 px-5` بدل `py-1.5 px-4`، خط `text-sm font-semibold` بدل `text-xs font-medium`
+- زوايا أنعم: `rounded-2xl`
+- تأثيرات بصرية: `shadow-sm backdrop-blur-sm`
+- تفاعل: `transition-all duration-200 active:scale-95`
+- إضافة أيقونة `Sparkles` صغيرة (من lucide-react) قبل اسم النموذج
+- تجاوب: `max-w-[200px] truncate` لمنع كسر النص على الشاشات الصغيرة
 
-### 3. GitHub Integration
-- Created `github-repo` edge function via Composio
-- Actions: check-connection, create-repo, push-files
-- Push to GitHub button in CodeWorkspace plus menu
-- Creates new repo and pushes all project files
+**`src/pages/ImagesPage.tsx`** (سطر 473) و **`src/pages/VideosPage.tsx`** (سطر 456):
+- تحديث colorClass ليشمل shadow مناسب: `shadow-pink-500/25` للصور و `shadow-violet-500/25` للفيديوهات
 
-### 4. Database
-- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
-- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
+### النتيجة
+زر أكبر، أوضح، أنيق مع أيقونة Sparkles، تأثير ضغط سلس، ومتجاوب تماماً مع جميع الأجهزة.
 
-### 5. OAuth2 "Login with Megsy"
-- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
-- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
-- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
-- Built `/oauth/authorize` consent screen page
-- Updated App.tsx routes and config.toml
-
-### 6. Secrets Required
-- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
-- `COMPOSIO_API_KEY` ✅ Already exists
-- `FAL_API_KEY` ✅ Already exists
