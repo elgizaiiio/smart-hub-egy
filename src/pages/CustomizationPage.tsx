@@ -44,10 +44,6 @@ const CustomizationPage = () => {
   const isMobile = useIsMobile();
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("theme") || "dark");
   const [currentAccent, setCurrentAccent] = useState(() => localStorage.getItem("accent") || "262 60% 55%");
-  const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem("fontSize");
-    return saved ? parseInt(saved) : 1;
-  });
   const [chatStyle, setChatStyle] = useState(() => localStorage.getItem("chatStyle") || "modern");
 
   useEffect(() => {
