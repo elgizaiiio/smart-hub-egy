@@ -1,26 +1,75 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import FancyButton from "@/components/FancyButton";
 
 const services = [
-  "Smart Chat", "Voice Talk", "Memory", "80+ Models", "Chat History", "Custom Prompts",
-  "Create Images", "Edit Photos", "Remove BG", "4K Upscale", "Style Transfer", "Text → Image",
-  "Create Videos", "Animate", "Image → Video", "Text → Video", "Edit Videos",
-  "Analyze Files", "Summarize Docs", "Read PDFs", "Extract Data", "Spreadsheets", "OCR Scan",
-  "Write Code", "Code Review", "1-Click Deploy", "Live Preview", "GitHub Sync", "Vercel Deploy",
-  "Fix Bugs", "Full-Stack Apps", "Web Search", "Deep Research", "News Feed", "Academic Papers",
-  "AI Agents", "Auto Tasks", "Send Emails", "Telegram Bot", "Google Drive", "Notion Sync",
-  "Composio", "Translate", "Schedule", "API Access", "Webhooks", "Workflows",
+  // Chat
+  "AI Chat",
+  "Voice Chat",
+  "Memory & Context",
+  "Multi-Model Access",
+  "Conversation History",
+  "System Prompts",
+  // Images
+  "Image Generation",
+  "Image Editing",
+  "Background Removal",
+  "Upscaling",
+  "Style Transfer",
+  "Text to Image",
+  // Video
+  "Video Generation",
+  "Video Animation",
+  "Image to Video",
+  "Text to Video",
+  "Video Editing",
+  // Files
+  "File Analysis",
+  "Document Summary",
+  "PDF Parsing",
+  "Data Extraction",
+  "Spreadsheet Analysis",
+  "OCR",
+  // Code
+  "Code Generation",
+  "Code Review",
+  "One-Click Deploy",
+  "Real-Time Preview",
+  "GitHub Integration",
+  "Vercel Deploy",
+  "Bug Fixing",
+  "Full-Stack Apps",
+  // Search & Web
+  "Web Search",
+  "Deep Research",
+  "News Search",
+  "Academic Search",
+  // Agents & Integrations
+  "AI Agents",
+  "Task Automation",
+  "Email Sending",
+  "Telegram Bot",
+  "Google Drive",
+  "Notion",
+  "Composio",
+  "Translation",
+  "Scheduling",
+  "API Access",
+  "Webhooks",
+  "Workflow Automation",
 ];
 
-const providers = ["Google", "Amazon", "Supabase", "GitHub"];
+const providers = [
+  "Google",
+  "Amazon",
+  "Supabase",
+  "GitHub",
+];
 
 const ModelsMarquee = () => {
-  const navigate = useNavigate();
   const items = [...services, ...services];
 
   return (
     <section id="models" className="relative overflow-hidden py-20">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -33,6 +82,7 @@ const ModelsMarquee = () => {
         </p>
       </motion.div>
 
+      {/* Logos row */}
       <div className="mx-auto mb-16 flex max-w-5xl items-center justify-center gap-10 px-6 md:gap-20">
         {providers.map((name) => (
           <span key={name} className="text-lg font-black uppercase tracking-wider text-foreground/20 md:text-2xl">
@@ -41,6 +91,7 @@ const ModelsMarquee = () => {
         ))}
       </div>
 
+      {/* Services heading */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -62,11 +113,14 @@ const ModelsMarquee = () => {
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-32 bg-gradient-to-r from-background to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-32 bg-gradient-to-l from-background to-transparent" />
         <div className="landing-marquee">
-          <div className="landing-marquee-track flex gap-3">
+          <div className="landing-marquee-track">
             {items.map((s, i) => (
-              <FancyButton key={i} onClick={() => navigate("/auth")} className="text-xs whitespace-nowrap">
+              <span
+                key={i}
+                className="inline-flex whitespace-nowrap px-4 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground/60"
+              >
                 {s}
-              </FancyButton>
+              </span>
             ))}
           </div>
         </div>
@@ -77,11 +131,14 @@ const ModelsMarquee = () => {
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-32 bg-gradient-to-r from-background to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-32 bg-gradient-to-l from-background to-transparent" />
         <div className="landing-marquee">
-          <div className="landing-marquee-track-reverse flex gap-3">
+          <div className="landing-marquee-track-reverse">
             {[...items].reverse().map((s, i) => (
-              <FancyButton key={i} onClick={() => navigate("/auth")} className="text-xs whitespace-nowrap">
+              <span
+                key={i}
+                className="inline-flex whitespace-nowrap px-4 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground/60"
+              >
                 {s}
-              </FancyButton>
+              </span>
             ))}
           </div>
         </div>
