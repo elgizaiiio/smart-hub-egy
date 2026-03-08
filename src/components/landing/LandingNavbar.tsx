@@ -204,49 +204,55 @@ const LandingNavbar = () => {
                 <AnimatePresence>
                   {openDropdown === item.label && (
                     <motion.div
-                      initial={{ opacity: 0, y: 6 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 6 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute left-0 top-full z-50 pt-2"
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="fixed left-0 right-0 top-[64px] flex justify-center z-50 px-6 pointer-events-none"
                     >
-                      <div className="min-w-[280px] rounded-xl border border-border/50 bg-popover p-2 shadow-xl">
-                        {item.columns.map((col) => (
-                          <div key={col.title} className="mb-2 last:mb-0">
-                            <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-                              {col.title}
-                            </p>
-                            {col.items.map((sub) => (
-                              <button
-                                key={sub.label}
-                                onClick={() => handleNav(sub.href)}
-                                className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent"
-                              >
-                                <div>
-                                  <div className="text-sm font-medium text-foreground">
-                                    {sub.label}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {sub.desc}
-                                  </div>
+                      <div className="w-full max-w-[1000px] rounded-2xl border border-border/50 bg-background/80 backdrop-blur-3xl p-8 shadow-2xl pointer-events-auto">
+                        <div className="flex gap-10">
+                          {/* Featured Card (Left) */}
+                          {item.featured && (
+                            <div className="w-[280px] shrink-0 rounded-2xl bg-gradient-to-b from-primary/10 to-transparent border border-border/50 p-6 flex flex-col items-start relative overflow-hidden">
+                               <div className="mb-4 rounded-full bg-primary/20 p-3 text-primary">
+                                 {item.label === "Products" ? <Mail className="w-6 h-6" /> : <ArrowRight className="w-6 h-6" />}
+                               </div>
+                               <h3 className="text-xl font-bold text-foreground mb-2 whitespace-pre-line">{item.featured.title}</h3>
+                               {item.featured.desc && <p className="text-sm text-muted-foreground mb-6">{item.featured.desc}</p>}
+                               <button onClick={() => handleNav(item.featured!.href)} className="mt-auto rounded-xl bg-foreground text-background px-5 py-3 text-sm font-semibold hover:opacity-90 transition-opacity w-full">
+                                 {item.featured.cta}
+                               </button>
+                            </div>
+                          )}
+
+                          {/* Columns (Right) */}
+                          <div className="flex-1 grid gap-8" style={{ gridTemplateColumns: `repeat(${item.columns.length}, minmax(0, 1fr))` }}>
+                            {item.columns.map((col) => (
+                              <div key={col.title}>
+                                <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">
+                                  {col.title}
+                                </h4>
+                                <div className="space-y-5">
+                                  {col.items.map((sub) => (
+                                    <button
+                                      key={sub.label}
+                                      onClick={() => handleNav(sub.href)}
+                                      className="group flex flex-col w-full text-left"
+                                    >
+                                      <span className="text-[15px] font-semibold text-foreground/90 group-hover:text-primary transition-colors">
+                                        {sub.label}
+                                      </span>
+                                      <span className="text-[13px] text-muted-foreground group-hover:text-muted-foreground/80 transition-colors mt-1">
+                                        {sub.desc}
+                                      </span>
+                                    </button>
+                                  ))}
                                 </div>
-                              </button>
+                              </div>
                             ))}
                           </div>
-                        ))}
-                        
-                        {item.featured && (
-                          <div className="mt-2 rounded-lg bg-gradient-to-r from-primary/20 to-purple-500/20 p-3">
-                            <p className="text-xs font-bold text-foreground">{item.featured.title.replace('\n', ' ')}</p>
-                            <button
-                              onClick={() => handleNav(item.featured!.href)}
-                              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                            >
-                              {item.featured.cta}
-                              <ArrowRight className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
+                        </div>
                       </div>
                     </motion.div>
                   )}
