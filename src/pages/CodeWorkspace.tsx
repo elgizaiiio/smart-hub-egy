@@ -254,7 +254,7 @@ const CodeWorkspace = () => {
 
   const handleApprove = async () => {
     if (!hasEnoughCredits(BUILD_CREDIT_COST)) {
-      toast.error("رصيد الكريدت غير كافي. تحتاج 5 كريدت للبناء.");
+      toast.error("رصيد MC غير كافي. تحتاج 5 MC للبناء.");
       return;
     }
 
