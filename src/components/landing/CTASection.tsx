@@ -1,59 +1,55 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 
 const CTASection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden">
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-purple-600/10 via-purple-500/5 to-transparent" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-purple-600/10 blur-[150px]" />
+    <section className="relative overflow-hidden py-24 md:py-32">
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/15 via-primary/5 to-transparent" />
+      <div className="absolute left-1/2 top-1/2 h-[760px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-[140px]" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+      <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
         <motion.h2
-          initial={{ opacity: 0, y: 60 }}
+          initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.9 }}
-          className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-none mb-4"
+          transition={{ duration: 0.8 }}
+          className="font-display text-5xl font-black uppercase leading-[0.9] tracking-tight text-foreground md:text-8xl"
         >
-          <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            JOIN THE CREATORS
-          </span>
+          BUILD FASTER
         </motion.h2>
+
         <motion.h2
-          initial={{ opacity: 0, y: 60 }}
+          initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.9, delay: 0.15 }}
-          className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-none mb-8"
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="mt-2 font-display text-5xl font-black uppercase leading-[0.9] tracking-tight text-primary md:text-8xl"
         >
-          <span className="text-white">SHAPING THE FUTURE</span>
+          CREATE BIGGER
         </motion.h2>
 
         <motion.p
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.3 }}
-          className="text-white/40 text-lg md:text-xl max-w-xl mx-auto mb-12"
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-xl"
         >
-          Start creating with Megsy today. Free credits included -- no credit card required.
+          ابدأ الآن وجرّب تجربة Megsy الكاملة من أول Prompt حتى المنتج النهائي.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.94 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.45 }}
+          transition={{ duration: 0.55, delay: 0.35 }}
+          className="mt-10"
         >
-          <FancyButton onClick={() => navigate("/auth")} className="text-lg px-10 py-4">
-            <span className="flex items-center gap-2">
-              Start Creating Free <ArrowRight size={20} />
-            </span>
+          <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-base">
+            Start Creating Free
           </FancyButton>
         </motion.div>
       </div>
