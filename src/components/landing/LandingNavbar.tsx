@@ -194,8 +194,7 @@ const LandingNavbar = () => {
                       className="fixed left-1/2 top-16 z-50 mt-1 -translate-x-1/2"
                     >
                       <div
-                        className="flex max-h-[80vh] overflow-auto overscroll-contain gap-0 rounded-2xl border border-white/[0.08] bg-[hsl(var(--background))]/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl"
-                        style={{ width: item.featured ? "min(860px, calc(100vw - 2rem))" : "min(680px, calc(100vw - 2rem))" }}
+                        className="flex max-h-[80vh] w-max max-w-[calc(100vw-2rem)] overflow-auto overscroll-contain gap-0 rounded-2xl border border-white/[0.08] bg-[hsl(var(--background))]/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl"
                       >
                         {/* Columns */}
                         <div className="flex flex-1 gap-8">
