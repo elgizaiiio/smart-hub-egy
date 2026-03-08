@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { ArrowLeft, Check, User, Bot, MessageSquare, Type, Palette } from "lucide-react";
+import { ArrowLeft, Check, User, Bot, MessageSquare, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
