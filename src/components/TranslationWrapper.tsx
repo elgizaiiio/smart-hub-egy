@@ -246,7 +246,7 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
         return;
       }
       appliedLangRef.current = lang;
-      triggerTranslate(lang);
+      safeTriggerTranslate(lang);
     };
 
     const handleLangChange = () => {
