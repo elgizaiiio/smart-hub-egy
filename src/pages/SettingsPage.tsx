@@ -62,6 +62,7 @@ const SettingsPage = () => {
   const quickActions = [
     { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
+    { icon: Globe2, label: "Language", desc: "Translation", path: "/settings/language" },
     { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
   ];
 
@@ -125,7 +126,7 @@ const SettingsPage = () => {
           </button>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-3 gap-2.5 mb-8">
+          <div className="grid grid-cols-4 gap-2.5 mb-8">
             {quickActions.map((action, i) => {
               const Icon = action.icon;
               return (
