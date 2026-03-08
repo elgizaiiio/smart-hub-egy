@@ -119,43 +119,120 @@ const ContactPage = () => {
         <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
           {/* Left: Giant Typography Graphic */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, rotateY: -15 }}
-            whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 1 }}
-            className="relative hidden lg:block"
+            className="relative hidden lg:flex items-center justify-center"
           >
-            <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-purple-600 p-10">
-              <motion.div
-                initial={{ y: 40, opacity: 0 }}
-                whileInView={{ y: 0, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="relative z-10 flex h-full flex-col justify-between"
-              >
-                <h2 className="font-display text-[5.5vw] font-black uppercase leading-[0.85] tracking-tighter text-black">
-                  NEED
-                  <br />
-                  TO
-                  <br />
-                  CONTACT
-                  <br />
-                  US?
-                </h2>
+            <div className="relative aspect-square w-full flex items-center justify-center">
+              {/* Glowing background */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-[70%] w-[70%] rounded-full bg-purple-600/20 blur-[80px]" />
+              </div>
+
+              {/* Sphere */}
+              <div className="relative h-[420px] w-[420px]" style={{ perspective: "800px" }}>
+                {/* Rotating wireframe sphere using CSS */}
                 <motion.div
-                  className="absolute bottom-4 right-4"
-                  initial={{ scale: 0, rotate: -45 }}
-                  whileInView={{ scale: 1, rotate: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.7, type: "spring" }}
+                  animate={{ rotateY: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0"
+                  style={{ transformStyle: "preserve-3d" }}
                 >
-                  <svg viewBox="0 0 120 80" fill="none" className="h-28 w-40 text-black">
-                    <rect x="2" y="2" width="116" height="76" rx="8" stroke="currentColor" strokeWidth="5" />
-                    <path d="M2 10 L60 50 L118 10" stroke="currentColor" strokeWidth="5" fill="none" />
-                    <path d="M2 78 L45 45" stroke="currentColor" strokeWidth="5" />
-                    <path d="M118 78 L75 45" stroke="currentColor" strokeWidth="5" />
-                  </svg>
+                  {/* Horizontal rings */}
+                  {[0, 30, 60, 90, 120, 150].map((angle) => (
+                    <div
+                      key={`h-${angle}`}
+                      className="absolute inset-0 flex items-center justify-center"
+                      style={{
+                        transform: `rotateX(${angle}deg)`,
+                        transformStyle: "preserve-3d",
+                      }}
+                    >
+                      <div
+                        className="h-full w-full rounded-full border border-purple-500/30"
+                        style={{ transformStyle: "preserve-3d" }}
+                      />
+                    </div>
+                  ))}
+                  {/* Vertical rings */}
+                  {[0, 30, 60, 90, 120, 150].map((angle) => (
+                    <div
+                      key={`v-${angle}`}
+                      className="absolute inset-0 flex items-center justify-center"
+                      style={{
+                        transform: `rotateY(${angle}deg)`,
+                        transformStyle: "preserve-3d",
+                      }}
+                    >
+                      <div
+                        className="h-full w-full rounded-full border border-purple-400/25"
+                        style={{ transformStyle: "preserve-3d" }}
+                      />
+                    </div>
+                  ))}
                 </motion.div>
+
+                {/* Glowing core */}
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.9, 0.6] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-purple-400 shadow-[0_0_40px_15px_rgba(168,85,247,0.4)]"
+                />
+
+                {/* Orbiting dots */}
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={`dot-${i}`}
+                    className="absolute inset-0"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 8 + i * 3, repeat: Infinity, ease: "linear", delay: i * 1.5 }}
+                    style={{ transformOrigin: "center center" }}
+                  >
+                    <div
+                      className="absolute h-2.5 w-2.5 rounded-full bg-purple-400 shadow-[0_0_12px_4px_rgba(168,85,247,0.5)]"
+                      style={{
+                        top: `${15 + i * 12}%`,
+                        left: `${50 + (i % 2 === 0 ? 20 : -15)}%`,
+                      }}
+                    />
+                  </motion.div>
+                ))}
+
+                {/* Floating particles */}
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <motion.div
+                    key={`p-${i}`}
+                    className="absolute h-1 w-1 rounded-full bg-purple-300/50"
+                    style={{
+                      top: `${10 + Math.random() * 80}%`,
+                      left: `${10 + Math.random() * 80}%`,
+                    }}
+                    animate={{
+                      y: [0, -15, 0],
+                      opacity: [0.2, 0.7, 0.2],
+                    }}
+                    transition={{
+                      duration: 2 + Math.random() * 3,
+                      repeat: Infinity,
+                      delay: Math.random() * 2,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Text overlay */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5, duration: 0.7 }}
+                className="absolute bottom-8 left-0 right-0 text-center"
+              >
+                <p className="text-sm font-medium uppercase tracking-[0.3em] text-purple-400/60">
+                  Powered by AI
+                </p>
               </motion.div>
             </div>
           </motion.div>
