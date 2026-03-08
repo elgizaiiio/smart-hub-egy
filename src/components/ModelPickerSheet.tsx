@@ -277,18 +277,11 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                           <div className="aspect-square bg-secondary relative overflow-hidden">
                             {media ? (
                               media.media_type === "video" ? (
-                                <>
                                 <video
                                     src={media.media_url}
                                     className="w-full h-full object-cover"
                                     autoPlay muted loop playsInline
                                   />
-                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="w-9 h-9 rounded-full bg-background/50 backdrop-blur-sm flex items-center justify-center group-hover:opacity-0 transition-opacity">
-                                      <Play className="w-4 h-4 text-foreground fill-foreground" />
-                                    </div>
-                                  </div>
-                                </>
                               ) : (
                                 <img
                                   src={media.media_url}
