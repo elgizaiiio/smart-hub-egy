@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, Share2 } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, Share2, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
