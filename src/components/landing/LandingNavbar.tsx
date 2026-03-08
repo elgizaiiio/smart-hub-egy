@@ -5,7 +5,6 @@ import FancyButton from "@/components/FancyButton";
 import { ChevronDown, ArrowRight } from "lucide-react";
 /* ── Mega-menu data ── */
 interface SubItem {
-  icon: React.ElementType;
   label: string;
   desc: string;
   href: string;
@@ -39,28 +38,28 @@ const navItems: NavItem[] = [
       {
         title: "Image",
         items: [
-          { icon: IconImageGen, label: "AI Image Generator", desc: "Create images from prompts or references", href: "/images" },
-          { icon: IconCreative, label: "Creative Ideation", desc: "Explore visual ideas and directions", href: "/images" },
-          { icon: IconBgRemover, label: "Background Remover", desc: "Remove and replace image backgrounds", href: "/images" },
-          { icon: IconTrainModel, label: "Train Your Own Model", desc: "Train custom models for consistency", href: "/images" },
+          { label: "AI Image Generator", desc: "Create images from prompts or references", href: "/images" },
+          { label: "Creative Ideation", desc: "Explore visual ideas and directions", href: "/images" },
+          { label: "Background Remover", desc: "Remove and replace image backgrounds", href: "/images" },
+          { label: "Train Your Own Model", desc: "Train custom models for consistency", href: "/images" },
         ],
       },
       {
         title: "Video",
         items: [
-          { icon: IconVideoGen, label: "AI Video Generator", desc: "Generate motion from images or text", href: "/videos" },
+          { label: "AI Video Generator", desc: "Generate motion from images or text", href: "/videos" },
         ],
       },
       {
         title: "Editing",
         items: [
-          { icon: IconImageEditor, label: "Image Editor", desc: "Edit and refine images with AI", href: "/images" },
+          { label: "Image Editor", desc: "Edit and refine images with AI", href: "/images" },
         ],
       },
       {
         title: "Upscaling",
         items: [
-          { icon: IconUpscaler, label: "Image Upscaler", desc: "Enhance resolution without losing detail", href: "/images" },
+          { label: "Image Upscaler", desc: "Enhance resolution without losing detail", href: "/images" },
         ],
       },
     ],
@@ -72,19 +71,19 @@ const navItems: NavItem[] = [
       {
         title: "Tools",
         items: [
-          { icon: IconChat, label: "AI Chat", desc: "Chat with 80+ AI models", href: "/chat" },
-          { icon: IconImageGen, label: "Image Generation", desc: "Create stunning visuals", href: "/images" },
-          { icon: IconVideoGen, label: "Video Generation", desc: "Generate AI videos", href: "/videos" },
-          { icon: IconCode, label: "Code Builder", desc: "Build & deploy full-stack apps", href: "/code" },
+          { label: "AI Chat", desc: "Chat with 80+ AI models", href: "/chat" },
+          { label: "Image Generation", desc: "Create stunning visuals", href: "/images" },
+          { label: "Video Generation", desc: "Generate AI videos", href: "/videos" },
+          { label: "Code Builder", desc: "Build & deploy full-stack apps", href: "/code" },
         ],
       },
       {
         title: "Featured Models",
         items: [
-          { icon: IconMegsyPro, label: "Megsy Pro", desc: "Our flagship creative model", href: "/#models" },
-          { icon: IconGPT, label: "GPT-4o", desc: "Advanced reasoning", href: "/#models" },
-          { icon: IconClaude, label: "Claude Sonnet", desc: "Best for code & analysis", href: "/#models" },
-          { icon: IconGemini, label: "Gemini Flash", desc: "Ultra-fast responses", href: "/#models" },
+          { label: "Megsy Pro", desc: "Our flagship creative model", href: "/#models" },
+          { label: "GPT-4o", desc: "Advanced reasoning", href: "/#models" },
+          { label: "Claude Sonnet", desc: "Best for code & analysis", href: "/#models" },
+          { label: "Gemini Flash", desc: "Ultra-fast responses", href: "/#models" },
         ],
       },
     ],
@@ -95,10 +94,10 @@ const navItems: NavItem[] = [
       {
         title: "Resources",
         items: [
-          { icon: IconBlog, label: "Blog", desc: "Tips, tutorials and updates", href: "#" },
-          { icon: IconSupport, label: "Support", desc: "Get help from our team", href: "/contact" },
-          { icon: IconChangelog, label: "Changelog", desc: "What's new in Megsy", href: "#" },
-          { icon: IconAPI, label: "API Docs", desc: "Integrate Megsy into your apps", href: "#" },
+          { label: "Blog", desc: "Tips, tutorials and updates", href: "#" },
+          { label: "Support", desc: "Get help from our team", href: "/contact" },
+          { label: "Changelog", desc: "What's new in Megsy", href: "#" },
+          { label: "API Docs", desc: "Integrate Megsy into your apps", href: "#" },
         ],
       },
     ],
