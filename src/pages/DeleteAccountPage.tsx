@@ -34,7 +34,7 @@ const DeleteAccountPage = () => {
     "Profile Information",
     "All Conversations",
     "Generated Images & Videos",
-    "Credits & Subscription",
+    "MC & Subscription",
   ];
 
   const content = (

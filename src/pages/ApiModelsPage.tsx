@@ -126,7 +126,7 @@ const ApiModelsPage = () => {
                   <span className="text-xs text-muted-foreground">({models.length})</span>
                 </div>
                 <span className="text-primary font-medium">
-                  {min === max ? `${min} credits` : `${min}-${max} credits`}
+                  {min === max ? `${min} MC` : `${min}-${max} MC`}
                 </span>
               </div>
             );
