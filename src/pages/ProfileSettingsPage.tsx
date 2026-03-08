@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, MailCheck, ShieldEllipsis, UserRoundX, Gem, Camera, ChevronRight, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, MailCheck, ShieldEllipsis, ShieldCheck, UserRoundX, Gem, Camera, ChevronRight, Pencil, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,8 @@ const ProfileSettingsPage = () => {
   const [uploading, setUploading] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState("");
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [toggling2FA, setToggling2FA] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +33,7 @@ const ProfileSettingsPage = () => {
       setUserEmail(user.email || "");
       const { data: profile } = await supabase
         .from("profiles")
-        .select("credits, plan, display_name, avatar_url")
+        .select("credits, plan, display_name, avatar_url, two_factor_enabled")
         .eq("id", user.id)
         .single();
       if (profile && !cancelled) {
@@ -39,6 +41,7 @@ const ProfileSettingsPage = () => {
         setPlan(profile.plan || "free");
         if (profile.display_name) setUserName(profile.display_name);
         setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
+        setTwoFactorEnabled((profile as any).two_factor_enabled ?? false);
       }
     };
     loadUser();
@@ -80,6 +83,21 @@ const ProfileSettingsPage = () => {
       toast.success("Name updated");
     } catch {
       toast.error("Failed to update name");
+    }
+  };
+
+  const handleToggle2FA = async () => {
+    if (!userId) return;
+    setToggling2FA(true);
+    try {
+      const newVal = !twoFactorEnabled;
+      await supabase.from("profiles").update({ two_factor_enabled: newVal, updated_at: new Date().toISOString() } as any).eq("id", userId);
+      setTwoFactorEnabled(newVal);
+      toast.success(newVal ? "Two-factor authentication enabled" : "Two-factor authentication disabled");
+    } catch {
+      toast.error("Failed to update 2FA setting");
+    } finally {
+      setToggling2FA(false);
     }
   };
 
@@ -148,7 +166,7 @@ const ProfileSettingsPage = () => {
         </button>
       </div>
 
-      {/* Security + Upgrade + Delete — compact list */}
+      {/* Security + Upgrade + Delete */}
       <div>
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1 px-1">Security</p>
         <button onClick={() => navigate("/settings/change-email")} className="w-full flex items-center gap-3 py-3 px-1 text-left">
@@ -166,6 +184,16 @@ const ProfileSettingsPage = () => {
             <p className="text-xs text-muted-foreground">Update your password</p>
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+        </button>
+        <button onClick={handleToggle2FA} disabled={toggling2FA} className="w-full flex items-center gap-3 py-3 px-1 text-left">
+          <ShieldCheck className={`w-5 h-5 ${twoFactorEnabled ? "text-primary" : "text-muted-foreground"}`} />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">Two-Factor Authentication</p>
+            <p className="text-xs text-muted-foreground">{twoFactorEnabled ? "Enabled — OTP required on login" : "Disabled — Enable for extra security"}</p>
+          </div>
+          <div className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-colors ${twoFactorEnabled ? "bg-primary" : "bg-muted"}`}>
+            <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${twoFactorEnabled ? "translate-x-4" : "translate-x-0"}`} />
+          </div>
         </button>
         {plan === "free" && (
           <button onClick={() => navigate("/pricing")} className="w-full flex items-center gap-3 py-3 px-1 text-left">

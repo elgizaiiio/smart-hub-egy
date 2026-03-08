@@ -28,12 +28,42 @@ function otpEmailHtml(code: string): string {
     </div>`;
 }
 
+async function sendEmail(email: string, otp: string) {
+  const smtpHost = Deno.env.get("SMTP_HOST");
+  const smtpPort = Number(Deno.env.get("SMTP_PORT") || "587");
+  const smtpUser = Deno.env.get("SMTP_USER");
+  const smtpPass = Deno.env.get("SMTP_PASS");
+  const fromEmail = Deno.env.get("SMTP_FROM_EMAIL") || smtpUser;
+  const fromName = Deno.env.get("SMTP_FROM_NAME") || "Megsy AI";
+
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    throw new Error("SMTP credentials not configured");
+  }
+
+  const client = new SMTPClient({
+    connection: {
+      hostname: smtpHost,
+      port: smtpPort,
+      tls: smtpPort === 465,
+      auth: { username: smtpUser, password: smtpPass },
+    },
+  });
+
+  await client.send({
+    from: `${fromName} <${fromEmail}>`,
+    to: email,
+    subject: `${otp} — Your Megsy AI verification code`,
+    html: otpEmailHtml(otp),
+  });
+
+  await client.close();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { action, email, code } = await req.json();
-    
     if (!email) throw new Error("Email is required");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -41,16 +71,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     if (action === "send") {
-      // Generate OTP
       const otp = generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
       // Invalidate old codes
-      await supabase
-        .from("otp_codes")
-        .update({ used: true })
-        .eq("email", email.toLowerCase())
-        .eq("used", false);
+      await supabase.from("otp_codes").update({ used: true }).eq("email", email.toLowerCase()).eq("used", false);
 
       // Store new code
       await supabase.from("otp_codes").insert({
@@ -59,41 +84,14 @@ serve(async (req) => {
         expires_at: expiresAt,
       });
 
-      // Send via SMTP
-      const smtpHost = Deno.env.get("SMTP_HOST");
-      const smtpPort = Number(Deno.env.get("SMTP_PORT") || "587");
-      const smtpUser = Deno.env.get("SMTP_USER");
-      const smtpPass = Deno.env.get("SMTP_PASS");
-      const fromEmail = Deno.env.get("SMTP_FROM_EMAIL") || smtpUser;
-      const fromName = Deno.env.get("SMTP_FROM_NAME") || "Megsy AI";
-
-      if (!smtpHost || !smtpUser || !smtpPass) {
-        throw new Error("SMTP credentials not configured");
-      }
-
-      const client = new SMTPClient({
-        connection: {
-          hostname: smtpHost,
-          port: smtpPort,
-          tls: smtpPort === 465,
-          auth: { username: smtpUser, password: smtpPass },
-        },
-      });
-
-      await client.send({
-        from: `${fromName} <${fromEmail}>`,
-        to: email,
-        subject: `${otp} — Your Megsy AI verification code`,
-        html: otpEmailHtml(otp),
-      });
-
-      await client.close();
+      await sendEmail(email, otp);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
-    } else if (action === "verify") {
+    } else if (action === "verify-only") {
+      // Just verify the OTP without creating/signing in user (for signup flow)
       if (!code) throw new Error("Code is required");
 
       const { data: otpRecord } = await supabase
@@ -109,65 +107,94 @@ serve(async (req) => {
 
       if (!otpRecord) {
         return new Response(JSON.stringify({ success: false, error: "Invalid or expired code" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Mark as used
       await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
 
-      // Check if user exists
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    } else if (action === "verify-2fa") {
+      // Verify OTP for 2FA (user already authenticated with password)
+      if (!code) throw new Error("Code is required");
+
+      const { data: otpRecord } = await supabase
+        .from("otp_codes")
+        .select("*")
+        .eq("email", email.toLowerCase())
+        .eq("code", code)
+        .eq("used", false)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!otpRecord) {
+        return new Response(JSON.stringify({ success: false, error: "Invalid or expired code" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    } else if (action === "verify") {
+      // Legacy: verify and sign in (kept for backward compatibility)
+      if (!code) throw new Error("Code is required");
+
+      const { data: otpRecord } = await supabase
+        .from("otp_codes")
+        .select("*")
+        .eq("email", email.toLowerCase())
+        .eq("code", code)
+        .eq("used", false)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!otpRecord) {
+        return new Response(JSON.stringify({ success: false, error: "Invalid or expired code" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
+
       const normalizedEmail = email.trim().toLowerCase();
       const { data: usersData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
       const existingUser = usersData?.users?.find(u => u.email?.toLowerCase() === normalizedEmail);
 
       if (existingUser) {
-        // Generate magic link for existing user
         const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-          type: "magiclink",
-          email: normalizedEmail,
+          type: "magiclink", email: normalizedEmail,
         });
-
         if (linkError) throw new Error(linkError.message);
-
-        return new Response(JSON.stringify({ 
-          success: true, 
-          is_new: false,
-          token_hash: linkData.properties.hashed_token,
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({
+          success: true, is_new: false, token_hash: linkData.properties.hashed_token,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } else {
-        // Create new user with random password
         const randomPass = crypto.randomUUID() + "Aa1!";
-        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-          email: normalizedEmail,
-          password: randomPass,
-          email_confirm: true,
+        await supabase.auth.admin.createUser({
+          email: normalizedEmail, password: randomPass, email_confirm: true,
         });
-
-        if (createError) throw new Error(createError.message);
-
-        // Generate magic link for new user
         const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-          type: "magiclink",
-          email: normalizedEmail,
+          type: "magiclink", email: normalizedEmail,
         });
-
         if (linkError) throw new Error(linkError.message);
-
-        return new Response(JSON.stringify({ 
-          success: true, 
-          is_new: true,
-          token_hash: linkData.properties.hashed_token,
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({
+          success: true, is_new: true, token_hash: linkData.properties.hashed_token,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
     } else {
-      throw new Error("Invalid action. Use 'send' or 'verify'");
+      throw new Error("Invalid action");
     }
 
   } catch (e) {

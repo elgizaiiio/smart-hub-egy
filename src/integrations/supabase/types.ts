@@ -399,6 +399,7 @@ export type Database = {
           display_name: string | null
           id: string
           plan: string
+          two_factor_enabled: boolean
           updated_at: string
         }
         Insert: {
@@ -408,6 +409,7 @@ export type Database = {
           display_name?: string | null
           id: string
           plan?: string
+          two_factor_enabled?: boolean
           updated_at?: string
         }
         Update: {
@@ -417,6 +419,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           plan?: string
+          two_factor_enabled?: boolean
           updated_at?: string
         }
         Relationships: []
