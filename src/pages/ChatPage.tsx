@@ -288,7 +288,7 @@ const ChatPage = () => {
         </div>
 
         {/* Input */}
-        <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-1">
+        <div className="shrink-0 px-3 md:px-6 pt-1 bg-background" style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}>
           <div className="max-w-3xl mx-auto space-y-1.5">
             {/* Active mode badge */}
             <AnimatePresence>

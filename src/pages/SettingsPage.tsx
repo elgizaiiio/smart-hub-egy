@@ -155,7 +155,7 @@ const SettingsPage = () => {
             transition={{ delay: 0.25 }}
             className="mb-3 flex justify-center"
           >
-            <button onClick={() => navigate("/settings/referrals")} className="fancy-btn fancy-btn-green w-full">
+            <button onClick={() => navigate("/settings/referrals")} className="fancy-btn fancy-btn-gold w-full">
               <span className="fold" />
               <div className="points_wrapper">
                 {Array.from({ length: 8 }).map((_, j) => <span key={j} className="point" />)}
