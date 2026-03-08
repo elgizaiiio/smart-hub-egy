@@ -90,32 +90,15 @@ const AuthPage = () => {
       if (error) throw new Error(error.message);
       if (!data?.success) throw new Error(data?.error || "Invalid code");
 
-      // Use the magic link to sign in
-      if (data.action_link) {
-        // Extract token from action link and verify
-        const url = new URL(data.action_link);
-        const token_hash = url.searchParams.get("token_hash") || url.searchParams.get("token");
-        const type = url.searchParams.get("type") || "magiclink";
+      // Use the hashed token to sign in
+      if (data.token_hash) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: "magiclink",
+        });
         
-        if (token_hash) {
-          const { error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash,
-            type: type as any,
-          });
-          
-          if (verifyError) {
-            // Fallback: try direct URL approach
-            const hashFragment = url.hash;
-            if (hashFragment) {
-              window.location.href = data.action_link;
-              return;
-            }
-            throw new Error(verifyError.message);
-          }
-        } else {
-          // Redirect to action link
-          window.location.href = data.action_link;
-          return;
+        if (verifyError) {
+          throw new Error(verifyError.message);
         }
       }
 
