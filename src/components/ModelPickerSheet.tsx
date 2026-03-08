@@ -149,7 +149,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                 <div className="flex items-center justify-between">
                   <h2 className="font-display text-2xl font-bold text-foreground">{detailModel.name}</h2>
                   {detailModel.credits > 0 ? (
-                    <span className="text-lg font-bold text-primary">{detailModel.credits} cr</span>
+                    <span className="text-lg font-bold text-primary">{detailModel.credits} MC</span>
                   ) : (
                     <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-sm font-semibold">Free</span>
                   )}
