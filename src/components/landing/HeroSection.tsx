@@ -1,126 +1,150 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
-import ModelBrandIcon from "@/components/landing/ModelBrandIcon";
-
-const spotlightModels = [
-  { id: "megsy-v1", name: "Megsy V1" },
-  { id: "megsy-v1-img", name: "Megsy V1 Image" },
-  { id: "megsy-video", name: "Megsy Video" },
-  { id: "openai/gpt-5", name: "GPT-5" },
-  { id: "x-ai/grok-3", name: "Grok 3" },
-];
 
 const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-background pt-24">
-      <div className="landing-grid-overlay absolute inset-0" />
-
-      <div className="pointer-events-none absolute inset-0 overflow-hidden select-none">
+    <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-black">
+      {/* Massive perspective text wall — like Leonardo */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none overflow-hidden">
+        {/* Top text — comes from above */}
         <motion.span
-          initial={{ opacity: 0, y: -80 }}
-          animate={{ opacity: 0.55, y: 0 }}
-          transition={{ duration: 1.1, ease: "easeOut" }}
-          className="landing-hero-word absolute -top-[2vw] left-1/2 -translate-x-1/2 text-[24vw] leading-none text-primary"
+          initial={{ opacity: 0, y: -300, rotateX: 60 }}
+          animate={{ opacity: 0.15, y: -120, rotateX: 12 }}
+          transition={{ duration: 1.6, ease: "easeOut" }}
+          className="absolute text-[28vw] font-black uppercase leading-none tracking-tighter text-purple-500"
+          style={{ fontFamily: "var(--font-display)" }}
         >
           MEGSY
         </motion.span>
 
+        {/* Left — rotated */}
         <motion.span
-          initial={{ opacity: 0, x: -120 }}
-          animate={{ opacity: 0.45, x: 0 }}
-          transition={{ duration: 1.1, delay: 0.15, ease: "easeOut" }}
-          className="landing-hero-word absolute left-[-11vw] top-1/2 -translate-y-1/2 rotate-[-90deg] text-[14vw] leading-none text-primary"
+          initial={{ opacity: 0, x: -400 }}
+          animate={{ opacity: 0.12, x: -80 }}
+          transition={{ duration: 1.4, delay: 0.2, ease: "easeOut" }}
+          className="absolute left-[-8vw] text-[16vw] font-black uppercase leading-none tracking-tighter text-purple-500"
+          style={{ fontFamily: "var(--font-display)", writingMode: "vertical-lr", transform: "rotate(180deg)" }}
         >
           YOUR IDEAS
         </motion.span>
 
+        {/* Right — rotated */}
         <motion.span
-          initial={{ opacity: 0, x: 120 }}
-          animate={{ opacity: 0.45, x: 0 }}
-          transition={{ duration: 1.1, delay: 0.2, ease: "easeOut" }}
-          className="landing-hero-word absolute right-[-11vw] top-1/2 -translate-y-1/2 rotate-90 text-[14vw] leading-none text-primary"
+          initial={{ opacity: 0, x: 400 }}
+          animate={{ opacity: 0.12, x: 80 }}
+          transition={{ duration: 1.4, delay: 0.3, ease: "easeOut" }}
+          className="absolute right-[-8vw] text-[16vw] font-black uppercase leading-none tracking-tighter text-purple-500"
+          style={{ fontFamily: "var(--font-display)", writingMode: "vertical-lr" }}
         >
-          TOOLS
+          YOUR TOOLS
         </motion.span>
 
+        {/* Bottom — comes from below */}
         <motion.span
-          initial={{ opacity: 0, y: 80 }}
-          animate={{ opacity: 0.55, y: 0 }}
-          transition={{ duration: 1.1, delay: 0.25, ease: "easeOut" }}
-          className="landing-hero-word absolute -bottom-[3vw] left-1/2 -translate-x-1/2 text-[19vw] leading-none text-primary"
+          initial={{ opacity: 0, y: 300, rotateX: -60 }}
+          animate={{ opacity: 0.14, y: 140, rotateX: -8 }}
+          transition={{ duration: 1.6, delay: 0.15, ease: "easeOut" }}
+          className="absolute text-[22vw] font-black uppercase leading-none tracking-tighter text-purple-500"
+          style={{ fontFamily: "var(--font-display)" }}
         >
-          CREATE
+          TO CREATE
         </motion.span>
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-6xl flex-col items-center justify-center px-6 text-center">
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-6 text-sm font-semibold uppercase tracking-[0.24em] text-foreground/70"
-        >
-          Creator-first AI Platform
-        </motion.p>
+      {/* Gradient orbs */}
+      <motion.div
+        animate={{ scale: [1, 1.15, 1], opacity: [0.18, 0.28, 0.18] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute left-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-purple-600/25 blur-[160px]"
+      />
+      <motion.div
+        animate={{ scale: [1, 1.2, 1], opacity: [0.12, 0.22, 0.12] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-fuchsia-600/20 blur-[140px]"
+      />
 
-        <motion.h1
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="font-display text-[11vw] font-black uppercase leading-[0.88] tracking-tight text-foreground md:text-[8vw]"
+      {/* Content */}
+      <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.9, delay: 0.5 }}
         >
-          THE ALL-IN-ONE
-          <br />
-          AI CREATIVE PLATFORM
-        </motion.h1>
+          <h1 className="font-display text-[13vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[9vw]">
+            THE CREATOR-FIRST
+          </h1>
+          <h1 className="font-display text-[13vw] font-black uppercase leading-[0.85] tracking-tighter md:text-[9vw]">
+            <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+              AI PLATFORM
+            </span>
+          </h1>
+        </motion.div>
 
         <motion.p
-          initial={{ opacity: 0, y: 32 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.22 }}
-          className="mx-auto mt-7 max-w-3xl text-base leading-relaxed text-muted-foreground md:text-xl"
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-white/50 md:text-xl"
         >
-          Megsy يجمع الدردشة الذكية، صناعة الصور، الفيديو، التعديل الاحترافي، وبناء التطبيقات في تجربة واحدة متكاملة
-          تشرح وتنفذ وتنتج من فكرة واحدة حتى النتيجة النهائية.
+          Generate stunning images, cinematic videos, intelligent conversations,
+          and production-ready code with 80+ AI models in one unified platform.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 26 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.35 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+          transition={{ duration: 0.7, delay: 1.1 }}
+          className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
-          <FancyButton onClick={() => navigate("/auth")} className="px-8 py-3 text-base">
-            Start Creating
+          <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-lg">
+            Start Creating Free
           </FancyButton>
           <button
             onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
-            className="rounded-xl border border-border bg-secondary/40 px-8 py-3 text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary"
+            className="rounded-full border border-white/20 px-8 py-3.5 text-sm font-semibold text-white/70 transition-all hover:border-white/40 hover:text-white"
           >
-            Explore Full Platform
+            Explore Platform
           </button>
         </motion.div>
 
+        {/* Showcase images */}
         <motion.div
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.45 }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-3"
+          transition={{ duration: 1.2, delay: 1.4 }}
+          className="relative mx-auto mt-20 max-w-5xl"
         >
-          {spotlightModels.map((model) => (
-            <span
-              key={model.id}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-2 text-sm font-semibold text-foreground"
-            >
-              <ModelBrandIcon modelId={model.id} className="h-4 w-4" />
-              {model.name}
-            </span>
-          ))}
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-transparent to-transparent" />
+          <div className="grid grid-cols-3 gap-3">
+            <motion.img
+              whileHover={{ scale: 1.04 }}
+              transition={{ duration: 0.4 }}
+              src="/api-showcase/showcase-1.png"
+              alt="AI Generated Art"
+              className="h-48 w-full rounded-2xl object-cover opacity-80 md:h-72"
+            />
+            <motion.img
+              whileHover={{ scale: 1.04 }}
+              transition={{ duration: 0.4 }}
+              src="/api-showcase/showcase-2.jpg"
+              alt="AI Generated Art"
+              className="mt-8 h-48 w-full rounded-2xl object-cover opacity-80 md:h-72"
+            />
+            <motion.img
+              whileHover={{ scale: 1.04 }}
+              transition={{ duration: 0.4 }}
+              src="/api-showcase/showcase-3.jpg"
+              alt="AI Generated Art"
+              className="h-48 w-full rounded-2xl object-cover opacity-80 md:h-72"
+            />
+          </div>
         </motion.div>
       </div>
+
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black to-transparent" />
     </section>
   );
 };

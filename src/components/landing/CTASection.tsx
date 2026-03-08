@@ -6,49 +6,50 @@ const CTASection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative overflow-hidden py-24 md:py-32">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/15 via-primary/5 to-transparent" />
-      <div className="absolute left-1/2 top-1/2 h-[760px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-[140px]" />
+    <section className="relative overflow-hidden py-28 md:py-36">
+      <div className="absolute inset-0 bg-gradient-to-b from-purple-600/10 via-purple-500/5 to-transparent" />
+      <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-600/10 blur-[160px]" />
 
       <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
         <motion.h2
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="font-display text-5xl font-black uppercase leading-[0.9] tracking-tight text-foreground md:text-8xl"
+          transition={{ duration: 0.9 }}
+          className="font-display text-6xl font-black uppercase tracking-tighter leading-none text-white md:text-8xl lg:text-9xl"
         >
-          BUILD FASTER
+          JOIN THE CREATORS
         </motion.h2>
-
         <motion.h2
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="mt-2 font-display text-5xl font-black uppercase leading-[0.9] tracking-tight text-primary md:text-8xl"
+          transition={{ duration: 0.9, delay: 0.12 }}
+          className="mt-2 font-display text-6xl font-black uppercase tracking-tighter leading-none md:text-8xl lg:text-9xl"
         >
-          CREATE BIGGER
+          <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+            SHAPING THE FUTURE
+          </span>
         </motion.h2>
 
         <motion.p
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-xl"
+          transition={{ duration: 0.7, delay: 0.25 }}
+          className="mx-auto mt-8 max-w-xl text-lg text-white/40 md:text-xl"
         >
-          ابدأ الآن وجرّب تجربة Megsy الكاملة من أول Prompt حتى المنتج النهائي.
+          Start creating with Megsy today. Free credits included -- no credit card required.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.94 }}
+          initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.55, delay: 0.35 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-10"
         >
-          <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-base">
+          <FancyButton onClick={() => navigate("/auth")} className="px-12 py-4 text-lg">
             Start Creating Free
           </FancyButton>
         </motion.div>
