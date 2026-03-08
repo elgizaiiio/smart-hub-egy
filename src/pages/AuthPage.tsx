@@ -201,6 +201,21 @@ const AuthPage = () => {
     });
   };
 
+  const handleForgotPassword = async () => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Reset link sent! Check your email.");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to send reset link");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const resetFlow = () => {
     setStep("email");
     setPassword("");
