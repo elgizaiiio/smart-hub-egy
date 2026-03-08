@@ -433,8 +433,9 @@ const ChatPage = () => {
 
               <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} />
             </div>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
+            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept="*/*" />
             <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
+            <input ref={photoInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
           </div>
         </div>
       </div>
