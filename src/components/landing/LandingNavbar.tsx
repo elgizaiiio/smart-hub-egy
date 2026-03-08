@@ -183,12 +183,12 @@ const LandingNavbar = () => {
                     >
                       <div
                         className="flex max-h-[80vh] overflow-auto overscroll-contain gap-0 rounded-2xl border border-white/[0.08] bg-background p-5 shadow-2xl shadow-black/60"
-                        style={{ width: item.featured ? "min(620px, calc(100vw - 2rem))" : "min(480px, calc(100vw - 2rem))" }}
+                        style={{ width: item.featured ? "min(620px, calc(100vw - 2rem))" : "min(560px, calc(100vw - 2rem))" }}
                       >
                         {/* Columns */}
                         <div className="flex flex-1 gap-8">
                           {item.columns.map((col) => (
-                            <div key={col.title} className="min-w-[160px]">
+                            <div key={col.title} className="min-w-[180px] flex-1">
                               <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">
                                 {col.title}
                               </h4>
