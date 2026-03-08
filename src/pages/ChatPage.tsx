@@ -109,6 +109,24 @@ const ChatPage = () => {
     setPlusMenuOpen(false);
   };
 
+  const handleOpenFilesPicker = () => {
+    const input = fileInputRef.current;
+    if (!input) return;
+
+    try {
+      const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+      if (typeof pickerInput.showPicker === "function") {
+        pickerInput.showPicker();
+      } else {
+        input.click();
+      }
+    } catch {
+      input.click();
+    }
+
+    setPlusMenuOpen(false);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const userMsg: Message = { role: "user", content: input };
