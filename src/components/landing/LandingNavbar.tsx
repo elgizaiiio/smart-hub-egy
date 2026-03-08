@@ -8,6 +8,7 @@ const links = [
   { label: "Models", href: "#models" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "Pricing", href: "#pricing" },
+  { label: "About Us", href: "https://about.megsyai.com", external: true },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -38,7 +39,12 @@ const LandingNavbar = () => {
 
         <div className="hidden items-center gap-8 md:flex">
           {links.map((l) => (
-            <a key={l.label} href={l.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <a
+              key={l.label}
+              href={l.href}
+              {...((l as any).external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
               {l.label}
             </a>
           ))}
@@ -64,7 +70,13 @@ const LandingNavbar = () => {
       {mobileOpen && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-t border-border bg-background px-6 py-5 md:hidden">
           {links.map((l) => (
-            <a key={l.label} href={l.href} onClick={() => setMobileOpen(false)} className="block py-3 text-base font-medium text-muted-foreground hover:text-foreground">
+            <a
+              key={l.label}
+              href={l.href}
+              onClick={() => setMobileOpen(false)}
+              {...((l as any).external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              className="block py-3 text-base font-medium text-muted-foreground hover:text-foreground"
+            >
               {l.label}
             </a>
           ))}
