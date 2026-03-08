@@ -38,18 +38,39 @@ const LandingNavbar = () => {
           MEGSY
         </a>
 
-        
+        <div className="hidden items-center gap-6 md:flex">
+          {links.map((l) =>
+            l.href.startsWith("#") ? (
+              <a
+                key={l.label}
+                href={l.href}
+                className="text-sm font-medium text-white/50 transition-colors hover:text-white"
+              >
+                {l.label}
+              </a>
+            ) : (l as any).external ? (
+              <a
+                key={l.label}
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-white/50 transition-colors hover:text-white"
+              >
+                {l.label}
+              </a>
+            ) : (
+              <a
+                key={l.label}
+                href={l.href}
+                onClick={(e) => { e.preventDefault(); navigate(l.href); }}
+                className="text-sm font-medium text-white/50 transition-colors hover:text-white"
+              >
+                {l.label}
+              </a>
+            )
+          )}
+        </div>
 
-
-
-
-
-
-
-
-
-
-        
 
         <div className="hidden items-center gap-3 md:flex">
           <button
