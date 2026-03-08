@@ -145,12 +145,18 @@ const LinkedInIcon = () => (
 );
 
 const integrations = [
-  { id: "github", name: "GitHub", description: "Connect repositories & create issues", icon: GitHubIcon, category: "Development", app: "github", isSvg: true },
-  { id: "gmail", name: "Gmail", description: "Send and manage emails", icon: GmailIcon, category: "Communication", app: "gmail", isSvg: true },
-  { id: "gdrive", name: "Google Drive", description: "Upload and manage files", icon: GoogleDriveIcon, category: "Storage", app: "googledrive", isSvg: true },
+  // Essential
+  { id: "github", name: "GitHub", description: "Connect repositories & create issues", icon: GitHubIcon, category: "Essential", app: "github", isSvg: true },
+  { id: "gmail", name: "Gmail", description: "Send and manage emails", icon: GmailIcon, category: "Essential", app: "gmail", isSvg: true },
+  { id: "gdrive", name: "Google Drive", description: "Upload and manage files", icon: GoogleDriveIcon, category: "Essential", app: "googledrive", isSvg: true },
+  { id: "slack", name: "Slack", description: "Send messages to channels", icon: SlackIcon, category: "Essential", app: "slack", isSvg: true },
+  { id: "notion", name: "Notion", description: "Create pages & manage workspace", icon: NotionIcon, category: "Essential", app: "notion", isSvg: true },
+  // Productivity
   { id: "gcalendar", name: "Google Calendar", description: "Create events & manage schedule", icon: GoogleCalendarIcon, category: "Productivity", app: "googlecalendar", isSvg: true },
-  { id: "notion", name: "Notion", description: "Create pages & manage workspace", icon: NotionIcon, category: "Productivity", app: "notion", isSvg: true },
-  { id: "slack", name: "Slack", description: "Send messages to channels", icon: SlackIcon, category: "Communication", app: "slack", isSvg: true },
+  { id: "outlook", name: "Outlook", description: "Email & calendar management", icon: OutlookIcon, category: "Productivity", app: "outlook", isSvg: true },
+  { id: "teams", name: "Microsoft Teams", description: "Team communication & meetings", icon: TeamsIcon, category: "Productivity", app: "microsoftteams", isSvg: true },
+  { id: "zoom", name: "Zoom", description: "Video meetings & webinars", icon: ZoomIcon, category: "Productivity", app: "zoom", isSvg: true },
+  // Development
   { id: "supabase", name: "Supabase", description: "Backend & database management", icon: () => (
     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
       <path d="M13.73 21.766c-.28.354-.857.157-.857-.29V13.5h8.464c.736 0 1.137.852.673 1.432l-8.28 6.834z" fill="#3ECF8E"/>
@@ -159,16 +165,15 @@ const integrations = [
       <defs><linearGradient id="sb1" x1="12.87" y1="15.3" x2="18.17" y2="19.07" gradientUnits="userSpaceOnUse"><stop stopColor="#249361"/><stop offset="1" stopColor="#3ECF8E"/></linearGradient></defs>
     </svg>
   ), category: "Development", app: "supabase", isSvg: true },
-  { id: "hubspot", name: "HubSpot", description: "CRM & marketing automation", icon: HubSpotIcon, category: "Business", app: "hubspot", isSvg: true },
-  { id: "youtube", name: "YouTube", description: "Search & manage video content", icon: YouTubeIcon, category: "Social", app: "youtube", isSvg: true },
-  { id: "outlook", name: "Outlook", description: "Email & calendar management", icon: OutlookIcon, category: "Communication", app: "outlook", isSvg: true },
   { id: "figma", name: "Figma", description: "Design collaboration & assets", icon: FigmaIcon, category: "Development", app: "figma", isSvg: true },
-  { id: "teams", name: "Microsoft Teams", description: "Team communication & meetings", icon: TeamsIcon, category: "Communication", app: "microsoftteams", isSvg: true },
-  { id: "zoom", name: "Zoom", description: "Video meetings & webinars", icon: ZoomIcon, category: "Communication", app: "zoom", isSvg: true },
-  { id: "instagram", name: "Instagram", description: "Share images and stories", icon: InstagramIcon, category: "Social", app: "instagram", isSvg: true },
-  { id: "facebook", name: "Facebook", description: "Publish content to Facebook", icon: FacebookIcon, category: "Social", app: "facebook", isSvg: true },
-  { id: "linkedin", name: "LinkedIn", description: "Share professional content", icon: LinkedInIcon, category: "Social", app: "linkedin", isSvg: true },
-  { id: "discord", name: "Discord", description: "Send messages & manage servers", icon: DiscordIcon, category: "Communication", app: "discord", isSvg: true },
+  // Social & Marketing
+  { id: "youtube", name: "YouTube", description: "Search & manage video content", icon: YouTubeIcon, category: "Social & Marketing", app: "youtube", isSvg: true },
+  { id: "instagram", name: "Instagram", description: "Share images and stories", icon: InstagramIcon, category: "Social & Marketing", app: "instagram", isSvg: true },
+  { id: "facebook", name: "Facebook", description: "Publish content to Facebook", icon: FacebookIcon, category: "Social & Marketing", app: "facebook", isSvg: true },
+  { id: "linkedin", name: "LinkedIn", description: "Share professional content", icon: LinkedInIcon, category: "Social & Marketing", app: "linkedin", isSvg: true },
+  { id: "discord", name: "Discord", description: "Send messages & manage servers", icon: DiscordIcon, category: "Social & Marketing", app: "discord", isSvg: true },
+  // Business
+  { id: "hubspot", name: "HubSpot", description: "CRM & marketing automation", icon: HubSpotIcon, category: "Business", app: "hubspot", isSvg: true },
 ];
 
 const IntegrationsPage = () => {
