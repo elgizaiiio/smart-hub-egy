@@ -1,4 +1,5 @@
 import { ArrowLeft, Copy, Check, Gift, Users, DollarSign, Share2 } from "lucide-react";
+import FancyButton from "@/components/FancyButton";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useState } from "react";
