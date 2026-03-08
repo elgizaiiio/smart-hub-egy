@@ -54,7 +54,7 @@ const LandingNavbar = () => {
         <div className="hidden items-center gap-3 md:flex">
           <button
             onClick={() => navigate("/auth")}
-            className="rounded-full border border-border px-5 py-2 text-sm font-medium text-foreground transition-all hover:border-foreground/35"
+            className="rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white transition-all hover:border-white/40"
           >
             Log in
           </button>
