@@ -98,12 +98,12 @@ const PricingPreview = () => {
               transition={{ duration: 0.7, delay: i * 0.12 }}
               className={`relative rounded-3xl border p-9 ${
                 plan.highlight
-                  ? "border-purple-500/40 bg-purple-500/[0.08] shadow-xl shadow-purple-500/10"
-                  : "border-white/10 bg-white/[0.02]"
+                  ? `${plan.borderColor} ${plan.bgColor} shadow-xl shadow-purple-500/10`
+                  : `${plan.borderColor} ${plan.bgColor}`
               }`}
             >
               {plan.highlight && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-purple-500 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white">
+                <div className={`absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full ${plan.badgeColor} px-4 py-1 text-xs font-bold uppercase tracking-wider text-white`}>
                   Most Popular
                 </div>
               )}
@@ -111,16 +111,17 @@ const PricingPreview = () => {
               <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-5xl font-black text-white">
-                  {plan.price === "Custom" ? "" : "$"}{plan.price}
+                  ${plan.price}
                 </span>
                 <span className="text-base text-white/40">{plan.period}</span>
               </div>
+              <p className="mt-1 text-xs text-white/30">or {plan.yearlyPrice} billed yearly</p>
               <p className="mt-2 text-sm text-white/40">{plan.description}</p>
 
               <ul className="mt-8 space-y-3">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-3 text-base text-white/60">
-                    <Check size={16} className="shrink-0 text-purple-400" />
+                    <Check size={16} className={`shrink-0 ${plan.checkColor}`} />
                     {f}
                   </li>
                 ))}
