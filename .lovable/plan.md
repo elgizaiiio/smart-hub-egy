@@ -1,28 +1,41 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-## إضافة إشعار الكوكيز
+## ✅ Completed
 
-### ما سيتم بناؤه
-إشعار كوكيز يظهر أسفل يسار الشاشة عند أول زيارة للموقع، بنفس التصميم المطلوب (من Uiverse.io). يختفي عند الضغط على Accept أو Decline ولا يظهر مرة أخرى.
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-### الملفات
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-**1. ملف جديد: `src/components/CookieConsent.tsx`**
-- يستخدم `localStorage` لتتبع ما إذا تم القبول/الرفض
-- يظهر بعد 1.5 ثانية من فتح الموقع بأنيميشن `framer-motion`
-- يحتوي على أيقونة كوكيز SVG + عنوان + وصف + زرين (Accept / Decline)
-- عند الضغط على أي زر يُحفظ الاختيار في `localStorage` ويختفي
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-**2. تعديل: `src/index.css`**
-- إضافة CSS المطلوب في نهاية الملف مع تعديل بسيط:
-  - `.cookie-card` بدلاً من `.card` (لتجنب التعارض)
-  - إضافة `position: fixed; bottom: 20px; left: 20px; z-index: 9999;`
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-**3. تعديل: `src/App.tsx`**
-- استيراد `CookieConsent` وإضافته داخل `BrowserRouter` بجانب `Toaster`
-
-### التفاصيل التقنية
-- CSS المرفق يُطبق كما هو مع تغيير `.card` إلى `.cookie-card` وإضافة `fixed positioning`
-- `localStorage` key: `megsy_cookies_accepted`
-- رابط "Learn more" يوجه إلى `/privacy`
-
+### 5. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists
