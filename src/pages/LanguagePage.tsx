@@ -1,41 +1,101 @@
 import { useState, useMemo } from "react";
-import { ArrowLeft, Check, Search, Globe, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 
 const LANGUAGES = [
-  { code: "en", name: "English", native: "English", flag: "🇺🇸" },
-  { code: "ar", name: "Arabic", native: "العربية", flag: "🇸🇦" },
-  { code: "es", name: "Spanish", native: "Español", flag: "🇪🇸" },
-  { code: "fr", name: "French", native: "Français", flag: "🇫🇷" },
-  { code: "de", name: "German", native: "Deutsch", flag: "🇩🇪" },
-  { code: "zh", name: "Chinese", native: "中文", flag: "🇨🇳" },
-  { code: "ja", name: "Japanese", native: "日本語", flag: "🇯🇵" },
-  { code: "ko", name: "Korean", native: "한국어", flag: "🇰🇷" },
-  { code: "pt", name: "Portuguese", native: "Português", flag: "🇧🇷" },
-  { code: "ru", name: "Russian", native: "Русский", flag: "🇷🇺" },
-  { code: "tr", name: "Turkish", native: "Türkçe", flag: "🇹🇷" },
-  { code: "hi", name: "Hindi", native: "हिन्दी", flag: "🇮🇳" },
-  { code: "it", name: "Italian", native: "Italiano", flag: "🇮🇹" },
-  { code: "nl", name: "Dutch", native: "Nederlands", flag: "🇳🇱" },
-  { code: "pl", name: "Polish", native: "Polski", flag: "🇵🇱" },
-  { code: "sv", name: "Swedish", native: "Svenska", flag: "🇸🇪" },
-  { code: "th", name: "Thai", native: "ไทย", flag: "🇹🇭" },
-  { code: "vi", name: "Vietnamese", native: "Tiếng Việt", flag: "🇻🇳" },
-  { code: "id", name: "Indonesian", native: "Bahasa Indonesia", flag: "🇮🇩" },
-  { code: "uk", name: "Ukrainian", native: "Українська", flag: "🇺🇦" },
-  { code: "ro", name: "Romanian", native: "Română", flag: "🇷🇴" },
-  { code: "el", name: "Greek", native: "Ελληνικά", flag: "🇬🇷" },
-  { code: "cs", name: "Czech", native: "Čeština", flag: "🇨🇿" },
-  { code: "hu", name: "Hungarian", native: "Magyar", flag: "🇭🇺" },
-  { code: "da", name: "Danish", native: "Dansk", flag: "🇩🇰" },
-  { code: "fi", name: "Finnish", native: "Suomi", flag: "🇫🇮" },
-  { code: "no", name: "Norwegian", native: "Norsk", flag: "🇳🇴" },
-  { code: "he", name: "Hebrew", native: "עברית", flag: "🇮🇱" },
-  { code: "ms", name: "Malay", native: "Bahasa Melayu", flag: "🇲🇾" },
-  { code: "bn", name: "Bengali", native: "বাংলা", flag: "🇧🇩" },
+  { code: "en", name: "English", native: "English" },
+  { code: "ar", name: "Arabic", native: "العربية" },
+  { code: "es", name: "Spanish", native: "Español" },
+  { code: "fr", name: "French", native: "Français" },
+  { code: "de", name: "German", native: "Deutsch" },
+  { code: "zh", name: "Chinese (Simplified)", native: "简体中文" },
+  { code: "zh-TW", name: "Chinese (Traditional)", native: "繁體中文" },
+  { code: "ja", name: "Japanese", native: "日本語" },
+  { code: "ko", name: "Korean", native: "한국어" },
+  { code: "pt", name: "Portuguese", native: "Português" },
+  { code: "pt-BR", name: "Portuguese (Brazil)", native: "Português (Brasil)" },
+  { code: "ru", name: "Russian", native: "Русский" },
+  { code: "tr", name: "Turkish", native: "Türkçe" },
+  { code: "hi", name: "Hindi", native: "हिन्दी" },
+  { code: "it", name: "Italian", native: "Italiano" },
+  { code: "nl", name: "Dutch", native: "Nederlands" },
+  { code: "pl", name: "Polish", native: "Polski" },
+  { code: "sv", name: "Swedish", native: "Svenska" },
+  { code: "th", name: "Thai", native: "ไทย" },
+  { code: "vi", name: "Vietnamese", native: "Tiếng Việt" },
+  { code: "id", name: "Indonesian", native: "Bahasa Indonesia" },
+  { code: "uk", name: "Ukrainian", native: "Українська" },
+  { code: "ro", name: "Romanian", native: "Română" },
+  { code: "el", name: "Greek", native: "Ελληνικά" },
+  { code: "cs", name: "Czech", native: "Čeština" },
+  { code: "hu", name: "Hungarian", native: "Magyar" },
+  { code: "da", name: "Danish", native: "Dansk" },
+  { code: "fi", name: "Finnish", native: "Suomi" },
+  { code: "no", name: "Norwegian", native: "Norsk" },
+  { code: "he", name: "Hebrew", native: "עברית" },
+  { code: "ms", name: "Malay", native: "Bahasa Melayu" },
+  { code: "bn", name: "Bengali", native: "বাংলা" },
+  { code: "ta", name: "Tamil", native: "தமிழ்" },
+  { code: "te", name: "Telugu", native: "తెలుగు" },
+  { code: "mr", name: "Marathi", native: "मराठी" },
+  { code: "ur", name: "Urdu", native: "اردو" },
+  { code: "fa", name: "Persian", native: "فارسی" },
+  { code: "sw", name: "Swahili", native: "Kiswahili" },
+  { code: "af", name: "Afrikaans", native: "Afrikaans" },
+  { code: "sq", name: "Albanian", native: "Shqip" },
+  { code: "am", name: "Amharic", native: "አማርኛ" },
+  { code: "hy", name: "Armenian", native: "Հայերեն" },
+  { code: "az", name: "Azerbaijani", native: "Azərbaycan" },
+  { code: "eu", name: "Basque", native: "Euskara" },
+  { code: "be", name: "Belarusian", native: "Беларуская" },
+  { code: "bs", name: "Bosnian", native: "Bosanski" },
+  { code: "bg", name: "Bulgarian", native: "Български" },
+  { code: "my", name: "Burmese", native: "မြန်မာ" },
+  { code: "ca", name: "Catalan", native: "Català" },
+  { code: "hr", name: "Croatian", native: "Hrvatski" },
+  { code: "et", name: "Estonian", native: "Eesti" },
+  { code: "fil", name: "Filipino", native: "Filipino" },
+  { code: "gl", name: "Galician", native: "Galego" },
+  { code: "ka", name: "Georgian", native: "ქართული" },
+  { code: "gu", name: "Gujarati", native: "ગુજરાતી" },
+  { code: "ha", name: "Hausa", native: "Hausa" },
+  { code: "is", name: "Icelandic", native: "Íslenska" },
+  { code: "ig", name: "Igbo", native: "Igbo" },
+  { code: "ga", name: "Irish", native: "Gaeilge" },
+  { code: "jv", name: "Javanese", native: "Basa Jawa" },
+  { code: "kn", name: "Kannada", native: "ಕನ್ನಡ" },
+  { code: "kk", name: "Kazakh", native: "Қазақ" },
+  { code: "km", name: "Khmer", native: "ខ្មែរ" },
+  { code: "ky", name: "Kyrgyz", native: "Кыргызча" },
+  { code: "lo", name: "Lao", native: "ລາວ" },
+  { code: "lv", name: "Latvian", native: "Latviešu" },
+  { code: "lt", name: "Lithuanian", native: "Lietuvių" },
+  { code: "lb", name: "Luxembourgish", native: "Lëtzebuergesch" },
+  { code: "mk", name: "Macedonian", native: "Македонски" },
+  { code: "mg", name: "Malagasy", native: "Malagasy" },
+  { code: "ml", name: "Malayalam", native: "മലയാളം" },
+  { code: "mt", name: "Maltese", native: "Malti" },
+  { code: "mi", name: "Maori", native: "Te Reo Māori" },
+  { code: "mn", name: "Mongolian", native: "Монгол" },
+  { code: "ne", name: "Nepali", native: "नेपाली" },
+  { code: "ps", name: "Pashto", native: "پښتو" },
+  { code: "pa", name: "Punjabi", native: "ਪੰਜਾਬੀ" },
+  { code: "sr", name: "Serbian", native: "Српски" },
+  { code: "si", name: "Sinhala", native: "සිංහල" },
+  { code: "sk", name: "Slovak", native: "Slovenčina" },
+  { code: "sl", name: "Slovenian", native: "Slovenščina" },
+  { code: "so", name: "Somali", native: "Soomaali" },
+  { code: "su", name: "Sundanese", native: "Basa Sunda" },
+  { code: "tg", name: "Tajik", native: "Тоҷикӣ" },
+  { code: "uz", name: "Uzbek", native: "Oʻzbek" },
+  { code: "cy", name: "Welsh", native: "Cymraeg" },
+  { code: "xh", name: "Xhosa", native: "isiXhosa" },
+  { code: "yi", name: "Yiddish", native: "ייִדיש" },
+  { code: "yo", name: "Yoruba", native: "Yorùbá" },
+  { code: "zu", name: "Zulu", native: "isiZulu" },
 ];
 
 const LanguagePage = () => {
@@ -44,14 +104,12 @@ const LanguagePage = () => {
   const [currentLang, setCurrentLang] = useState(localStorage.getItem("language") || "en");
   const [search, setSearch] = useState("");
 
-  const currentLangData = LANGUAGES.find((l) => l.code === currentLang);
-
   const filtered = useMemo(
     () =>
       LANGUAGES.filter(
         (l) =>
           l.name.toLowerCase().includes(search.toLowerCase()) ||
-          l.native.includes(search)
+          l.native.toLowerCase().includes(search.toLowerCase())
       ),
     [search]
   );
@@ -64,35 +122,11 @@ const LanguagePage = () => {
 
   const LanguageContent = () => (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="space-y-5 max-w-lg"
+      transition={{ duration: 0.3 }}
+      className="space-y-4 max-w-2xl"
     >
-      {/* Current language hero card */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border border-primary/20 p-5">
-        <div className="absolute top-3 right-3 opacity-10">
-          <Globe className="w-20 h-20 text-primary" />
-        </div>
-        <div className="relative z-10 flex items-center gap-4">
-          <div className="notranslate w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center text-2xl">
-            {currentLangData?.flag}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-primary font-medium uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3" />
-              Current Language
-            </p>
-            <p className="notranslate text-lg font-bold text-foreground truncate">
-              {currentLangData?.name}
-            </p>
-            <p className="notranslate text-sm text-muted-foreground">
-              {currentLangData?.native}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Search */}
       <div className="relative group">
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -104,56 +138,52 @@ const LanguagePage = () => {
         />
       </div>
 
-      {/* Language grid */}
-      <div className="space-y-1">
+      {/* Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <AnimatePresence mode="popLayout">
-          {filtered.map((lang, i) => {
+          {filtered.map((lang) => {
             const isActive = currentLang === lang.code;
             return (
               <motion.button
                 key={lang.code}
                 layout
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2, delay: Math.min(i * 0.015, 0.3) }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.15 }}
                 onClick={() => handleSelect(lang.code)}
-                className={`notranslate w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left transition-all duration-200 ${
+                className={`notranslate relative flex flex-col items-start p-3.5 rounded-xl text-left transition-all duration-200 ${
                   isActive
-                    ? "bg-primary/10 border border-primary/25"
-                    : "hover:bg-accent/50 border border-transparent"
+                    ? "bg-primary/10 border border-primary/30 shadow-sm"
+                    : "bg-secondary/40 border border-border/40 hover:bg-accent/50 hover:border-border"
                 }`}
               >
-                <span className="text-xl w-8 text-center flex-shrink-0">{lang.flag}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${isActive ? "text-primary" : "text-foreground"}`}>
-                    {lang.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{lang.native}</p>
-                </div>
                 {isActive && (
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                    className="absolute top-2.5 right-2.5"
                   >
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={3} />
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="w-3 h-3 text-primary-foreground" strokeWidth={3} />
                     </div>
                   </motion.div>
                 )}
+                <p className={`text-sm font-medium leading-tight ${isActive ? "text-primary" : "text-foreground"}`}>
+                  {lang.name}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{lang.native}</p>
               </motion.button>
             );
           })}
         </AnimatePresence>
-
-        {filtered.length === 0 && (
-          <div className="py-10 text-center">
-            <Globe className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No languages found</p>
-          </div>
-        )}
       </div>
+
+      {filtered.length === 0 && (
+        <div className="py-12 text-center">
+          <p className="text-sm text-muted-foreground">No languages found</p>
+        </div>
+      )}
     </motion.div>
   );
 
@@ -167,7 +197,7 @@ const LanguagePage = () => {
 
   return (
     <div className="h-[100dvh] bg-background overflow-y-auto">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-3 px-4 py-3">
           <button
             onClick={() => navigate("/settings")}
