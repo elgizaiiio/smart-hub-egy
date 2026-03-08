@@ -452,7 +452,8 @@ const ImagesPage = () => {
     : "None";
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background">
+    <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
+    <div className="h-full flex flex-col bg-background">
       <AppSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
