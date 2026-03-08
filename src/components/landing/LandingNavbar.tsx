@@ -188,7 +188,7 @@ const LandingNavbar = () => {
                         {/* Columns */}
                         <div className="flex flex-1 gap-8">
                           {item.columns.map((col) => (
-                            <div key={col.title} className="min-w-[160px]">
+                            <div key={col.title} className="min-w-[180px] flex-1">
                               <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">
                                 {col.title}
                               </h4>
