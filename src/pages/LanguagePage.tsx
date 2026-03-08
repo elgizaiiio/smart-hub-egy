@@ -51,6 +51,8 @@ const LanguagePage = () => {
   const handleSelect = (code: string) => {
     localStorage.setItem("language", code);
     setCurrentLang(code);
+    // Notify TranslationWrapper in the same tab
+    window.dispatchEvent(new Event("languagechange-custom"));
   };
 
   const LanguageContent = () => (

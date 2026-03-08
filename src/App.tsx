@@ -36,6 +36,7 @@ import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SharedChatPage from "./pages/SharedChatPage";
 import CookieConsent from "./components/CookieConsent";
+import TranslationWrapper from "./components/TranslationWrapper";
 
 const queryClient = new QueryClient();
 
