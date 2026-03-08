@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Mail } from "lucide-react";
+import { ArrowLeft, Check, Mail, Building2, Calendar, Zap, Cpu, Infinity, Server, ShieldCheck, Users, Gauge, Clock, HeadphonesIcon, Webhook, Globe, BarChart3, HardDrive, Headset } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const plans = [
