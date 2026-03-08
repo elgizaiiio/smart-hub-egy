@@ -21,8 +21,8 @@ const tabs = [
   },
   {
     title: "VIDEO CREATION",
-    description: "Generate, animate, and render video with Kling 3.0 Pro, Veo 3.1, Runway Gen-4, and Megsy Video. From 4-second clips to full scenes with camera control.",
-    video: "/api-showcase/video-3.mp4",
+    description: "Bring your imagination to life in motion. Kling 3.0 Pro, Veo 3.1, Runway Gen-4 & Megsy Video — generate cinematic scenes, control camera angles, and render stunning videos from a single prompt. Your director's chair awaits.",
+    video: "/api-showcase/video-gen-preview.mp4",
     accent: "bg-amber-500",
   },
   {
