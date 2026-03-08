@@ -576,10 +576,10 @@ const ImagesPage = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.96 }}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72 rounded-2xl"
+                    className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-64 rounded-2xl"
                   >
                     {/* ATTACH */}
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-1">Attach</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold px-1 mb-0.5">Attach</p>
                     <button
                       onClick={() => {
                         if (!capability.acceptsImages) {
@@ -590,13 +590,13 @@ const ImagesPage = () => {
                         fileInputRef.current?.click();
                         setMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-accent/60 transition-all group"
+                      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-accent/60 transition-all group"
                     >
-                      <div className="w-8 h-8 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                        <ImageIcon className="w-4 h-4 text-violet-500" />
+                      <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+                        <ImageIcon className="w-3.5 h-3.5 text-violet-500" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-foreground font-medium">
+                        <p className="text-[13px] text-foreground font-medium">
                           {capability.acceptsImages ? "Attach Image" : `${selectedModel.name}`}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
@@ -605,11 +605,11 @@ const ImagesPage = () => {
                       </div>
                     </button>
 
-                    {/* PUBLISH TO - PRO */}
-                    <div className="border-t border-border pt-2 mt-2">
-                      <div className="flex items-center justify-between px-1 mb-1">
+                    {/* PUBLISH TO - PREMIUM */}
+                    <div className="border-t border-border pt-1.5 mt-1.5">
+                      <div className="flex items-center justify-between px-1 mb-0.5">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Publish to</p>
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-500 border border-amber-500/30 font-bold tracking-wide">PRO ✨</span>
+                        <span className="text-[7px] px-1.5 py-[2px] rounded-full bg-gradient-to-r from-amber-400/15 to-amber-600/15 text-amber-400 border border-amber-400/20 font-semibold tracking-widest uppercase">Premium</span>
                       </div>
 
                       {PUBLISH_OPTIONS.map(({ platform, Icon, label }) => {
@@ -620,13 +620,13 @@ const ImagesPage = () => {
                           <button
                             key={platform}
                             onClick={() => handlePublish(platform)}
-                            className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left hover:bg-accent/60 transition-all group"
+                            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-left hover:bg-accent/60 transition-all group"
                           >
-                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-accent transition-colors">
+                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center group-hover:bg-accent transition-colors">
                               <Icon />
                             </div>
-                            <span className="text-sm text-foreground font-medium">{label}</span>
-                            <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${isConnected ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
+                            <span className="text-[13px] text-foreground font-medium">{label}</span>
+                            <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-medium ${isConnected ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
                               {isLoadingConnections ? "..." : isConnected ? "Connected" : "Connect"}
                             </span>
                           </button>
