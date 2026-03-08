@@ -86,6 +86,9 @@ const App = () => {
             <Route path="/files" element={<ProtectedRoute><FilesPage /></ProtectedRoute>} />
             <Route path="/code" element={<ProtectedRoute><ProgrammingPage /></ProtectedRoute>} />
             <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace /></ProtectedRoute>} />
+            <Route path="/studio" element={<ProtectedRoute><StudioPage /></ProtectedRoute>} />
+            <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/settings/customization" element={<ProtectedRoute><CustomizationPage /></ProtectedRoute>} />
             <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
