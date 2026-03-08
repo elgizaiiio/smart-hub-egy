@@ -70,7 +70,13 @@ const LandingNavbar = () => {
       {mobileOpen && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-t border-border bg-background px-6 py-5 md:hidden">
           {links.map((l) => (
-            <a key={l.label} href={l.href} onClick={() => setMobileOpen(false)} className="block py-3 text-base font-medium text-muted-foreground hover:text-foreground">
+            <a
+              key={l.label}
+              href={l.href}
+              onClick={() => setMobileOpen(false)}
+              {...((l as any).external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              className="block py-3 text-base font-medium text-muted-foreground hover:text-foreground"
+            >
               {l.label}
             </a>
           ))}
