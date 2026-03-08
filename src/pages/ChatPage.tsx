@@ -157,7 +157,7 @@ const ChatPage = () => {
   };
 
   const handleNewChat = () => {
-    setMessages([]); setConversationId(null); setIsLoading(false); setIsThinking(false); setAttachedFiles([]); setSearchStatus("");
+    setMessages([]); setConversationId(null); setIsLoading(false); setIsThinking(false); setAttachedFiles([]); setSearchStatus(""); setChatMode("normal"); setSearchEnabled(false);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
