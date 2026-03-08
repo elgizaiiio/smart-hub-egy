@@ -154,13 +154,9 @@ serve(async (req) => {
 
     // Disconnect a connected account
     if (action === "disconnect") {
-      const { connectionId } = await req.json().catch(() => ({}));
-      const bodyConnectionId = connectionId || (await req.json().catch(() => ({}))).connectionId;
-      // connectionId should already be parsed from the initial req.json() call above
-      const connId = connectionId;
-      if (!connId) throw new Error("connectionId is required for disconnect action");
+      if (!connectionId) throw new Error("connectionId is required for disconnect action");
 
-      const resp = await fetch(`${COMPOSIO_BASE}/connectedAccounts/${encodeURIComponent(connId)}`, {
+      const resp = await fetch(`${COMPOSIO_BASE}/connectedAccounts/${encodeURIComponent(connectionId)}`, {
         method: "DELETE",
         headers,
       });
