@@ -48,7 +48,7 @@ const FAQSection = () => {
           transition={{ duration: 0.9 }}
           className="mb-16 text-center"
         >
-          <h2 className="font-display text-[12vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
+          <h2 className="font-display text-[10vw] font-black uppercase leading-[0.85] tracking-tighter text-white md:text-[8vw]">
             FA<span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Qs</span>
           </h2>
           <p className="mt-4 text-xl text-white/40">Everything you need to know about Megsy.</p>
