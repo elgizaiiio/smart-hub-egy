@@ -152,6 +152,27 @@ serve(async (req) => {
       });
     }
 
+    // Disconnect a connected account
+    if (action === "disconnect") {
+      const { connectionId } = await req.json().catch(() => ({}));
+      const bodyConnectionId = connectionId || (await req.json().catch(() => ({}))).connectionId;
+      // connectionId should already be parsed from the initial req.json() call above
+      const connId = connectionId;
+      if (!connId) throw new Error("connectionId is required for disconnect action");
+
+      const resp = await fetch(`${COMPOSIO_BASE}/connectedAccounts/${encodeURIComponent(connId)}`, {
+        method: "DELETE",
+        headers,
+      });
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error(`Composio disconnect failed [${resp.status}]: ${t}`);
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     throw new Error(`Unknown action: ${action}`);
   } catch (e) {
     console.error("composio error:", e);
