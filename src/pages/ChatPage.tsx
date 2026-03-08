@@ -259,7 +259,7 @@ const ChatPage = () => {
               </motion.div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
+            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-32">
               {messages.map((msg, i) => (
                 <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} onShare={msg.role === "assistant" && conversationId ? handleShare : undefined} />
               ))}
@@ -285,10 +285,9 @@ const ChatPage = () => {
               </motion.button>
             )}
           </AnimatePresence>
-        </div>
 
-        {/* Input */}
-        <div className="shrink-0 px-3 md:px-6 pt-6 pb-4 pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+          {/* Sticky Input */}
+          <div className="sticky bottom-0 z-10 px-3 md:px-6 pt-6 pb-4 pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
           <div className="max-w-3xl mx-auto space-y-1.5 pointer-events-auto">
             {/* Active mode badge */}
             <AnimatePresence>
@@ -386,6 +385,7 @@ const ChatPage = () => {
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
             <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
           </div>
+        </div>
         </div>
       </div>
     </AppLayout>
