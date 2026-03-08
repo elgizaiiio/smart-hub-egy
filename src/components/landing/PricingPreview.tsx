@@ -36,9 +36,12 @@ const plans = [
     features: [
       "500 MC / month",
       "All AI models access",
+      "Image generation (500/month)",
+      "Video generation (50/month)",
       "Code generation + live preview",
       "Deploy + publish (20 projects)",
       "GitHub sync + version control",
+      "File analysis",
       "API access",
       "Social publishing (10 platforms)",
       "Priority support",
