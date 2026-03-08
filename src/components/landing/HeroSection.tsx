@@ -1,142 +1,99 @@
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useRef } from "react";
 import FancyButton from "@/components/FancyButton";
-
-const floatingImages = [
-  { src: "/api-showcase/showcase-1.png", className: "left-[5%] top-[12%] w-[220px] md:w-[280px]", delay: 0 },
-  { src: "/api-showcase/showcase-2.jpg", className: "right-[3%] top-[18%] w-[200px] md:w-[260px]", delay: 0.15 },
-  { src: "/api-showcase/showcase-3.jpg", className: "left-[8%] bottom-[22%] w-[180px] md:w-[240px]", delay: 0.3 },
-  { src: "/api-showcase/showcase-4.jpg", className: "right-[6%] bottom-[15%] w-[210px] md:w-[270px]", delay: 0.1 },
-  { src: "/api-showcase/showcase-1.png", className: "right-[22%] top-[8%] w-[160px] md:w-[200px]", delay: 0.25 },
-  { src: "/api-showcase/showcase-2.jpg", className: "left-[20%] bottom-[8%] w-[170px] md:w-[220px]", delay: 0.2 },
-];
 
 const HeroSection = () => {
   const navigate = useNavigate();
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-
-  const imageScale = useTransform(scrollYProgress, [0, 0.5], [1, 2.5]);
-  const imageOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
-  const textY = useTransform(scrollYProgress, [0, 0.5], [0, -100]);
 
   return (
-    <section ref={ref} className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-black pt-16">
-      {/* 3D Perspective text room - like Leonardo.ai */}
-      <div className="pointer-events-none absolute inset-0 select-none" style={{ perspective: "800px" }}>
-        {/* Top wall */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2 }}
-          className="absolute inset-x-0 top-0 flex items-end justify-center overflow-hidden"
-          style={{ height: "45%", transformOrigin: "bottom center", transform: "rotateX(45deg)" }}
+    <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-background pt-24">
+      <div className="pointer-events-none absolute inset-0 select-none">
+        <motion.span
+          initial={{ opacity: 0, y: -80 }}
+          animate={{ opacity: 0.5, y: 0 }}
+          transition={{ duration: 0.9 }}
+          className="absolute left-1/2 top-[-6vw] -translate-x-1/2 whitespace-nowrap font-display text-[20vw] font-black uppercase leading-none tracking-tighter text-primary"
         >
-          <span className="whitespace-nowrap text-[20vw] font-black uppercase leading-none tracking-tighter text-purple-500/50" style={{ fontFamily: "var(--font-display)" }}>
-            MEGSY AI
-          </span>
-        </motion.div>
+          MEGSY AI
+        </motion.span>
 
-        {/* Bottom wall */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, delay: 0.1 }}
-          className="absolute inset-x-0 bottom-0 flex items-start justify-center overflow-hidden"
-          style={{ height: "45%", transformOrigin: "top center", transform: "rotateX(-45deg)" }}
+        <motion.span
+          initial={{ opacity: 0, y: 80 }}
+          animate={{ opacity: 0.45, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.1 }}
+          className="absolute bottom-[-8vw] left-1/2 -translate-x-1/2 whitespace-nowrap font-display text-[19vw] font-black uppercase leading-none tracking-tighter text-primary"
         >
-          <span className="whitespace-nowrap text-[18vw] font-black uppercase leading-none tracking-tighter text-purple-500/40" style={{ fontFamily: "var(--font-display)" }}>
-            YOURS TO CREATE
-          </span>
-        </motion.div>
+          YOURS TO CREATE
+        </motion.span>
 
-        {/* Left wall */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, delay: 0.2 }}
-          className="absolute left-0 top-0 bottom-0 flex items-center justify-end overflow-hidden"
-          style={{ width: "35%", transformOrigin: "right center", transform: "rotateY(-40deg)" }}
+        <motion.span
+          initial={{ opacity: 0, x: -60 }}
+          animate={{ opacity: 0.4, x: 0 }}
+          transition={{ duration: 0.85, delay: 0.15 }}
+          className="absolute left-[-4vw] top-1/2 -translate-y-1/2 font-display text-[14vw] font-black uppercase leading-none tracking-tighter text-primary"
+          style={{ writingMode: "vertical-lr", transform: "translateY(-50%) rotate(180deg)" }}
         >
-          <span className="whitespace-nowrap text-[16vw] font-black uppercase leading-none tracking-tighter text-purple-500/35" style={{ fontFamily: "var(--font-display)", writingMode: "vertical-lr", transform: "rotate(180deg)" }}>
-            YOUR IDEAS
-          </span>
-        </motion.div>
+          YOUR IDEAS
+        </motion.span>
 
-        {/* Right wall */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, delay: 0.3 }}
-          className="absolute right-0 top-0 bottom-0 flex items-center justify-start overflow-hidden"
-          style={{ width: "35%", transformOrigin: "left center", transform: "rotateY(40deg)" }}
+        <motion.span
+          initial={{ opacity: 0, x: 60 }}
+          animate={{ opacity: 0.4, x: 0 }}
+          transition={{ duration: 0.85, delay: 0.2 }}
+          className="absolute right-[-4vw] top-1/2 -translate-y-1/2 font-display text-[14vw] font-black uppercase leading-none tracking-tighter text-primary"
+          style={{ writingMode: "vertical-lr" }}
         >
-          <span className="whitespace-nowrap text-[16vw] font-black uppercase leading-none tracking-tighter text-purple-500/35" style={{ fontFamily: "var(--font-display)", writingMode: "vertical-lr" }}>
-            YOUR TOOLS
-          </span>
-        </motion.div>
+          YOUR TOOLS
+        </motion.span>
       </div>
 
-      {/* Floating images that scale & fade on scroll */}
-      {floatingImages.map((img, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, scale: 0.6, y: 60 }}
-          animate={{ opacity: 0.85, scale: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.8 + img.delay }}
-          className={`absolute ${img.className} z-[5] hidden md:block`}
-          style={{ scale: imageScale, opacity: imageOpacity }}
-        >
-          <img
-            src={img.src}
-            alt="AI Generated"
-            className="rounded-2xl shadow-2xl shadow-black/50 object-cover aspect-[4/5]"
-            loading="lazy"
-          />
-        </motion.div>
-      ))}
-
-      {/* Center content */}
-      <motion.div className="relative z-10 mx-auto max-w-4xl px-6 text-center" style={{ y: textY }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.9, delay: 0.4 }}
-        >
-          <h1 className="font-display text-4xl font-black uppercase leading-[0.9] tracking-tight text-white sm:text-5xl md:text-7xl lg:text-8xl">
-            THE CREATOR-FIRST
-          </h1>
-          <h1 className="font-display text-4xl font-black uppercase leading-[0.9] tracking-tight sm:text-5xl md:text-7xl lg:text-8xl">
-            <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-              GENERATIVE AI PLATFORM
-            </span>
-          </h1>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
+      <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+        <motion.h1
+          initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.9 }}
+          transition={{ duration: 0.7 }}
+          className="font-display text-[12vw] font-black uppercase leading-[0.84] tracking-tighter text-foreground md:text-[8vw]"
+        >
+          THE CREATOR-FIRST
+        </motion.h1>
+
+        <motion.h1
+          initial={{ opacity: 0, y: 32 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.12 }}
+          className="font-display text-[12vw] font-black uppercase leading-[0.84] tracking-tighter text-primary md:text-[8vw]"
+        >
+          GENERATIVE AI PLATFORM
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.22 }}
+          className="mx-auto mt-7 max-w-2xl text-lg text-muted-foreground md:text-xl"
+        >
+          Build images, videos, code, and content with massive model coverage and production-level quality.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.32 }}
           className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
           <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-lg">
             Start now
           </FancyButton>
           <button
-            onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
-            className="rounded-full border border-white/30 bg-black/50 px-8 py-3.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/5"
+            onClick={() => document.getElementById("media-flow")?.scrollIntoView({ behavior: "smooth" })}
+            className="rounded-full border border-border bg-card/40 px-8 py-3.5 text-sm font-semibold text-foreground/90 transition-all hover:border-foreground/35 hover:bg-card"
           >
             Explore Platform
           </button>
         </motion.div>
-      </motion.div>
+      </div>
 
-      {/* Bottom gradient */}
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black to-transparent z-20" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
     </section>
   );
 };

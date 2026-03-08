@@ -1,5 +1,6 @@
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import HeroSection from "@/components/landing/HeroSection";
+import ScrollMediaShowcase from "@/components/landing/ScrollMediaShowcase";
 import StatsMarquee from "@/components/landing/StatsMarquee";
 import FeatureBlock from "@/components/landing/FeatureBlock";
 import ModelsMarquee from "@/components/landing/ModelsMarquee";
@@ -12,10 +13,12 @@ import LandingFooter from "@/components/landing/LandingFooter";
 
 const LandingPage = () => {
   return (
-    <div data-theme="dark" className="min-h-screen overflow-x-hidden bg-black text-white">
+    <div data-theme="dark" className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <LandingNavbar />
 
       <HeroSection />
+
+      <ScrollMediaShowcase />
 
       <StatsMarquee />
 
@@ -25,7 +28,7 @@ const LandingPage = () => {
           title="CREATE IMAGES WITHOUT LIMITS"
           description="Generate high-quality visuals from simple prompts or custom models, tailored to your aesthetic and built to scale across concepts, styles, and use cases."
           media="/api-showcase/showcase-1.png"
-          accentColor="text-sky-500"
+          accentColor="text-primary"
         />
 
         <FeatureBlock
@@ -34,7 +37,7 @@ const LandingPage = () => {
           description="Turn static ideas into dynamic video content with AI-driven animation and motion tools designed for storytelling, social, and product experiences."
           media="/api-showcase/video-1.mp4"
           mediaType="video"
-          accentColor="text-emerald-500"
+          accentColor="text-success"
           reverse
         />
 
@@ -43,7 +46,7 @@ const LandingPage = () => {
           title="EDIT WITH PRECISION"
           description="Edit images and video while preserving the elements that matter. Refine, adjust, and perfect your work without starting over."
           media="/api-showcase/showcase-4.jpg"
-          accentColor="text-amber-500"
+          accentColor="text-warning"
         />
 
         <FeatureBlock
@@ -51,7 +54,7 @@ const LandingPage = () => {
           title="BUILD & DEPLOY CODE"
           description="Build full-stack applications through conversation. Write, preview, and deploy production-ready code with live preview and one-click deployment."
           media="/api-showcase/showcase-3.jpg"
-          accentColor="text-fuchsia-500"
+          accentColor="text-primary"
           reverse
         />
       </div>
