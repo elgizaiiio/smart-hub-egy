@@ -149,19 +149,32 @@ const PricingPage = () => {
           <h2 className="font-display text-3xl font-bold mb-3 text-foreground">Choose your plan</h2>
           <p className="text-muted-foreground text-sm mb-6">One platform. Infinite possibilities.</p>
 
-          <div className="inline-flex items-center gap-1 bg-secondary rounded-full p-1">
+          <div className="relative inline-flex items-center gap-0 rounded-full p-1 bg-muted/50 backdrop-blur-xl border border-border/50 shadow-lg">
+            <motion.div
+              layoutId="pricing-toggle-indicator"
+              className="absolute top-1 bottom-1 rounded-full bg-primary shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
+              style={{ width: isYearly ? "calc(55% - 4px)" : "calc(45% - 4px)" }}
+              animate={{ left: isYearly ? "calc(45% + 2px)" : "4px" }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            />
             <button
               onClick={() => setIsYearly(false)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${!isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              className={`relative z-10 px-6 py-2.5 rounded-full text-sm font-semibold transition-colors duration-200 ${!isYearly ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
               Monthly
             </button>
             <button
               onClick={() => setIsYearly(true)}
-              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-colors ${isYearly ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              className={`relative z-10 inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-colors duration-200 ${isYearly ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
               <span className="notranslate">Yearly</span>
-              <span className="notranslate inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 leading-none whitespace-nowrap">Save</span>
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="notranslate inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 leading-none whitespace-nowrap ring-1 ring-emerald-500/30"
+              >
+                Save 20%
+              </motion.span>
             </button>
           </div>
         </motion.div>

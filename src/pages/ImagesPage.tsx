@@ -400,8 +400,8 @@ const ImagesPage = () => {
         toast.success("Image link copied! Open Instagram and paste it.");
         setMenuOpen(false);
         return;
-      case "linkedin":
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+      case "youtube":
+        shareUrl = `https://studio.youtube.com/`;
         break;
     }
 
