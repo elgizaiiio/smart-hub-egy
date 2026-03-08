@@ -79,7 +79,7 @@ const StickyFeatureTabs = () => {
         </div>
 
         {/* Content */}
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:items-stretch">
+        <div className="grid gap-6 md:gap-8 lg:grid-cols-[1fr_1.4fr] lg:items-stretch">
           {/* Text side */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -88,16 +88,16 @@ const StickyFeatureTabs = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.35 }}
-              className="flex flex-col justify-center"
+              className="order-2 flex flex-col justify-center lg:order-1"
             >
               <div className={`mb-4 h-1 w-12 rounded-full ${current.accent}`} />
-              <h3 className="font-display text-3xl font-black uppercase tracking-tight text-foreground md:text-5xl">
+              <h3 className="font-display text-2xl font-black uppercase tracking-tight text-foreground md:text-5xl">
                 {current.title}
               </h3>
-              <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:mt-4 md:text-lg">
                 {current.description}
               </p>
-              <div className="mt-8">
+              <div className="mt-6 md:mt-8">
                 <FancyButton onClick={() => navigate("/auth")} className="text-sm">
                   Try it now
                 </FancyButton>
@@ -113,7 +113,7 @@ const StickyFeatureTabs = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
               transition={{ duration: 0.4 }}
-              className="relative aspect-[16/10] overflow-hidden rounded-2xl"
+              className="relative order-1 aspect-[16/10] overflow-hidden rounded-2xl lg:order-2"
             >
               {current.useChat ? (
                 <ChatDemo />
