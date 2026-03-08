@@ -615,6 +615,7 @@ const VideosPage = () => {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 };
 

@@ -438,6 +438,7 @@ const FilesPage = () => {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 };
 

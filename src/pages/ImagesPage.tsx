@@ -643,6 +643,7 @@ const ImagesPage = () => {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 };
 
