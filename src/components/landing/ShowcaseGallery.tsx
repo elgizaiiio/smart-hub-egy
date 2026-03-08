@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import LazyVideo from "@/components/landing/LazyVideo";
 
 const categories = [
   {
