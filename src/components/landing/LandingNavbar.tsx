@@ -30,7 +30,7 @@ const LandingNavbar = () => {
       animate={{ y: 0 }}
       transition={{ duration: 0.55, ease: "easeOut" }}
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? "border-b border-border bg-background/90 backdrop-blur-xl" : "bg-background/55 backdrop-blur-md"
+        scrolled ? "border-b border-white/[0.06] bg-black/90 backdrop-blur-xl" : "bg-black/55 backdrop-blur-md"
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
