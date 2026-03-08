@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
+import AppLayout from "@/layouts/AppLayout";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
 import ReactMarkdown from "react-markdown";
@@ -251,7 +252,8 @@ const FilesPage = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background">
+    <AppLayout onSelectConversation={loadOldConversation} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} activeConversationId={conversationId}>
+    <div className="h-full flex flex-col bg-background">
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} onSelectConversation={loadOldConversation} activeConversationId={conversationId} currentMode="files" />
 
       {/* Preview Modal */}
@@ -272,7 +274,7 @@ const FilesPage = () => {
         )}
       </AnimatePresence>
 
-      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2">
+      <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-2">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
@@ -436,6 +438,7 @@ const FilesPage = () => {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 };
 

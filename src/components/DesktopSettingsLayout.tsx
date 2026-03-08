@@ -5,6 +5,7 @@ import {
   User, CreditCard, Gift, Globe, Paintbrush, Activity, Info, LogOut, ChevronRight, Code, Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import AppLayout from "@/layouts/AppLayout";
 
 interface NavItem {
   id: string;
@@ -69,7 +70,8 @@ export function DesktopSettingsLayout({ children, title, subtitle }: DesktopSett
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="h-[100dvh] bg-background flex">
+    <AppLayout>
+    <div className="h-full bg-background flex">
       {/* Sidebar */}
       <div className="w-[280px] border-r border-border flex flex-col overflow-y-auto shrink-0">
         <div className="px-5 py-5">
@@ -141,6 +143,7 @@ export function DesktopSettingsLayout({ children, title, subtitle }: DesktopSett
         <div className="px-8 py-6">{children}</div>
       </div>
     </div>
+    </AppLayout>
   );
 }
 
