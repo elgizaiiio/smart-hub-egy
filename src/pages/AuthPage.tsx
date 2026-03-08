@@ -214,6 +214,7 @@ const AuthPage = () => {
     "otp-signup": "Enter the 6-digit code sent to your email",
     "set-password": "Create a password for your account",
     "otp-2fa": "Enter the 2FA code sent to your email",
+    "forgot-password": "We'll send a reset link to your email",
   };
 
   const OtpInputs = () => (
