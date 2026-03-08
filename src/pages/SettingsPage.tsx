@@ -62,6 +62,7 @@ const SettingsPage = () => {
   const quickActions = [
     { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
+    { icon: Globe2, label: "Language", desc: "Translation", path: "/settings/language" },
     { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
   ];
 
