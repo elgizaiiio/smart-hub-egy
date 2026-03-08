@@ -340,7 +340,7 @@ const FilesPage = () => {
         )}
       </div>
 
-      <div className="sticky bottom-0 z-20 shrink-0 px-3 pb-3 pt-1 bg-background/80 backdrop-blur-md">
+      <div className="sticky bottom-0 z-20 shrink-0 px-3 pt-1 bg-background" style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}>
         <div className="max-w-3xl mx-auto relative">
           {/* Attached files preview */}
           {attachedFiles.length > 0 && (
