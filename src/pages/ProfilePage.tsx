@@ -114,6 +114,7 @@ const ProfilePage = () => {
   }
 
   return (
+    <AppLayout>
     <div className="min-h-screen bg-background">
       <header className="flex items-center px-4 md:px-6 h-14 border-b border-border">
         <button onClick={() => navigate("/chat")} className="text-muted-foreground hover:text-foreground transition-colors mr-3">
