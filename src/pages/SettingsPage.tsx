@@ -162,7 +162,7 @@ const SettingsPage = () => {
               </div>
               <span className="inner">
                 <Gift className="w-4 h-4" />
-                Referrals — Earn 20%
+                Earn 20% — Forever
               </span>
             </button>
           </motion.div>
