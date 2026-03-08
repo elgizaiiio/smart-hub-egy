@@ -259,7 +259,7 @@ const ChatPage = () => {
               </motion.div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-32">
+            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-4">
               {messages.map((msg, i) => (
                 <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} onShare={msg.role === "assistant" && conversationId ? handleShare : undefined} />
               ))}
@@ -270,25 +270,26 @@ const ChatPage = () => {
               <div ref={messagesEndRef} />
             </div>
           )}
+        </div>
 
-          {/* Scroll to bottom button */}
-          <AnimatePresence>
-            {showScrollBtn && messages.length > 0 && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                onClick={scrollToBottom}
-                className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 w-9 h-9 rounded-full bg-secondary border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              >
-                <ArrowDown className="w-4 h-4" />
-              </motion.button>
-            )}
-          </AnimatePresence>
+        {/* Scroll to bottom button */}
+        <AnimatePresence>
+          {showScrollBtn && messages.length > 0 && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={scrollToBottom}
+              className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 w-9 h-9 rounded-full bg-secondary border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <ArrowDown className="w-4 h-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
-          {/* Sticky Input */}
-          <div className="sticky bottom-0 z-10 px-3 md:px-6 pt-6 pb-4 pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
-          <div className="max-w-3xl mx-auto space-y-1.5 pointer-events-auto">
+        {/* Fixed Input Footer */}
+        <div className="shrink-0 z-10 px-3 md:px-6 pt-3 pb-4 bg-background" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+          <div className="max-w-3xl mx-auto space-y-1.5">
             {/* Active mode badge */}
             <AnimatePresence>
               {chatMode !== "normal" && (
@@ -385,7 +386,6 @@ const ChatPage = () => {
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
             <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
           </div>
-        </div>
         </div>
       </div>
     </AppLayout>
