@@ -2,7 +2,6 @@ import { useEffect, useRef, ReactNode } from "react";
 
 const RTL_LANGUAGES = ["ar", "he"];
 
-// Google Translate language codes mapping
 const LANG_MAP: Record<string, string> = {
   en: "en", ar: "ar", es: "es", fr: "fr", de: "de", zh: "zh-CN",
   ja: "ja", ko: "ko", pt: "pt", ru: "ru", tr: "tr", hi: "hi",
@@ -18,95 +17,109 @@ declare global {
   }
 }
 
-function triggerTranslate(langCode: string) {
-  const gtLang = LANG_MAP[langCode] || langCode;
-  let attempts = 0;
+/* ── Cookie helpers ─────────────────────────────────────────── */
 
-  // Use the Google Translate combo to switch language (limited retries)
-  const trySwitch = () => {
-    const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-    if (select) {
-      const { pairs, cleanup } = buildAttributeMirror();
-      select.value = gtLang;
-      select.dispatchEvent(new Event("change"));
-      // Copy translated text back to placeholder/title/aria-label
-      setTimeout(() => applyMirroredAttributes(pairs, cleanup), 1800);
-      return;
-    }
-
-    attempts += 1;
-    if (attempts < 20) {
-      setTimeout(trySwitch, 300);
-    }
-  };
-
-  if (langCode === "en") {
-    // Reset to original
-    const frame = document.querySelector<HTMLIFrameElement>(".goog-te-banner-frame");
-    if (frame) {
-      const closeBtn = frame.contentDocument?.querySelector<HTMLElement>(".goog-close-link");
-      closeBtn?.click();
-    }
-    // Also try cookie reset
-    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + window.location.hostname;
-    window.location.reload();
-    return;
-  }
-
-  trySwitch();
+function setGoogTransCookie(gtLang: string) {
+  const val = gtLang === "en" ? "" : `/en/${gtLang}`;
+  const host = window.location.hostname;
+  // Set for both root and current domain
+  document.cookie = `googtrans=${val}; path=/;`;
+  document.cookie = `googtrans=${val}; path=/; domain=.${host}`;
 }
 
-type AttrMirrorPair = { el: Element; attr: string; span: HTMLSpanElement };
+function clearGoogTransCookie() {
+  const host = window.location.hostname;
+  document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${host}`;
+}
 
-/** Build hidden mirror nodes so Google can translate input attributes. */
-function buildAttributeMirror() {
-  const ATTR_NAMES = ["placeholder", "title", "aria-label"] as const;
-  const existing = document.getElementById("gt-attr-mirror");
-  if (existing) existing.remove();
+/* ── Attribute translation (placeholder/title/aria-label) ──── */
+
+type AttrPair = { el: Element; attr: string; span: HTMLSpanElement };
+
+function translateInputAttributes() {
+  const ATTRS = ["placeholder", "title", "aria-label"] as const;
+  const old = document.getElementById("gt-attr-mirror");
+  if (old) old.remove();
 
   const mirror = document.createElement("div");
   mirror.id = "gt-attr-mirror";
-  mirror.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;overflow:hidden;height:0;width:0;";
+  mirror.style.cssText =
+    "position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;overflow:hidden;height:0;width:0;";
   document.body.appendChild(mirror);
 
-  const pairs: AttrMirrorPair[] = [];
+  const pairs: AttrPair[] = [];
   document.querySelectorAll("input, textarea, [title], [aria-label]").forEach((el) => {
-    ATTR_NAMES.forEach((attr) => {
+    ATTRS.forEach((attr) => {
       const val = el.getAttribute(attr);
-      if (!val || !val.trim()) return;
+      if (!val?.trim()) return;
 
-      const dataKey = `data-orig-${attr}`;
-      if (!el.getAttribute(dataKey)) {
-        el.setAttribute(dataKey, val);
-      }
+      const origKey = `data-orig-${attr}`;
+      if (!el.getAttribute(origKey)) el.setAttribute(origKey, val);
 
       const span = document.createElement("span");
-      span.textContent = el.getAttribute(dataKey) || val;
+      span.textContent = el.getAttribute(origKey) || val;
       mirror.appendChild(span);
       pairs.push({ el, attr, span });
     });
   });
 
-  return {
-    pairs,
-    cleanup: () => mirror.remove(),
-  };
+  if (!pairs.length) {
+    mirror.remove();
+    return;
+  }
+
+  // Google Translate will translate the mirror spans; copy back after delay
+  setTimeout(() => {
+    pairs.forEach(({ el, attr, span }) => {
+      const t = span.textContent?.trim();
+      if (t) el.setAttribute(attr, t);
+    });
+    mirror.remove();
+  }, 2500);
 }
 
-/** Copy translated mirror text back into placeholder/title/aria-label. */
-function applyMirroredAttributes(pairs: AttrMirrorPair[], cleanup: () => void) {
-  pairs.forEach(({ el, attr, span }) => {
-    const translated = span.textContent || "";
-    if (translated.trim()) {
-      el.setAttribute(attr, translated);
+/* ── Core trigger (one-shot) ───────────────────────────────── */
+
+function triggerTranslateOnce(langCode: string) {
+  const gtLang = LANG_MAP[langCode] || langCode;
+
+  if (langCode === "en") {
+    clearGoogTransCookie();
+    // Restore originals for placeholders
+    document.querySelectorAll("[data-orig-placeholder]").forEach((el) => {
+      el.setAttribute("placeholder", el.getAttribute("data-orig-placeholder")!);
+    });
+    const frame = document.querySelector<HTMLIFrameElement>(".goog-te-banner-frame");
+    if (frame) {
+      frame.contentDocument?.querySelector<HTMLElement>(".goog-close-link")?.click();
     }
-  });
-  cleanup();
+    window.location.reload();
+    return;
+  }
+
+  // Set cookie so Google remembers
+  setGoogTransCookie(gtLang);
+
+  let attempts = 0;
+  const trySwitch = () => {
+    const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+    if (select) {
+      select.value = gtLang;
+      select.dispatchEvent(new Event("change"));
+      // Translate input attributes after Google finishes
+      setTimeout(translateInputAttributes, 2000);
+      return;
+    }
+    if (++attempts < 30) setTimeout(trySwitch, 200);
+  };
+
+  trySwitch();
 }
+
+/* ── Init Google Translate widget ──────────────────────────── */
 
 function initGoogleTranslate() {
-  // Add the hidden div for Google Translate
   if (!document.getElementById("google_translate_element")) {
     const div = document.createElement("div");
     div.id = "google_translate_element";
@@ -114,7 +127,12 @@ function initGoogleTranslate() {
     document.body.appendChild(div);
   }
 
-  // Define the init function
+  // Pre-set cookie BEFORE loading the script so Google picks it up automatically
+  const savedLang = localStorage.getItem("language") || "en";
+  if (savedLang !== "en") {
+    setGoogTransCookie(LANG_MAP[savedLang] || savedLang);
+  }
+
   window.googleTranslateElementInit = () => {
     new window.google.translate.TranslateElement(
       {
@@ -125,196 +143,179 @@ function initGoogleTranslate() {
       "google_translate_element"
     );
 
-    // After init, check if there's a saved language
-    const saved = localStorage.getItem("language") || "en";
-    if (saved !== "en") {
-      setTimeout(() => triggerTranslate(saved), 1000);
+    // If there's a saved non-English language, trigger once after widget ready
+    if (savedLang !== "en") {
+      setTimeout(() => {
+        triggerTranslateOnce(savedLang);
+      }, 800);
     }
   };
 
-  // Load the script if not already loaded
   if (!document.getElementById("google-translate-script")) {
     const script = document.createElement("script");
     script.id = "google-translate-script";
-    script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+    script.src =
+      "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
     script.async = true;
     document.body.appendChild(script);
   }
 }
+
+/* ── Hide Google Translate UI CSS ──────────────────────────── */
+
+const HIDE_CSS = `
+  .goog-te-banner-frame, .goog-te-balloon-frame,
+  iframe.goog-te-banner-frame,
+  .goog-te-spinner-pos, .goog-te-spinner-animation,
+  [class*="VIpgJd-ZVi9od-"],
+  [class*="goog-te-spinner"] {
+    display: none !important; height: 0 !important; width: 0 !important;
+    visibility: hidden !important; overflow: hidden !important;
+    opacity: 0 !important; pointer-events: none !important;
+  }
+  body { top: 0px !important; margin-top: 0px !important; position: static !important; }
+  html > body { top: 0px !important; }
+  .goog-tooltip, .goog-tooltip:hover { display: none !important; }
+  .goog-text-highlight { background: none !important; box-shadow: none !important; }
+  #google_translate_element { display: none !important; }
+  .skiptranslate { display: none !important; height: 0 !important; overflow: hidden !important; opacity: 0 !important; }
+  #goog-gt-tt, .goog-te-menu-value { display: none !important; }
+`;
+
+/* ── Component ─────────────────────────────────────────────── */
 
 interface TranslationWrapperProps {
   children: ReactNode;
 }
 
 const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
-  const appliedLangRef = useRef<string>("en");
-  const lastRouteKeyRef = useRef<string>("");
-  const translateLockRef = useRef(false);
-  const lastTranslateAtRef = useRef(0);
+  const appliedLangRef = useRef(localStorage.getItem("language") || "en");
 
-  const safeTriggerTranslate = (lang: string) => {
-    const now = Date.now();
-    if (translateLockRef.current) return;
-    if (now - lastTranslateAtRef.current < 1200) return;
-
-    translateLockRef.current = true;
-    lastTranslateAtRef.current = now;
-    triggerTranslate(lang);
-
-    // Unlock after Google finishes DOM work
-    setTimeout(() => {
-      translateLockRef.current = false;
-    }, 1800);
-  };
-
-  // Initialize Google Translate on mount
+  // 1. Boot Google Translate + hide UI
   useEffect(() => {
     initGoogleTranslate();
 
     const style = document.createElement("style");
-    style.textContent = `
-      .goog-te-banner-frame, .goog-te-balloon-frame,
-      iframe.goog-te-banner-frame,
-      .goog-te-spinner-pos,
-      .goog-te-spinner-animation,
-      [class*="VIpgJd-ZVi9od-"],
-      [class*="goog-te-spinner"] { display: none !important; height: 0 !important; width: 0 !important; visibility: hidden !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-      body { top: 0px !important; margin-top: 0px !important; position: static !important; }
-      html > body { top: 0px !important; }
-      .goog-tooltip, .goog-tooltip:hover { display: none !important; }
-      .goog-text-highlight { background: none !important; box-shadow: none !important; }
-      #google_translate_element { display: none !important; }
-      .skiptranslate { display: none !important; height: 0 !important; overflow: hidden !important; opacity: 0 !important; }
-      #goog-gt-tt, .goog-te-menu-value { display: none !important; }
-    `;
+    style.textContent = HIDE_CSS;
     document.head.appendChild(style);
 
-    // Aggressively strip body.style.top and hide banner frames
     const cleanUp = () => {
       document.body.style.top = "0px";
       document.body.style.marginTop = "0px";
-      // Hide any banner iframes Google creates
-      document.querySelectorAll<HTMLIFrameElement>(".goog-te-banner-frame, iframe.skiptranslate").forEach(f => {
-        f.style.display = "none";
-        f.style.height = "0";
-        f.style.visibility = "hidden";
-      });
+      document
+        .querySelectorAll<HTMLIFrameElement>(".goog-te-banner-frame, iframe.skiptranslate")
+        .forEach((f) => {
+          f.style.display = "none";
+          f.style.height = "0";
+          f.style.visibility = "hidden";
+        });
     };
 
-    // MutationObserver on body attributes
-    const bodyObserver = new MutationObserver(cleanUp);
-    bodyObserver.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+    const bodyObs = new MutationObserver(cleanUp);
+    bodyObs.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
 
-    // MutationObserver on document to catch newly added iframes/elements
-    const docObserver = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        for (const node of m.addedNodes) {
-          if (node instanceof HTMLElement) {
-            if (node.classList?.contains("skiptranslate") || node.classList?.contains("goog-te-banner-frame")) {
-              node.style.display = "none";
-              node.style.height = "0";
-              node.style.visibility = "hidden";
-            }
+    const docObs = new MutationObserver((muts) => {
+      for (const m of muts) {
+        for (const n of m.addedNodes) {
+          if (
+            n instanceof HTMLElement &&
+            (n.classList?.contains("skiptranslate") ||
+              n.classList?.contains("goog-te-banner-frame"))
+          ) {
+            n.style.display = "none";
+            n.style.height = "0";
+            n.style.visibility = "hidden";
           }
         }
       }
       cleanUp();
     });
-    docObserver.observe(document.documentElement, { childList: true, subtree: true });
+    docObs.observe(document.documentElement, { childList: true, subtree: true });
 
-    // Periodic fallback for first few seconds
-    const interval = setInterval(cleanUp, 100);
-    setTimeout(() => clearInterval(interval), 5000);
+    const iv = setInterval(cleanUp, 100);
+    setTimeout(() => clearInterval(iv), 5000);
 
     return () => {
-      bodyObserver.disconnect();
-      docObserver.disconnect();
-      clearInterval(interval);
+      bodyObs.disconnect();
+      docObs.disconnect();
+      clearInterval(iv);
       document.head.removeChild(style);
     };
   }, []);
 
-  // Listen for language changes
+  // 2. Set dir/lang from localStorage on mount
   useEffect(() => {
-    const applyLanguage = (lang: string) => {
-      const isRtl = RTL_LANGUAGES.includes(lang);
-      document.documentElement.dir = isRtl ? "rtl" : "ltr";
+    const lang = localStorage.getItem("language") || "en";
+    document.documentElement.dir = RTL_LANGUAGES.includes(lang) ? "rtl" : "ltr";
+    document.documentElement.lang = lang;
+  }, []);
+
+  // 3. Listen for EXPLICIT language changes only (no DOM mutation loops)
+  useEffect(() => {
+    const onLangChange = () => {
+      const lang = localStorage.getItem("language") || "en";
+
+      document.documentElement.dir = RTL_LANGUAGES.includes(lang) ? "rtl" : "ltr";
       document.documentElement.lang = lang;
 
-      // Avoid repeated translate triggers for the same language
-      if (appliedLangRef.current === lang) {
-        return;
-      }
+      if (appliedLangRef.current === lang) return;
       appliedLangRef.current = lang;
-      safeTriggerTranslate(lang);
+
+      // Persist cookie
+      if (lang === "en") {
+        clearGoogTransCookie();
+      } else {
+        setGoogTransCookie(LANG_MAP[lang] || lang);
+      }
+
+      triggerTranslateOnce(lang);
     };
 
-    const handleLangChange = () => {
-      const lang = localStorage.getItem("language") || "en";
-      applyLanguage(lang);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key !== "language") return;
+      onLangChange();
     };
 
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key && event.key !== "language") return;
-      const lang = event.newValue || localStorage.getItem("language") || "en";
-      applyLanguage(lang);
-    };
-
-    // Sync initial document lang/dir without forcing translate again
-    handleLangChange();
-
-    window.addEventListener("languagechange-custom", handleLangChange);
-    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("languagechange-custom", onLangChange);
+    window.addEventListener("storage", onStorage);
     return () => {
-      window.removeEventListener("languagechange-custom", handleLangChange);
-      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("languagechange-custom", onLangChange);
+      window.removeEventListener("storage", onStorage);
     };
   }, []);
 
-  // Re-translate once per SPA route change (without mutation loops)
+  // 4. On SPA route change → re-translate input attributes only (no full re-trigger)
   useEffect(() => {
-    const runForCurrentRoute = () => {
-      const lang = localStorage.getItem("language") || "en";
-      if (lang === "en") return;
+    const lang = localStorage.getItem("language") || "en";
+    if (lang === "en") return;
 
-      const routeKey = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-      if (lastRouteKeyRef.current === routeKey) return;
+    let lastPath = window.location.pathname;
 
-      lastRouteKeyRef.current = routeKey;
-      safeTriggerTranslate(lang);
+    const checkRoute = () => {
+      const cur = window.location.pathname;
+      if (cur !== lastPath) {
+        lastPath = cur;
+        // Just re-translate input attributes for new page content
+        setTimeout(translateInputAttributes, 1500);
+      }
     };
 
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const scheduleRun = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(runForCurrentRoute, 300);
-    };
-
-    // Initial route sync
-    scheduleRun();
-
-    const originalPush = history.pushState;
-    const originalReplace = history.replaceState;
-
+    const origPush = history.pushState;
+    const origReplace = history.replaceState;
     history.pushState = function (...args) {
-      originalPush.apply(history, args);
-      scheduleRun();
+      origPush.apply(history, args);
+      checkRoute();
     };
-
     history.replaceState = function (...args) {
-      originalReplace.apply(history, args);
-      scheduleRun();
+      origReplace.apply(history, args);
+      checkRoute();
     };
-
-    window.addEventListener("popstate", scheduleRun);
-    window.addEventListener("hashchange", scheduleRun);
+    window.addEventListener("popstate", checkRoute);
 
     return () => {
-      history.pushState = originalPush;
-      history.replaceState = originalReplace;
-      window.removeEventListener("popstate", scheduleRun);
-      window.removeEventListener("hashchange", scheduleRun);
-      if (timer) clearTimeout(timer);
+      history.pushState = origPush;
+      history.replaceState = origReplace;
+      window.removeEventListener("popstate", checkRoute);
     };
   }, []);
 
