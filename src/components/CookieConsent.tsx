@@ -53,7 +53,7 @@ const CookieConsent = () => {
           <p className="cookieHeading">We use cookies.</p>
           <p className="cookieDescription">
             We use cookies to ensure that we give you the best experience on our website.{" "}
-            <Link to="/privacy">Learn more</Link>.
+            <a href="https://privacy.megsyai.com" target="_blank" rel="noopener noreferrer">Learn more</a>.
           </p>
 
           <div className="buttonContainer">
