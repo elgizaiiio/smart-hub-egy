@@ -46,6 +46,8 @@ const LandingPage = () => {
     return () => lenis.destroy();
   }, []);
 
+  if (!ready) return <div className="min-h-screen bg-background" />;
+
   return (
     <div data-theme="dark" className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <LandingNavbar />
