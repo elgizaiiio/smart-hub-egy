@@ -393,7 +393,7 @@ Rules:
 
           if (!parsed.files || typeof parsed.files !== "object") throw new Error("Invalid file structure");
 
-          const allFiles = { ...NEXTJS_TEMPLATE, ...parsed.files };
+          const allFiles = { ...VITE_TEMPLATE, ...parsed.files };
           setFiles(allFiles);
           updateStep("parse", { status: "done", detail: `${Object.keys(parsed.files).length} files` });
 
