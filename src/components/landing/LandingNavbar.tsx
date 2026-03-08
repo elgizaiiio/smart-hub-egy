@@ -196,36 +196,33 @@ const LandingNavbar = () => {
                       className="fixed left-1/2 top-16 z-50 mt-1 -translate-x-1/2"
                     >
                       <div
-                        className="flex max-h-[80vh] overflow-auto overscroll-contain gap-0 rounded-2xl border border-white/[0.08] bg-background p-5 shadow-2xl shadow-black/60"
-                        style={{ width: item.featured ? "min(620px, calc(100vw - 2rem))" : "min(560px, calc(100vw - 2rem))" }}
+                        className="flex max-h-[80vh] overflow-auto overscroll-contain gap-0 rounded-2xl border border-white/[0.06] bg-background p-6 shadow-2xl shadow-black/60"
+                        style={{ width: item.featured ? "min(740px, calc(100vw - 2rem))" : "min(600px, calc(100vw - 2rem))" }}
                       >
                         {/* Columns */}
-                        <div className="flex flex-1 gap-8">
+                        <div className="flex flex-1 gap-6">
                           {item.columns.map((col) => (
-                            <div key={col.title} className="min-w-[180px] flex-1">
-                              <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">
+                            <div key={col.title} className="min-w-[200px] flex-1">
+                              <h4 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                                 {col.title}
                               </h4>
                               <div className="space-y-1">
-                                {col.items.map((sub) => {
-                                  return (
-                                    <button
-                                      key={sub.label}
-                                      onClick={() => handleNav(sub.href)}
-                                      className="group flex w-full items-start gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-white/[0.06]"
-                                    >
-                                      
-                                      <div>
-                                        <div className="text-sm font-medium text-white/90 group-hover:text-white">
-                                          {sub.label}
-                                        </div>
-                                        <div className="text-xs leading-relaxed text-white/30 group-hover:text-white/45">
-                                          {sub.desc}
-                                        </div>
+                                {col.items.map((sub) => (
+                                  <button
+                                    key={sub.label}
+                                    onClick={() => handleNav(sub.href)}
+                                    className="group flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-primary/[0.06]"
+                                  >
+                                    <div>
+                                      <div className="text-[14px] font-semibold text-foreground/90 group-hover:text-foreground">
+                                        {sub.label}
                                       </div>
-                                    </button>
-                                  );
-                                })}
+                                      <div className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground group-hover:text-foreground/50">
+                                        {sub.desc}
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
                               </div>
                             </div>
                           ))}
@@ -233,17 +230,20 @@ const LandingNavbar = () => {
 
                         {/* Featured card */}
                         {item.featured && (
-                          <div className="ml-4 flex w-48 flex-col justify-end rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 p-5">
-                            <p className="mb-3 text-sm font-bold leading-snug text-white whitespace-pre-line">
-                              {item.featured.title}
-                            </p>
-                            <button
-                              onClick={() => handleNav(item.featured!.href)}
-                              className="inline-flex w-fit items-center gap-1 rounded-full bg-white/20 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur transition-colors hover:bg-white/30"
-                            >
-                              {item.featured.cta}
-                              <ArrowRight className="h-3 w-3" />
-                            </button>
+                          <div className="ml-5 flex w-52 flex-col justify-between rounded-2xl bg-gradient-to-br from-primary via-purple-600 to-cyan-500 p-6">
+                            <div className="mb-6 h-20 w-full rounded-xl bg-white/10 backdrop-blur" />
+                            <div>
+                              <p className="text-base font-black leading-snug text-white whitespace-pre-line">
+                                {item.featured.title}
+                              </p>
+                              <button
+                                onClick={() => handleNav(item.featured!.href)}
+                                className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/20 px-5 py-2 text-xs font-bold text-white backdrop-blur transition-colors hover:bg-white/30"
+                              >
+                                {item.featured.cta}
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
