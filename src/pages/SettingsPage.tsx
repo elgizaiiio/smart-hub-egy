@@ -173,7 +173,7 @@ const SettingsPage = () => {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.15 + i * 0.04 }}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => (item as any).external ? window.open(item.path, "_blank") : navigate(item.path)}
                   className="w-full flex items-center gap-3 py-3.5 px-1 text-left hover:bg-muted/30 transition-colors"
                 >
                   <Icon className="w-5 h-5 text-muted-foreground shrink-0" />
