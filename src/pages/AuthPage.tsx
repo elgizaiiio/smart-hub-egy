@@ -103,7 +103,7 @@ const AuthPage = () => {
       }
 
       toast.success(data.is_new ? "Account created!" : "Welcome back!");
-      navigate("/");
+      navigate("/chat");
     } catch (e: any) {
       toast.error(e.message || "Verification failed");
       setOtpValues(["", "", "", "", "", ""]);
