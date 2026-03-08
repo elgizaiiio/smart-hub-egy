@@ -64,12 +64,9 @@ const HeroSection = () => {
           <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-base">
             Start creating
           </FancyButton>
-          <button
-            onClick={() => window.open("https://api.megsyai.com", "_blank")}
-            className="rounded-full border border-border bg-card/40 px-10 py-4 text-base font-semibold text-foreground/90 backdrop-blur-md transition-all hover:border-foreground/30 hover:bg-card"
-          >
+          <FancyButton onClick={() => window.open("https://api.megsyai.com", "_blank")} className="px-10 py-4 text-base">
             API Platform
-          </button>
+          </FancyButton>
         </motion.div>
       </div>
 
