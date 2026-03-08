@@ -205,7 +205,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                         </>
                       )}
                       <tr>
-                        <td className="px-4 py-3 text-muted-foreground">Credits</td>
+                        <td className="px-4 py-3 text-muted-foreground">MC</td>
                         <td className="px-4 py-3 text-primary font-bold text-right">{detailModel.credits > 0 ? `${detailModel.credits} per request` : "Free"}</td>
                       </tr>
                     </tbody>
