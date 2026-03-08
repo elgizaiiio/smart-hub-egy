@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
-import { Slider } from "@/components/ui/slider";
+
 
 const themes = [
   { id: "dark", label: "Pitch Black", desc: "True black", colors: ["#000000", "#0d0d0d", "#1a1a1a"] },
