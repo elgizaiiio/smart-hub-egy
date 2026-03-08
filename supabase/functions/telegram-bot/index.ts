@@ -580,14 +580,17 @@ serve(async (req) => {
         if (!app) { await send(BOT_TOKEN, chatId, msgId, "❌ التطبيق غير موجود", [[{ text: "🔙 رجوع", callback_data: "oauth_list" }]]); return new Response("OK"); }
 
         const uris = (app.redirect_uris || []).join("\n") || "لم يتم تحديد";
+        const logoStatus = app.logo_url ? "✅" : "❌";
         await send(BOT_TOKEN, chatId, msgId,
           `🔑 *${app.name}*\n\n` +
           `📌 Client ID:\n\`${app.client_id}\`\n\n` +
           `🔗 Redirect URIs:\n${uris}\n\n` +
+          `🖼 Logo: ${logoStatus}\n` +
           `🔓 Public: ${app.is_public ? "نعم" : "لا"}\n` +
           `📅 ${new Date(app.created_at).toLocaleDateString("ar-EG")}`,
           [
             [{ text: "✏️ تعديل الاسم", callback_data: `oedit_name_${appId}` }],
+            [{ text: "🖼 تعديل الصورة", callback_data: `oedit_logo_${appId}` }],
             [{ text: "🔗 تعديل Redirect URIs", callback_data: `oedit_uri_${appId}` }],
             [{ text: "🔄 إعادة توليد Secret", callback_data: `oregen_${appId}` }],
             [{ text: "🗑 حذف", callback_data: `odel_${appId}` }],
