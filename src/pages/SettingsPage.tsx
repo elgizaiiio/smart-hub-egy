@@ -49,11 +49,9 @@ const SettingsPage = () => {
   };
 
   if (!isMobile) {
-    return (
-      <DesktopSettingsLayout title="Welcome" subtitle="Manage your account and preferences">
-        <DesktopSettingsHome />
-      </DesktopSettingsLayout>
-    );
+    // Redirect to billing on desktop (no more overview)
+    navigate("/settings/billing", { replace: true });
+    return null;
   }
 
   const initial = userName.charAt(0).toUpperCase();
