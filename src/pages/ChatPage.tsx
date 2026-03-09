@@ -325,20 +325,7 @@ const ChatPage = () => {
                     <MoreVertical className="w-4.5 h-4.5" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
-                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Share2 className="w-4 h-4 text-muted-foreground" />
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toast.success("Starred!")} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Star className="w-4 h-4 text-muted-foreground" />
-                    Star
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setRenameValue(conversationTitle); setIsRenaming(true); }} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Pencil className="w-4 h-4 text-muted-foreground" />
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuContent align="end" className="w-48 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
                   <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
                     <Trash2 className="w-4 h-4" />
                     Delete
@@ -677,79 +664,6 @@ const ChatPage = () => {
             <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
           </>
         )}
-
-        {/* Share Dialog */}
-        <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Share chat</DialogTitle>
-              <DialogDescription>Only messages up to this point will be shared.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2 mt-2">
-              <button
-                onClick={() => setShareMode("private")}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${shareMode === "private" ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/50"}`}
-              >
-                <Lock className="w-5 h-5 text-muted-foreground" />
-                <div className="text-left flex-1">
-                  <p className="text-sm font-medium text-foreground">Keep private</p>
-                  <p className="text-xs text-muted-foreground">Only you have access</p>
-                </div>
-                {shareMode === "private" && (
-                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  </div>
-                )}
-              </button>
-              <button
-                onClick={() => setShareMode("public")}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${shareMode === "public" ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/50"}`}
-              >
-                <Globe className="w-5 h-5 text-muted-foreground" />
-                <div className="text-left flex-1">
-                  <p className="text-sm font-medium text-foreground">Create public link</p>
-                  <p className="text-xs text-muted-foreground">Anyone with the link can view</p>
-                </div>
-                {shareMode === "public" && (
-                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  </div>
-                )}
-              </button>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-3">
-              Don't share personal information or third-party content without permission.
-            </p>
-            <div className="flex justify-end mt-2">
-              <button
-                onClick={handleCreateShareLink}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
-              >
-                {shareMode === "public" ? "Create share link" : "Save"}
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Rename Dialog */}
-        <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Rename chat</DialogTitle>
-            </DialogHeader>
-            <input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-secondary/50 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
-              onKeyDown={(e) => e.key === "Enter" && handleRename()}
-              autoFocus
-            />
-            <div className="flex justify-end gap-2 mt-2">
-              <button onClick={() => setIsRenaming(false)} className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
-              <button onClick={handleRename} className="px-4 py-1.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">Save</button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Connectors Dialog */}
         <ConnectorsDialog
