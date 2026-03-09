@@ -204,10 +204,11 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     load();
   }, [open]);
 
+  const { models: dynamicModels } = useDynamicModels();
   const allModels = useMemo(() => {
     const typeList = tab === "models" ? types.models : types.tools;
-    return ALL_MODEL_DETAILS.filter((m) => typeList.includes(m.type));
-  }, [tab, types]);
+    return dynamicModels.filter((m) => typeList.includes(m.type));
+  }, [tab, types, dynamicModels]);
 
   // Split featured vs other for image models
   const featuredModels = useMemo(() => {
