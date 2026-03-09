@@ -7,8 +7,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from
+"@/components/ui/dropdown-menu";
 import FancyButton from "@/components/FancyButton";
 
 interface DesktopSidebarProps {
@@ -31,29 +31,29 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const [credits, setCredits] = useState(0);
   const [recentChats, setRecentChats] = useState<Conversation[]>([]);
 
-  useEffect(() => { loadUserInfo(); }, []);
+  useEffect(() => {loadUserInfo();}, []);
 
   const loadUserInfo = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const emailPrefix = user.email?.split("@")[0] || "User";
       setUserName(user.user_metadata?.full_name || emailPrefix);
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("credits, avatar_url, display_name")
-        .eq("id", user.id)
-        .single();
+      const { data: profile } = await supabase.
+      from("profiles").
+      select("credits, avatar_url, display_name").
+      eq("id", user.id).
+      single();
       if (profile) {
         setCredits(Number(profile.credits) || 0);
         setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
         if (profile.display_name) setUserName(profile.display_name);
       }
-      const { data: convos } = await supabase
-        .from("conversations")
-        .select("id, title, updated_at")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
-        .limit(8);
+      const { data: convos } = await supabase.
+      from("conversations").
+      select("id, title, updated_at").
+      eq("user_id", user.id).
+      order("updated_at", { ascending: false }).
+      limit(8);
       if (convos) setRecentChats(convos);
     }
   };
@@ -76,10 +76,10 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       <div className="flex items-center justify-between h-12 px-5 bg-[hsl(0,0%,8%)] border-b border-[hsl(0,0%,15%)]">
         {/* Left: Brand */}
         <button
-          onClick={() => { onNewChat?.(); navigate("/chat"); }}
-          className="flex items-center gap-1 hover:opacity-80 transition-opacity shrink-0 mr-6"
-        >
-          <Sparkles className="w-4 h-4 text-[hsl(var(--primary))]" />
+          onClick={() => {onNewChat?.();navigate("/chat");}}
+          className="flex items-center gap-1 hover:opacity-80 transition-opacity shrink-0 mr-6">
+          
+          
           <span className="text-[15px] font-bold tracking-tight text-white">
             Megsy
           </span>
@@ -92,30 +92,30 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
             <DropdownMenuTrigger asChild>
               <button
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all ${
-                  isInSection("/chat")
-                    ? "bg-[hsl(0,0%,18%)] text-white"
-                    : "text-[hsl(0,0%,55%)] hover:text-white"
-                }`}
-              >
+                isInSection("/chat") ?
+                "bg-[hsl(0,0%,18%)] text-white" :
+                "text-[hsl(0,0%,55%)] hover:text-white"}`
+                }>
+                
                 Chat
                 <ChevronDown className="w-3 h-3 opacity-50" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56 bg-[hsl(0,0%,12%)] border-[hsl(0,0%,20%)] text-white">
-              <DropdownMenuItem onClick={() => { onNewChat?.(); navigate("/chat"); }} className="text-white/90 focus:text-white focus:bg-[hsl(0,0%,18%)]">
+              <DropdownMenuItem onClick={() => {onNewChat?.();navigate("/chat");}} className="text-white/90 focus:text-white focus:bg-[hsl(0,0%,18%)]">
                 <MessageSquare className="w-3.5 h-3.5 mr-2" />
                 New Chat
               </DropdownMenuItem>
               {recentChats.length > 0 && <DropdownMenuSeparator className="bg-[hsl(0,0%,20%)]" />}
-              {recentChats.map(chat => (
-                <DropdownMenuItem
-                  key={chat.id}
-                  onClick={() => { onSelectConversation?.(chat.id); navigate("/chat"); }}
-                  className="text-white/60 focus:text-white focus:bg-[hsl(0,0%,18%)] text-[12px] truncate"
-                >
+              {recentChats.map((chat) =>
+              <DropdownMenuItem
+                key={chat.id}
+                onClick={() => {onSelectConversation?.(chat.id);navigate("/chat");}}
+                className="text-white/60 focus:text-white focus:bg-[hsl(0,0%,18%)] text-[12px] truncate">
+                
                   {chat.title || "Untitled"}
                 </DropdownMenuItem>
-              ))}
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -124,25 +124,25 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
             <button
               onClick={() => navigate("/images")}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium transition-all rounded-l-full ${
-                isImageMode
-                  ? "bg-[hsl(0,0%,22%)] text-white"
-                  : isAIToolkit
-                  ? "text-white/60 hover:text-white"
-                  : "text-[hsl(0,0%,55%)] hover:text-white"
-              }`}
-            >
+              isImageMode ?
+              "bg-[hsl(0,0%,22%)] text-white" :
+              isAIToolkit ?
+              "text-white/60 hover:text-white" :
+              "text-[hsl(0,0%,55%)] hover:text-white"}`
+              }>
+              
               <ImageIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => navigate("/videos")}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium transition-all rounded-r-full ${
-                isVideoMode
-                  ? "bg-[hsl(0,0%,22%)] text-white"
-                  : isAIToolkit
-                  ? "text-white/60 hover:text-white"
-                  : "text-[hsl(0,0%,55%)] hover:text-white"
-              }`}
-            >
+              isVideoMode ?
+              "bg-[hsl(0,0%,22%)] text-white" :
+              isAIToolkit ?
+              "text-white/60 hover:text-white" :
+              "text-[hsl(0,0%,55%)] hover:text-white"}`
+              }>
+              
               <Video className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -152,11 +152,11 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
             <DropdownMenuTrigger asChild>
               <button
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all ${
-                  isInSection("/files")
-                    ? "bg-[hsl(0,0%,18%)] text-white"
-                    : "text-[hsl(0,0%,55%)] hover:text-white"
-                }`}
-              >
+                isInSection("/files") ?
+                "bg-[hsl(0,0%,18%)] text-white" :
+                "text-[hsl(0,0%,55%)] hover:text-white"}`
+                }>
+                
                 Files
                 <ChevronDown className="w-3 h-3 opacity-50" />
               </button>
@@ -173,11 +173,11 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           <button
             onClick={() => navigate(isVideoMode ? "/videos/studio" : "/images/studio")}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all ${
-              location.pathname.includes("/studio")
-                ? "bg-[hsl(0,0%,18%)] text-white"
-                : "text-[hsl(0,0%,55%)] hover:text-white"
-            }`}
-          >
+            location.pathname.includes("/studio") ?
+            "bg-[hsl(0,0%,18%)] text-white" :
+            "text-[hsl(0,0%,55%)] hover:text-white"}`
+            }>
+            
             Studio
           </button>
 
@@ -185,11 +185,11 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           <button
             onClick={() => navigate("/code")}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all ${
-              isInSection("/code")
-                ? "bg-[hsl(0,0%,18%)] text-white"
-                : "text-[hsl(0,0%,55%)] hover:text-white"
-            }`}
-          >
+            isInSection("/code") ?
+            "bg-[hsl(0,0%,18%)] text-white" :
+            "text-[hsl(0,0%,55%)] hover:text-white"}`
+            }>
+            
             Code
           </button>
         </nav>
@@ -199,16 +199,16 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           {/* Credits / Pricing */}
           <button
             onClick={() => navigate("/pricing")}
-            className="text-[13px] font-medium text-[hsl(0,0%,55%)] hover:text-white transition-colors"
-          >
+            className="text-[13px] font-medium text-[hsl(0,0%,55%)] hover:text-white transition-colors">
+            
             Pricing
           </button>
 
           {/* Sparkle / new */}
           <button
-            onClick={() => { onNewChat?.(); navigate("/chat"); }}
-            className="w-8 h-8 rounded-full bg-[hsl(0,0%,18%)] hover:bg-[hsl(0,0%,25%)] flex items-center justify-center transition-colors"
-          >
+            onClick={() => {onNewChat?.();navigate("/chat");}}
+            className="w-8 h-8 rounded-full bg-[hsl(0,0%,18%)] hover:bg-[hsl(0,0%,25%)] flex items-center justify-center transition-colors">
+            
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </button>
 
@@ -221,13 +221,13 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-[hsl(0,0%,25%)] hover:ring-[hsl(var(--primary))] transition-all">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-[hsl(0,0%,18%)] flex items-center justify-center text-[10px] font-semibold text-white/70">
+                {avatarUrl ?
+                <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> :
+
+                <div className="w-full h-full bg-[hsl(0,0%,18%)] flex items-center justify-center text-[10px] font-semibold text-white/70">
                     {initial}
                   </div>
-                )}
+                }
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44 bg-[hsl(0,0%,12%)] border-[hsl(0,0%,20%)] text-white">
@@ -249,8 +249,8 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           </DropdownMenu>
         </div>
       </div>
-    </header>
-  );
+    </header>);
+
 };
 
 export default DesktopSidebar;
