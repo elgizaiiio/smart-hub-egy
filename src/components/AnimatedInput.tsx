@@ -142,7 +142,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                               : "text-popover-foreground hover:bg-accent/50"
                           }`}
                         >
-                          <ModelBrandIcon modelId={m.id} />
+                          
                           <span className="font-medium">{m.name}</span>
                         </button>
                       ))}
