@@ -157,6 +157,14 @@ const ServiceImagesPage = () => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentScenario = demoScenarios[scenarioIndex];
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [typedUserText, typedAiText, phase, showImage, showUserMessage, showAiMessage]);
 
   // Type text character by character
   const typeText = useCallback((
