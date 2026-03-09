@@ -109,47 +109,8 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Model selector */}
-            {selectedModel && onModelChange && (
-              <div className="relative" ref={modelMenuRef}>
-                <button
-                  onClick={() => setModelMenuOpen(!modelMenuOpen)}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted-foreground/60 hover:text-muted-foreground font-medium transition-colors"
-                >
-                  {selectedModel.name}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
 
-                <AnimatePresence>
-                  {modelMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 4, scale: 0.96 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute bottom-full mb-2 right-0 z-50 w-52 rounded-xl border border-border bg-popover shadow-lg overflow-hidden"
-                    >
-                      {chatModels.map((m) => (
-                        <button
-                          key={m.id}
-                          onClick={() => { onModelChange(m); setModelMenuOpen(false); }}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-                            selectedModel.id === m.id
-                              ? "bg-accent text-accent-foreground"
-                              : "text-popover-foreground hover:bg-accent/50"
-                          }`}
-                        >
-                          <span className="font-medium">{m.name}</span>
-                          {selectedModel.id === m.id && (
-                            <span className="ml-auto w-2 h-2 rounded-full bg-primary" />
-                          )}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
+
 
             {/* Send / Stop */}
             {isLoading ? (
