@@ -251,17 +251,24 @@ const ChatPage = () => {
       setIsShared(true);
       setShareId(newShareId);
       const url = `${window.location.origin}/share/${newShareId}`;
-      await navigator.clipboard.writeText(url);
-      toast.success("Share link copied!");
+      setGeneratedShareUrl(url);
     } else {
       await supabase
         .from("conversations")
         .update({ is_shared: false } as any)
         .eq("id", conversationId);
       setIsShared(false);
+      setGeneratedShareUrl(null);
       toast.success("Chat set to private");
+      setShareDialogOpen(false);
     }
-    setShareDialogOpen(false);
+  };
+
+  const handleCopyShareLink = async () => {
+    if (generatedShareUrl) {
+      await navigator.clipboard.writeText(generatedShareUrl);
+      toast.success("Link copied!");
+    }
   };
 
   const handleRename = async () => {
