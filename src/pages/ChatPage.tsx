@@ -342,15 +342,35 @@ const ChatPage = () => {
             </div>
           )}
 
-          {/* Right: Share button */}
+          {/* Right: More menu */}
           <div className="flex items-center gap-2">
             {hasConversation && conversationId && (
-              <button
-                onClick={handleShare}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-foreground bg-secondary hover:bg-accent border border-border/50 transition-colors"
-              >
-                Share
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                    <MoreVertical className="w-4.5 h-4.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
+                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
+                    <Share2 className="w-4 h-4 text-muted-foreground" />
+                    Share
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => toast.success("Starred!")} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
+                    <Star className="w-4 h-4 text-muted-foreground" />
+                    Star
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setRenameValue(conversationTitle); setIsRenaming(true); }} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
+                    Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-1" />
+                  <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
