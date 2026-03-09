@@ -221,8 +221,40 @@ function mainMenuKB() {
     [{ text: "👥 إدارة المستخدمين", callback_data: "users_menu" }],
     [{ text: "🔑 OAuth Apps", callback_data: "oauth_menu" }],
     [{ text: "🎨 معرض العرض (Showcase)", callback_data: "showcase_menu" }],
+    [{ text: "⚙️ إعدادات الصفحات", callback_data: "pagesettings_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
+}
+
+// ---- Page Settings Defaults ----
+const DEFAULT_PAGE_IMAGES = {
+  styles: ["none", "dynamic", "cinematic", "creative", "fashion", "portrait", "stock-photo", "vibrant", "anime", "3d-render"],
+  aspectRatios: ["2:3", "1:1", "16:9"],
+  maxImages: 4,
+  defaultStyle: "dynamic",
+  defaultAspect: "1:1",
+  defaultNumImages: 1,
+};
+
+const DEFAULT_PAGE_VIDEOS = {
+  aspectRatios: ["9:16", "16:9", "1:1", "4:3"],
+  durations: [4, 5, 6, 8, 10],
+  resolutions: ["720p", "1080p", "2K", "4K"],
+  defaultAspect: "16:9",
+  defaultDuration: 5,
+  defaultResolution: "1080p",
+};
+
+async function getPageSettings(sb: ReturnType<typeof createClient>, page: "images" | "videos") {
+  const defaults = page === "images" ? DEFAULT_PAGE_IMAGES : DEFAULT_PAGE_VIDEOS;
+  const { data } = await sb.from("memories").select("value").eq("key", `page_settings_${page}`).maybeSingle();
+  if (!data) return { ...defaults };
+  try { return { ...defaults, ...JSON.parse(data.value) }; } catch { return { ...defaults }; }
+}
+
+async function savePageSettings(sb: ReturnType<typeof createClient>, page: "images" | "videos", settings: Record<string, unknown>) {
+  await sb.from("memories").delete().eq("key", `page_settings_${page}`);
+  await sb.from("memories").insert({ key: `page_settings_${page}`, value: JSON.stringify(settings) });
 }
 
 serve(async (req) => {
