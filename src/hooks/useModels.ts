@@ -50,6 +50,7 @@ export function useDynamicModels() {
             ...(ov.type && { type: ov.type as ModelDetail["type"] }),
             ...(customization && { customization }),
             ...(ov.icon_url && { iconUrl: ov.icon_url }),
+            ...(ov.badges && { badges: ov.badges.split(",").filter(Boolean) }),
           };
         };
 

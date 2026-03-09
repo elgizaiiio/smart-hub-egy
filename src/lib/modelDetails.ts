@@ -24,6 +24,7 @@ export interface ModelDetail {
   quality?: "standard" | "high" | "ultra";
   customization?: Record<string, any>;
   iconUrl?: string;
+  badges?: string[];
 }
 
 const MIME_IMG = ["image/jpeg", "image/png", "image/webp"];

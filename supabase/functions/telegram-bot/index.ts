@@ -268,10 +268,8 @@ function mainMenuKB() {
 
 // ---- Page Settings Defaults ----
 const DEFAULT_PAGE_IMAGES = {
-  styles: ["none", "dynamic", "cinematic", "creative", "fashion", "portrait", "stock-photo", "vibrant", "anime", "3d-render"],
   aspectRatios: ["2:3", "1:1", "16:9"],
   maxImages: 4,
-  defaultStyle: "dynamic",
   defaultAspect: "1:1",
   defaultNumImages: 1,
 };
@@ -447,7 +445,9 @@ serve(async (req) => {
           }
           fieldRows.push(row);
         }
-        fieldRows.push([{ text: "🗑 إعادة ضبط", callback_data: `reset_${modelId}` }, { text: "🚫 إخفاء النموذج", callback_data: `hide_${modelId}` }]);
+        fieldRows.push([{ text: "🎛 التخصيص", callback_data: "cust" }, { text: "🏷 الشارات", callback_data: "bdg" }]);
+        fieldRows.push([{ text: "📷 رفع أيقونة", callback_data: "icn_up" }]);
+        fieldRows.push([{ text: "🗑 إعادة ضبط", callback_data: `reset_${modelId}` }, { text: "🚫 إخفاء", callback_data: `hide_${modelId}` }]);
         fieldRows.push([{ text: "🔙 رجوع", callback_data: "edit_menu" }]);
 
         await send(BOT_TOKEN, chatId, msgId,
@@ -1279,17 +1279,13 @@ serve(async (req) => {
         const s = await getPageSettings(sb, "images") as typeof DEFAULT_PAGE_IMAGES;
         await send(BOT_TOKEN, chatId, msgId,
           `🖼 *إعدادات صفحة الصور*\n\n` +
-          `🎨 الأنماط: \`${s.styles.join(", ")}\`\n` +
           `📐 النسب: \`${s.aspectRatios.join(", ")}\`\n` +
           `🔢 أقصى عدد صور: \`${s.maxImages}\`\n` +
-          `✨ النمط الافتراضي: \`${s.defaultStyle}\`\n` +
           `📐 النسبة الافتراضية: \`${s.defaultAspect}\`\n` +
           `🔢 العدد الافتراضي: \`${s.defaultNumImages}\``,
           [
-            [{ text: "🎨 تعديل الأنماط", callback_data: "ps_img_styles" }],
             [{ text: "📐 تعديل النسب", callback_data: "ps_img_aspects" }],
             [{ text: "🔢 أقصى عدد صور", callback_data: "ps_img_max" }],
-            [{ text: "✨ النمط الافتراضي", callback_data: "ps_img_defstyle" }],
             [{ text: "📐 النسبة الافتراضية", callback_data: "ps_img_defaspect" }],
             [{ text: "🔢 العدد الافتراضي", callback_data: "ps_img_defnum" }],
             [{ text: "🗑 إعادة ضبط", callback_data: "ps_img_reset" }],
@@ -1503,6 +1499,375 @@ serve(async (req) => {
           [{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }],
           [{ text: "🔙 القائمة", callback_data: "pagesettings_menu" }],
         ]);
+        return new Response("OK");
+      }
+
+      // ==================== التخصيص (Customization) ====================
+      if (d === "cust") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        const rows = CUST_FEATURES.map(f => [{
+          text: `${cust[f.key]?.on ? "✅" : "⬜"} ${f.emoji} ${f.label}`,
+          callback_data: `ct_${f.key}`,
+        }, {
+          text: cust[f.key]?.on ? "⚙️" : "—",
+          callback_data: cust[f.key]?.on ? `co_${f.key}` : "noop",
+        }]);
+        rows.push([{ text: "💾 تم", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🎛 *التخصيص* لـ \`${session.adminModelId}\`\n\nاختر الخاصية لتفعيلها/تعطيلها:\n(⚙️ = تعديل الخيارات)`, rows);
+        return new Response("OK");
+      }
+
+      // Toggle customization feature
+      if (d.startsWith("ct_")) {
+        const feat = d.replace("ct_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        if (!cust[feat]) cust[feat] = { on: false };
+        cust[feat].on = !cust[feat].on;
+        if (cust[feat].on && CUST_OPTIONS[feat]) {
+          if (!cust[feat].opts) cust[feat].opts = [...CUST_OPTIONS[feat]];
+          if (!cust[feat].prices) cust[feat].prices = {};
+          if (!cust[feat].def) cust[feat].def = CUST_OPTIONS[feat][0];
+        }
+        if (cust[feat].on && feat === "neg" && cust[feat].price === undefined) cust[feat].price = 0;
+        if (cust[feat].on && feat === "ni") {
+          if (!cust[feat].max) cust[feat].max = 4;
+          if (cust[feat].pp === undefined) cust[feat].pp = 1;
+        }
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+        const rows = CUST_FEATURES.map(f => [{
+          text: `${cust[f.key]?.on ? "✅" : "⬜"} ${f.emoji} ${f.label}`,
+          callback_data: `ct_${f.key}`,
+        }, {
+          text: cust[f.key]?.on ? "⚙️" : "—",
+          callback_data: cust[f.key]?.on ? `co_${f.key}` : "noop",
+        }]);
+        rows.push([{ text: "💾 تم", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🎛 *التخصيص*\n\n${CUST_FEATURES.find(f=>f.key===feat)?.emoji||""} ${feat}: ${cust[feat].on ? "✅ مفعّل" : "⬜ معطّل"}`, rows);
+        return new Response("OK");
+      }
+
+      // Edit feature options
+      if (d.startsWith("co_")) {
+        const feat = d.replace("co_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        const fc = cust[feat] || {};
+
+        if (feat === "neg") {
+          const priceRows: any[][] = [];
+          for (let i = 0; i < CUST_PRICES.length; i += 5) {
+            const row: any[] = [];
+            for (let j = i; j < Math.min(i + 5, CUST_PRICES.length); j++) {
+              const p = CUST_PRICES[j];
+              row.push({ text: `${p === (fc.price || 0) ? "✅ " : ""}${p >= 0 ? "+" : ""}${p}`, callback_data: `cpn_${p}` });
+            }
+            priceRows.push(row);
+          }
+          priceRows.push([{ text: "🔙 رجوع", callback_data: "cust" }]);
+          await send(BOT_TOKEN, chatId, msgId, `🚫 *Negative Prompt*\n\nسعر إضافي: ${fc.price || 0} MC`, priceRows);
+          return new Response("OK");
+        }
+
+        if (feat === "ni") {
+          const niOpts = CUST_OPTIONS.ni || [];
+          const maxRows: any[][] = [];
+          for (let i = 0; i < niOpts.length; i += 3) {
+            const row: any[] = [];
+            for (let j = i; j < Math.min(i + 3, niOpts.length); j++) {
+              row.push({ text: `${String(fc.max) === niOpts[j] ? "✅ " : ""}${niOpts[j]}`, callback_data: `cnm_${niOpts[j]}` });
+            }
+            maxRows.push(row);
+          }
+          const ppRows: any[][] = [];
+          const ppPrices = CUST_PRICES.filter(p => p >= 0);
+          for (let i = 0; i < ppPrices.length; i += 4) {
+            const row: any[] = [];
+            for (let j = i; j < Math.min(i + 4, ppPrices.length); j++) {
+              row.push({ text: `${ppPrices[j] === (fc.pp || 1) ? "✅ " : ""}${ppPrices[j]}`, callback_data: `cnp_${ppPrices[j]}` });
+            }
+            ppRows.push(row);
+          }
+          await send(BOT_TOKEN, chatId, msgId, `🔢 *عدد الصور*\n\nالحد الأقصى: ${fc.max || 4}\nسعر كل صورة إضافية: ${fc.pp || 1} MC`, [
+            [{ text: "— الحد الأقصى —", callback_data: "noop" }],
+            ...maxRows,
+            [{ text: "— سعر الصورة الإضافية —", callback_data: "noop" }],
+            ...ppRows,
+            [{ text: "🔙 رجوع", callback_data: "cust" }],
+          ]);
+          return new Response("OK");
+        }
+
+        // ar, q, dur, res: options toggle
+        const allOpts = CUST_OPTIONS[feat] || [];
+        const selected = fc.opts || [];
+        const prices = fc.prices || {};
+        const featInfo = CUST_FEATURES.find(f => f.key === feat);
+        const rows: any[][] = [];
+        for (let i = 0; i < allOpts.length; i += 3) {
+          const row: any[] = [];
+          for (let j = i; j < Math.min(i + 3, allOpts.length); j++) {
+            const o = allOpts[j];
+            const isOn = selected.includes(o);
+            const pr = prices[o] || 0;
+            row.push({ text: `${isOn ? "✅" : "⬜"} ${o}${pr ? ` (${pr > 0 ? "+" : ""}${pr})` : ""}`, callback_data: `cop_${feat}_${o}` });
+          }
+          rows.push(row);
+        }
+        if (fc.def) rows.push([{ text: `📌 الافتراضي: ${fc.def}`, callback_data: `cdf_${feat}` }]);
+        rows.push([{ text: "💰 تعديل الأسعار", callback_data: `cpr_${feat}` }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: "cust" }]);
+        await send(BOT_TOKEN, chatId, msgId, `${featInfo?.emoji||""} *${featInfo?.label||feat}*\n\nاضغط لتفعيل/تعطيل الخيارات:`, rows);
+        return new Response("OK");
+      }
+
+      // Toggle option within feature
+      if (d.startsWith("cop_")) {
+        const rest = d.replace("cop_", "");
+        const us = rest.indexOf("_");
+        const feat = rest.slice(0, us);
+        const opt = rest.slice(us + 1);
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        if (!cust[feat]) cust[feat] = { on: true, opts: [], prices: {} };
+        const opts: string[] = cust[feat].opts || [];
+        const idx = opts.indexOf(opt);
+        if (idx >= 0) opts.splice(idx, 1); else opts.push(opt);
+        cust[feat].opts = opts;
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+        // Re-render by simulating co_ press
+        const allOpts = CUST_OPTIONS[feat] || [];
+        const prices = cust[feat].prices || {};
+        const featInfo = CUST_FEATURES.find(f => f.key === feat);
+        const rows: any[][] = [];
+        for (let i = 0; i < allOpts.length; i += 3) {
+          const row: any[] = [];
+          for (let j = i; j < Math.min(i + 3, allOpts.length); j++) {
+            const o = allOpts[j];
+            const isOn = opts.includes(o);
+            const pr = prices[o] || 0;
+            row.push({ text: `${isOn ? "✅" : "⬜"} ${o}${pr ? ` (${pr > 0 ? "+" : ""}${pr})` : ""}`, callback_data: `cop_${feat}_${o}` });
+          }
+          rows.push(row);
+        }
+        if (cust[feat].def) rows.push([{ text: `📌 الافتراضي: ${cust[feat].def}`, callback_data: `cdf_${feat}` }]);
+        rows.push([{ text: "💰 تعديل الأسعار", callback_data: `cpr_${feat}` }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: "cust" }]);
+        await send(BOT_TOKEN, chatId, msgId, `${featInfo?.emoji||""} *${featInfo?.label||feat}*\n\n${opt}: ${opts.includes(opt) ? "✅" : "⬜"}`, rows);
+        return new Response("OK");
+      }
+
+      // Set default for feature
+      if (d.startsWith("cdf_")) {
+        const feat = d.replace("cdf_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        const opts = cust[feat]?.opts || [];
+        const rows = opts.map((o: string) => [{ text: `${o === cust[feat]?.def ? "✅ " : ""}${o}`, callback_data: `cdv_${feat}_${o}` }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: `co_${feat}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `📌 *اختر القيمة الافتراضية:*`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("cdv_")) {
+        const rest = d.replace("cdv_", "");
+        const us = rest.indexOf("_");
+        const feat = rest.slice(0, us);
+        const val = rest.slice(us + 1);
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        if (!cust[feat]) cust[feat] = { on: true };
+        cust[feat].def = val;
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+        await send(BOT_TOKEN, chatId, msgId, `✅ الافتراضي: ${val}`, [[{ text: "🔙 رجوع", callback_data: `co_${feat}` }]]);
+        return new Response("OK");
+      }
+
+      // Price list for feature
+      if (d.startsWith("cpr_")) {
+        const feat = d.replace("cpr_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        const opts = cust[feat]?.opts || [];
+        const prices = cust[feat]?.prices || {};
+        const rows = opts.map((o: string) => [{ text: `${o}: ${prices[o] !== undefined ? (prices[o] >= 0 ? "+" : "") + prices[o] : "0"} MC`, callback_data: `cpo_${feat}_${o}` }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: `co_${feat}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `💰 *أسعار ${CUST_FEATURES.find(f=>f.key===feat)?.label||feat}*\n\nاضغط لتعديل السعر:`, rows);
+        return new Response("OK");
+      }
+
+      // Price picker for option
+      if (d.startsWith("cpo_")) {
+        const rest = d.replace("cpo_", "");
+        const us = rest.indexOf("_");
+        const feat = rest.slice(0, us);
+        const opt = rest.slice(us + 1);
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        const currentPrice = cust[feat]?.prices?.[opt] || 0;
+        const rows: any[][] = [];
+        for (let i = 0; i < CUST_PRICES.length; i += 5) {
+          const row: any[] = [];
+          for (let j = i; j < Math.min(i + 5, CUST_PRICES.length); j++) {
+            const p = CUST_PRICES[j];
+            row.push({ text: `${p === currentPrice ? "✅ " : ""}${p >= 0 ? "+" : ""}${p}`, callback_data: `cpx_${feat}_${opt}_${p}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "🔙 رجوع", callback_data: `cpr_${feat}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `💰 سعر *${opt}* (MC إضافي):`, rows);
+        return new Response("OK");
+      }
+
+      // Set price value
+      if (d.startsWith("cpx_")) {
+        const parts = d.replace("cpx_", "").split("_");
+        const feat = parts[0];
+        const price = parseInt(parts[parts.length - 1]);
+        const opt = parts.slice(1, -1).join("_");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        if (!cust[feat]) cust[feat] = { on: true, opts: [], prices: {} };
+        if (!cust[feat].prices) cust[feat].prices = {};
+        cust[feat].prices[opt] = price;
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+        await send(BOT_TOKEN, chatId, msgId, `✅ ${opt}: ${price >= 0 ? "+" : ""}${price} MC`, [
+          [{ text: "🔙 الأسعار", callback_data: `cpr_${feat}` }],
+          [{ text: "🔙 التخصيص", callback_data: "cust" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // Negative prompt price
+      if (d.startsWith("cpn_")) {
+        const price = parseInt(d.replace("cpn_", ""));
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        if (!cust.neg) cust.neg = { on: true };
+        cust.neg.price = price;
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+        await send(BOT_TOKEN, chatId, msgId, `✅ Negative Prompt: ${price >= 0 ? "+" : ""}${price} MC`, [[{ text: "🔙 التخصيص", callback_data: "cust" }]]);
+        return new Response("OK");
+      }
+
+      // Number of images max
+      if (d.startsWith("cnm_")) {
+        const max = parseInt(d.replace("cnm_", ""));
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        if (!cust.ni) cust.ni = { on: true };
+        cust.ni.max = max;
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+        await send(BOT_TOKEN, chatId, msgId, `✅ الحد الأقصى: ${max}`, [[{ text: "🔙 رجوع", callback_data: `co_ni` }], [{ text: "🔙 التخصيص", callback_data: "cust" }]]);
+        return new Response("OK");
+      }
+
+      // Number of images price per extra
+      if (d.startsWith("cnp_")) {
+        const pp = parseInt(d.replace("cnp_", ""));
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        try { cust = JSON.parse(config.customization || "{}"); } catch {}
+        if (!cust.ni) cust.ni = { on: true };
+        cust.ni.pp = pp;
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+        await send(BOT_TOKEN, chatId, msgId, `✅ سعر الصورة الإضافية: ${pp} MC`, [[{ text: "🔙 رجوع", callback_data: `co_ni` }], [{ text: "🔙 التخصيص", callback_data: "cust" }]]);
+        return new Response("OK");
+      }
+
+      // ==================== الشارات (Badges) ====================
+      if (d === "bdg") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        const current = (config.badges || "").split(",").filter(Boolean);
+        const rows: any[][] = [];
+        for (let i = 0; i < BADGE_OPTIONS.length; i += 3) {
+          const row: any[] = [];
+          for (let j = i; j < Math.min(i + 3, BADGE_OPTIONS.length); j++) {
+            const b = BADGE_OPTIONS[j];
+            row.push({ text: `${current.includes(b) ? "✅" : "⬜"} ${b}`, callback_data: `bt_${b}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "💾 حفظ", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🏷 *الشارات* لـ \`${session.adminModelId}\`\n\nالمحدد: ${current.length > 0 ? current.join(", ") : "لا شيء"}`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("bt_")) {
+        const badge = d.replace("bt_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        const current = (config.badges || "").split(",").filter(Boolean);
+        const idx = current.indexOf(badge);
+        if (idx >= 0) current.splice(idx, 1); else current.push(badge);
+        config.badges = current.join(",");
+        await setModelConfig(sb, session.adminModelId, config);
+        const rows: any[][] = [];
+        for (let i = 0; i < BADGE_OPTIONS.length; i += 3) {
+          const row: any[] = [];
+          for (let j = i; j < Math.min(i + 3, BADGE_OPTIONS.length); j++) {
+            const b = BADGE_OPTIONS[j];
+            row.push({ text: `${current.includes(b) ? "✅" : "⬜"} ${b}`, callback_data: `bt_${b}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "💾 حفظ", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🏷 *الشارات*\n\nالمحدد: ${current.length > 0 ? current.join(", ") : "لا شيء"}`, rows);
+        return new Response("OK");
+      }
+
+      // ==================== رفع الأيقونة (callback) ====================
+      if (d === "icn_up") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_icon" });
+        await send(BOT_TOKEN, chatId, msgId, `📷 *رفع أيقونة النموذج*\n\nأرسل صورة (PNG/SVG/JPG) لـ \`${session.adminModelId}\`:`, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
         return new Response("OK");
       }
 
@@ -1901,6 +2266,40 @@ serve(async (req) => {
           text: `✅ تم تحديث صورة التطبيق بنجاح!`,
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${session.oauthAppId}` }]] }),
+        });
+        return new Response("OK");
+      }
+
+      // رفع أيقونة النموذج
+      if (session?.adminAction === "awaiting_icon" && session.adminModelId) {
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document) fileId = message.document.file_id;
+        if (!fileId) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "أرسل صورة فقط.", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]] }) });
+          return new Response("OK");
+        }
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل تحميل الملف." }); return new Response("OK"); }
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || "png";
+        const storagePath = `model-icons/${session.adminModelId}.${ext}`;
+        const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, {
+          contentType: ext === "svg" ? "image/svg+xml" : `image/${ext}`,
+          upsert: true,
+        });
+        if (uploadError) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ: ${uploadError.message}` }); return new Response("OK"); }
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        const config = await getModelConfig(sb, session.adminModelId);
+        config.icon_url = urlData.publicUrl;
+        await setModelConfig(sb, session.adminModelId, config);
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ تم رفع أيقونة \`${session.adminModelId}\``, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "✏️ تعديل", callback_data: `emod_${session.adminModelId}` }], [{ text: "🔙 القائمة", callback_data: "edit_menu" }]] }),
         });
         return new Response("OK");
       }

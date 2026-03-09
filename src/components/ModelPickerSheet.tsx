@@ -222,12 +222,19 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
   }, [allModels, mode, tab]);
 
   const handleSelect = (model: ModelDetail) => {
+    let cust: Record<string, any> | undefined;
+    if (model.customization) {
+      cust = typeof model.customization === 'string' ? JSON.parse(model.customization as string) : model.customization;
+    }
     onSelect({
       id: model.id,
       name: model.name,
       credits: model.credits.toString(),
       requiresImage: model.requiresImage,
-      category: model.type.includes("tool") || model.type.includes("i2v") || model.type.includes("avatar") ? "tool" : "model"
+      category: model.type.includes("tool") || model.type.includes("i2v") || model.type.includes("avatar") ? "tool" : "model",
+      customization: cust,
+      iconUrl: model.iconUrl,
+      badges: model.badges,
     });
     onClose();
     setDetailModel(null);
@@ -237,9 +244,9 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
   const renderModelRow = (model: ModelDetail, showBorder = true) => {
     const isSelected = selectedModelId === model.id;
-    const logo = MODEL_LOGOS[model.id];
-    const badges = MODEL_BADGES[model.id] || [];
-    const isNew = NEW_MODELS.includes(model.id);
+    const logo = model.iconUrl || MODEL_LOGOS[model.id];
+    const badges = model.badges || MODEL_BADGES[model.id] || [];
+    const isNew = (model.badges || []).includes("NEW") || NEW_MODELS.includes(model.id);
     const isFree = model.credits === 0;
 
     return (

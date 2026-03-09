@@ -10,6 +10,9 @@ export interface ModelOption {
   description?: string;
   requiresImage?: boolean;
   category?: "model" | "tool";
+  customization?: Record<string, any>;
+  iconUrl?: string;
+  badges?: string[];
 }
 
 type ModelMode = "chat" | "images" | "videos" | "files" | "code";

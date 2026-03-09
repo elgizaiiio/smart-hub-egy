@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, RotateCcw, HelpCircle, Lock, Unlock, Settings2, X } from "lucide-react";
+import { ChevronDown, RotateCcw, HelpCircle, Lock, Unlock, Settings2, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ModelOption } from "@/components/ModelSelector";
-
-export type ImageStyle = "none" | "cinematic" | "creative" | "dynamic" | "fashion" | "portrait" | "stock-photo" | "vibrant" | "anime" | "3d-render";
 
 export interface ImageDimensions {
   width: number;
@@ -15,24 +13,10 @@ export interface ImageDimensions {
 }
 
 export interface ImageSettings {
-  style: ImageStyle;
   dimensions: ImageDimensions;
   numImages: number;
   privateMode: boolean;
 }
-
-const STYLES: { value: ImageStyle; label: string; icon: string }[] = [
-  { value: "none", label: "None", icon: "🚫" },
-  { value: "dynamic", label: "Dynamic", icon: "⚡" },
-  { value: "cinematic", label: "Cinematic", icon: "🎬" },
-  { value: "creative", label: "Creative", icon: "🎨" },
-  { value: "fashion", label: "Fashion", icon: "👗" },
-  { value: "portrait", label: "Portrait", icon: "📸" },
-  { value: "stock-photo", label: "Stock Photo", icon: "🖼️" },
-  { value: "vibrant", label: "Vibrant", icon: "🌈" },
-  { value: "anime", label: "Anime", icon: "✨" },
-  { value: "3d-render", label: "3D Render", icon: "🧊" },
-];
 
 const PRESET_DIMENSIONS: { dims: ImageDimensions; icon: React.ReactNode }[] = [
   {
@@ -76,7 +60,6 @@ const DEVICE_PRESETS: ImageDimensions[] = [
 ];
 
 export const DEFAULT_SETTINGS: ImageSettings = {
-  style: "dynamic",
   dimensions: { width: 1024, height: 1024, label: "1:1" },
   numImages: 1,
   privateMode: false,
@@ -99,7 +82,6 @@ const ImageSettingsPanel = ({
   onSettingsChange,
   className = "",
 }: ImageSettingsPanelProps) => {
-  const [styleOpen, setStyleOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [numExpanded, setNumExpanded] = useState(false);
 
@@ -109,7 +91,6 @@ const ImageSettingsPanel = ({
 
   const handleReset = () => onSettingsChange({ ...DEFAULT_SETTINGS });
 
-  const currentStyle = STYLES.find(s => s.value === settings.style);
   const dimRatio = settings.dimensions.width / settings.dimensions.height;
 
   return (
@@ -130,56 +111,6 @@ const ImageSettingsPanel = ({
             </div>
             <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </button>
-        </div>
-
-        {/* ── Style ── */}
-        <div>
-          <div className="relative">
-            <button
-              onClick={() => setStyleOpen(!styleOpen)}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-secondary/50 border border-border hover:border-primary/40 transition-all group"
-            >
-              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-base">
-                {currentStyle?.icon || "⚡"}
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Style</span>
-                <p className="text-sm font-medium text-foreground">{currentStyle?.label || "Dynamic"}</p>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${styleOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            <AnimatePresence>
-              {styleOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="mt-2 rounded-xl border border-border bg-popover shadow-lg overflow-hidden max-h-52 overflow-y-auto">
-                    {STYLES.map(s => (
-                      <button
-                        key={s.value}
-                        onClick={() => { updateSetting("style", s.value); setStyleOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
-                          settings.style === s.value
-                            ? "bg-primary/10 text-primary"
-                            : "text-popover-foreground hover:bg-accent/50"
-                        }`}
-                      >
-                        <span className="text-base">{s.icon}</span>
-                        <span className="font-medium">{s.label}</span>
-                        {settings.style === s.value && (
-                          <span className="ml-auto w-2 h-2 rounded-full bg-primary" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
 
         {/* ── Image Dimensions ── */}

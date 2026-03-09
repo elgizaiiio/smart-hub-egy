@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Loader2, ChevronDown, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,7 +14,8 @@ const PLACEHOLDERS = [
   "Anime character with flowing hair...",
 ];
 
-const ASPECT_RATIOS: ImageDimensions[] = [
+// Default aspect ratios (used when model has no customization)
+const DEFAULT_ASPECT_RATIOS: ImageDimensions[] = [
   { width: 768, height: 1024, label: "2:3" },
   { width: 1024, height: 1024, label: "1:1" },
   { width: 1024, height: 576, label: "16:9" },
@@ -23,9 +24,23 @@ const ASPECT_RATIOS: ImageDimensions[] = [
   { width: 1080, height: 1920, label: "9:16" },
 ];
 
-const QUALITIES = ["512px", "1K", "2K", "4K"];
+const DEFAULT_QUALITIES = ["512px", "1K", "2K", "4K"];
 
-const MODEL_LOGOS: Record<string, string> = {
+// Map aspect ratio labels to dimensions
+const ASPECT_DIM_MAP: Record<string, ImageDimensions> = {
+  "1:1": { width: 1024, height: 1024, label: "1:1" },
+  "2:3": { width: 768, height: 1024, label: "2:3" },
+  "3:2": { width: 1024, height: 768, label: "3:2" },
+  "4:3": { width: 1200, height: 900, label: "4:3" },
+  "3:4": { width: 900, height: 1200, label: "3:4" },
+  "16:9": { width: 1024, height: 576, label: "16:9" },
+  "9:16": { width: 576, height: 1024, label: "9:16" },
+  "4:5": { width: 1080, height: 1350, label: "4:5" },
+  "5:4": { width: 1350, height: 1080, label: "5:4" },
+};
+
+// Fallback logos for known models
+const FALLBACK_LOGOS: Record<string, string> = {
   "megsy-v1-img": "/model-logos/megsy.png",
   "gpt-image": "/model-logos/openai.svg",
   "gpt-image-1": "/model-logos/openai.svg",
@@ -79,6 +94,41 @@ const BottomInputBar = ({
   const [openDropdown, setOpenDropdown] = useState<DropdownId>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Read customization from model
+  const cust = selectedModel.customization;
+  const showAspect = !cust || cust.ar?.on !== false;
+  const showQuality = !cust || cust.q?.on !== false;
+  const showCount = !cust || cust.ni?.on !== false;
+
+  // Build dynamic options from customization
+  const aspectOptions = useMemo(() => {
+    if (cust?.ar?.opts?.length > 0) {
+      return cust.ar.opts.map((label: string) => ASPECT_DIM_MAP[label] || { width: 1024, height: 1024, label });
+    }
+    return DEFAULT_ASPECT_RATIOS;
+  }, [cust]);
+
+  const qualityOptions = useMemo(() => {
+    if (cust?.q?.opts?.length > 0) return cust.q.opts as string[];
+    return DEFAULT_QUALITIES;
+  }, [cust]);
+
+  const maxImages = useMemo(() => {
+    if (cust?.ni?.max) return cust.ni.max;
+    return 4;
+  }, [cust]);
+
+  const countOptions = useMemo(() => {
+    const opts: number[] = [];
+    for (let i = 1; i <= maxImages; i++) opts.push(i);
+    return opts;
+  }, [maxImages]);
+
+  // Set quality default from customization
+  useEffect(() => {
+    if (cust?.q?.def) setSelectedQuality(cust.q.def);
+  }, [cust?.q?.def]);
+
   // Animated placeholder
   useEffect(() => {
     if (input) return;
@@ -102,7 +152,7 @@ const BottomInputBar = ({
   };
 
   const currentAspect = settings.dimensions.label;
-  const logo = MODEL_LOGOS[selectedModel.id];
+  const logo = selectedModel.iconUrl || FALLBACK_LOGOS[selectedModel.id];
 
   const chipClass =
     "shrink-0 px-3 py-2 rounded-xl text-xs font-medium " +
@@ -165,7 +215,7 @@ const BottomInputBar = ({
           {/* Bottom controls row */}
           <div className="flex items-center justify-between gap-3 px-4 pb-4">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-              {/* Model chip (keeps its tiny logo) */}
+              {/* Model chip */}
               <button
                 onClick={() => setModelPickerOpen(!modelPickerOpen)}
                 className={
@@ -179,94 +229,100 @@ const BottomInputBar = ({
                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${modelPickerOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Aspect ratio (NO icons) */}
-              <Popover open={openDropdown === "aspect"} onOpenChange={(o) => setOpenDropdown(o ? "aspect" : null)}>
-                <PopoverTrigger asChild>
-                  <button className={chipClass}>{currentAspect}</button>
-                </PopoverTrigger>
-                <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
-                  <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Aspect</p>
-                  <div className="space-y-0.5">
-                    {ASPECT_RATIOS.map((ar) => (
-                      <button
-                        key={ar.label}
-                        onClick={() => {
-                          updateSetting("dimensions", ar);
-                          setOpenDropdown(null);
-                        }}
-                        className={`${itemBase} ${
-                          settings.dimensions.label === ar.label
-                            ? "bg-accent text-accent-foreground font-semibold"
-                            : "hover:bg-accent hover:text-accent-foreground"
-                        }`}
-                      >
-                        {ar.label}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Aspect ratio chip - conditional */}
+              {showAspect && (
+                <Popover open={openDropdown === "aspect"} onOpenChange={(o) => setOpenDropdown(o ? "aspect" : null)}>
+                  <PopoverTrigger asChild>
+                    <button className={chipClass}>{currentAspect}</button>
+                  </PopoverTrigger>
+                  <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
+                    <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Aspect</p>
+                    <div className="space-y-0.5">
+                      {aspectOptions.map((ar: ImageDimensions) => (
+                        <button
+                          key={ar.label}
+                          onClick={() => {
+                            updateSetting("dimensions", ar);
+                            setOpenDropdown(null);
+                          }}
+                          className={`${itemBase} ${
+                            settings.dimensions.label === ar.label
+                              ? "bg-accent text-accent-foreground font-semibold"
+                              : "hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                        >
+                          {ar.label}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
 
-              {/* Quality (NO icons) */}
-              <Popover open={openDropdown === "quality"} onOpenChange={(o) => setOpenDropdown(o ? "quality" : null)}>
-                <PopoverTrigger asChild>
-                  <button className={chipClass}>{selectedQuality}</button>
-                </PopoverTrigger>
-                <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
-                  <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Quality</p>
-                  <div className="space-y-0.5">
-                    {QUALITIES.map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => {
-                          setSelectedQuality(q);
-                          setOpenDropdown(null);
-                        }}
-                        className={`${itemBase} ${
-                          selectedQuality === q
-                            ? "bg-accent text-accent-foreground font-semibold"
-                            : "hover:bg-accent hover:text-accent-foreground"
-                        }`}
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Quality chip - conditional */}
+              {showQuality && (
+                <Popover open={openDropdown === "quality"} onOpenChange={(o) => setOpenDropdown(o ? "quality" : null)}>
+                  <PopoverTrigger asChild>
+                    <button className={chipClass}>{selectedQuality}</button>
+                  </PopoverTrigger>
+                  <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
+                    <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Quality</p>
+                    <div className="space-y-0.5">
+                      {qualityOptions.map((q: string) => (
+                        <button
+                          key={q}
+                          onClick={() => {
+                            setSelectedQuality(q);
+                            setOpenDropdown(null);
+                          }}
+                          className={`${itemBase} ${
+                            selectedQuality === q
+                              ? "bg-accent text-accent-foreground font-semibold"
+                              : "hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
 
-              {/* Images count (NO icons) */}
-              <Popover open={openDropdown === "count"} onOpenChange={(o) => setOpenDropdown(o ? "count" : null)}>
-                <PopoverTrigger asChild>
-                  <button className={chipClass}>
-                    {settings.numImages} Image{settings.numImages > 1 ? "s" : ""}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
-                  <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Images</p>
-                  <div className="space-y-0.5">
-                    {[1, 2, 3, 4].map((n) => (
-                      <button
-                        key={n}
-                        onClick={() => {
-                          updateSetting("numImages", n);
-                          setOpenDropdown(null);
-                        }}
-                        className={`${itemBase} ${
-                          settings.numImages === n
-                            ? "bg-accent text-accent-foreground font-semibold"
-                            : "hover:bg-accent hover:text-accent-foreground"
-                        }`}
-                      >
-                        {n} Image{n > 1 ? "s" : ""}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Images count chip - conditional */}
+              {showCount && (
+                <Popover open={openDropdown === "count"} onOpenChange={(o) => setOpenDropdown(o ? "count" : null)}>
+                  <PopoverTrigger asChild>
+                    <button className={chipClass}>
+                      {settings.numImages} Image{settings.numImages > 1 ? "s" : ""}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
+                    <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Images</p>
+                    <div className="space-y-0.5">
+                      {countOptions.map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => {
+                            updateSetting("numImages", n);
+                            setOpenDropdown(null);
+                          }}
+                          className={`${itemBase} ${
+                            settings.numImages === n
+                              ? "bg-accent text-accent-foreground font-semibold"
+                              : "hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                        >
+                          {n} Image{n > 1 ? "s" : ""}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
 
-            {/* Generate button (white -> warning when text) */}
+            {/* Generate button */}
             <button
               onClick={onGenerate}
               disabled={!input.trim() || isGenerating}
