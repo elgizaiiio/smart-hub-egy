@@ -348,7 +348,18 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
               {/* Model list */}
               <div className="flex-1 overflow-y-auto">
-                {allModels.map((model, i) => renderModelRow(model, i < allModels.length - 1))}
+                {mode === "images" && tab === "models" ? (
+                  <>
+                    {featuredModels.map((model, i) => renderModelRow(model, i < featuredModels.length - 1))}
+                    {otherModels.length > 0 && (
+                      <div className="border-t border-border">
+                        {otherModels.map((model, i) => renderModelRow(model, i < otherModels.length - 1))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  allModels.map((model, i) => renderModelRow(model, i < allModels.length - 1))
+                )}
               </div>
             </motion.div>
           </>
