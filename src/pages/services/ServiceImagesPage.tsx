@@ -589,7 +589,7 @@ const ServiceImagesPage = () => {
                               />
                               <div>
                                 <p className="text-sm font-medium">Creating your image...</p>
-                                <p className="text-xs text-muted-foreground">Using {currentScenario.model}</p>
+                                
                               </div>
                             </div>
                             {/* Progress bar */}
