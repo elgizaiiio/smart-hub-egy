@@ -119,7 +119,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                   onClick={() => setModelMenuOpen(!modelMenuOpen)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                 >
-                  <ModelBrandIcon modelId={selectedModel.id} />
+                  
                   <span>{selectedModel.name}</span>
                   <ChevronDown className="w-3 h-3" />
                 </button>
@@ -142,7 +142,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                               : "text-popover-foreground hover:bg-accent/50"
                           }`}
                         >
-                          <ModelBrandIcon modelId={m.id} />
+                          
                           <span className="font-medium">{m.name}</span>
                         </button>
                       ))}
