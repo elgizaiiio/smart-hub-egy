@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Download, Loader2, Settings2, Video, Image as ImageIcon, X, Trash2, ArrowUp, ChevronDown } from "lucide-react";
+import { Menu, Download, Loader2, Settings2, Video, Image as ImageIcon, X, Trash2, ArrowUp, ChevronDown, Paperclip } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -558,7 +558,7 @@ const VideosPage = () => {
                     onClick={() => fileInputRef.current?.click()}
                     className="w-9 h-9 flex items-center justify-center rounded-xl bg-secondary/80 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent hover:border-primary/30 transition-all duration-200"
                   >
-                    <ImageIcon className="w-[18px] h-[18px]" />
+                    <Paperclip className="w-[18px] h-[18px]" />
                   </button>
                 </div>
 
