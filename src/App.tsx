@@ -47,6 +47,7 @@ import ImageAgentPage from "./pages/ImageAgentPage";
 import VideoAgentPage from "./pages/VideoAgentPage";
 import CookieConsent from "./components/CookieConsent";
 import TranslationWrapper from "./components/TranslationWrapper";
+import EgyptPage from "./pages/EgyptPage";
 
 const queryClient = new QueryClient();
 
