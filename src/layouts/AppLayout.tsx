@@ -16,7 +16,7 @@ const AppLayout = ({ children, onSelectConversation, onNewChat, activeConversati
         onNewChat={onNewChat}
         activeConversationId={activeConversationId}
       />
-      <main className="flex-1 min-w-0 h-[100dvh]">
+      <main className="flex-1 min-w-0 h-[100dvh] overflow-hidden">
         {children}
       </main>
     </div>
