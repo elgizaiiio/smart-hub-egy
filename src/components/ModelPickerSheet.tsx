@@ -358,7 +358,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     );
   }
 
-  // Images/Chat mode: full-screen sheet
+  // Chat mode: full-screen sheet
   return createPortal(
     <AnimatePresence>
       {open &&
