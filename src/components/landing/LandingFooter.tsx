@@ -11,7 +11,7 @@ const footerLinks = {
   ],
   Product: [
     { label: "Pricing", href: "/pricing" },
-    { label: "API", href: "#" },
+    { label: "API", href: "/apis" },
     { label: "Referral Program", href: "#" },
     { label: "Integrations", href: "#" },
   ],
@@ -19,6 +19,7 @@ const footerLinks = {
     { label: "About Us", href: "https://about.megsyai.com" },
     { label: "Contact", href: "/contact" },
     { label: "Support", href: "/contact" },
+    { label: "Egypt 🇪🇬", href: "/egypt" },
   ],
   Legal: [
     { label: "Terms of Service", href: "https://terms.megsyai.com" },

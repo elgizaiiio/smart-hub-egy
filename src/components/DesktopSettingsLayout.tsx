@@ -82,6 +82,22 @@ export function DesktopSettingsLayout({ children, title, subtitle }: DesktopSett
 
               <div className="h-px bg-border/30 my-3" />
 
+              {EXTRA_NAV.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate(item.path)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200"
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+
+              <div className="h-px bg-border/30 my-3" />
+
               {EXTERNAL_LINKS.map((item) => {
                 const Icon = item.icon;
                 return (
