@@ -59,6 +59,8 @@ const VideosPage = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [selectedShowcaseItem, setSelectedShowcaseItem] = useState<ShowcaseItem | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileInput, setMobileInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const capability = useMemo(() => getVideoModelCapability(selectedModel.id), [selectedModel.id]);
