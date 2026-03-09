@@ -98,13 +98,14 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId, mode = "i
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const { models: allModels } = useDynamicModels();
 
   const models = useMemo(() => {
     if (mode === "videos") {
-      return ALL_MODEL_DETAILS.filter(m => m.type === "video" || m.type === "video-i2v").slice(0, 12);
+      return allModels.filter(m => m.type === "video" || m.type === "video-i2v").slice(0, 12);
     }
-    return ALL_MODEL_DETAILS.filter(m => m.type === "image").slice(0, 12);
-  }, [mode]);
+    return allModels.filter(m => m.type === "image").slice(0, 12);
+  }, [mode, allModels]);
 
   // Close on outside click
   useEffect(() => {
