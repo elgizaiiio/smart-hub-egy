@@ -2270,6 +2270,40 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // رفع أيقونة النموذج
+      if (session?.adminAction === "awaiting_icon" && session.adminModelId) {
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document) fileId = message.document.file_id;
+        if (!fileId) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "أرسل صورة فقط.", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]] }) });
+          return new Response("OK");
+        }
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل تحميل الملف." }); return new Response("OK"); }
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || "png";
+        const storagePath = `model-icons/${session.adminModelId}.${ext}`;
+        const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, {
+          contentType: ext === "svg" ? "image/svg+xml" : `image/${ext}`,
+          upsert: true,
+        });
+        if (uploadError) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ: ${uploadError.message}` }); return new Response("OK"); }
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        const config = await getModelConfig(sb, session.adminModelId);
+        config.icon_url = urlData.publicUrl;
+        await setModelConfig(sb, session.adminModelId, config);
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ تم رفع أيقونة \`${session.adminModelId}\``, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "✏️ تعديل", callback_data: `emod_${session.adminModelId}` }], [{ text: "🔙 القائمة", callback_data: "edit_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
       // إدخال fal suffix بعد اختيار البادئة
       if (session?.adminAction === "awaiting_fal_suffix" && text && session.adminModelId) {
         const prefix = session.addModelData?._falPrefix || "fal-ai/";

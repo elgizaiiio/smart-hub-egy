@@ -244,9 +244,9 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
   const renderModelRow = (model: ModelDetail, showBorder = true) => {
     const isSelected = selectedModelId === model.id;
-    const logo = MODEL_LOGOS[model.id];
-    const badges = MODEL_BADGES[model.id] || [];
-    const isNew = NEW_MODELS.includes(model.id);
+    const logo = model.iconUrl || MODEL_LOGOS[model.id];
+    const badges = model.badges || MODEL_BADGES[model.id] || [];
+    const isNew = (model.badges || []).includes("NEW") || NEW_MODELS.includes(model.id);
     const isFree = model.credits === 0;
 
     return (
