@@ -16,7 +16,7 @@ interface DesktopSidebarProps {
 }
 
 const mainNav = [
-  { path: "/", label: "Chat" },
+  { path: "/chat", label: "Chat" },
   { path: "/images", label: "Images" },
   { path: "/videos", label: "Videos" },
   { path: "/code", label: "Code" },
