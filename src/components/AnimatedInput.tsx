@@ -95,8 +95,8 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           onKeyDown={handleKeyDown}
           placeholder={displayedPlaceholder}
           rows={1}
-          className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/40 px-4 pt-3 pb-1 max-h-8 md:max-h-32"
-          style={{ minHeight: "36px" }}
+          className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/40 px-4 pt-3 pb-1 overflow-hidden md:overflow-auto md:max-h-32"
+          style={{ minHeight: "36px", maxHeight: window.innerWidth < 768 ? "36px" : undefined }}
         />
 
         {/* Bottom bar */}
