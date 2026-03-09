@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Sparkles, Zap, Wand2, Loader2, Send, User, Bot } from "lucide-react";
+import { Zap, Wand2 } from "lucide-react";
 
 // Scenarios for the demo - many models and unique images
 const demoScenarios = [
