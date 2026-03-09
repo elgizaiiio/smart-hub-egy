@@ -652,6 +652,13 @@ const ChatPage = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Connectors Dialog */}
+        <ConnectorsDialog
+          open={connectorsOpen}
+          onOpenChange={setConnectorsOpen}
+          onNavigateIntegrations={() => navigate("/settings/integrations")}
+        />
       </div>
     </AppLayout>
   );
