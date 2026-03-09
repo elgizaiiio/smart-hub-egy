@@ -384,8 +384,8 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.1 }}
             className="relative rounded-2xl bg-primary p-6 flex flex-col justify-between lg:row-span-2"
           >
-            <div className="w-16 h-16 flex items-center justify-center">
-              <Zap className="w-12 h-12 text-black" />
+            <div className="w-16 h-16 flex items-center justify-center text-4xl font-black text-black">
+              01
             </div>
             <div>
               <h3 className="text-2xl font-bold text-black">From idea to execution, effortlessly.</h3>
