@@ -1,14 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, ChevronDown, Sparkles, Search } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, ChevronDown, Coins } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 
 interface DesktopSidebarProps {
@@ -23,6 +17,14 @@ interface Conversation {
   updated_at: string;
 }
 
+/* ── Mega-menu structure ── */
+interface SubItem { label: string; desc: string; action: string; }
+interface MenuColumn { title: string; items: SubItem[]; }
+interface DropdownNav { label: string; columns: MenuColumn[]; }
+interface LinkNav { label: string; href: string; }
+type NavItem = DropdownNav | LinkNav;
+const isDropdown = (item: NavItem): item is DropdownNav => "columns" in item;
+
 const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId }: DesktopSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,6 +32,9 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
   const [recentChats, setRecentChats] = useState<Conversation[]>([]);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [pinned, setPinned] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { loadUserInfo(); }, []);
 
@@ -53,7 +58,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
         .select("id, title, updated_at")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
-        .limit(8);
+        .limit(6);
       if (convos) setRecentChats(convos);
     }
   };
@@ -66,176 +71,290 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const initial = userName.charAt(0).toUpperCase() || "U";
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
-  const isImageMode = isActive("/images");
-  const isVideoMode = isActive("/videos");
+  const handleMouseEnter = (label: string) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (!pinned) setOpenDropdown(label);
+  };
 
-  const navLinkClass = (active: boolean) =>
-    `px-4 py-1.5 text-[13px] font-medium rounded-full transition-all whitespace-nowrap ${
-      active
-        ? "bg-white/[0.12] text-white"
-        : "text-white/50 hover:text-white/80"
-    }`;
+  const handleMouseLeave = () => {
+    if (!pinned) {
+      timeoutRef.current = setTimeout(() => setOpenDropdown(null), 200);
+    }
+  };
+
+  const handleClick = (label: string) => {
+    if (openDropdown === label && pinned) {
+      setOpenDropdown(null);
+      setPinned(false);
+    } else {
+      setOpenDropdown(label);
+      setPinned(true);
+    }
+  };
+
+  const closeMenu = () => {
+    setOpenDropdown(null);
+    setPinned(false);
+  };
+
+  /* ── Navigation items ── */
+  const chatNav: DropdownNav = {
+    label: "Chat",
+    columns: [
+      {
+        title: "Chat",
+        items: [
+          { label: "New Chat", desc: "Start a fresh conversation", action: "new-chat" },
+          ...recentChats.map((c) => ({
+            label: c.title || "Untitled",
+            desc: new Date(c.updated_at).toLocaleDateString(),
+            action: `chat:${c.id}`,
+          })),
+        ],
+      },
+    ],
+  };
+
+  const imagesNav: DropdownNav = {
+    label: "Images",
+    columns: [
+      {
+        title: "AI Images",
+        items: [
+          { label: "Image Generator", desc: "Create stunning AI visuals", action: "/images" },
+          { label: "Image Studio", desc: "Advanced generation workspace", action: "/images/studio" },
+          { label: "Image Agent", desc: "AI assistant for prompts & models", action: "/images/agent" },
+        ],
+      },
+    ],
+  };
+
+  const videosNav: DropdownNav = {
+    label: "Videos",
+    columns: [
+      {
+        title: "AI Videos",
+        items: [
+          { label: "Video Generator", desc: "Generate cinematic AI videos", action: "/videos" },
+          { label: "Video Studio", desc: "Advanced video workspace", action: "/videos/studio" },
+          { label: "Video Agent", desc: "AI assistant for video creation", action: "/videos/agent" },
+        ],
+      },
+    ],
+  };
+
+  const filesNav: DropdownNav = {
+    label: "Files",
+    columns: [
+      {
+        title: "Files",
+        items: [
+          { label: "All Files", desc: "Browse your uploaded files", action: "/files" },
+        ],
+      },
+    ],
+  };
+
+  const navItems: NavItem[] = [
+    chatNav,
+    imagesNav,
+    videosNav,
+    filesNav,
+    { label: "Code", href: "/code" },
+  ];
+
+  const handleAction = (action: string) => {
+    closeMenu();
+    if (action === "new-chat") {
+      onNewChat?.();
+      navigate("/chat");
+    } else if (action.startsWith("chat:")) {
+      const id = action.replace("chat:", "");
+      onSelectConversation?.(id);
+      navigate("/chat");
+    } else {
+      navigate(action);
+    }
+  };
+
+  const activeSectionFor = (label: string) => {
+    switch (label) {
+      case "Chat": return isActive("/chat");
+      case "Images": return isActive("/images");
+      case "Videos": return isActive("/videos");
+      case "Files": return isActive("/files");
+      case "Code": return isActive("/code");
+      default: return false;
+    }
+  };
 
   return (
-    <header className="hidden md:block w-full shrink-0 z-40">
-      <div className="flex items-center justify-between h-[52px] px-5 bg-[hsl(0,0%,7%)] border-b border-white/[0.06]">
+    <header className="hidden md:block w-full shrink-0 z-50">
+      <div className="flex items-center justify-between h-16 px-6 bg-background/90 backdrop-blur-xl border-b border-border">
 
-        {/* Left: Brand + Search */}
-        <div className="flex items-center gap-4 shrink-0">
-          <button
-            onClick={() => { onNewChat?.(); navigate("/chat"); }}
-            className="text-[17px] font-black tracking-tight text-white italic hover:opacity-80 transition-opacity"
-          >
-            Megsy
-          </button>
+        {/* Logo */}
+        <button
+          onClick={() => { onNewChat?.(); navigate("/chat"); }}
+          className="font-display text-2xl font-black uppercase tracking-tight text-foreground hover:opacity-80 transition-opacity shrink-0"
+        >
+          MEGSY
+        </button>
 
-          {/* Search pill */}
-          <div className="flex items-center gap-2 bg-white/[0.06] rounded-full px-3 py-1.5 border border-white/[0.08] w-[180px]">
-            <Search className="w-3.5 h-3.5 text-white/30" />
-            <span className="text-[12px] text-white/30">Search</span>
-          </div>
+        {/* Center nav */}
+        <div className="flex items-center gap-1">
+          {navItems.map((item) =>
+            isDropdown(item) ? (
+              <div
+                key={item.label}
+                className="relative"
+                onMouseEnter={() => handleMouseEnter(item.label)}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button
+                  onClick={() => handleClick(item.label)}
+                  className={`flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                    activeSectionFor(item.label)
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${openDropdown === item.label ? "rotate-180" : ""}`} />
+                </button>
+
+                <AnimatePresence>
+                  {openDropdown === item.label && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="fixed left-0 right-0 top-[64px] flex justify-center z-50 px-6 pointer-events-none"
+                    >
+                      <div
+                        className="w-full max-w-[600px] rounded-2xl border border-white/10 bg-black/95 backdrop-blur-3xl p-6 shadow-2xl pointer-events-auto"
+                        onMouseEnter={() => handleMouseEnter(item.label)}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${item.columns.length}, minmax(0, 1fr))` }}>
+                          {item.columns.map((col) => (
+                            <div key={col.title}>
+                              <h4 className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">
+                                {col.title}
+                              </h4>
+                              <div className="space-y-1">
+                                {col.items.map((sub) => (
+                                  <button
+                                    key={sub.label + sub.action}
+                                    onClick={() => handleAction(sub.action)}
+                                    className="group flex flex-col w-full text-left rounded-xl px-3 py-2.5 hover:bg-white/[0.06] transition-colors"
+                                  >
+                                    <span className="text-[14px] font-semibold text-white/90 group-hover:text-primary transition-colors">
+                                      {sub.label}
+                                    </span>
+                                    <span className="text-[12px] text-white/40 group-hover:text-white/60 transition-colors mt-0.5">
+                                      {sub.desc}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.href)}
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                  activeSectionFor(item.label)
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {item.label}
+              </button>
+            )
+          )}
         </div>
 
-        {/* Center: Navigation pills */}
-        <nav className="flex items-center gap-1 bg-white/[0.04] rounded-full p-1 border border-white/[0.06]">
-          {/* Chat with dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className={navLinkClass(isActive("/chat"))}>
-                Chat
-                <ChevronDown className="w-3 h-3 ml-1 inline opacity-40" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 bg-[hsl(0,0%,10%)] border-white/[0.08] text-white">
-              <DropdownMenuItem onClick={() => { onNewChat?.(); navigate("/chat"); }} className="text-white/90 focus:text-white focus:bg-white/[0.08]">
-                <MessageSquare className="w-3.5 h-3.5 mr-2" />
-                New Chat
-              </DropdownMenuItem>
-              {recentChats.length > 0 && <DropdownMenuSeparator className="bg-white/[0.08]" />}
-              {recentChats.map((chat) => (
-                <DropdownMenuItem
-                  key={chat.id}
-                  onClick={() => { onSelectConversation?.(chat.id); navigate("/chat"); }}
-                  className="text-white/50 focus:text-white focus:bg-white/[0.08] text-[12px] truncate"
-                >
-                  {chat.title || "Untitled"}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* AI Toolkit — split Image/Video */}
-          <div className={`flex items-center rounded-full overflow-hidden ${isImageMode || isVideoMode ? "bg-white/[0.12]" : ""}`}>
-            <button
-              onClick={() => navigate("/images")}
-              className={`flex items-center gap-1 px-3 py-1.5 text-[13px] font-medium transition-all ${
-                isImageMode
-                  ? "bg-white/[0.15] text-white"
-                  : isVideoMode
-                  ? "text-white/60 hover:text-white"
-                  : "text-white/50 hover:text-white/80"
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-            </button>
-            <div className="w-px h-4 bg-white/[0.1]" />
-            <button
-              onClick={() => navigate("/videos")}
-              className={`flex items-center gap-1 px-3 py-1.5 text-[13px] font-medium transition-all ${
-                isVideoMode
-                  ? "bg-white/[0.15] text-white"
-                  : isImageMode
-                  ? "text-white/60 hover:text-white"
-                  : "text-white/50 hover:text-white/80"
-              }`}
-            >
-              <Video className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Files with dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className={navLinkClass(isActive("/files"))}>
-                Files
-                <ChevronDown className="w-3 h-3 ml-1 inline opacity-40" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-48 bg-[hsl(0,0%,10%)] border-white/[0.08] text-white">
-              <DropdownMenuItem onClick={() => navigate("/files")} className="text-white/90 focus:text-white focus:bg-white/[0.08]">
-                <FolderOpen className="w-3.5 h-3.5 mr-2" />
-                All Files
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Studio */}
-          <button
-            onClick={() => navigate(isVideoMode ? "/videos/studio" : "/images/studio")}
-            className={navLinkClass(location.pathname.includes("/studio"))}
-          >
-            Studio
-          </button>
-
-          {/* Code */}
-          <button
-            onClick={() => navigate("/code")}
-            className={navLinkClass(isActive("/code"))}
-          >
-            Code
-          </button>
-        </nav>
-
-        {/* Right: Pricing + Subscribe + New + Avatar */}
+        {/* Right: Credits + Subscribe + Avatar */}
         <div className="flex items-center gap-3 shrink-0">
+          {/* Credits */}
           <button
             onClick={() => navigate("/pricing")}
-            className="text-[13px] font-medium text-white/50 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Pricing
+            <Coins className="w-3.5 h-3.5" />
+            <span className="tabular-nums">{credits.toFixed(0)} MC</span>
           </button>
 
-          <button
-            onClick={() => { onNewChat?.(); navigate("/chat"); }}
-            className="w-8 h-8 rounded-full bg-white/[0.06] hover:bg-white/[0.12] flex items-center justify-center transition-colors border border-white/[0.06]"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-white/70" />
-          </button>
-
-          <FancyButton onClick={() => navigate("/pricing")} className="!h-8 !text-[12px] !px-5 !rounded-full">
-            Subscribe Now
+          {/* Subscribe */}
+          <FancyButton onClick={() => navigate("/pricing")} className="text-sm">
+            Subscribe
           </FancyButton>
 
-          {/* User avatar */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-white/[0.1] hover:ring-white/[0.3] transition-all">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-white/[0.08] flex items-center justify-center text-[11px] font-semibold text-white/60">
-                    {initial}
+          {/* User avatar dropdown */}
+          <div
+            className="relative"
+            onMouseEnter={() => handleMouseEnter("__user")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <button
+              onClick={() => handleClick("__user")}
+              className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-border hover:ring-primary/50 transition-all"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center text-[11px] font-semibold text-muted-foreground">
+                  {initial}
+                </div>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {openDropdown === "__user" && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute right-0 top-[48px] z-50"
+                >
+                  <div
+                    className="w-48 rounded-2xl border border-white/10 bg-black/95 backdrop-blur-3xl p-2 shadow-2xl"
+                    onMouseEnter={() => handleMouseEnter("__user")}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <button
+                      onClick={() => { closeMenu(); navigate("/settings/profile"); }}
+                      className="w-full text-left rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors"
+                    >
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => { closeMenu(); navigate("/settings"); }}
+                      className="w-full text-left rounded-xl px-3 py-2.5 text-[14px] font-medium text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors"
+                    >
+                      Settings
+                    </button>
+                    <div className="my-1 h-px bg-white/[0.08]" />
+                    <button
+                      onClick={() => { closeMenu(); handleLogout(); }}
+                      className="w-full text-left rounded-xl px-3 py-2.5 text-[14px] font-medium text-red-400 hover:bg-white/[0.06] hover:text-red-300 transition-colors"
+                    >
+                      Log out
+                    </button>
                   </div>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 bg-[hsl(0,0%,10%)] border-white/[0.08] text-white">
-              <DropdownMenuItem onClick={() => navigate("/settings/profile")} className="text-white/80 focus:text-white focus:bg-white/[0.08]">
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/settings")} className="text-white/80 focus:text-white focus:bg-white/[0.08]">
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/[0.08]" />
-              <DropdownMenuItem className="text-white/50 focus:bg-white/[0.08] text-[12px]">
-                <span className="tabular-nums">{credits.toFixed(0)} MC</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/[0.08]" />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-400 focus:text-red-300 focus:bg-white/[0.08]">
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </header>
