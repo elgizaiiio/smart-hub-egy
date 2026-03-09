@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Paperclip, Download, Loader2, Settings2, Video, Image as ImageIcon, X, Trash2, Coins, Sparkles } from "lucide-react";
+import { Menu, Download, Loader2, Settings2, Video, Image as ImageIcon, X, Trash2, ArrowUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ import ThinkingLoader from "@/components/ThinkingLoader";
 import ShowcaseGrid from "@/components/ShowcaseGrid";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
 import VideoBottomInputBar, { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "@/components/VideoBottomInputBar";
+import VideoSettingsDrawer from "@/components/VideoSettingsDrawer";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 import { getVideoModelCapability } from "@/lib/videoModelCapabilities";
 
@@ -58,6 +59,8 @@ const VideosPage = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [selectedShowcaseItem, setSelectedShowcaseItem] = useState<ShowcaseItem | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileInput, setMobileInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const capability = useMemo(() => getVideoModelCapability(selectedModel.id), [selectedModel.id]);
@@ -383,10 +386,28 @@ const VideosPage = () => {
     );
   }
 
-  // ── Mobile Layout ──
+  // ── Mobile Layout (Artlist-style) ──
+
+  const MODEL_LOGOS: Record<string, string> = {
+    "megsy-video": "/model-logos/megsy.png",
+    "veo-3.1": "/model-logos/google.ico",
+    "veo-3.1-fast": "/model-logos/google.ico",
+    "kling-3-pro": "/model-logos/kling.png",
+    "kling-o1": "/model-logos/kling.png",
+    "openai-sora": "/model-logos/openai.svg",
+    "pika-2.2": "/model-logos/pika.png",
+    "luma-dream": "/model-logos/luma.png",
+    "seedance-pro": "/model-logos/bytedance.ico",
+    "wan-2.6": "/model-logos/fal.ico",
+    "pixverse-5.5": "/model-logos/fal.ico",
+    "megsy-video-i2v": "/model-logos/megsy.png",
+  };
+
+  const currentLogo = MODEL_LOGOS[selectedModel.id];
+
   return (
     <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
-      <div className="h-full flex bg-background">
+      <div className="h-full flex flex-col bg-background relative">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -404,146 +425,170 @@ const VideosPage = () => {
           selectedModelId={selectedModel.id}
         />
 
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Top Bar */}
-          <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border">
-            <button onClick={() => setSidebarOpen(true)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+        <VideoSettingsDrawer
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          settings={settings}
+          onSettingsChange={setSettings}
+          selectedModel={selectedModel}
+          onOpenModelPicker={() => setModelPickerOpen(true)}
+        />
+
+        {/* Showcase / content area */}
+        <div className="flex-1 overflow-y-auto pb-48">
+          {/* Top bar - minimal */}
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-xl">
+            <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground">
               <Menu className="w-5 h-5" />
             </button>
-
-            {capability.acceptsImages && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
-            )}
-
-            <div className="flex-1 relative">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleGenerate();
-                  }
-                }}
-                placeholder="Describe the video..."
-                rows={1}
-                className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/40 py-2 max-h-20"
-                style={{ minHeight: "36px" }}
-              />
-            </div>
-
-            <button
-              onClick={handleGenerate}
-              disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
-              className="shrink-0 h-10 px-5 flex items-center gap-2.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-30 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
-            >
-              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              <div className="flex items-center gap-1 pl-2 border-l border-primary-foreground/20">
-                <Coins className="w-3.5 h-3.5" />
-                <span className="text-xs">{creditCost}</span>
-              </div>
-            </button>
           </div>
 
-          {/* Tabs */}
-          <div className="shrink-0 flex items-center gap-1 px-4 py-2 border-b border-border">
-            <button
-              onClick={() => navigate("/images")}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              Image
-            </button>
-            <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-              <Video className="w-3.5 h-3.5" />
-              Video
-            </button>
-          </div>
-
-          {/* Attached images */}
-          {attachedImages.length > 0 && (
-            <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border overflow-x-auto">
-              {attachedImages.map((img) => (
-                <div key={img.id} className="relative shrink-0">
-                  <img src={img.dataUrl} alt={img.name} className="w-12 h-12 rounded-xl object-cover border border-border" />
-                  <button
-                    onClick={() => setAttachedImages((prev) => prev.filter((i) => i.id !== img.id))}
-                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center"
-                  >
-                    ×
-                  </button>
+          {/* Generated videos */}
+          {generatedVideos.length > 0 && (
+            <div className="px-2 py-2">
+              {isGenerating && (
+                <div className="mb-4 flex justify-center">
+                  <ThinkingLoader />
                 </div>
-              ))}
+              )}
+              <div className="columns-2 gap-2">
+                {generatedVideos.map((vid) => (
+                  <motion.div
+                    key={vid.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="break-inside-avoid mb-2 group relative rounded-2xl overflow-hidden"
+                  >
+                    <video
+                      src={vid.url}
+                      controls
+                      className="w-full rounded-2xl object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end p-2 pointer-events-none group-hover:pointer-events-auto">
+                      <div className="flex gap-1.5">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white">{vid.model}</span>
+                      </div>
+                      <button
+                        onClick={() => handleDownload(vid.url, vid.prompt)}
+                        className="ml-auto w-6 h-6 flex items-center justify-center rounded-md bg-white/20 text-white"
+                      >
+                        <Download className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            {isGenerating && generatedVideos.length === 0 && (
-              <div className="flex items-center justify-center py-20">
-                <ThinkingLoader />
-              </div>
-            )}
+          {/* Showcase grid when no videos */}
+          {generatedVideos.length === 0 && !isGenerating && (
+            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
+          )}
 
-            {!isGenerating && generatedVideos.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center px-4">
+          {isGenerating && generatedVideos.length === 0 && (
+            <div className="flex items-center justify-center py-20">
+              <ThinkingLoader />
+            </div>
+          )}
+        </div>
+
+        {/* ── Bottom Artlist-style input bar ── */}
+        <div className="absolute bottom-0 left-0 right-0 z-30" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+          <div className="mx-3">
+            {/* Attached images */}
+            <AnimatePresence>
+              {attachedImages.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="w-24 h-24 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-5"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center gap-2 px-3 pb-2"
                 >
-                  <Video className="w-12 h-12 text-primary/30" />
-                </motion.div>
-                <h2 className="font-display text-xl font-bold text-foreground mb-2">AI Video Creation</h2>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  Describe what you want to see and let AI create a stunning video
-                </p>
-              </div>
-            )}
-
-            {generatedVideos.length > 0 && (
-              <div className="max-w-5xl mx-auto px-4 py-4">
-                {isGenerating && (
-                  <div className="mb-6">
-                    <ThinkingLoader />
-                  </div>
-                )}
-                <div className="columns-1 gap-3">
-                  {generatedVideos.map((vid) => (
-                    <motion.div
-                      key={vid.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="break-inside-avoid mb-3 group relative rounded-2xl overflow-hidden"
-                    >
-                      <video
-                        src={vid.url}
-                        controls
-                        className="w-full rounded-2xl object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end p-2 pointer-events-none group-hover:pointer-events-auto">
-                        <div className="flex gap-1.5">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white">{vid.model}</span>
-                        </div>
-                        <button
-                          onClick={() => handleDownload(vid.url, vid.prompt)}
-                          className="ml-auto w-6 h-6 flex items-center justify-center rounded-md bg-white/20 text-white"
-                        >
-                          <Download className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </motion.div>
+                  {attachedImages.map((img) => (
+                    <div key={img.id} className="relative shrink-0">
+                      <img src={img.dataUrl} alt={img.name} className="w-12 h-12 rounded-xl object-cover border border-border" />
+                      <button
+                        onClick={() => setAttachedImages((prev) => prev.filter((i) => i.id !== img.id))}
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
-                </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="bg-muted/80 backdrop-blur-3xl border border-border rounded-2xl shadow-lg">
+              {/* Top chips row */}
+              <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+                {/* Image/Video type chip */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Image</span>
+                  <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                </button>
+
+                {/* Settings chip */}
+                <button
+                  onClick={() => setSettingsOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  <span>{selectedModel.name}</span>
+                </button>
               </div>
-            )}
+
+              {/* Text input */}
+              <div className="px-4 py-2">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Describe the video you want to create"
+                  rows={1}
+                  className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-foreground/30 max-h-20"
+                  style={{ minHeight: "32px" }}
+                />
+              </div>
+
+              {/* Bottom icons row */}
+              <div className="flex items-center justify-between px-4 pb-3">
+                <div className="flex items-center gap-2">
+                  {/* Attach image */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-muted/60 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Send button */}
+                <button
+                  onClick={handleGenerate}
+                  disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
+                  className="w-11 h-11 flex items-center justify-center rounded-full bg-muted border border-border text-foreground disabled:opacity-30 hover:bg-accent transition-colors"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <ArrowUp className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
+
+        <ShowcaseDetailModal
+          item={selectedShowcaseItem}
+          onClose={() => setSelectedShowcaseItem(null)}
+          onRecreate={handleRecreate}
+        />
 
         <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} multiple />
       </div>
