@@ -82,7 +82,7 @@ const ImageSettingsDrawer = ({
           
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4">
-              <h2 className="text-lg font-bold text-foreground">Settings</h2>
+              
               <button
               onClick={onClose}
               className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
