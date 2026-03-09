@@ -88,6 +88,9 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const initial = userName.charAt(0).toUpperCase() || "U";
 
   const isActive = (path: string) =>
+    location.pathname === path;
+
+  const isInSection = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
