@@ -1,9 +1,10 @@
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Image, Sparkles, Zap, Wand2, ArrowRight } from "lucide-react";
+import { Image, Sparkles, Zap, Wand2, Star } from "lucide-react";
 
 const features = [
   { icon: Sparkles, title: "Text to Image", desc: "Describe your vision and watch Megsy Pro bring it to life with photorealistic quality." },
@@ -12,42 +13,117 @@ const features = [
   { icon: Image, title: "Style Control", desc: "Choose from dozens of artistic styles or create your own unique visual identity." },
 ];
 
+// Floating images configuration
+const floatingImages = [
+  { src: "/showcase/img-1.jpg", className: "top-[15%] left-[2%] w-32 h-44 md:w-48 md:h-64", speed: 0.03, rotate: -5 },
+  { src: "/showcase/img-2.jpg", className: "top-[40%] left-[8%] w-28 h-36 md:w-40 md:h-52", speed: 0.05, rotate: 3 },
+  { src: "/showcase/img-3.jpg", className: "bottom-[10%] left-[5%] w-36 h-28 md:w-52 md:h-40", speed: 0.04, rotate: -2 },
+  { src: "/showcase/img-4.jpg", className: "top-[12%] right-[3%] w-28 h-40 md:w-44 md:h-60", speed: 0.035, rotate: 4 },
+  { src: "/showcase/img-5.jpg", className: "top-[45%] right-[5%] w-32 h-24 md:w-48 md:h-36", speed: 0.045, rotate: -3 },
+  { src: "/showcase/img-6.jpg", className: "bottom-[15%] right-[8%] w-24 h-32 md:w-36 md:h-48", speed: 0.055, rotate: 2 },
+];
+
 const ServiceImagesPage = () => {
   const navigate = useNavigate();
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left - rect.width / 2) / rect.width;
+        const y = (e.clientY - rect.top - rect.height / 2) / rect.height;
+        setMousePosition({ x, y });
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   return (
     <div data-theme="dark" className="min-h-screen bg-background text-foreground">
       <LandingNavbar />
 
-      {/* Hero */}
-      <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 pt-28">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent" />
+      {/* Hero with Parallax Images */}
+      <section 
+        ref={heroRef}
+        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black px-6 pt-20"
+      >
+        {/* Floating Images with Parallax */}
+        {floatingImages.map((img, i) => (
+          <motion.div
+            key={i}
+            className={`absolute ${img.className} overflow-hidden rounded-2xl shadow-2xl pointer-events-none hidden md:block`}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1,
+              x: mousePosition.x * 100 * img.speed * (i % 2 === 0 ? 1 : -1),
+              y: mousePosition.y * 100 * img.speed * (i % 2 === 0 ? -1 : 1),
+              rotate: img.rotate + mousePosition.x * 5 * img.speed,
+            }}
+            transition={{ 
+              opacity: { duration: 0.8, delay: i * 0.1 },
+              scale: { duration: 0.8, delay: i * 0.1 },
+              x: { duration: 0.3, ease: "easeOut" },
+              y: { duration: 0.3, ease: "easeOut" },
+              rotate: { duration: 0.3, ease: "easeOut" },
+            }}
+          >
+            <img 
+              src={img.src} 
+              alt="" 
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+        ))}
+
+        {/* Center Content */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="relative z-10 mx-auto max-w-6xl text-center"
+          transition={{ duration: 0.7, delay: 0.3 }}
+          className="relative z-10 mx-auto max-w-5xl text-center"
         >
-          <h1 className="font-display mt-4 text-6xl font-black uppercase leading-tight tracking-tight md:text-8xl lg:text-9xl">
-            AI Image<br />
-            <span className="text-primary">Generator</span>
+          <h1 className="font-display text-5xl font-black uppercase leading-[1.1] tracking-tight md:text-7xl lg:text-8xl">
+            <span className="text-white">THE AI IMAGE </span>
+            <span className="text-primary">GENERATOR</span>
+            <br />
+            <span className="text-primary">FOR AMBITIOUS CREATIVES</span>
           </h1>
-          <p className="mx-auto mt-8 max-w-3xl text-xl text-muted-foreground md:text-2xl">
-            Create stunning, photorealistic images from text prompts using our proprietary Megsy Pro model.
-            From concept art to product photography — generate anything you imagine.
+          
+          <p className="mx-auto mt-8 max-w-3xl text-lg text-white/60 md:text-xl leading-relaxed">
+            Turn text into images, transform images into new styles, or refine visuals with pro-level precision.
+            Megsy's AI image generator gives you speed, consistency, and control,
+            whether you're prototyping products, scaling content, or creating for yourself.
           </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-5">
-            <FancyButton onClick={() => navigate("/auth")} className="text-lg px-10 py-4">
-              Start Creating Free <ArrowRight className="ml-2 h-5 w-5" />
-            </FancyButton>
+
+          {/* Star Rating */}
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+              ))}
+            </div>
+            <span className="text-lg font-bold text-white">4.9</span>
+            <span className="text-sm text-white/50">based on 12.5K Ratings</span>
+          </div>
+
+          {/* CTA Button */}
+          <div className="mt-10">
             <button
-              onClick={() => navigate("/#pricing")}
-              className="rounded-full border border-border px-8 py-4 text-base font-medium text-foreground transition-all hover:border-foreground/40"
+              onClick={() => navigate("/auth")}
+              className="rounded-full bg-white px-10 py-4 text-lg font-semibold text-black transition-all hover:bg-white/90 hover:scale-105"
             >
-              View Pricing
+              Generate AI Image
             </button>
           </div>
         </motion.div>
+
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
       </section>
 
       {/* Megsy Pro Promo */}
