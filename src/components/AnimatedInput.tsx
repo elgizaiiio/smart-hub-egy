@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, ArrowUp, Square, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ModelOption } from "./ModelSelector";
-import { getModelsForMode } from "./ModelSelector";
+import { getModelsForMode, ModelBrandIcon } from "./ModelSelector";
 
 interface AnimatedInputProps {
   value: string;
