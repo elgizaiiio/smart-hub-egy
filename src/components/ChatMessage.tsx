@@ -132,14 +132,22 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
           {/* Action buttons - Claude style */}
           {!isStreaming && content && (
             <div className="flex items-center gap-0.5 mt-2">
-              <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-colors" title="Copy">
+              <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all active:scale-90 duration-150" title="Copy">
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
-              <button onClick={() => onLike?.(liked === true ? null : true)} className={`p-1.5 rounded-lg transition-colors ${liked === true ? "text-foreground bg-accent" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`} title="Like">
-                <ThumbsUp className="w-4 h-4" />
+              <button
+                onClick={() => onLike?.(liked === true ? null : true)}
+                className={`p-1.5 rounded-lg transition-all active:scale-90 duration-150 ${liked === true ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
+                title="Like"
+              >
+                <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${liked === true ? "scale-110" : ""}`} />
               </button>
-              <button onClick={() => onLike?.(liked === false ? null : false)} className={`p-1.5 rounded-lg transition-colors ${liked === false ? "text-foreground bg-accent" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`} title="Dislike">
-                <ThumbsDown className="w-4 h-4" />
+              <button
+                onClick={() => onLike?.(liked === false ? null : false)}
+                className={`p-1.5 rounded-lg transition-all active:scale-90 duration-150 ${liked === false ? "text-destructive bg-destructive/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
+                title="Dislike"
+              >
+                <ThumbsDown className={`w-4 h-4 transition-transform duration-200 ${liked === false ? "scale-110" : ""}`} />
               </button>
             </div>
           )}
