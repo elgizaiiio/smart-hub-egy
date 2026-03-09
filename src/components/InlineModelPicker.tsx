@@ -1,7 +1,8 @@
 import { useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
-import { ALL_MODEL_DETAILS, type ModelDetail } from "@/lib/modelDetails";
+import { type ModelDetail } from "@/lib/modelDetails";
+import { useDynamicModels } from "@/hooks/useModels";
 import type { ModelOption } from "./ModelSelector";
 
 const MODEL_BADGES: Record<string, string[]> = {
