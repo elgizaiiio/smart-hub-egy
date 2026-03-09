@@ -101,22 +101,22 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       <div className="flex-1" />
 
       {/* Bottom Section */}
-      <div className="flex flex-col items-center gap-2 w-full px-2 pb-4">
-        {/* Credits Badge */}
+      <div className="flex flex-col items-center w-full px-2 pb-4 gap-3">
+        {/* Credits Display */}
         <button
           onClick={() => navigate("/pricing")}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sidebar-accent/60 text-[11px] font-semibold text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all"
+          className="w-[58px] text-center py-1 rounded-lg text-[11px] font-bold text-sidebar-foreground/80 hover:text-sidebar-foreground transition-all"
         >
-          <Coins className="w-3.5 h-3.5 text-amber-400" />
-          <span>{credits.toFixed(0)}</span>
+          <span className="text-[18px] font-extrabold bg-gradient-to-b from-sidebar-foreground to-sidebar-foreground/50 bg-clip-text text-transparent leading-none">{credits.toFixed(0)}</span>
+          <span className="block text-[9px] font-medium text-sidebar-foreground/40 mt-0.5">credits</span>
         </button>
 
         {/* Upgrade Button */}
         <button
           onClick={() => navigate("/pricing")}
-          className="w-[54px] py-1.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:shadow-md hover:shadow-primary/20 transition-all"
+          className="w-[58px] py-2 rounded-xl text-[10px] font-bold bg-gradient-to-b from-primary via-primary to-primary/70 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all"
         >
-          Upgrade
+          PRO ✦
         </button>
 
         {/* User Avatar */}
