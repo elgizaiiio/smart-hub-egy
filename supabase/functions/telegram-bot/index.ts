@@ -91,6 +91,38 @@ const MC_PRESETS = [5, 10, 25, 50, 100, 500];
 const SHOWCASE_ASPECTS = ["1:1", "2:3", "3:2", "4:3", "16:9", "9:16", "4:5"];
 const SHOWCASE_QUALITIES = ["1K", "2K", "4K", "8K"];
 
+// Capabilities for selection-based editing
+const CAPABILITY_OPTIONS = [
+  { key: "text-to-image", label: "نص → صورة" },
+  { key: "image-to-image", label: "صورة → صورة" },
+  { key: "multi-image", label: "عدة صور" },
+  { key: "inpainting", label: "Inpainting" },
+  { key: "outpainting", label: "Outpainting" },
+  { key: "upscale", label: "تكبير" },
+  { key: "remove-bg", label: "حذف الخلفية" },
+  { key: "style-transfer", label: "نقل الأسلوب" },
+  { key: "face-enhance", label: "تحسين الوجه" },
+  { key: "colorize", label: "تلوين" },
+  { key: "restore", label: "ترميم" },
+  { key: "text-to-video", label: "نص → فيديو" },
+  { key: "image-to-video", label: "صورة → فيديو" },
+  { key: "avatar", label: "أفاتار" },
+  { key: "lipsync", label: "Lipsync" },
+  { key: "editing", label: "تعديل/Edit" },
+  { key: "logo", label: "شعارات" },
+  { key: "sticker", label: "ملصقات" },
+  { key: "qr", label: "QR فني" },
+  { key: "product-photo", label: "صور منتجات" },
+];
+
+const FAL_PREFIXES = [
+  { label: "fal-ai/", value: "fal-ai/" },
+  { label: "fal-ai/flux/", value: "fal-ai/flux/" },
+  { label: "fal-ai/stable-diffusion/", value: "fal-ai/stable-diffusion/" },
+  { label: "fal-ai/wan/", value: "fal-ai/wan/" },
+  { label: "fal-ai/kling/", value: "fal-ai/kling/" },
+];
+
 interface BotSession {
   page?: "images" | "videos";
   modelIndex?: number;
