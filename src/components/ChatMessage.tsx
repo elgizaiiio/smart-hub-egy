@@ -129,9 +129,12 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
 
+          {/* Sparkles badge for completed messages */}
+          {!isStreaming && content && <SparklesBadge />}
+
           {/* Action buttons - Claude style */}
           {!isStreaming && content && (
-            <div className="flex items-center gap-0.5 mt-2">
+            <div className="flex items-center gap-0.5 mt-1">
               <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all active:scale-90 duration-150" title="Copy">
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
