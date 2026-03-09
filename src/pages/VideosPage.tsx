@@ -529,7 +529,11 @@ const VideosPage = () => {
                   onClick={() => setSettingsOpen(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-accent transition-colors"
                 >
-                  <Settings2 className="w-3.5 h-3.5" />
+                  {currentLogo ? (
+                    <img src={currentLogo} alt={selectedModel.name} className="w-4 h-4 rounded-full object-cover" />
+                  ) : (
+                    <Settings2 className="w-3.5 h-3.5" />
+                  )}
                   <span>{selectedModel.name}</span>
                 </button>
               </div>
