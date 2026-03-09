@@ -683,41 +683,57 @@ const ChatPage = () => {
 
         {/* Share Dialog */}
         <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md gap-3">
             <DialogHeader>
-              <DialogTitle>Share chat</DialogTitle>
-              <DialogDescription>Only messages up to this point will be shared.</DialogDescription>
+              <DialogTitle className="text-lg">Chat shared</DialogTitle>
+              <DialogDescription>Future messages aren't included</DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 mt-2">
+            <div className="space-y-1 rounded-xl border border-border overflow-hidden">
               <button
                 onClick={() => setShareMode("private")}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${shareMode === "private" ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/50"}`}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 transition-colors ${shareMode === "private" ? "bg-accent/50" : "hover:bg-secondary/50"}`}
               >
-                <Lock className="w-5 h-5 text-muted-foreground" />
+                <Lock className="w-4.5 h-4.5 text-muted-foreground shrink-0" />
                 <div className="text-left flex-1">
-                  <p className="text-sm font-medium text-foreground">Keep private</p>
+                  <p className="text-sm font-semibold text-foreground">Keep private</p>
                   <p className="text-xs text-muted-foreground">Only you have access</p>
                 </div>
+                {shareMode === "private" && <span className="text-primary text-lg">✓</span>}
               </button>
+              <div className="h-px bg-border" />
               <button
                 onClick={() => setShareMode("public")}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${shareMode === "public" ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/50"}`}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 transition-colors ${shareMode === "public" ? "bg-accent/50" : "hover:bg-secondary/50"}`}
               >
-                <Globe className="w-5 h-5 text-muted-foreground" />
+                <Globe className="w-4.5 h-4.5 text-muted-foreground shrink-0" />
                 <div className="text-left flex-1">
-                  <p className="text-sm font-medium text-foreground">Create public link</p>
+                  <p className="text-sm font-semibold text-foreground">Create public link</p>
                   <p className="text-xs text-muted-foreground">Anyone with the link can view</p>
                 </div>
+                {shareMode === "public" && <span className="text-primary text-lg">✓</span>}
               </button>
             </div>
-            <div className="flex justify-end mt-3">
-              <button
-                onClick={handleCreateShareLink}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
-              >
-                {shareMode === "public" ? "Create share link" : "Save"}
-              </button>
-            </div>
+            {shareMode === "public" && (
+              <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5">
+                <span className="flex-1 text-xs text-muted-foreground truncate">Share link will be generated...</span>
+                <button
+                  onClick={handleCreateShareLink}
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-accent/50 transition-colors"
+                >
+                  Copy link
+                </button>
+              </div>
+            )}
+            {shareMode === "private" && (
+              <div className="flex justify-end">
+                <button
+                  onClick={handleCreateShareLink}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
+                >
+                  Save
+                </button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
