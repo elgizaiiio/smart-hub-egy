@@ -427,6 +427,7 @@ const ImagesPage = () => {
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
             selectedModel={selectedModel}
+            onModelSelect={setSelectedModel}
             onOpenModelPicker={() => setModelPickerOpen(true)}
             settings={settings}
             onSettingsChange={setSettings}
