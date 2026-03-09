@@ -3,26 +3,27 @@ import { useNavigate } from "react-router-dom";
 
 const footerLinks = {
   Create: [
-    { label: "AI Chat", href: "/services/chat" },
-    { label: "Image Generation", href: "/services/images" },
-    { label: "Video Generation", href: "/services/videos" },
-    { label: "Code Builder", href: "/services/code" },
-    { label: "File Analysis", href: "/services/files" },
+    { label: "AI Chat", href: "#features" },
+    { label: "Image Generation", href: "#features" },
+    { label: "Video Generation", href: "#features" },
+    { label: "Code Builder", href: "#features" },
+    { label: "Image Tools", href: "#features" },
   ],
   Product: [
     { label: "Pricing", href: "/pricing" },
-    { label: "API", href: "https://api.megsyai.com", external: true },
-    { label: "System Status", href: "https://status.megsyai.com", external: true },
+    { label: "API", href: "/apis" },
+    { label: "Referral Program", href: "#" },
+    { label: "Integrations", href: "#" },
   ],
   About: [
-    { label: "About Us", href: "https://about.megsyai.com", external: true },
+    { label: "About Us", href: "https://about.megsyai.com" },
     { label: "Contact", href: "/contact" },
     { label: "Support", href: "/contact" },
-    { label: "Egypt", href: "/egypt" },
+    { label: "Egypt 🇪🇬", href: "/egypt" },
   ],
   Legal: [
-    { label: "Terms of Service", href: "https://terms.megsyai.com", external: true },
-    { label: "Privacy Policy", href: "https://privacy.megsyai.com", external: true },
+    { label: "Terms of Service", href: "https://terms.megsyai.com" },
+    { label: "Privacy Policy", href: "https://privacy.megsyai.com" },
   ],
 };
 
@@ -120,27 +121,22 @@ const LandingFooter = () => {
             >
               <h4 className="mb-5 text-sm font-bold text-white">{title}</h4>
               <ul className="space-y-3">
-                {links.map((link) => {
-                  const isExternal = (link as any).external || link.href.startsWith("http");
-                  return (
-                    <li key={link.label}>
-                      <a
-                        href={link.href}
-                        target={isExternal ? "_blank" : undefined}
-                        rel={isExternal ? "noopener noreferrer" : undefined}
-                        onClick={(e) => {
-                          if (!isExternal && link.href.startsWith("/")) {
-                            e.preventDefault();
-                            navigate(link.href);
-                          }
-                        }}
-                        className="text-sm text-white/30 transition-colors hover:text-white/60"
-                      >
-                        {link.label}
-                      </a>
-                    </li>
-                  );
-                })}
+                {links.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      onClick={(e) => {
+                        if (link.href.startsWith("/")) {
+                          e.preventDefault();
+                          navigate(link.href);
+                        }
+                      }}
+                      className="text-sm text-white/30 transition-colors hover:text-white/60"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </motion.div>
           ))}
