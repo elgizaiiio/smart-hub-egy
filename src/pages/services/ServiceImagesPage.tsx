@@ -147,38 +147,101 @@ const ServiceImagesPage = () => {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
       </section>
 
-      {/* Megsy Pro Promo */}
+      {/* Why Creatives Choose Megsy */}
       <section className="mx-auto max-w-7xl px-6 py-28">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-12 md:p-20"
+          className="text-center mb-16"
         >
-          <div className="flex flex-col items-center gap-12 md:flex-row">
-            <div className="flex-1">
-              <h2 className="font-display text-4xl font-black uppercase md:text-5xl">
-                Why <span className="text-primary">Megsy Pro</span>?
-              </h2>
-              <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
-                Our flagship model delivers unmatched image quality with faster generation times.
-                Trained on diverse, high-quality datasets, Megsy Pro understands context, composition,
-                and artistic style better than any competitor.
-              </p>
-              <ul className="mt-8 space-y-4">
-                {["4x faster than DALL-E 3", "Photorealistic quality at any resolution", "Built-in style consistency", "No content restrictions on art"].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-base text-foreground/80">
-                    <div className="h-2 w-2 rounded-full bg-primary" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex h-80 w-full items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] md:w-96">
-              <Sparkles className="h-20 w-20 text-primary/40" />
-            </div>
-          </div>
+          <h2 className="font-display text-4xl font-black uppercase md:text-5xl lg:text-6xl">
+            WHY CREATIVES CHOOSE
+            <br />
+            <span className="text-primary">MEGSY'S AI IMAGE GENERATOR</span>
+          </h2>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+            Most AI tools promise fast results. But speed without quality creates more problems
+            than it solves. Megsy is built for creatives who care about both craft and efficiency.
+          </p>
         </motion.div>
+
+        {/* Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[280px]">
+          {/* Card 1 - Green accent */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="relative rounded-2xl bg-primary p-6 flex flex-col justify-between lg:row-span-2"
+          >
+            <div className="w-16 h-16 flex items-center justify-center">
+              <Zap className="w-12 h-12 text-black" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-black">From idea to execution, effortlessly.</h3>
+              <p className="mt-3 text-sm text-black/70">
+                Megsy puts creative control in your hands, so you can refine and finish your work in one place, without jumping between tools.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Card 2 - Image with overlay */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="relative rounded-2xl overflow-hidden lg:col-span-2 lg:row-span-1"
+          >
+            <img src="/showcase/img-3.jpg" alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <div className="absolute bottom-0 left-0 p-6">
+              <h3 className="text-xl font-bold text-white">Diverse styles, professional polish.</h3>
+              <p className="mt-2 text-sm text-white/70 max-w-sm">
+                Go from photorealism to bold artistic aesthetics. Prototype, pitch, or publish without encountering creative roadblocks.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Card 3 - Yellow accent */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="relative rounded-2xl bg-yellow-400 p-6 flex flex-col justify-between lg:row-span-2"
+          >
+            <div className="w-16 h-16 flex items-center justify-center">
+              <Sparkles className="w-12 h-12 text-black" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-black">Consistency and control.</h3>
+              <p className="mt-3 text-sm text-black/70">
+                Keep characters, styles, and brand elements streamlined across every output; perfect for designers, marketers, and creators who need to stay on brand.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Card 4 - Image with overlay */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="relative rounded-2xl overflow-hidden lg:col-span-2 lg:row-span-1"
+          >
+            <img src="/showcase/model-4.jpg" alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <div className="absolute bottom-0 left-0 p-6">
+              <h3 className="text-xl font-bold text-white">Built for real creatives.</h3>
+              <p className="mt-2 text-sm text-white/70 max-w-sm">
+                With advanced tools like AI Canvas, Image-to-Image, and Style Transfer, you can go beyond ordinary and deliver visuals with purpose.
+              </p>
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* Features */}
