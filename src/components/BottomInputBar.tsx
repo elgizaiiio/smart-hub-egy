@@ -149,9 +149,6 @@ const BottomInputBar = ({
                 style={{ minHeight: "40px" }}
               />
             </div>
-            <button className="w-8 h-8 flex items-center justify-center text-foreground/40 hover:text-foreground/70 transition-colors mt-1">
-              <Expand className="w-4 h-4" />
-            </button>
           </div>
 
           {/* Bottom controls row */}
