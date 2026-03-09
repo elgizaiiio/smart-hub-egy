@@ -140,30 +140,23 @@ const ServiceImagesPage = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="relative z-10 mx-auto max-w-4xl text-center px-4"
+          className="relative z-10 mx-auto max-w-4xl px-4 text-center"
         >
-          <h1 className="font-display text-4xl font-black uppercase leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-            <span className="text-white">THE AI IMAGE </span>
-            <span className="text-primary">GENERATOR</span>
-            <br />
-            <span className="text-primary">FOR AMBITIOUS CREATIVES</span>
-          </h1>
-          
-          <p className="mx-auto mt-8 max-w-2xl text-base text-white/60 sm:text-lg md:text-xl leading-relaxed">
-            Turn text into images, transform images into new styles, or refine visuals with pro-level precision.
-            Megsy's AI image generator gives you speed, consistency, and control,
-            whether you're prototyping products, scaling content, or creating for yourself.
-          </p>
+          <div className="mx-auto inline-block rounded-3xl border border-border/40 bg-background/70 px-6 py-8 shadow-2xl backdrop-blur-md sm:px-10 sm:py-10">
+            <h1 className="font-display text-4xl font-black uppercase leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+              <span className="block">AI IMAGE GENERATION</span>
+              <span className="block text-primary">BUILT FOR CREATIVE TEAMS</span>
+            </h1>
 
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl">
+              Generate, remix, and refine visuals in minutes—consistent styles, sharper details, and export-ready files for every channel.
+            </p>
 
-          {/* CTA Button */}
-          <div className="mt-10">
-            <button
-              onClick={() => navigate("/auth")}
-              className="rounded-full bg-white px-10 py-4 text-lg font-semibold text-black transition-all hover:bg-white/90 hover:scale-105"
-            >
-              Generate AI Image
-            </button>
+            <div className="mt-8 flex justify-center">
+              <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-base sm:text-lg">
+                Generate an image
+              </FancyButton>
+            </div>
           </div>
         </motion.div>
 
