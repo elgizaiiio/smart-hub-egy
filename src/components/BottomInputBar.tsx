@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, Image as ImageIcon, Film, AudioLines } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ModelOption } from "@/components/ModelSelector";
@@ -132,8 +132,33 @@ const BottomInputBar = ({
 
         {/* Main glass container */}
         <div className="bg-muted/80 backdrop-blur-3xl border border-border rounded-2xl shadow-lg overflow-visible">
-          {/* Input area */}
+          {/* Input area with media buttons */}
           <div className="flex items-start gap-3 px-5 pt-4 pb-3">
+            {/* Left media type buttons (vertical stack like Artlist) */}
+            <div className="shrink-0 flex flex-col gap-1.5 pt-1">
+              <button
+                onClick={onAttach}
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary transition-all duration-200"
+                title="Image mode (active)"
+              >
+                <ImageIcon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => window.location.href = '/videos'}
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border transition-all duration-200"
+                title="Switch to Video"
+              >
+                <Film className="w-4 h-4" />
+              </button>
+              <button
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                title="Audio (coming soon)"
+                disabled
+              >
+                <AudioLines className="w-4 h-4" />
+              </button>
+            </div>
+
             <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
