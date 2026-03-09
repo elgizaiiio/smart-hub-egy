@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Image, Sparkles, Zap, Wand2, Star } from "lucide-react";
+import { Image, Sparkles, Zap, Wand2 } from "lucide-react";
 
 const features = [
   { icon: Sparkles, title: "Text to Image", desc: "Describe your vision and watch Megsy Pro bring it to life with photorealistic quality." },
