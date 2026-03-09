@@ -508,27 +508,9 @@ const ServiceImagesPage = () => {
             className="relative"
           >
             <div className="rounded-2xl border border-border/30 bg-card/50 overflow-hidden backdrop-blur-sm">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-                <div className="flex items-center gap-2">
-                  <motion.div 
-                    animate={phase === 'generating' ? { rotate: 360 } : { rotate: 0 }}
-                    transition={{ duration: 1, repeat: phase === 'generating' ? Infinity : 0, ease: "linear" }}
-                    className="w-4 h-4 text-primary text-xs font-bold"
-                  >
-                    M
-                  </motion.div>
-                  <span className="text-sm font-medium">Megsy Image AI</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className={phase === 'generating' ? "text-amber-400" : "text-primary"}>●</span>
-                  {phase === 'generating' ? "Creating..." : phase === 'complete' ? "Done" : "Active"}
-                </div>
-              </div>
-
               {/* Chat Messages Area */}
               <div className="h-[400px] flex flex-col">
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
                   {/* User Message */}
                   <AnimatePresence>
                     {showUserMessage && (
