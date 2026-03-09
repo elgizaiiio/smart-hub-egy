@@ -41,6 +41,10 @@ import ServiceVideosPage from "./pages/services/ServiceVideosPage";
 import ServiceChatPage from "./pages/services/ServiceChatPage";
 import ServiceFilesPage from "./pages/services/ServiceFilesPage";
 import ServiceCodePage from "./pages/services/ServiceCodePage";
+import ImageStudioPage from "./pages/ImageStudioPage";
+import VideoStudioPage from "./pages/VideoStudioPage";
+import ImageAgentPage from "./pages/ImageAgentPage";
+import VideoAgentPage from "./pages/VideoAgentPage";
 import CookieConsent from "./components/CookieConsent";
 import TranslationWrapper from "./components/TranslationWrapper";
 
