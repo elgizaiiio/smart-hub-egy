@@ -313,15 +313,21 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.3 }}
             className="relative"
           >
-            <div className="rounded-2xl border border-white/10 bg-black/50 overflow-hidden backdrop-blur-sm">
+            <div className="rounded-2xl border border-white/10 bg-black/50 overflow-hidden backdrop-blur-sm group/mockup">
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
+                  <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>
+                    <Sparkles className="w-4 h-4 text-primary" />
+                  </motion.div>
                   <span className="text-sm font-medium">AI Creation</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="text-primary">●</span> 999,996,047 credits
+                  <motion.span 
+                    className="text-primary"
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >●</motion.span> 999,996,047 credits
                 </div>
               </div>
               
@@ -329,26 +335,69 @@ const ServiceImagesPage = () => {
               <div className="grid grid-cols-[auto_1fr_auto] gap-2 p-3">
                 {/* Left thumbnails */}
                 <div className="flex flex-col gap-2">
-                  {[1, 2, 3, 4, 5].map((_, i) => (
-                    <div key={i} className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-900 border border-white/10" />
+                  {[0, 1, 2, 3, 4].map((_, i) => (
+                    <motion.div 
+                      key={i} 
+                      className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-900 border border-white/10 cursor-pointer"
+                      whileHover={{ scale: 1.2, borderColor: "rgba(255,255,255,0.4)" }}
+                      whileTap={{ scale: 0.95 }}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.5 + i * 0.1 }}
+                    />
                   ))}
                 </div>
                 
                 {/* Main image area */}
-                <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-red-900 via-red-800 to-black">
-                  <div className="absolute top-3 left-3 px-2 py-1 rounded bg-black/50 text-xs flex items-center gap-1">
-                    <Wand2 className="w-3 h-3" /> Ultra Upscale
-                  </div>
+                <motion.div 
+                  className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-red-900 via-red-800 to-black cursor-pointer"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <motion.div 
+                    className="absolute top-3 left-3 px-2 py-1 rounded bg-black/50 text-xs flex items-center gap-1"
+                    initial={{ opacity: 0, y: -10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <motion.div animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}>
+                      <Wand2 className="w-3 h-3" />
+                    </motion.div>
+                    Ultra Upscale
+                  </motion.div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-32 h-40 bg-gradient-to-t from-black/50 to-transparent rounded-lg" />
+                    <motion.div 
+                      className="w-32 h-40 bg-gradient-to-t from-black/50 to-transparent rounded-lg"
+                      animate={{ y: [0, -8, 0] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    />
                   </div>
-                </div>
+                  {/* Shimmer effect */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                    animate={{ x: ["-100%", "200%"] }}
+                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: "easeInOut" }}
+                  />
+                </motion.div>
                 
                 {/* Right panel */}
                 <div className="w-44 space-y-3">
-                  <div className="rounded-lg bg-white/5 p-3">
+                  <motion.div 
+                    className="rounded-lg bg-white/5 p-3 hover:bg-white/10 transition-colors cursor-pointer"
+                    whileHover={{ scale: 1.03 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.6 }}
+                  >
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">P</div>
+                      <motion.div 
+                        className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
+                      >P</motion.div>
                       <div>
                         <p className="text-[10px] text-muted-foreground">Today</p>
                         <p className="text-xs font-medium">MegsyUser</p>
@@ -363,14 +412,23 @@ const ServiceImagesPage = () => {
                     <div className="flex items-center gap-1 mt-2 text-[10px] text-primary">
                       <Sparkles className="w-3 h-3" /> Nano Banana · 1344 x 768
                     </div>
-                  </div>
+                  </motion.div>
                   
                   {/* Action buttons */}
                   <div className="space-y-1.5">
-                    {["Remix", "Upscale", "Create Video", "Use as Guide"].map((action) => (
-                      <button key={action} className="w-full text-xs py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-left flex items-center gap-2">
+                    {["Remix", "Upscale", "Create Video", "Use as Guide"].map((action, i) => (
+                      <motion.button 
+                        key={action} 
+                        className="w-full text-xs py-2 px-3 rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary transition-all text-left flex items-center gap-2"
+                        whileHover={{ x: 4, scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.7 + i * 0.1 }}
+                      >
                         <Zap className="w-3 h-3 text-primary" /> {action}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
