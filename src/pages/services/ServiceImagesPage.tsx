@@ -85,11 +85,11 @@ const ServiceImagesPage = () => {
       </section>
 
       {/* Features */}
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <h2 className="font-display text-center text-3xl font-black uppercase md:text-4xl">
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <h2 className="font-display text-center text-4xl font-black uppercase md:text-5xl">
           Everything You Need
         </h2>
-        <div className="mt-12 grid gap-6 sm:grid-cols-2">
+        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((f, i) => (
             <motion.div
               key={f.title}
@@ -97,11 +97,11 @@ const ServiceImagesPage = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 transition-colors hover:border-primary/20 hover:bg-primary/[0.03]"
+              className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-10 transition-colors hover:border-primary/20 hover:bg-primary/[0.03]"
             >
-              <f.icon className="h-8 w-8 text-primary" />
-              <h3 className="mt-4 text-lg font-bold">{f.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
+              <f.icon className="h-10 w-10 text-primary" />
+              <h3 className="mt-5 text-xl font-bold">{f.title}</h3>
+              <p className="mt-3 text-base text-muted-foreground">{f.desc}</p>
             </motion.div>
           ))}
         </div>
