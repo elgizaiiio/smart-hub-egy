@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Loader2, Coins, ChevronDown, Image as ImageIcon, Video, AudioLines, Expand } from "lucide-react";
+import { Sparkles, Loader2, Coins, Image as ImageIcon, Expand } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ModelOption } from "@/components/ModelSelector";
 import type { ImageSettings, ImageStyle, ImageDimensions } from "@/components/ImageSettingsPanel";
+import InlineModelPicker from "./InlineModelPicker";
 
 const PLACEHOLDERS = [
   "Describe the image you want to create...",
@@ -10,18 +11,6 @@ const PLACEHOLDERS = [
   "Oil painting of a serene lake...",
   "Professional product photo...",
   "Anime character with flowing hair...",
-];
-
-const STYLES: { value: ImageStyle; label: string; icon: string }[] = [
-  { value: "none", label: "None", icon: "🚫" },
-  { value: "dynamic", label: "Dynamic", icon: "⚡" },
-  { value: "cinematic", label: "Cinematic", icon: "🎬" },
-  { value: "creative", label: "Creative", icon: "🎨" },
-  { value: "fashion", label: "Fashion", icon: "👗" },
-  { value: "portrait", label: "Portrait", icon: "📸" },
-  { value: "vibrant", label: "Vibrant", icon: "🌈" },
-  { value: "anime", label: "Anime", icon: "✨" },
-  { value: "3d-render", label: "3D Render", icon: "🧊" },
 ];
 
 const ASPECT_RATIOS: ImageDimensions[] = [
@@ -35,12 +24,28 @@ const ASPECT_RATIOS: ImageDimensions[] = [
 
 const QUALITIES = ["1K", "2K", "4K"];
 
+// Model icon info
+const MODEL_ICONS: Record<string, { letter: string; gradient: string }> = {
+  "nano-banana-2": { letter: "G", gradient: "from-yellow-400 to-orange-500" },
+  "nano-banana-pro": { letter: "G", gradient: "from-yellow-400 to-orange-500" },
+  "seedream-4": { letter: "Iu", gradient: "from-blue-400 to-purple-500" },
+  "seedream-5-lite": { letter: "Iu", gradient: "from-blue-400 to-purple-500" },
+  "gpt-image": { letter: "G", gradient: "from-green-400 to-emerald-500" },
+  "ideogram-3": { letter: "△", gradient: "from-pink-400 to-rose-500" },
+  "flux-kontext": { letter: "△", gradient: "from-cyan-400 to-blue-500" },
+  "flux-2-pro": { letter: "△", gradient: "from-cyan-400 to-blue-500" },
+  "grok-imagine": { letter: "◇", gradient: "from-purple-400 to-violet-500" },
+  "recraft-v4": { letter: "R", gradient: "from-orange-400 to-red-500" },
+  "megsy-v1-img": { letter: "M", gradient: "from-primary to-primary/70" },
+};
+
 interface BottomInputBarProps {
   input: string;
   onInputChange: (val: string) => void;
   onGenerate: () => void;
   isGenerating: boolean;
   selectedModel: ModelOption;
+  onModelSelect: (model: ModelOption) => void;
   onOpenModelPicker: () => void;
   settings: ImageSettings;
   onSettingsChange: (s: ImageSettings) => void;
@@ -55,6 +60,7 @@ const BottomInputBar = ({
   onGenerate,
   isGenerating,
   selectedModel,
+  onModelSelect,
   onOpenModelPicker,
   settings,
   onSettingsChange,
@@ -64,7 +70,7 @@ const BottomInputBar = ({
 }: BottomInputBarProps) => {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
-  const [activeMode, setActiveMode] = useState<"image" | "video" | "audio">("image");
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Animated placeholder
@@ -90,10 +96,22 @@ const BottomInputBar = ({
   };
 
   const currentAspect = settings.dimensions.label;
+  const iconInfo = MODEL_ICONS[selectedModel.id] || { letter: "AI", gradient: "from-gray-400 to-gray-500" };
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto relative">
+        {/* Inline Model Picker */}
+        <InlineModelPicker
+          open={modelPickerOpen}
+          onClose={() => setModelPickerOpen(false)}
+          onSelect={(model) => {
+            onModelSelect(model);
+            setModelPickerOpen(false);
+          }}
+          selectedModelId={selectedModel.id}
+        />
+
         <div className="bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
           {/* Top row: Input + Expand */}
           <div className="flex items-start gap-3 px-4 pt-4 pb-3">
@@ -130,11 +148,11 @@ const BottomInputBar = ({
             <div className="flex items-center gap-2 overflow-x-auto">
               {/* Model chip */}
               <button
-                onClick={onOpenModelPicker}
+                onClick={() => setModelPickerOpen(!modelPickerOpen)}
                 className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
               >
-                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                  <span className="text-[8px] font-bold text-black">G</span>
+                <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center`}>
+                  <span className="text-[8px] font-bold text-black">{iconInfo.letter}</span>
                 </div>
                 {selectedModel.name}
               </button>
