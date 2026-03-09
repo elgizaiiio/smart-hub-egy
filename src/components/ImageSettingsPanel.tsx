@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, RotateCcw, Settings2, X, Lock, Unlock } from "lucide-react";
+import { ChevronDown, ChevronUp, RotateCcw, HelpCircle, Lock, Unlock, Settings2, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import ModelSelector, { type ModelOption } from "@/components/ModelSelector";
+import type { ModelOption } from "@/components/ModelSelector";
 
 export type ImageStyle = "none" | "cinematic" | "creative" | "dynamic" | "fashion" | "portrait" | "stock-photo" | "vibrant" | "anime" | "3d-render";
 
@@ -22,23 +21,47 @@ export interface ImageSettings {
   privateMode: boolean;
 }
 
-const STYLES: { value: ImageStyle; label: string }[] = [
-  { value: "none", label: "None" },
-  { value: "cinematic", label: "Cinematic" },
-  { value: "creative", label: "Creative" },
-  { value: "dynamic", label: "Dynamic" },
-  { value: "fashion", label: "Fashion" },
-  { value: "portrait", label: "Portrait" },
-  { value: "stock-photo", label: "Stock Photo" },
-  { value: "vibrant", label: "Vibrant" },
-  { value: "anime", label: "Anime" },
-  { value: "3d-render", label: "3D Render" },
+const STYLES: { value: ImageStyle; label: string; icon: string }[] = [
+  { value: "none", label: "None", icon: "🚫" },
+  { value: "dynamic", label: "Dynamic", icon: "⚡" },
+  { value: "cinematic", label: "Cinematic", icon: "🎬" },
+  { value: "creative", label: "Creative", icon: "🎨" },
+  { value: "fashion", label: "Fashion", icon: "👗" },
+  { value: "portrait", label: "Portrait", icon: "📸" },
+  { value: "stock-photo", label: "Stock Photo", icon: "🖼️" },
+  { value: "vibrant", label: "Vibrant", icon: "🌈" },
+  { value: "anime", label: "Anime", icon: "✨" },
+  { value: "3d-render", label: "3D Render", icon: "🧊" },
 ];
 
-const PRESET_DIMENSIONS: ImageDimensions[] = [
-  { width: 768, height: 1024, label: "2:3" },
-  { width: 1024, height: 1024, label: "1:1" },
-  { width: 1024, height: 576, label: "16:9" },
+const PRESET_DIMENSIONS: { dims: ImageDimensions; icon: React.ReactNode }[] = [
+  {
+    dims: { width: 768, height: 1024, label: "2:3" },
+    icon: (
+      <div className="flex flex-col items-center gap-1">
+        <div className="w-4 h-6 border-2 border-current rounded-sm" />
+        <span className="text-[10px]">2:3</span>
+      </div>
+    ),
+  },
+  {
+    dims: { width: 1024, height: 1024, label: "1:1" },
+    icon: (
+      <div className="flex flex-col items-center gap-1">
+        <div className="w-5 h-5 border-2 border-current rounded-sm" />
+        <span className="text-[10px]">1:1</span>
+      </div>
+    ),
+  },
+  {
+    dims: { width: 1024, height: 576, label: "16:9" },
+    icon: (
+      <div className="flex flex-col items-center gap-1">
+        <div className="w-7 h-4 border-2 border-current rounded-sm" />
+        <span className="text-[10px]">16:9</span>
+      </div>
+    ),
+  },
 ];
 
 const SOCIAL_PRESETS: ImageDimensions[] = [
@@ -53,8 +76,8 @@ const DEVICE_PRESETS: ImageDimensions[] = [
 ];
 
 export const DEFAULT_SETTINGS: ImageSettings = {
-  style: "none",
-  dimensions: PRESET_DIMENSIONS[1], // 1:1
+  style: "dynamic",
+  dimensions: { width: 1024, height: 1024, label: "1:1" },
   numImages: 1,
   privateMode: false,
 };
@@ -62,6 +85,7 @@ export const DEFAULT_SETTINGS: ImageSettings = {
 interface ImageSettingsPanelProps {
   selectedModel: ModelOption;
   onModelChange: (model: ModelOption) => void;
+  onOpenModelPicker: () => void;
   settings: ImageSettings;
   onSettingsChange: (settings: ImageSettings) => void;
   className?: string;
@@ -70,12 +94,14 @@ interface ImageSettingsPanelProps {
 const ImageSettingsPanel = ({
   selectedModel,
   onModelChange,
+  onOpenModelPicker,
   settings,
   onSettingsChange,
   className = "",
 }: ImageSettingsPanelProps) => {
   const [styleOpen, setStyleOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
+  const [numExpanded, setNumExpanded] = useState(false);
 
   const updateSetting = <K extends keyof ImageSettings>(key: K, value: ImageSettings[K]) => {
     onSettingsChange({ ...settings, [key]: value });
@@ -83,201 +109,266 @@ const ImageSettingsPanel = ({
 
   const handleReset = () => onSettingsChange({ ...DEFAULT_SETTINGS });
 
+  const currentStyle = STYLES.find(s => s.value === settings.style);
   const dimRatio = settings.dimensions.width / settings.dimensions.height;
 
   return (
-    <div className={`flex flex-col gap-5 ${className}`}>
-      {/* Model */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Model</label>
-        <ModelSelector
-          mode="images"
-          selectedModel={selectedModel}
-          onModelChange={onModelChange}
-          colorClass="w-full justify-between bg-secondary text-foreground hover:bg-accent border border-border"
-        />
-      </div>
-
-      {/* Style */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Style</label>
-        <div className="relative">
+    <div className={`flex flex-col h-full ${className}`}>
+      <div className="flex-1 overflow-y-auto space-y-5 px-1">
+        {/* ── Model ── */}
+        <div>
           <button
-            onClick={() => setStyleOpen(!styleOpen)}
-            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-secondary border border-border text-sm text-foreground hover:bg-accent transition-colors"
+            onClick={onOpenModelPicker}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-secondary/50 border border-border hover:border-primary/40 transition-all group"
           >
-            <span>{STYLES.find(s => s.value === settings.style)?.label || "None"}</span>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Settings2 className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">Model</span>
+              <p className="text-sm font-medium text-foreground truncate">{selectedModel.name}</p>
+            </div>
+            <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </button>
-          <AnimatePresence>
-            {styleOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                className="absolute top-full mt-1 left-0 right-0 z-50 rounded-xl border border-border bg-popover shadow-lg overflow-hidden max-h-60 overflow-y-auto"
-              >
-                {STYLES.map(s => (
-                  <button
-                    key={s.value}
-                    onClick={() => { updateSetting("style", s.value); setStyleOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                      settings.style === s.value ? "bg-accent text-accent-foreground" : "text-popover-foreground hover:bg-accent/50"
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
-      </div>
 
-      {/* Dimensions */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Image Dimensions</label>
-        <div className="flex gap-2">
-          {PRESET_DIMENSIONS.map(d => (
+        {/* ── Style ── */}
+        <div>
+          <div className="relative">
             <button
-              key={d.label}
-              onClick={() => updateSetting("dimensions", d)}
-              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors border ${
-                settings.dimensions.label === d.label
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary text-foreground border-border hover:bg-accent"
-              }`}
+              onClick={() => setStyleOpen(!styleOpen)}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-secondary/50 border border-border hover:border-primary/40 transition-all group"
             >
-              {d.label}
+              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-base">
+                {currentStyle?.icon || "⚡"}
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Style</span>
+                <p className="text-sm font-medium text-foreground">{currentStyle?.label || "Dynamic"}</p>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${styleOpen ? "rotate-180" : ""}`} />
             </button>
-          ))}
-          <Popover open={customOpen} onOpenChange={setCustomOpen}>
-            <PopoverTrigger asChild>
+
+            <AnimatePresence>
+              {styleOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 rounded-xl border border-border bg-popover shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+                    {STYLES.map(s => (
+                      <button
+                        key={s.value}
+                        onClick={() => { updateSetting("style", s.value); setStyleOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                          settings.style === s.value
+                            ? "bg-primary/10 text-primary"
+                            : "text-popover-foreground hover:bg-accent/50"
+                        }`}
+                      >
+                        <span className="text-base">{s.icon}</span>
+                        <span className="font-medium">{s.label}</span>
+                        {settings.style === s.value && (
+                          <span className="ml-auto w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* ── Image Dimensions ── */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <span className="text-xs font-semibold text-foreground">Image Dimensions</span>
+            <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex gap-2">
+            {PRESET_DIMENSIONS.map(({ dims, icon }) => (
               <button
-                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors border ${
-                  !PRESET_DIMENSIONS.find(d => d.label === settings.dimensions.label)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-secondary text-foreground border-border hover:bg-accent"
+                key={dims.label}
+                onClick={() => updateSetting("dimensions", dims)}
+                className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all border ${
+                  settings.dimensions.label === dims.label
+                    ? "bg-primary/10 border-primary text-primary"
+                    : "bg-secondary/50 border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
                 }`}
               >
-                Custom
+                {icon}
               </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-4 space-y-4" side="right" align="start">
-              {/* Aspect ratio preview */}
-              <div className="flex justify-center">
-                <div
-                  className="border-2 border-primary rounded-lg bg-primary/10 transition-all"
-                  style={{
-                    width: dimRatio >= 1 ? 80 : 80 * dimRatio,
-                    height: dimRatio >= 1 ? 80 / dimRatio : 80,
-                  }}
-                />
-              </div>
-              <div className="text-center text-xs text-muted-foreground">
-                {settings.dimensions.width} × {settings.dimensions.height}
-              </div>
-
-              {/* Slider */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>Wide</span>
-                  <span>Tall</span>
+            ))}
+            <Popover open={customOpen} onOpenChange={setCustomOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all border ${
+                    !PRESET_DIMENSIONS.find(p => p.dims.label === settings.dimensions.label)
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-secondary/50 border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-5 h-5 border-2 border-dashed border-current rounded-sm flex items-center justify-center">
+                      <span className="text-[8px] font-bold">+</span>
+                    </div>
+                    <span className="text-[10px]">Custom</span>
+                  </div>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-4 space-y-4" side="right" align="start">
+                <div className="flex justify-center">
+                  <div
+                    className="border-2 border-primary rounded-lg bg-primary/10 transition-all"
+                    style={{
+                      width: dimRatio >= 1 ? 80 : 80 * dimRatio,
+                      height: dimRatio >= 1 ? 80 / dimRatio : 80,
+                    }}
+                  />
                 </div>
-                <Slider
-                  value={[dimRatio]}
-                  min={0.5}
-                  max={2}
-                  step={0.05}
-                  onValueChange={([v]) => {
-                    const w = Math.round(1024 * Math.min(v, 1) + (v > 1 ? (v - 1) * 512 : 0));
-                    const h = Math.round(1024 / Math.max(v, 1) + (v < 1 ? (1 - v) * 512 : 0));
-                    updateSetting("dimensions", {
-                      width: Math.round(w / 32) * 32,
-                      height: Math.round(h / 32) * 32,
-                      label: `${Math.round(w / 32) * 32}×${Math.round(h / 32) * 32}`,
-                    });
-                  }}
-                />
-              </div>
-
-              {/* Social presets */}
-              <div className="space-y-1">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Socials</p>
-                <div className="grid grid-cols-1 gap-1">
+                <div className="text-center text-xs text-muted-foreground">
+                  {settings.dimensions.width} × {settings.dimensions.height}
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>Wide</span>
+                    <span>Tall</span>
+                  </div>
+                  <Slider
+                    value={[dimRatio]}
+                    min={0.5}
+                    max={2}
+                    step={0.05}
+                    onValueChange={([v]) => {
+                      const w = Math.round(1024 * Math.min(v, 1) + (v > 1 ? (v - 1) * 512 : 0));
+                      const h = Math.round(1024 / Math.max(v, 1) + (v < 1 ? (1 - v) * 512 : 0));
+                      updateSetting("dimensions", {
+                        width: Math.round(w / 32) * 32,
+                        height: Math.round(h / 32) * 32,
+                        label: `${Math.round(w / 32) * 32}×${Math.round(h / 32) * 32}`,
+                      });
+                    }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Socials</p>
                   {SOCIAL_PRESETS.map(d => (
                     <button
                       key={d.label}
                       onClick={() => { updateSetting("dimensions", d); setCustomOpen(false); }}
-                      className="text-left text-xs px-2 py-1.5 rounded-md hover:bg-accent transition-colors text-foreground"
+                      className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-accent transition-colors text-foreground"
                     >
                       {d.label}
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Device presets */}
-              <div className="space-y-1">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Devices</p>
-                <div className="grid grid-cols-1 gap-1">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Devices</p>
                   {DEVICE_PRESETS.map(d => (
                     <button
                       key={d.label}
                       onClick={() => { updateSetting("dimensions", d); setCustomOpen(false); }}
-                      className="text-left text-xs px-2 py-1.5 rounded-md hover:bg-accent transition-colors text-foreground"
+                      className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-accent transition-colors text-foreground"
                     >
                       {d.label}
                     </button>
                   ))}
                 </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
-      </div>
 
-      {/* Number of Images */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Number of Images</label>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4].map(n => (
+        {/* ── Number of Images ── */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <span className="text-xs font-semibold text-foreground">Number of images</span>
+            <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+          </div>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map(n => (
+              <button
+                key={n}
+                onClick={() => updateSetting("numImages", n)}
+                className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all border ${
+                  settings.numImages === n
+                    ? "bg-primary/10 border-primary text-primary"
+                    : "bg-secondary/50 border-border text-muted-foreground hover:border-primary/30"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
             <button
-              key={n}
-              onClick={() => updateSetting("numImages", n)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                settings.numImages === n
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary text-foreground border-border hover:bg-accent"
-              }`}
+              onClick={() => setNumExpanded(!numExpanded)}
+              className="w-10 h-10 rounded-xl text-sm font-semibold transition-all border bg-secondary/50 border-border text-muted-foreground hover:border-primary/30"
             >
-              {n}
+              <ChevronDown className={`w-4 h-4 mx-auto transition-transform ${numExpanded ? "rotate-180" : ""}`} />
             </button>
-          ))}
+          </div>
+          <AnimatePresence>
+            {numExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex gap-2 mt-2">
+                  {[5, 6, 7, 8].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => updateSetting("numImages", n)}
+                      className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all border ${
+                        settings.numImages === n
+                          ? "bg-primary/10 border-primary text-primary"
+                          : "bg-secondary/50 border-border text-muted-foreground hover:border-primary/30"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* ── Private Mode ── */}
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-foreground">Private Mode</span>
+              <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
+            <div className="flex items-center gap-2">
+              {settings.privateMode ? (
+                <Lock className="w-3.5 h-3.5 text-emerald-500" />
+              ) : (
+                <Unlock className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+              <Switch
+                checked={settings.privateMode}
+                onCheckedChange={(v) => updateSetting("privateMode", v)}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Private Mode */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {settings.privateMode ? <Lock className="w-4 h-4 text-primary" /> : <Unlock className="w-4 h-4 text-muted-foreground" />}
-          <span className="text-sm text-foreground">Private Mode</span>
-        </div>
-        <Switch
-          checked={settings.privateMode}
-          onCheckedChange={(v) => updateSetting("privateMode", v)}
-        />
+      {/* ── Reset ── */}
+      <div className="shrink-0 pt-4 mt-auto border-t border-border">
+        <button
+          onClick={handleReset}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+        >
+          <RotateCcw className="w-4 h-4" />
+          Reset to Defaults
+        </button>
       </div>
-
-      {/* Reset */}
-      <Button
-        variant="ghost"
-        onClick={handleReset}
-        className="w-full gap-2 text-muted-foreground hover:text-foreground"
-      >
-        <RotateCcw className="w-4 h-4" />
-        Reset to Defaults
-      </Button>
     </div>
   );
 };
@@ -307,18 +398,17 @@ export const MobileSettingsDrawer = ({
           animate={{ x: 0 }}
           exit={{ x: "-100%" }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="fixed left-0 top-0 bottom-0 z-50 w-72 bg-card border-r border-border p-4 overflow-y-auto"
+          className="fixed left-0 top-0 bottom-0 z-50 w-[260px] bg-card border-r border-border flex flex-col"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-sm font-bold text-foreground flex items-center gap-2">
-              <Settings2 className="w-4 h-4" />
-              Settings
-            </h3>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-accent">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <span className="text-sm font-bold text-foreground">Settings</span>
+            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-accent">
               <X className="w-4 h-4" />
             </button>
           </div>
-          {children}
+          <div className="flex-1 overflow-y-auto p-4">
+            {children}
+          </div>
         </motion.div>
       </>
     )}

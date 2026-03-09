@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Paperclip, Sparkles, Download, Loader2, Settings2, Image as ImageIcon, Video, MoreHorizontal, Trash2 } from "lucide-react";
+import { Menu, Paperclip, Sparkles, Download, Loader2, Settings2, Image as ImageIcon, Video, MoreHorizontal, Trash2, Coins, Zap, ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,12 +10,11 @@ import AppLayout from "@/layouts/AppLayout";
 import AppSidebar from "@/components/AppSidebar";
 import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
+import ModelPickerSheet from "@/components/ModelPickerSheet";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import ImageSettingsPanel, { MobileSettingsDrawer, DEFAULT_SETTINGS, type ImageSettings, type ImageStyle } from "@/components/ImageSettingsPanel";
 import {
   getImageModelCapability,
-  PUBLISH_PLATFORM_TO_APP,
-  type PublishPlatform,
 } from "@/lib/imageModelCapabilities";
 import {
   DropdownMenu,
@@ -37,9 +36,11 @@ interface GeneratedImage {
   url: string;
   prompt: string;
   model: string;
+  modelId: string;
   dimensions: string;
   createdAt: Date;
   style?: string;
+  speed?: string;
 }
 
 interface AttachedImage {
@@ -70,12 +71,39 @@ const STYLE_SUFFIX: Record<ImageStyle, string> = {
   "3d-render": ", 3D render, Octane render, Blender, CGI, volumetric lighting",
 };
 
+// Group images by day
+const groupByDay = (images: GeneratedImage[]) => {
+  const groups: { label: string; images: GeneratedImage[] }[] = [];
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+
+  const grouped: Record<string, GeneratedImage[]> = {};
+  images.forEach(img => {
+    const d = new Date(img.createdAt);
+    const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    let label: string;
+    if (day.getTime() === today.getTime()) label = "Today";
+    else if (day.getTime() === yesterday.getTime()) label = "Yesterday";
+    else label = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    if (!grouped[label]) grouped[label] = [];
+    grouped[label].push(img);
+  });
+
+  Object.entries(grouped).forEach(([label, imgs]) => {
+    groups.push({ label, images: imgs });
+  });
+
+  return groups;
+};
+
 const ImagesPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { userId, hasEnoughCredits, refreshCredits } = useCredits();
+  const { userId, credits, hasEnoughCredits, refreshCredits } = useCredits();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("images"));
   const [input, setInput] = useState("");
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -86,9 +114,9 @@ const ImagesPage = () => {
   const [settings, setSettings] = useState<ImageSettings>(DEFAULT_SETTINGS);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const capability = useMemo(() => getImageModelCapability(selectedModel.id), [selectedModel.id]);
+  const creditCost = (Number(selectedModel.credits) || 1) * settings.numImages;
 
   // Animated placeholder
   useEffect(() => {
@@ -154,7 +182,6 @@ const ImagesPage = () => {
       return;
     }
 
-    const creditCost = (Number(selectedModel.credits) || 1) * settings.numImages;
     if (userId && !hasEnoughCredits(creditCost)) {
       toast.error("Insufficient MC credits. Please top up.");
       return;
@@ -194,24 +221,20 @@ const ImagesPage = () => {
         toast.error(data.error);
         if (convId) await saveMessage(convId, "assistant", `Error: ${data.error}`);
       } else {
-        // Handle both single and multi-image responses
         const urls: string[] = data.image_urls || (data.image_url ? [data.image_url] : []);
-
-        const newImages: GeneratedImage[] = urls.map((url, idx) => ({
+        const newImages: GeneratedImage[] = urls.map((url) => ({
           id: crypto.randomUUID(),
           url,
           prompt: trimmed || "Generated image",
           model: selectedModel.name,
+          modelId: selectedModel.id,
           dimensions: `${settings.dimensions.width}×${settings.dimensions.height}`,
           createdAt: new Date(),
           style: settings.style !== "none" ? settings.style : undefined,
+          speed: "Fast",
         }));
-
         setGeneratedImages((prev) => [...newImages, ...prev]);
-
-        if (convId) {
-          await saveMessage(convId, "assistant", trimmed, urls);
-        }
+        if (convId) await saveMessage(convId, "assistant", trimmed, urls);
       }
     } catch {
       toast.error("Generation failed. Please try again.");
@@ -242,7 +265,7 @@ const ImagesPage = () => {
     }
     const filesToUse = files.slice(0, remainingSlots);
     try {
-      const loadedImages = await Promise.all(
+      const loaded = await Promise.all(
         filesToUse.map(async (file) => ({
           id: crypto.randomUUID(),
           dataUrl: await readFileAsDataUrl(file),
@@ -250,7 +273,7 @@ const ImagesPage = () => {
           name: file.name,
         })),
       );
-      setAttachedImages((prev) => [...prev, ...loadedImages]);
+      setAttachedImages((prev) => [...prev, ...loaded]);
     } catch {
       toast.error("Failed to read attached image");
     }
@@ -271,7 +294,6 @@ const ImagesPage = () => {
       .select("*")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
-
     if (msgs) {
       const images: GeneratedImage[] = [];
       msgs.forEach((m) => {
@@ -282,18 +304,16 @@ const ImagesPage = () => {
               url,
               prompt: m.content,
               model: selectedModel.name,
+              modelId: selectedModel.id,
               dimensions: "1024×1024",
               createdAt: new Date(m.created_at),
+              speed: "Fast",
             });
           });
         }
       });
       setGeneratedImages(images.reverse());
     }
-  };
-
-  const removeImage = (id: string) => {
-    setGeneratedImages((prev) => prev.filter((img) => img.id !== id));
   };
 
   const handleDownload = (url: string, prompt: string) => {
@@ -304,10 +324,13 @@ const ImagesPage = () => {
     a.click();
   };
 
+  const dayGroups = useMemo(() => groupByDay(generatedImages), [generatedImages]);
+
   const settingsPanelContent = (
     <ImageSettingsPanel
       selectedModel={selectedModel}
       onModelChange={setSelectedModel}
+      onOpenModelPicker={() => { setSettingsOpen(false); setModelPickerOpen(true); }}
       settings={settings}
       onSettingsChange={setSettings}
     />
@@ -326,19 +349,20 @@ const ImagesPage = () => {
           currentMode="images"
         />
 
-        {/* Desktop Left Settings Panel */}
+        {/* Model Picker Sheet */}
+        <ModelPickerSheet
+          open={modelPickerOpen}
+          onClose={() => setModelPickerOpen(false)}
+          onSelect={(m) => { setSelectedModel(m); setModelPickerOpen(false); }}
+          mode="images"
+          selectedModelId={selectedModel.id}
+        />
+
+        {/* ── Desktop Left Settings Panel ── */}
         {!isMobile && (
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="w-64 shrink-0 border-r border-border bg-card/50 p-4 overflow-y-auto hidden md:block"
-          >
-            <h3 className="font-display text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-              <Settings2 className="w-4 h-4 text-primary" />
-              Generation Settings
-            </h3>
+          <div className="w-[240px] shrink-0 border-r border-border bg-card flex flex-col p-4 hidden md:flex">
             {settingsPanelContent}
-          </motion.div>
+          </div>
         )}
 
         {/* Mobile Settings Drawer */}
@@ -348,131 +372,106 @@ const ImagesPage = () => {
           </MobileSettingsDrawer>
         )}
 
-        {/* Main Content */}
+        {/* ── Main Content ── */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top Bar */}
-          <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border">
+          {/* ── Top Bar: Prompt + Generate ── */}
+          <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border">
             {isMobile && (
-              <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50">
+              <button onClick={() => setSidebarOpen(true)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                 <Menu className="w-5 h-5" />
               </button>
             )}
 
-            {/* Tabs */}
-            <div className="flex bg-secondary rounded-full p-1">
-              <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-background text-foreground shadow-sm">
-                <ImageIcon className="w-3.5 h-3.5" />
-                Image
-              </button>
+            {/* Attach button */}
+            {capability.acceptsImages && (
               <button
-                onClick={() => navigate("/videos")}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               >
-                <Video className="w-3.5 h-3.5" />
-                Video
+                <Paperclip className="w-4 h-4" />
               </button>
-            </div>
+            )}
 
-            <div className="flex-1" />
+            {/* Prompt input */}
+            <div className="flex-1 relative">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleGenerate();
+                  }
+                }}
+                placeholder={displayedPlaceholder}
+                rows={1}
+                className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/40 py-2 max-h-20"
+                style={{ minHeight: "36px" }}
+              />
+            </div>
 
             {isMobile && (
               <button
                 onClick={() => setSettingsOpen(true)}
-                className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               >
                 <Settings2 className="w-5 h-5" />
               </button>
             )}
-          </div>
 
-          {/* Prompt Bar */}
-          <div className="shrink-0 px-4 py-3">
-            <div className="max-w-3xl mx-auto">
-              {/* Attached images preview */}
-              {attachedImages.length > 0 && (
-                <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-1">
-                  {attachedImages.map((img) => (
-                    <div key={img.id} className="relative shrink-0">
-                      <img src={img.dataUrl} alt={img.name} className="w-12 h-12 rounded-xl object-cover border border-border" />
-                      <button
-                        onClick={() => setAttachedImages((prev) => prev.filter((i) => i.id !== img.id))}
-                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
+            {/* Generate Button - Leonardo style */}
+            <button
+              onClick={handleGenerate}
+              disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
+              className="shrink-0 h-10 px-5 flex items-center gap-2.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-30 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
               )}
-
-              <div className="flex items-end gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-sm focus-within:border-primary/50 transition-colors">
-                {/* Attach button */}
-                {capability.acceptsImages && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </button>
-                )}
-
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleGenerate();
-                    }
-                  }}
-                  placeholder={displayedPlaceholder + "│"}
-                  rows={1}
-                  className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50 py-1.5 max-h-32"
-                  style={{ minHeight: "32px" }}
-                />
-
-                <button
-                  onClick={handleGenerate}
-                  disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
-                  className="shrink-0 h-9 px-5 flex items-center gap-2 rounded-xl font-medium text-sm transition-all disabled:opacity-30 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  {isGenerating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Generate
-                    </>
-                  )}
-                </button>
+              <span className="hidden sm:inline">Generate</span>
+              <div className="flex items-center gap-1 pl-2 border-l border-primary-foreground/20">
+                <Coins className="w-3.5 h-3.5" />
+                <span className="text-xs">{creditCost}</span>
               </div>
-
-              {/* Info badges */}
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                  {selectedModel.name}
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                  {settings.dimensions.label}
-                </span>
-                {settings.style !== "none" && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                    {settings.style}
-                  </span>
-                )}
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                  ×{settings.numImages}
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                  {(Number(selectedModel.credits) || 1) * settings.numImages} MC
-                </span>
-              </div>
-            </div>
+            </button>
           </div>
 
-          {/* Generated Images Grid */}
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {/* ── Tabs ── */}
+          <div className="shrink-0 flex items-center gap-1 px-4 py-2 border-b border-border">
+            <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+              <ImageIcon className="w-3.5 h-3.5" />
+              Image
+            </button>
+            <button
+              onClick={() => navigate("/videos")}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+            >
+              <Video className="w-3.5 h-3.5" />
+              Video
+            </button>
+          </div>
+
+          {/* ── Attached images preview ── */}
+          {attachedImages.length > 0 && (
+            <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border overflow-x-auto">
+              {attachedImages.map((img) => (
+                <div key={img.id} className="relative shrink-0">
+                  <img src={img.dataUrl} alt={img.name} className="w-12 h-12 rounded-xl object-cover border border-border" />
+                  <button
+                    onClick={() => setAttachedImages((prev) => prev.filter((i) => i.id !== img.id))}
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Generated Images - Leonardo Layout ── */}
+          <div className="flex-1 overflow-y-auto">
             {isGenerating && generatedImages.length === 0 && (
               <div className="flex items-center justify-center py-20">
                 <ThinkingLoader />
@@ -481,82 +480,107 @@ const ImagesPage = () => {
 
             {!isGenerating && generatedImages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  <ImageIcon className="w-10 h-10 text-primary/50" />
-                </div>
-                <h2 className="font-display text-lg font-bold text-foreground mb-1">Create Stunning Images</h2>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="w-24 h-24 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-5"
+                >
+                  <ImageIcon className="w-12 h-12 text-primary/30" />
+                </motion.div>
+                <h2 className="font-display text-xl font-bold text-foreground mb-2">AI Creation</h2>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  Describe what you want to see and let AI bring your vision to life. Adjust settings on the left to fine-tune your output.
+                  Describe what you want to see and let AI bring your vision to life
                 </p>
               </div>
             )}
 
-            {generatedImages.length > 0 && (
-              <div className="max-w-5xl mx-auto">
+            {dayGroups.length > 0 && (
+              <div className="max-w-5xl mx-auto px-4 py-4">
                 {isGenerating && (
-                  <div className="mb-4">
+                  <div className="mb-6">
                     <ThinkingLoader />
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  <AnimatePresence>
-                    {generatedImages.map((img) => (
-                      <motion.div
-                        key={img.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="group relative rounded-2xl overflow-hidden bg-card border border-border hover:border-primary/30 transition-colors"
-                      >
-                        <div className="aspect-square bg-secondary">
-                          <img
-                            src={img.url}
-                            alt={img.prompt}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
+                {dayGroups.map((group) => (
+                  <div key={group.label} className="mb-8">
+                    <h3 className="text-sm font-semibold text-foreground mb-4">{group.label}</h3>
 
-                        {/* Overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                          <p className="text-xs text-foreground line-clamp-2 mb-2">{img.prompt}</p>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/80 text-muted-foreground">{img.model}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/80 text-muted-foreground">{img.dimensions}</span>
-                            {img.style && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">{img.style}</span>
-                            )}
+                    <div className="space-y-6">
+                      {group.images.map((img) => (
+                        <motion.div
+                          key={img.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="flex gap-4 md:gap-6"
+                        >
+                          {/* Image */}
+                          <div className="w-full max-w-lg shrink-0">
+                            <div className="relative group rounded-2xl overflow-hidden bg-secondary">
+                              <img
+                                src={img.url}
+                                alt={img.prompt}
+                                className="w-full object-cover"
+                                loading="lazy"
+                              />
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Action menu */}
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button className="w-7 h-7 flex items-center justify-center rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                              <DropdownMenuItem onClick={() => handleDownload(img.url, img.prompt)}>
-                                <Download className="w-4 h-4 mr-2" />
-                                Download
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(img.url); toast.success("Link copied!"); }}>
-                                Copy Link
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => removeImage(img.id)} className="text-destructive">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Remove
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
+                          {/* Metadata - Right side (desktop) */}
+                          <div className="hidden md:flex flex-col justify-between min-w-0 flex-1 py-1">
+                            <div>
+                              <p className="text-sm text-foreground leading-relaxed line-clamp-4 mb-3">
+                                {img.prompt}
+                              </p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[11px] px-2.5 py-1 rounded-md bg-primary/10 text-primary font-medium">
+                                  {img.model}
+                                </span>
+                                <span className="text-[11px] px-2.5 py-1 rounded-md bg-secondary text-muted-foreground font-medium">
+                                  {img.dimensions}
+                                </span>
+                                <span className="text-[11px] px-2.5 py-1 rounded-md bg-secondary text-muted-foreground font-medium flex items-center gap-1">
+                                  <Zap className="w-3 h-3" />
+                                  {img.speed || "Fast"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="mt-3">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                                    <MoreHorizontal className="w-5 h-5" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-40">
+                                  <DropdownMenuItem onClick={() => handleDownload(img.url, img.prompt)}>
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(img.url); toast.success("Link copied!"); }}>
+                                    Copy Link
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => setGeneratedImages((prev) => prev.filter((g) => g.id !== img.id))}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Remove
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+
+                          {/* Mobile: metadata below image is handled inline */}
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
