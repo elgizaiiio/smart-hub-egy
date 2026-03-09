@@ -1458,6 +1458,81 @@ serve(async (req) => {
         }
       }
 
+      // ---- Add model text inputs ----
+      if (session?.addModelStep === "awaiting_id" && text) {
+        const id = text.trim().replace(/\s+/g, "-").toLowerCase();
+        session.addModelData = { ...(session.addModelData || {}), id };
+        session.addModelStep = "awaiting_name";
+        await saveSession(sb, chatId, session);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ ID: \`${id}\`\n\n📛 الخطوة 2/5: أدخل اسم النموذج:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 إلغاء", callback_data: "edit_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.addModelStep === "awaiting_name" && text) {
+        session.addModelData = { ...(session.addModelData || {}), name: text.trim() };
+        session.addModelStep = "awaiting_type";
+        await saveSession(sb, chatId, session);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ الاسم: *${text.trim()}*\n\n📦 الخطوة 3/5: اختر النوع:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "🖼 image", callback_data: "am_type_image" }, { text: "🔧 image-tool", callback_data: "am_type_image-tool" }],
+            [{ text: "🎬 video", callback_data: "am_type_video" }, { text: "🎬 video-i2v", callback_data: "am_type_video-i2v" }],
+            [{ text: "💬 chat", callback_data: "am_type_chat" }, { text: "👤 video-avatar", callback_data: "am_type_video-avatar" }],
+            [{ text: "🔙 إلغاء", callback_data: "edit_menu" }],
+          ]}),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.addModelStep === "awaiting_credits_text" && text) {
+        const credits = parseInt(text.trim());
+        if (isNaN(credits) || credits < 0) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ أدخل رقم صحيح:" });
+          return new Response("OK");
+        }
+        session.addModelData = { ...(session.addModelData || {}), credits: String(credits) };
+        session.addModelStep = "awaiting_description";
+        await saveSession(sb, chatId, session);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ التكلفة: *${credits} MC*\n\n📝 الخطوة 5/5: أدخل وصف النموذج:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "am_save" }], [{ text: "🔙 إلغاء", callback_data: "edit_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.addModelStep === "awaiting_description" && text) {
+        session.addModelData = { ...(session.addModelData || {}), description: text.trim() };
+        await saveSession(sb, chatId, session);
+        // Auto-save
+        const md = session.addModelData;
+        const { data: addedData } = await sb.from("memories").select("value").eq("key", "models_added").maybeSingle();
+        const added: Record<string, unknown>[] = addedData?.value ? JSON.parse(addedData.value) : [];
+        added.push({
+          id: md.id, name: md.name || md.id, type: md.type || "image",
+          credits: Number(md.credits) || 0, description: md.description || "",
+          longDescription: md.description || "", icon: "Image",
+          modes: ["text-to-image"], acceptsImages: false, requiresImage: false,
+          maxImages: 0, acceptedMimeTypes: [], provider: "Megsy", speed: "standard", quality: "high",
+        });
+        await sb.from("memories").delete().eq("key", "models_added");
+        await sb.from("memories").insert({ key: "models_added", value: JSON.stringify(added) });
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ *تم إضافة النموذج بنجاح!*\n\n📌 ID: \`${md.id}\`\n📛 الاسم: *${md.name || md.id}*\n📦 النوع: ${md.type || "image"}\n💰 التكلفة: ${md.credits || 0} MC\n📝 الوصف: ${(md.description || "").slice(0, 50)}`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "✏️ تعديل الإعدادات", callback_data: `emod_${md.id}` }],
+            [{ text: "➕ إضافة نموذج آخر", callback_data: "add_model" }],
+            [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+          ]}),
+        });
+        return new Response("OK");
+      }
+
       // ---- Showcase text inputs ----
       // Step 2: receive prompt
       if (session?.showcaseStep === "awaiting_prompt" && text) {
