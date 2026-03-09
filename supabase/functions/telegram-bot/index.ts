@@ -91,6 +91,38 @@ const MC_PRESETS = [5, 10, 25, 50, 100, 500];
 const SHOWCASE_ASPECTS = ["1:1", "2:3", "3:2", "4:3", "16:9", "9:16", "4:5"];
 const SHOWCASE_QUALITIES = ["1K", "2K", "4K", "8K"];
 
+// Capabilities for selection-based editing
+const CAPABILITY_OPTIONS = [
+  { key: "text-to-image", label: "نص → صورة" },
+  { key: "image-to-image", label: "صورة → صورة" },
+  { key: "multi-image", label: "عدة صور" },
+  { key: "inpainting", label: "Inpainting" },
+  { key: "outpainting", label: "Outpainting" },
+  { key: "upscale", label: "تكبير" },
+  { key: "remove-bg", label: "حذف الخلفية" },
+  { key: "style-transfer", label: "نقل الأسلوب" },
+  { key: "face-enhance", label: "تحسين الوجه" },
+  { key: "colorize", label: "تلوين" },
+  { key: "restore", label: "ترميم" },
+  { key: "text-to-video", label: "نص → فيديو" },
+  { key: "image-to-video", label: "صورة → فيديو" },
+  { key: "avatar", label: "أفاتار" },
+  { key: "lipsync", label: "Lipsync" },
+  { key: "editing", label: "تعديل/Edit" },
+  { key: "logo", label: "شعارات" },
+  { key: "sticker", label: "ملصقات" },
+  { key: "qr", label: "QR فني" },
+  { key: "product-photo", label: "صور منتجات" },
+];
+
+const FAL_PREFIXES = [
+  { label: "fal-ai/", value: "fal-ai/" },
+  { label: "fal-ai/flux/", value: "fal-ai/flux/" },
+  { label: "fal-ai/stable-diffusion/", value: "fal-ai/stable-diffusion/" },
+  { label: "fal-ai/wan/", value: "fal-ai/wan/" },
+  { label: "fal-ai/kling/", value: "fal-ai/kling/" },
+];
+
 interface BotSession {
   page?: "images" | "videos";
   modelIndex?: number;
@@ -504,18 +536,152 @@ serve(async (req) => {
           return new Response("OK");
         }
 
+        // Capabilities - toggle selection
+        if (field === "capabilities") {
+          const config = await getModelConfig(sb, session.adminModelId);
+          const current = (config.capabilities || "").split(",").filter(Boolean);
+          await saveSession(sb, chatId, { ...session, adminAction: "cap_editing", adminField: field });
+          const rows: { text: string; callback_data: string }[][] = [];
+          for (let i = 0; i < CAPABILITY_OPTIONS.length; i += 2) {
+            const row: { text: string; callback_data: string }[] = [];
+            const c1 = CAPABILITY_OPTIONS[i];
+            const on1 = current.includes(c1.key);
+            row.push({ text: `${on1 ? "✅" : "⬜"} ${c1.label}`, callback_data: `cap_${c1.key}` });
+            if (CAPABILITY_OPTIONS[i + 1]) {
+              const c2 = CAPABILITY_OPTIONS[i + 1];
+              const on2 = current.includes(c2.key);
+              row.push({ text: `${on2 ? "✅" : "⬜"} ${c2.label}`, callback_data: `cap_${c2.key}` });
+            }
+            rows.push(row);
+          }
+          rows.push([{ text: "💾 حفظ القدرات", callback_data: "cap_save" }]);
+          rows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+          await send(BOT_TOKEN, chatId, msgId, `🛠 *قدرات النموذج* لـ \`${session.adminModelId}\`\n\nالمحدد: ${current.length > 0 ? current.join(", ") : "لا شيء"}\n\nاضغط لتفعيل/تعطيل:`, rows);
+          return new Response("OK");
+        }
+
+        // fal_id - prefix suggestions
+        if (field === "fal_id") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          const config = await getModelConfig(sb, session.adminModelId);
+          const prefixRows: { text: string; callback_data: string }[][] = [];
+          for (let i = 0; i < FAL_PREFIXES.length; i += 2) {
+            const row: { text: string; callback_data: string }[] = [];
+            row.push({ text: FAL_PREFIXES[i].label, callback_data: `falpfx_${i}` });
+            if (FAL_PREFIXES[i + 1]) row.push({ text: FAL_PREFIXES[i + 1].label, callback_data: `falpfx_${i + 1}` });
+            prefixRows.push(row);
+          }
+          prefixRows.push([{ text: "✏️ إدخال يدوي كامل", callback_data: "sv_fal_id_custom" }]);
+          prefixRows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+          await send(BOT_TOKEN, chatId, msgId, `🔗 *معرف fal.ai* لـ \`${session.adminModelId}\`\nالحالي: \`${config.fal_id || "غير محدد"}\`\n\nاختر بادئة أو أدخل المعرف كاملاً:\nمثال: \`fal-ai/nano-banana-pro/edit\``, prefixRows);
+          return new Response("OK");
+        }
+
+        // openrouter_id - common prefixes
+        if (field === "openrouter_id") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          const config = await getModelConfig(sb, session.adminModelId);
+          await send(BOT_TOKEN, chatId, msgId, `🔗 *معرف OpenRouter* لـ \`${session.adminModelId}\`\nالحالي: \`${config.openrouter_id || "غير محدد"}\`\n\nاختر بادئة أو أدخل المعرف:`, [
+            [{ text: "openai/", callback_data: "orpfx_openai/" }, { text: "google/", callback_data: "orpfx_google/" }],
+            [{ text: "x-ai/", callback_data: "orpfx_x-ai/" }, { text: "deepseek/", callback_data: "orpfx_deepseek/" }],
+            [{ text: "meta-llama/", callback_data: "orpfx_meta-llama/" }, { text: "anthropic/", callback_data: "orpfx_anthropic/" }],
+            [{ text: "✏️ إدخال يدوي", callback_data: "sv_openrouter_id_custom" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
+          return new Response("OK");
+        }
+
         await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
         await send(BOT_TOKEN, chatId, msgId, `✏️ ${fieldLabel}\n\nأدخل القيمة الجديدة لـ \`${session.adminModelId}\`:`, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
         return new Response("OK");
       }
 
-      // تعيين قيمة
-      if (d.startsWith("sv_")) {
-        const parts = d.replace("sv_", "").split("_");
-        const field = parts[0];
-        const value = parts.slice(1).join("_");
+      // ---- Capabilities toggle ----
+      if (d.startsWith("cap_") && d !== "cap_save") {
+        const capKey = d.replace("cap_", "");
         const session = await loadSession(sb, chatId);
         if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        const current = (config.capabilities || "").split(",").filter(Boolean);
+        const idx = current.indexOf(capKey);
+        if (idx >= 0) current.splice(idx, 1); else current.push(capKey);
+        config.capabilities = current.join(",");
+        await setModelConfig(sb, session.adminModelId, config);
+        // Re-render toggle grid
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < CAPABILITY_OPTIONS.length; i += 2) {
+          const row: { text: string; callback_data: string }[] = [];
+          const c1 = CAPABILITY_OPTIONS[i];
+          row.push({ text: `${current.includes(c1.key) ? "✅" : "⬜"} ${c1.label}`, callback_data: `cap_${c1.key}` });
+          if (CAPABILITY_OPTIONS[i + 1]) {
+            const c2 = CAPABILITY_OPTIONS[i + 1];
+            row.push({ text: `${current.includes(c2.key) ? "✅" : "⬜"} ${c2.label}`, callback_data: `cap_${c2.key}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "💾 حفظ القدرات", callback_data: "cap_save" }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🛠 *قدرات النموذج* لـ \`${session.adminModelId}\`\n\nالمحدد: ${current.length > 0 ? current.join(", ") : "لا شيء"}\n\nاضغط لتفعيل/تعطيل:`, rows);
+        return new Response("OK");
+      }
+
+      if (d === "cap_save") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم حفظ القدرات: \`${config.capabilities || "لا شيء"}\``, [
+          [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
+        await saveSession(sb, chatId, { adminAction: "idle" });
+        return new Response("OK");
+      }
+
+      // ---- fal prefix selection ----
+      if (d.startsWith("falpfx_")) {
+        const idx = parseInt(d.replace("falpfx_", ""));
+        const prefix = FAL_PREFIXES[idx]?.value || "fal-ai/";
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_fal_suffix", adminField: "fal_id" });
+        await send(BOT_TOKEN, chatId, msgId, `🔗 البادئة: \`${prefix}\`\n\nأدخل باقي المعرف:\nمثال: إذا المعرف \`fal-ai/nano-banana-pro/edit\`\nأدخل: \`nano-banana-pro/edit\``, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
+        // Store prefix temporarily
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_fal_suffix", adminField: "fal_id", addModelData: { ...session.addModelData, _falPrefix: prefix } });
+        return new Response("OK");
+      }
+
+      // ---- OpenRouter prefix selection ----
+      if (d.startsWith("orpfx_")) {
+        const prefix = d.replace("orpfx_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_or_suffix", adminField: "openrouter_id", addModelData: { ...session.addModelData, _orPrefix: prefix } });
+        await send(BOT_TOKEN, chatId, msgId, `🔗 البادئة: \`${prefix}\`\n\nأدخل اسم النموذج:\nمثال: \`gpt-5\` أو \`gemini-2.5-pro\``, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
+        return new Response("OK");
+      }
+
+      // تعيين قيمة
+      if (d.startsWith("sv_")) {
+        const raw = d.replace("sv_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+
+        // Handle compound field names like fal_id, openrouter_id
+        const knownFields = FIELDS.map(f => f.key);
+        let field = "";
+        let value = "";
+        for (const f of knownFields) {
+          if (raw.startsWith(f + "_")) {
+            field = f;
+            value = raw.slice(f.length + 1);
+            break;
+          }
+        }
+        if (!field) {
+          const parts = raw.split("_");
+          field = parts[0];
+          value = parts.slice(1).join("_");
+        }
 
         if (value === "custom") {
           await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
@@ -1736,6 +1902,46 @@ serve(async (req) => {
           parse_mode: "Markdown",
           reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع للتطبيق", callback_data: `oapp_${session.oauthAppId}` }]] }),
         });
+        return new Response("OK");
+      }
+
+      // إدخال fal suffix بعد اختيار البادئة
+      if (session?.adminAction === "awaiting_fal_suffix" && text && session.adminModelId) {
+        const prefix = session.addModelData?._falPrefix || "fal-ai/";
+        const fullId = prefix + text.trim();
+        const config = await getModelConfig(sb, session.adminModelId);
+        config.fal_id = fullId;
+        await setModelConfig(sb, session.adminModelId, config);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم تحديث *fal_id* → \`${fullId}\``,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+            [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+          ]}),
+        });
+        await saveSession(sb, chatId, { adminAction: "idle" });
+        return new Response("OK");
+      }
+
+      // إدخال OpenRouter suffix بعد اختيار البادئة
+      if (session?.adminAction === "awaiting_or_suffix" && text && session.adminModelId) {
+        const prefix = session.addModelData?._orPrefix || "";
+        const fullId = prefix + text.trim();
+        const config = await getModelConfig(sb, session.adminModelId);
+        config.openrouter_id = fullId;
+        await setModelConfig(sb, session.adminModelId, config);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم تحديث *openrouter_id* → \`${fullId}\``,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+            [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+          ]}),
+        });
+        await saveSession(sb, chatId, { adminAction: "idle" });
         return new Response("OK");
       }
 
