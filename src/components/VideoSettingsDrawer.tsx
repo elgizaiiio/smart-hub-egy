@@ -132,7 +132,7 @@ const VideoSettingsDrawer = ({
                 
                   <span>Aspect Ratio</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-muted-foreground">{currentAspectIcon}</span>
+                    
                     <span className="text-xs">{settings.dimensions.label}</span>
                     <ChevronDown
                     className={`w-4 h-4 transition-transform ${expanded === "aspect" ? "rotate-180" : ""}`} />
