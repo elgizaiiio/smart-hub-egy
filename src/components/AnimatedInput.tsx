@@ -109,9 +109,39 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </button>
 
           <div className="flex items-center gap-2">
-
-
-
+            {/* Model selector */}
+            {selectedModel && onModelChange && (
+              <div className="relative" ref={modelMenuRef}>
+                <button
+                  onClick={() => setModelMenuOpen(!modelMenuOpen)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                >
+                  {selectedModel.name}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                <AnimatePresence>
+                  {modelMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute bottom-full mb-1 right-0 w-48 rounded-xl border border-border bg-popover shadow-lg py-1 z-50"
+                    >
+                      {getModelsForMode("chat").map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => { onModelChange(m); setModelMenuOpen(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs transition-colors ${selectedModel.id === m.id ? "text-primary bg-primary/5" : "text-foreground hover:bg-accent/50"}`}
+                        >
+                          {m.name}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
             {/* Send / Stop */}
             {isLoading ? (
               <button
