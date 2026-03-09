@@ -71,6 +71,7 @@ const BottomInputBar = ({
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [selectedQuality, setSelectedQuality] = useState("2K");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Animated placeholder
