@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Loader2, Coins, Image as ImageIcon, Expand } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sparkles, Loader2, Coins, Image as ImageIcon, Expand, ChevronDown, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { ModelOption } from "@/components/ModelSelector";
 import type { ImageSettings, ImageStyle, ImageDimensions } from "@/components/ImageSettingsPanel";
 import InlineModelPicker from "./InlineModelPicker";
@@ -24,7 +24,6 @@ const ASPECT_RATIOS: ImageDimensions[] = [
 
 const QUALITIES = ["512px", "1K", "2K", "4K"];
 
-// Model icon info
 const MODEL_ICONS: Record<string, { letter: string; gradient: string }> = {
   "nano-banana-2": { letter: "G", gradient: "from-yellow-400 to-orange-500" },
   "nano-banana-pro": { letter: "G", gradient: "from-yellow-400 to-orange-500" },
@@ -54,6 +53,64 @@ interface BottomInputBarProps {
   onAttach: () => void;
 }
 
+// Dropdown component for chips
+const ChipDropdown = ({
+  open,
+  onToggle,
+  onClose,
+  label,
+  icon,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  label: React.ReactNode;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, onClose]);
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium 
+          bg-white/[0.06] backdrop-blur-2xl border border-white/[0.08] text-white/80 
+          hover:bg-white/[0.1] hover:border-white/[0.15] hover:text-white
+          transition-all duration-300 ease-out"
+      >
+        {icon}
+        {label}
+        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-full mb-2 left-0 min-w-[140px] 
+              bg-black/60 backdrop-blur-3xl border border-white/[0.1] 
+              rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden p-1.5 z-50"
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const BottomInputBar = ({
   input,
   onInputChange,
@@ -72,9 +129,9 @@ const BottomInputBar = ({
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState("2K");
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Animated placeholder
   useEffect(() => {
     if (input) return;
     const target = PLACEHOLDERS[placeholderIdx];
@@ -96,6 +153,10 @@ const BottomInputBar = ({
     onSettingsChange({ ...settings, [key]: value });
   };
 
+  const toggleDropdown = (id: string) => {
+    setActiveDropdown(prev => prev === id ? null : id);
+  };
+
   const currentAspect = settings.dimensions.label;
   const iconInfo = MODEL_ICONS[selectedModel.id] || { letter: "AI", gradient: "from-gray-400 to-gray-500" };
 
@@ -113,10 +174,10 @@ const BottomInputBar = ({
           selectedModelId={selectedModel.id}
         />
 
-        <div className="bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-          {/* Top row: Input + Expand */}
-          <div className="flex items-start gap-3 px-4 pt-4 pb-3">
-            {/* Input area */}
+        {/* Main glass container */}
+        <div className="bg-black/20 backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-visible">
+          {/* Input area */}
+          <div className="flex items-start gap-3 px-5 pt-4 pb-3">
             <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
@@ -130,132 +191,120 @@ const BottomInputBar = ({
                 }}
                 placeholder={displayedPlaceholder}
                 rows={1}
-                className="w-full bg-transparent border-none outline-none resize-none text-sm text-white placeholder:text-white/30 py-2 max-h-24"
+                className="w-full bg-transparent border-none outline-none resize-none text-sm text-white placeholder:text-white/25 py-2 max-h-24"
                 style={{ minHeight: "40px" }}
               />
             </div>
-
-            {/* Right icons */}
-            <div className="flex flex-col items-center gap-1 shrink-0">
-              <button className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white/70 transition-colors">
-                <Expand className="w-4 h-4" />
-              </button>
-            </div>
+            <button className="w-8 h-8 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors mt-1">
+              <Expand className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Bottom row: Chips + Generate button */}
+          {/* Bottom controls row */}
           <div className="flex items-center justify-between gap-3 px-4 pb-4">
-            {/* Chips */}
-            <div className="flex items-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               {/* Model chip */}
               <button
                 onClick={() => setModelPickerOpen(!modelPickerOpen)}
-                className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
+                className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium 
+                  bg-white/[0.06] backdrop-blur-2xl border border-white/[0.08] text-white/80 
+                  hover:bg-white/[0.1] hover:border-white/[0.15] hover:text-white
+                  transition-all duration-300 ease-out"
               >
                 <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center`}>
                   <span className="text-[8px] font-bold text-black">{iconInfo.letter}</span>
                 </div>
                 {selectedModel.name}
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${modelPickerOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Aspect ratio chip */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors">
-                    <div className="w-3.5 h-2.5 border border-current rounded-sm" />
-                    {currentAspect}
+              {/* Aspect Ratio chip */}
+              <ChipDropdown
+                open={activeDropdown === "aspect"}
+                onToggle={() => toggleDropdown("aspect")}
+                onClose={() => setActiveDropdown(null)}
+                icon={<div className="w-3 h-2.5 border border-current rounded-[2px]" />}
+                label={currentAspect}
+              >
+                {ASPECT_RATIOS.map((ar) => (
+                  <button
+                    key={ar.label}
+                    onClick={() => { updateSetting("dimensions", ar); setActiveDropdown(null); }}
+                    className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg transition-all duration-200
+                      ${settings.dimensions.label === ar.label
+                        ? "bg-white/[0.1] text-white"
+                        : "text-white/60 hover:bg-white/[0.06] hover:text-white/90"
+                      }`}
+                  >
+                    {ar.label}
+                    {settings.dimensions.label === ar.label && <Check className="w-3.5 h-3.5 text-white/80" />}
                   </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-36 p-3 bg-[#1a1a1a] border-white/10" align="start">
-                  <p className="text-xs text-white/50 mb-2 font-medium">Aspect Ratio</p>
-                  <div className="space-y-1">
-                    {ASPECT_RATIOS.map((ar) => (
-                      <button
-                        key={ar.label}
-                        onClick={() => updateSetting("dimensions", ar)}
-                        className="w-full flex items-center gap-2.5 text-xs px-2 py-1.5 rounded-md transition-colors text-white/80 hover:bg-white/5"
-                      >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                          settings.dimensions.label === ar.label
-                            ? "border-white/40 bg-white/10"
-                            : "border-white/20"
-                        }`}>
-                          {settings.dimensions.label === ar.label && (
-                            <div className="w-2 h-2 rounded-sm bg-white" />
-                          )}
-                        </div>
-                        {ar.label}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                ))}
+              </ChipDropdown>
 
               {/* Quality chip */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors">
-                    <Sparkles className="w-3 h-3" />
-                    {selectedQuality}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-32 p-3 bg-[#1a1a1a] border-white/10" align="start">
-                  <p className="text-xs text-white/50 mb-2 font-medium">Quality</p>
-                  <div className="space-y-0.5">
-                    {QUALITIES.map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => setSelectedQuality(q)}
-                        className="w-full flex items-center justify-between text-xs px-2 py-1.5 rounded-md transition-colors text-white/80 hover:bg-white/5"
-                      >
-                        {q}
-                        {selectedQuality === q && (
-                          <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Number of images chip */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors">
-                    <ImageIcon className="w-3 h-3" />
-                    {settings.numImages} Image{settings.numImages > 1 ? "s" : ""}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-36 p-2 bg-[#252525] border-white/10" align="start">
-                  {[1, 2, 3, 4].map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => updateSetting("numImages", n)}
-                      className={`w-full text-left text-xs px-3 py-2 rounded-lg transition-colors ${
-                        settings.numImages === n
-                          ? "bg-white/10 text-white font-semibold"
-                          : "text-white/70 hover:bg-white/5 hover:text-white"
+              <ChipDropdown
+                open={activeDropdown === "quality"}
+                onToggle={() => toggleDropdown("quality")}
+                onClose={() => setActiveDropdown(null)}
+                icon={<Sparkles className="w-3 h-3" />}
+                label={selectedQuality}
+              >
+                {QUALITIES.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => { setSelectedQuality(q); setActiveDropdown(null); }}
+                    className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg transition-all duration-200
+                      ${selectedQuality === q
+                        ? "bg-white/[0.1] text-white"
+                        : "text-white/60 hover:bg-white/[0.06] hover:text-white/90"
                       }`}
-                    >
-                      {n} Image{n > 1 ? "s" : ""}
-                    </button>
-                  ))}
-                </PopoverContent>
-              </Popover>
+                  >
+                    {q}
+                    {selectedQuality === q && <Check className="w-3.5 h-3.5 text-white/80" />}
+                  </button>
+                ))}
+              </ChipDropdown>
+
+              {/* Image count chip */}
+              <ChipDropdown
+                open={activeDropdown === "count"}
+                onToggle={() => toggleDropdown("count")}
+                onClose={() => setActiveDropdown(null)}
+                icon={<ImageIcon className="w-3 h-3" />}
+                label={`${settings.numImages} Image${settings.numImages > 1 ? "s" : ""}`}
+              >
+                {[1, 2, 3, 4].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => { updateSetting("numImages", n); setActiveDropdown(null); }}
+                    className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg transition-all duration-200
+                      ${settings.numImages === n
+                        ? "bg-white/[0.1] text-white"
+                        : "text-white/60 hover:bg-white/[0.06] hover:text-white/90"
+                      }`}
+                  >
+                    {n} Image{n > 1 ? "s" : ""}
+                    {settings.numImages === n && <Check className="w-3.5 h-3.5 text-white/80" />}
+                  </button>
+                ))}
+              </ChipDropdown>
             </div>
 
             {/* Generate button */}
             <button
               onClick={onGenerate}
               disabled={!input.trim() || isGenerating}
-              className="shrink-0 h-9 px-5 flex items-center gap-2 rounded-full font-semibold text-sm transition-all disabled:opacity-30 bg-[#f5d90a] text-black hover:bg-[#e5c900] shadow-lg"
+              className="shrink-0 h-10 px-5 flex items-center gap-2 rounded-xl font-semibold text-sm 
+                transition-all duration-300 disabled:opacity-30 
+                bg-[#f5d90a] text-black hover:bg-[#e5c900] hover:shadow-[0_0_20px_rgba(245,217,10,0.3)]
+                active:scale-[0.97]"
             >
               {isGenerating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
+                  <Sparkles className="w-4 h-4" />
                   <span>Generate</span>
                   <div className="flex items-center gap-1 pl-2 border-l border-black/20">
                     <Coins className="w-3 h-3" />
