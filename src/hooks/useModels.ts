@@ -75,7 +75,7 @@ export function useDynamicModels() {
             speed: a.speed || "standard",
             quality: a.quality || "high",
           }));
-          result = [...result, ...newModels];
+          result = [...result, ...newModels.map(m => applyOv(m, overrides[m.id]))];
         }
 
         setModels(result);

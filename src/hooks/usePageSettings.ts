@@ -20,10 +20,10 @@ export interface PageSettingsVideos {
 }
 
 const DEFAULT_IMAGE_SETTINGS: PageSettingsImages = {
-  styles: ["none", "dynamic", "cinematic", "creative", "fashion", "portrait", "stock-photo", "vibrant", "anime", "3d-render"],
+  styles: [],
   aspectRatios: ["2:3", "1:1", "16:9"],
   maxImages: 4,
-  defaultStyle: "dynamic",
+  defaultStyle: "none",
   defaultAspect: "1:1",
   defaultNumImages: 1,
 };
