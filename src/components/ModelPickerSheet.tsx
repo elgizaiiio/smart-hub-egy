@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, HelpCircle } from "lucide-react";
+import { ArrowLeft, HelpCircle, Star, Sparkles, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ALL_MODEL_DETAILS, type ModelDetail, type ModelType } from "@/lib/modelDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,47 @@ const MODE_TYPES: Record<PickerMode, { models: ModelType[]; tools: ModelType[]; 
   images: { models: ["image"], tools: ["image-tool"], modelLabel: "Models", toolLabel: "Tools" },
   videos: { models: ["video"], tools: ["video-i2v", "video-avatar"], modelLabel: "Models", toolLabel: "Tools" },
   chat: { models: ["chat"], tools: [], modelLabel: "Models", toolLabel: "" },
+};
+
+// Featured model IDs (shown at top)
+const FEATURED_IMAGE_IDS = [
+  "nano-banana-2",
+  "seedream-4",
+  "lucid-origin",
+  "flux-2-pro",
+  "gpt-image",
+  "nano-banana-pro",
+];
+
+// Capability badges per model
+const MODEL_BADGES: Record<string, string[]> = {
+  "nano-banana-2": ["Image Ref"],
+  "seedream-4": ["Image Ref"],
+  "lucid-origin": ["Style Ref", "Content Ref"],
+  "flux-2-pro": ["Image Guidance"],
+  "gpt-image": ["Image Ref"],
+  "nano-banana-pro": ["Image Ref"],
+  "seedream-4-0": ["Image Ref"],
+  "megsy-v1-img": ["Image Ref"],
+  "lucid-realism": ["Style Ref", "Content Ref"],
+  "ideogram-3": [],
+  "gpt-image-1": ["Image Ref"],
+  "flux-kontext": ["Image Ref"],
+  "flux-kontext-std": ["Image Ref"],
+  "flux-dev": ["Style Ref", "Content Ref", "Elements"],
+  "flux-schnell": ["Style Ref", "Content Ref"],
+  "phoenix-1": ["Image to Image", "Style Ref", "Content Ref", "Character Ref"],
+  "phoenix-0.9": ["Image to Image", "Style Ref", "Content Ref", "Character Ref"],
+};
+
+// Provider icons
+const PROVIDER_ICONS: Record<string, React.ReactNode> = {
+  "nano-banana-2": <span className="text-[10px]">🍌</span>,
+  "seedream-4": <span className="text-[10px]">🌊</span>,
+  "lucid-origin": <span className="text-[10px]">🔮</span>,
+  "flux-2-pro": <span className="text-[10px]">⚡</span>,
+  "gpt-image": <span className="text-[10px]">🤖</span>,
+  "nano-banana-pro": <span className="text-[10px]">🍌</span>,
 };
 
 interface ModelMediaRecord {
@@ -54,6 +95,17 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     return ALL_MODEL_DETAILS.filter(m => typeList.includes(m.type));
   }, [tab, types]);
 
+  // Split featured vs other for image models
+  const featuredModels = useMemo(() => {
+    if (mode !== "images" || tab !== "models") return [];
+    return allModels.filter(m => FEATURED_IMAGE_IDS.includes(m.id));
+  }, [allModels, mode, tab]);
+
+  const otherModels = useMemo(() => {
+    if (mode !== "images" || tab !== "models") return allModels;
+    return allModels.filter(m => !FEATURED_IMAGE_IDS.includes(m.id));
+  }, [allModels, mode, tab]);
+
   const handleSelect = (model: ModelDetail) => {
     onSelect({
       id: model.id,
@@ -68,6 +120,74 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
   if (!open) return null;
 
+  const renderModelRow = (model: ModelDetail) => {
+    const isSelected = selectedModelId === model.id;
+    const media = mediaMap[model.id];
+    const badges = MODEL_BADGES[model.id] || [];
+    const isNew = model.id === "nano-banana-2";
+
+    return (
+      <motion.button
+        key={model.id}
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        onClick={() => handleSelect(model)}
+        className={`w-full flex items-start gap-3 p-3 rounded-xl transition-all text-left group ${
+          isSelected
+            ? "bg-primary/10 border border-primary/30"
+            : "hover:bg-secondary/60 border border-transparent"
+        }`}
+      >
+        {/* Thumbnail */}
+        <div className="w-14 h-14 rounded-xl overflow-hidden bg-secondary shrink-0">
+          {media ? (
+            media.media_type === "video" ? (
+              <video src={media.media_url} className="w-full h-full object-cover" autoPlay muted loop playsInline />
+            ) : (
+              <img src={media.media_url} alt={model.name} className="w-full h-full object-cover" loading="lazy" />
+            )
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <span className="text-lg opacity-30">AI</span>
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-sm font-semibold text-foreground">{model.name}</span>
+            {PROVIDER_ICONS[model.id] && PROVIDER_ICONS[model.id]}
+            {isNew && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold">New</span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground line-clamp-1 mb-1.5">{model.description}</p>
+          {badges.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {badges.map(badge => (
+                <span
+                  key={badge}
+                  className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium"
+                >
+                  {badge}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Price */}
+        <div className="shrink-0 flex flex-col items-end gap-1">
+          <span className="text-[11px] font-semibold text-muted-foreground">
+            {model.credits > 0 ? `${model.credits} MC` : "Free"}
+          </span>
+          {isSelected && <span className="w-2 h-2 rounded-full bg-primary" />}
+        </div>
+      </motion.button>
+    );
+  };
+
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -78,8 +198,8 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
           className="fixed inset-0 z-50 bg-background flex flex-col"
         >
           {/* Top Bar */}
-          <div className="shrink-0 bg-background sticky top-0 z-10">
-            <div className="max-w-5xl mx-auto px-4 pt-3 pb-2 flex items-center gap-3">
+          <div className="shrink-0 bg-background sticky top-0 z-10 border-b border-border">
+            <div className="max-w-2xl mx-auto px-4 pt-3 pb-2 flex items-center gap-3">
               <button
                 onClick={() => { if (detailModel) setDetailModel(null); else onClose(); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -87,54 +207,47 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                 <ArrowLeft className="w-5 h-5" />
               </button>
 
-              {!detailModel && hasTools && (
-                <div className="flex-1 flex justify-center">
-                  <div className="flex bg-secondary rounded-full p-1 min-w-[200px]">
-                    <button
-                      onClick={() => setTab("models")}
-                      className={`flex-1 py-2 px-5 rounded-full text-sm font-semibold transition-all ${
-                        tab === "models" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {types.modelLabel}
-                    </button>
-                    <button
-                      onClick={() => setTab("tools")}
-                      className={`flex-1 py-2 px-5 rounded-full text-sm font-semibold transition-all ${
-                        tab === "tools" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {types.toolLabel}
-                    </button>
-                  </div>
-                </div>
-              )}
+              <div className="flex-1 text-center">
+                <h1 className="font-display text-base font-bold text-foreground">Models</h1>
+              </div>
 
-              {detailModel && (
-                <>
-                  <div className="flex-1" />
-                  <h1 className="font-display text-lg font-bold text-foreground">{detailModel.name}</h1>
-                  <div className="flex-1" />
-                  <div className="w-8" />
-                </>
-              )}
-
-              {!detailModel && !hasTools && (
-                <>
-                  <div className="flex-1" />
-                  <h1 className="font-display text-lg font-bold text-foreground">Choose Model</h1>
-                  <div className="flex-1" />
-                  <div className="w-8" />
-                </>
-              )}
+              <button
+                onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
+
+            {/* Tabs */}
+            {hasTools && !detailModel && (
+              <div className="max-w-2xl mx-auto px-4 pb-2">
+                <div className="flex bg-secondary rounded-full p-1">
+                  {["Image", "Video", "Legacy"].map((label, i) => {
+                    const tabKey = i === 0 ? "models" : i === 1 ? "tools" : "models";
+                    const isActive = (i === 0 && tab === "models") || (i === 1 && tab === "tools");
+                    if (i === 2 && mode !== "images") return null;
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => setTab(i === 0 ? "models" : "tools")}
+                        className={`flex-1 py-2 px-4 rounded-full text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                          isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {detailModel ? (
-            /* DETAIL VIEW - Clean redesign */
+            /* DETAIL VIEW */
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-                {/* Media */}
                 {mediaMap[detailModel.id] && (
                   <div className="rounded-2xl overflow-hidden aspect-video bg-secondary">
                     {mediaMap[detailModel.id].media_type === "video" ? (
@@ -145,7 +258,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                   </div>
                 )}
 
-                {/* Name + Price */}
                 <div className="flex items-center justify-between">
                   <h2 className="font-display text-2xl font-bold text-foreground">{detailModel.name}</h2>
                   {detailModel.credits > 0 ? (
@@ -155,10 +267,20 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                   )}
                 </div>
 
-                {/* Description */}
                 <p className="text-sm text-muted-foreground leading-relaxed">{detailModel.longDescription}</p>
 
-                {/* Specs Table */}
+                {/* Badges */}
+                {MODEL_BADGES[detailModel.id]?.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {MODEL_BADGES[detailModel.id].map(badge => (
+                      <span key={badge} className="text-xs px-3 py-1 rounded-lg bg-primary/10 text-primary font-medium">
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Specs */}
                 <div className="rounded-xl border border-border overflow-hidden">
                   <table className="w-full text-sm">
                     <tbody>
@@ -174,33 +296,11 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                         <td className="px-4 py-3 text-muted-foreground">Modes</td>
                         <td className="px-4 py-3 text-foreground font-medium text-right">{detailModel.modes.join(", ")}</td>
                       </tr>
-                      <tr className="border-b border-border">
-                        <td className="px-4 py-3 text-muted-foreground">Accepts Images</td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={`font-medium ${detailModel.acceptsImages ? "text-emerald-500" : "text-muted-foreground"}`}>
-                            {detailModel.acceptsImages ? "Yes" : "No"}
-                          </span>
-                        </td>
-                      </tr>
                       {detailModel.acceptsImages && (
                         <>
                           <tr className="border-b border-border">
-                            <td className="px-4 py-3 text-muted-foreground">Image Required</td>
-                            <td className="px-4 py-3 text-right">
-                              <span className={`font-medium ${detailModel.requiresImage ? "text-destructive" : "text-emerald-500"}`}>
-                                {detailModel.requiresImage ? "Required" : "Optional"}
-                              </span>
-                            </td>
-                          </tr>
-                          <tr className="border-b border-border">
                             <td className="px-4 py-3 text-muted-foreground">Max Images</td>
                             <td className="px-4 py-3 text-foreground font-medium text-right">{detailModel.maxImages}</td>
-                          </tr>
-                          <tr className="border-b border-border">
-                            <td className="px-4 py-3 text-muted-foreground">Accepted Formats</td>
-                            <td className="px-4 py-3 text-foreground font-medium text-right text-xs">
-                              {detailModel.acceptedMimeTypes.map(m => m.split("/")[1]).join(", ").toUpperCase() || "N/A"}
-                            </td>
                           </tr>
                         </>
                       )}
@@ -212,29 +312,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                   </table>
                 </div>
 
-                {/* Input Labels */}
-                {detailModel.inputLabels && detailModel.inputLabels.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground">Required Inputs</h3>
-                    <div className="space-y-1.5">
-                      {detailModel.inputLabels.map((label, i) => (
-                        <div key={i} className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-secondary/50 border border-border">
-                          <span className="w-5 h-5 rounded-md bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0">{i + 1}</span>
-                          <span className="text-sm text-foreground">{label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                {detailModel.notes && (
-                  <div className="px-4 py-3 rounded-xl bg-primary/5 border border-primary/20">
-                    <p className="text-sm text-muted-foreground">{detailModel.notes}</p>
-                  </div>
-                )}
-
-                {/* Select Button */}
                 <button
                   onClick={() => handleSelect(detailModel)}
                   className={`w-full py-3.5 rounded-2xl font-medium text-sm transition-colors ${
@@ -248,73 +325,50 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
               </div>
             </div>
           ) : (
-            /* LIST VIEW */
+            /* LIST VIEW - Leonardo style with Featured/Other sections */
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-5xl mx-auto px-4 py-3">
-                {allModels.length === 0 ? (
-                  <div className="text-center py-16">
-                    <p className="text-muted-foreground text-sm">No models found.</p>
-                  </div>
+              <div className="max-w-2xl mx-auto px-4 py-3">
+                {mode === "images" && tab === "models" ? (
+                  <>
+                    {/* Featured Section */}
+                    {featuredModels.length > 0 && (
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-3 px-1">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Featured</span>
+                        </div>
+                        <div className="space-y-1">
+                          {featuredModels.map(model => renderModelRow(model))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Separator */}
+                    <div className="border-t border-border my-4" />
+
+                    {/* Other Models Section */}
+                    {otherModels.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-3 px-1">
+                          <Star className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Other Models</span>
+                        </div>
+                        <div className="space-y-1">
+                          {otherModels.map(model => renderModelRow(model))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {allModels.map(model => {
-                      const isSelected = selectedModelId === model.id;
-                      const media = mediaMap[model.id];
-
-                      return (
-                        <motion.div
-                          key={model.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all bg-card border ${
-                            isSelected
-                              ? "border-primary ring-2 ring-primary/20"
-                              : "border-border hover:border-primary/30"
-                          }`}
-                          onClick={() => handleSelect(model)}
-                        >
-                          {/* Square media thumbnail */}
-                          <div className="aspect-square bg-secondary relative overflow-hidden">
-                            {media ? (
-                              media.media_type === "video" ? (
-                                <video
-                                    src={media.media_url}
-                                    className="w-full h-full object-cover"
-                                    autoPlay muted loop playsInline
-                                  />
-                              ) : (
-                                <img
-                                  src={media.media_url}
-                                  alt={model.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                  loading="lazy"
-                                />
-                              )
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
-                                <span className="text-4xl opacity-10">AI</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Card info */}
-                          <div className="p-2.5 flex items-center justify-between gap-1">
-                            <div className="min-w-0">
-                              <h3 className="text-sm font-bold text-foreground truncate">{model.name}</h3>
-                              <span className="text-[11px] text-muted-foreground font-medium">
-                                {model.credits > 0 ? `${model.credits} MC` : "Free"}
-                              </span>
-                            </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setDetailModel(model); }}
-                              className="shrink-0 w-7 h-7 rounded-full bg-secondary hover:bg-accent flex items-center justify-center transition-colors"
-                            >
-                              <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                  /* Non-image or tools: simple list */
+                  <div className="space-y-1">
+                    {allModels.length === 0 ? (
+                      <div className="text-center py-16">
+                        <p className="text-muted-foreground text-sm">No models found.</p>
+                      </div>
+                    ) : (
+                      allModels.map(model => renderModelRow(model))
+                    )}
                   </div>
                 )}
               </div>
