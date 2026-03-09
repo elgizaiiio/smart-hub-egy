@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Expand, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ModelOption } from "@/components/ModelSelector";
