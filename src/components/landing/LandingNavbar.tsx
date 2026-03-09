@@ -2,33 +2,19 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
-import { ChevronDown, ArrowRight, Mail } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
 /* ── Mega-menu data ── */
-interface SubItem {
-  label: string;
-  desc: string;
-  href: string;
-}
-
-interface MenuColumn {
-  title: string;
-  items: SubItem[];
-}
-
+interface SubItem { label: string; desc: string; href: string; }
+interface MenuColumn { title: string; items: SubItem[]; }
 interface NavDropdown {
   label: string;
   columns: MenuColumn[];
   featured?: { title: string; desc?: string; cta: string; href: string };
 }
-
-interface NavLink {
-  label: string;
-  href: string;
-  external?: boolean;
-}
-
+interface NavLink { label: string; href: string; external?: boolean; }
 type NavItem = NavDropdown | NavLink;
-
 const isDropdown = (item: NavItem): item is NavDropdown => "columns" in item;
 
 const navItems: NavItem[] = [
@@ -115,9 +101,43 @@ const LandingNavbar = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [pinned, setPinned] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [user, setUser] = useState<{ avatarUrl: string | null; displayName: string; email: string } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auth state listener
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const u = session.user;
+        const { data: profile } = await supabase.from("profiles").select("display_name, avatar_url").eq("id", u.id).single();
+        setUser({
+          avatarUrl: profile?.avatar_url || u.user_metadata?.avatar_url || null,
+          displayName: profile?.display_name || u.user_metadata?.full_name || u.email?.split("@")[0] || "U",
+          email: u.email || "",
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    // Initial check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const u = session.user;
+        supabase.from("profiles").select("display_name, avatar_url").eq("id", u.id).single().then(({ data: profile }) => {
+          setUser({
+            avatarUrl: profile?.avatar_url || u.user_metadata?.avatar_url || null,
+            displayName: profile?.display_name || u.user_metadata?.full_name || u.email?.split("@")[0] || "U",
+            email: u.email || "",
+          });
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -164,6 +184,8 @@ const LandingNavbar = () => {
       setPinned(true);
     }
   };
+
+  const initial = user?.displayName?.charAt(0)?.toUpperCase() || "U";
 
   return (
     <motion.nav
@@ -212,18 +234,14 @@ const LandingNavbar = () => {
                     >
                       <div className="w-full max-w-[1000px] rounded-2xl border border-white/10 bg-black backdrop-blur-3xl p-8 shadow-2xl pointer-events-auto">
                         <div className="flex gap-10">
-                          {/* Featured Card (Left) */}
                           {item.featured && (
                             <div className="group w-[280px] shrink-0 rounded-2xl border border-white/10 flex flex-col items-start relative overflow-hidden">
-                               {/* Background Image */}
                                <img 
                                  src={item.label === "Products" ? "/showcase/img-2.jpg" : "/showcase/img-1.jpg"}
                                  alt=""
                                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-80 transition-all duration-500"
                                />
-                               {/* Gradient Overlay */}
                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                               {/* Content */}
                                <div className="relative z-10 p-6 flex flex-col h-full w-full mt-auto">
                                  <h3 className="text-xl font-bold text-white mb-2 whitespace-pre-line">{item.featured.title}</h3>
                                  {item.featured.desc && <p className="text-sm text-white/70 mb-6">{item.featured.desc}</p>}
@@ -234,7 +252,6 @@ const LandingNavbar = () => {
                             </div>
                           )}
 
-                          {/* Columns (Right) */}
                           <div className="flex-1 grid gap-8" style={{ gridTemplateColumns: `repeat(${item.columns.length}, minmax(0, 1fr))` }}>
                             {item.columns.map((col) => (
                               <div key={col.title}>
@@ -282,17 +299,35 @@ const LandingNavbar = () => {
           )}
         </div>
 
-        {/* Auth buttons */}
+        {/* Auth buttons / Avatar */}
         <div className="hidden items-center gap-3 md:flex">
-          <button
-            onClick={() => navigate("/auth")}
-            className="rounded-full border border-border px-5 py-2 text-sm font-medium text-foreground transition-all hover:border-foreground/35"
-          >
-            Log in
-          </button>
-          <FancyButton onClick={() => navigate("/auth")} className="text-sm">
-            Start Creating
-          </FancyButton>
+          {user ? (
+            <button
+              onClick={() => navigate("/chat")}
+              className="flex items-center gap-2.5 rounded-full border border-border px-2 py-1.5 transition-all hover:border-foreground/35"
+            >
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                  {initial}
+                </div>
+              )}
+              <span className="pr-2 text-sm font-medium text-foreground">{user.displayName}</span>
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate("/auth")}
+                className="rounded-full border border-border px-5 py-2 text-sm font-medium text-foreground transition-all hover:border-foreground/35"
+              >
+                Log in
+              </button>
+              <FancyButton onClick={() => navigate("/auth")} className="text-sm">
+                Start Creating
+              </FancyButton>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -327,22 +362,18 @@ const LandingNavbar = () => {
                         {item.columns.map((col) => (
                           <div key={col.title}>
                             <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-white/30">{col.title}</h4>
-                            {col.items.map((sub) => {
-                              
-                              return (
-                                <button
-                                  key={sub.label}
-                                  onClick={() => handleNav(sub.href)}
-                                  className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-white/[0.06]"
-                                >
-                                  
-                                  <div>
-                                    <span className="text-sm text-white/80">{sub.label}</span>
-                                    <span className="block text-xs text-white/30">{sub.desc}</span>
-                                  </div>
-                                </button>
-                              );
-                            })}
+                            {col.items.map((sub) => (
+                              <button
+                                key={sub.label}
+                                onClick={() => handleNav(sub.href)}
+                                className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-white/[0.06]"
+                              >
+                                <div>
+                                  <span className="text-sm text-white/80">{sub.label}</span>
+                                  <span className="block text-xs text-white/30">{sub.desc}</span>
+                                </div>
+                              </button>
+                            ))}
                           </div>
                         ))}
                       </div>
@@ -365,10 +396,28 @@ const LandingNavbar = () => {
             )
           )}
           <div className="mt-5 flex flex-col gap-3">
-            <button onClick={() => navigate("/auth")} className="rounded-lg border border-border py-2.5 text-sm font-medium text-foreground">
-              Log in
-            </button>
-            <FancyButton onClick={() => navigate("/auth")}>Start Creating</FancyButton>
+            {user ? (
+              <button
+                onClick={() => { setMobileOpen(false); navigate("/chat"); }}
+                className="flex items-center justify-center gap-2.5 rounded-lg border border-border py-2.5"
+              >
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    {initial}
+                  </div>
+                )}
+                <span className="text-sm font-medium text-foreground">Go to Dashboard</span>
+              </button>
+            ) : (
+              <>
+                <button onClick={() => navigate("/auth")} className="rounded-lg border border-border py-2.5 text-sm font-medium text-foreground">
+                  Log in
+                </button>
+                <FancyButton onClick={() => navigate("/auth")}>Start Creating</FancyButton>
+              </>
+            )}
           </div>
         </motion.div>
       )}
