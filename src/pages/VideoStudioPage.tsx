@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Loader2, X, Video, Sparkles } from "lucide-react";
+import { Download, X, Video, Sparkles, Grid3X3 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,7 @@ import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import VideoBottomInputBar, { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "@/components/VideoBottomInputBar";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
-import { Progress } from "@/components/ui/progress";
+import StudioLoader from "@/components/StudioLoader";
 import { getVideoModelCapability } from "@/lib/videoModelCapabilities";
 
 interface GeneratedVideo {
@@ -44,7 +44,9 @@ const VideoStudioPage = () => {
   const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>([]);
   const [preview, setPreview] = useState<PreviewVideo | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const capability = useMemo(() => getVideoModelCapability(selectedModel.id), [selectedModel.id]);
   const creditCost = Number(selectedModel.credits) || 1;
@@ -62,21 +64,9 @@ const VideoStudioPage = () => {
   const loadHistory = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: convos } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("mode", "videos")
-      .order("updated_at", { ascending: false })
-      .limit(20);
+    const { data: convos } = await supabase.from("conversations").select("id").eq("user_id", user.id).eq("mode", "videos").order("updated_at", { ascending: false }).limit(20);
     if (!convos?.length) return;
-    const { data: msgs } = await supabase
-      .from("messages")
-      .select("*")
-      .in("conversation_id", convos.map(c => c.id))
-      .eq("role", "assistant")
-      .order("created_at", { ascending: false })
-      .limit(30);
+    const { data: msgs } = await supabase.from("messages").select("*").in("conversation_id", convos.map(c => c.id)).eq("role", "assistant").order("created_at", { ascending: false }).limit(30);
     if (msgs) {
       const videos: GeneratedVideo[] = [];
       msgs.forEach(m => {
@@ -96,24 +86,18 @@ const VideoStudioPage = () => {
     if (!prompt) return;
     const cost = Number(model.credits) || 1;
     if (userId && !hasEnoughCredits(cost)) { toast.error("Insufficient MC credits."); return; }
-
     setInput("");
     setIsGenerating(true);
     setProgress(0);
+    setShowGrid(false);
     const interval = setInterval(() => setProgress(p => Math.min(p + Math.random() * 8, 90)), 800);
-
     const { data: { user } } = await supabase.auth.getUser();
     let convId: string | null = null;
     if (user) {
-      const { data } = await supabase
-        .from("conversations")
-        .insert({ title: prompt.slice(0, 50), mode: "videos", model: model.id, user_id: user.id } as any)
-        .select("id")
-        .single();
+      const { data } = await supabase.from("conversations").insert({ title: prompt.slice(0, 50), mode: "videos", model: model.id, user_id: user.id } as any).select("id").single();
       convId = data?.id || null;
       if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt });
     }
-
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`, {
         method: "POST",
@@ -127,12 +111,10 @@ const VideoStudioPage = () => {
       else if (data.video_url) {
         const newVid: GeneratedVideo = { id: crypto.randomUUID(), url: data.video_url, prompt, model: model.name, duration: "5s", createdAt: new Date() };
         setGeneratedVideos(prev => [newVid, ...prev]);
+        setActiveIndex(0);
         if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "assistant", content: prompt, images: [data.video_url] });
       }
-    } catch {
-      clearInterval(interval);
-      toast.error("Generation failed.");
-    }
+    } catch { clearInterval(interval); toast.error("Generation failed."); }
     setIsGenerating(false);
     setTimeout(() => setProgress(0), 1000);
     refreshCredits();
@@ -142,52 +124,79 @@ const VideoStudioPage = () => {
     const a = document.createElement("a"); a.href = url; a.download = `${prompt.slice(0, 30).replace(/\s+/g, "_")}.mp4`; a.target = "_blank"; a.click();
   };
 
+  const currentVideo = generatedVideos[activeIndex];
+
   return (
     <AppLayout>
       <div className="h-full flex flex-col bg-background relative">
         <ModelPickerSheet open={modelPickerOpen} onClose={() => setModelPickerOpen(false)} onSelect={m => { setSelectedModel(m); setModelPickerOpen(false); }} mode="videos" selectedModelId={selectedModel.id} />
 
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
-          <button onClick={() => navigate("/videos")} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent transition-colors"><X className="w-4 h-4" /></button>
-          <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /><h1 className="text-sm font-bold text-foreground">Video Studio</h1></div>
-          {generatedVideos.length > 0 && <span className="text-xs text-muted-foreground">{generatedVideos.length} videos</span>}
-        </div>
-
-        {/* Progress */}
-        <AnimatePresence>
-          {isGenerating && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="px-6 py-4 border-b border-border">
-              <div className="flex items-center gap-3 mb-2">
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span className="text-sm text-foreground font-medium">Generating video...</span>
-                <span className="text-xs text-muted-foreground ml-auto">{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Gallery */}
-        <div className="flex-1 overflow-y-auto pb-32 px-6 py-6">
-          {generatedVideos.length === 0 && !isGenerating ? (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-              <div className="w-20 h-20 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-4"><Video className="w-10 h-10 text-primary/30" /></div>
-              <h2 className="text-lg font-bold text-foreground mb-1">No videos yet</h2>
-              <p className="text-sm text-muted-foreground">Generate your first video below</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {generatedVideos.map(vid => (
-                <motion.div key={vid.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="group relative rounded-2xl overflow-hidden cursor-pointer" onClick={() => setPreview({ url: vid.url, prompt: vid.prompt, model: vid.model })}>
-                  <video src={vid.url} className="w-full rounded-2xl object-cover aspect-video pointer-events-auto" muted />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end p-3">
-                    <p className="text-white text-xs line-clamp-2">{vid.prompt}</p>
-                  </div>
-                </motion.div>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left sidebar - history thumbnails */}
+          {generatedVideos.length > 0 && (
+            <div className="w-14 border-r border-border flex flex-col items-center gap-2 py-3 overflow-y-auto scrollbar-hide">
+              <button onClick={() => setShowGrid(!showGrid)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${showGrid ? 'bg-primary/20 text-primary' : 'hover:bg-accent text-muted-foreground'}`}>
+                <Grid3X3 className="w-4 h-4" />
+              </button>
+              <div className="w-6 border-t border-border my-1" />
+              {generatedVideos.slice(0, 20).map((vid, i) => (
+                <button
+                  key={vid.id}
+                  onClick={() => { setActiveIndex(i); setShowGrid(false); }}
+                  className={`w-10 h-10 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${activeIndex === i && !showGrid ? 'border-primary ring-1 ring-primary/30' : 'border-transparent hover:border-border'}`}
+                >
+                  <video src={vid.url} muted className="w-full h-full object-cover pointer-events-auto" />
+                </button>
               ))}
             </div>
           )}
+
+          {/* Main canvas area */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex items-center justify-center bg-card/30 relative overflow-hidden">
+              <AnimatePresence mode="wait">
+                {isGenerating ? (
+                  <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center">
+                    <StudioLoader progress={progress} message="Your video is on its way..." />
+                  </motion.div>
+                ) : showGrid ? (
+                  <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full overflow-y-auto p-6 pb-32">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {generatedVideos.map((vid, i) => (
+                        <motion.div key={vid.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                          className="group relative rounded-2xl overflow-hidden cursor-pointer"
+                          onClick={() => { setActiveIndex(i); setShowGrid(false); }}
+                        >
+                          <video src={vid.url} className="w-full rounded-2xl object-cover aspect-video pointer-events-auto" muted />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end p-3">
+                            <p className="text-white text-xs line-clamp-2">{vid.prompt}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                ) : currentVideo ? (
+                  <motion.div key={currentVideo.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }}
+                    className="relative max-w-[80%] max-h-[80%] group"
+                  >
+                    <video src={currentVideo.url} controls autoPlay className="max-w-full max-h-[70vh] rounded-2xl object-contain shadow-2xl pointer-events-auto" />
+                    <button onClick={() => handleDownload(currentVideo.url, currentVideo.prompt)}
+                      className="absolute top-3 right-3 w-10 h-10 rounded-xl bg-black/50 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center text-center">
+                    <div className="w-20 h-20 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-4">
+                      <Video className="w-10 h-10 text-primary/30" />
+                    </div>
+                    <h2 className="text-lg font-bold text-foreground mb-1">Create something amazing</h2>
+                    <p className="text-sm text-muted-foreground">Describe your video below to get started</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
 
         {/* Preview modal */}
