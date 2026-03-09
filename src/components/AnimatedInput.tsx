@@ -74,11 +74,14 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     }
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  
   const autoResize = () => {
     const el = textareaRef.current;
     if (el) {
       el.style.height = "auto";
-      el.style.height = Math.min(el.scrollHeight, 128) + "px";
+      const maxH = isMobile ? 96 : 128;
+      el.style.height = Math.min(el.scrollHeight, maxH) + "px";
     }
   };
 
