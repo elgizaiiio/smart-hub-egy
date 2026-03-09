@@ -167,7 +167,6 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </button>
         )}
       </div>
-      </div>
     </div>
   );
 };
