@@ -74,16 +74,22 @@ const ServiceImagesPage = () => {
     <div data-theme="dark" className="min-h-screen bg-background text-foreground">
       <LandingNavbar />
 
-      {/* Hero with Parallax Images */}
+      {/* Hero */}
       <section 
         ref={heroRef}
-        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black px-6 pt-20"
+        className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 pt-24"
       >
-        {/* LEFT side floating images - each moves independently */}
+        {/* Ambient glow */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[120px]" />
+          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-purple-500/8 blur-[100px]" />
+        </div>
+
+        {/* LEFT floating images */}
         {leftImages.map((img, i) => (
           <motion.div
             key={`left-${i}`}
-            className="absolute overflow-hidden rounded-lg pointer-events-none hidden lg:block"
+            className="absolute overflow-hidden rounded-2xl pointer-events-none hidden lg:block shadow-2xl"
             style={{
               top: img.top,
               left: img.left,
@@ -91,27 +97,27 @@ const ServiceImagesPage = () => {
               height: img.height,
               zIndex: img.zIndex,
             }}
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: -60 }}
             animate={{ 
-              opacity: 1, 
+              opacity: 0.7, 
               x: mousePosition.x * img.speedX,
               y: mousePosition.y * img.speedY,
             }}
             transition={{ 
-              opacity: { duration: 1, delay: i * 0.2 },
-              x: { duration: 0.2 + i * 0.1, ease: "easeOut" },
-              y: { duration: 0.2 + i * 0.1, ease: "easeOut" },
+              opacity: { duration: 1.2, delay: i * 0.2 },
+              x: { duration: 0.3 + i * 0.1, ease: "easeOut" },
+              y: { duration: 0.3 + i * 0.1, ease: "easeOut" },
             }}
           >
             <img src={img.src} alt="" className="w-full h-full object-cover" />
           </motion.div>
         ))}
 
-        {/* RIGHT side floating images - each moves independently */}
+        {/* RIGHT floating images */}
         {rightImages.map((img, i) => (
           <motion.div
             key={`right-${i}`}
-            className="absolute overflow-hidden rounded-lg pointer-events-none hidden lg:block"
+            className="absolute overflow-hidden rounded-2xl pointer-events-none hidden lg:block shadow-2xl"
             style={{
               top: img.top,
               right: img.right,
@@ -119,49 +125,57 @@ const ServiceImagesPage = () => {
               height: img.height,
               zIndex: img.zIndex,
             }}
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 0, x: 60 }}
             animate={{ 
-              opacity: 1, 
+              opacity: 0.7, 
               x: mousePosition.x * -img.speedX,
               y: mousePosition.y * img.speedY,
             }}
             transition={{ 
-              opacity: { duration: 1, delay: i * 0.2 },
-              x: { duration: 0.25 + i * 0.08, ease: "easeOut" },
-              y: { duration: 0.25 + i * 0.08, ease: "easeOut" },
+              opacity: { duration: 1.2, delay: i * 0.2 },
+              x: { duration: 0.3 + i * 0.08, ease: "easeOut" },
+              y: { duration: 0.3 + i * 0.08, ease: "easeOut" },
             }}
           >
             <img src={img.src} alt="" className="w-full h-full object-cover" />
           </motion.div>
         ))}
 
-        {/* Center Content */}
+        {/* Center Content — no box, just clean text */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="relative z-10 mx-auto max-w-4xl px-4 text-center"
+          className="relative z-10 mx-auto max-w-4xl text-center"
         >
-          <div className="mx-auto inline-block rounded-3xl border border-border/40 bg-background/70 px-6 py-8 shadow-2xl backdrop-blur-md sm:px-10 sm:py-10">
-            <h1 className="font-display text-4xl font-black uppercase leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-              <span className="block">AI IMAGE GENERATION</span>
-              <span className="block text-primary">BUILT FOR CREATIVE TEAMS</span>
-            </h1>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary"
+          >
+            <Sparkles className="w-4 h-4" />
+            AI Image Generation
+          </motion.div>
 
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl">
-              Generate, remix, and refine visuals in minutes—consistent styles, sharper details, and export-ready files for every channel.
-            </p>
+          <h1 className="font-display text-5xl font-black uppercase leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl">
+            <span className="block">Turn Words</span>
+            <span className="block text-primary">Into Visuals</span>
+          </h1>
 
-            <div className="mt-8 flex justify-center">
-              <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-base sm:text-lg">
-                Generate an image
-              </FancyButton>
-            </div>
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Type a prompt. Get a stunning image. Remix it, upscale it, and export — all in one place.
+          </p>
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <FancyButton onClick={() => navigate("/auth")} className="px-10 py-4 text-base sm:text-lg">
+              Start Generating
+            </FancyButton>
           </div>
         </motion.div>
 
-        {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
       </section>
 
       {/* Why Creatives Choose Megsy */}
