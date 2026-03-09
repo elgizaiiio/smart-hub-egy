@@ -129,6 +129,8 @@ const ServiceImagesPage = () => {
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
+
+  return (
     <div data-theme="dark" className="min-h-screen bg-background text-foreground">
       <LandingNavbar />
 
