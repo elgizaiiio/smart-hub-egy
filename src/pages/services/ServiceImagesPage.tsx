@@ -13,14 +13,19 @@ const features = [
   { icon: Image, title: "Style Control", desc: "Choose from dozens of artistic styles or create your own unique visual identity." },
 ];
 
-// Floating images configuration
-const floatingImages = [
-  { src: "/showcase/img-1.jpg", className: "top-[15%] left-[2%] w-32 h-44 md:w-48 md:h-64", speed: 0.03, rotate: -5 },
-  { src: "/showcase/img-2.jpg", className: "top-[40%] left-[8%] w-28 h-36 md:w-40 md:h-52", speed: 0.05, rotate: 3 },
-  { src: "/showcase/img-3.jpg", className: "bottom-[10%] left-[5%] w-36 h-28 md:w-52 md:h-40", speed: 0.04, rotate: -2 },
-  { src: "/showcase/img-4.jpg", className: "top-[12%] right-[3%] w-28 h-40 md:w-44 md:h-60", speed: 0.035, rotate: 4 },
-  { src: "/showcase/img-5.jpg", className: "top-[45%] right-[5%] w-32 h-24 md:w-48 md:h-36", speed: 0.045, rotate: -3 },
-  { src: "/showcase/img-6.jpg", className: "bottom-[15%] right-[8%] w-24 h-32 md:w-36 md:h-48", speed: 0.055, rotate: 2 },
+// LEFT side images - stacked/overlapping cluster
+const leftImages = [
+  { src: "/showcase/img-1.jpg", style: { top: "8%", left: "-5%", width: 180, height: 240 }, speed: 0.02, rotate: -8, zIndex: 3 },
+  { src: "/showcase/img-2.jpg", style: { top: "25%", left: "8%", width: 200, height: 280 }, speed: 0.03, rotate: 5, zIndex: 2 },
+  { src: "/showcase/img-3.jpg", style: { top: "55%", left: "-2%", width: 220, height: 160 }, speed: 0.025, rotate: -3, zIndex: 1 },
+];
+
+// RIGHT side images - stacked/overlapping cluster  
+const rightImages = [
+  { src: "/showcase/img-4.jpg", style: { top: "5%", right: "-8%", width: 200, height: 280 }, speed: 0.025, rotate: 6, zIndex: 3 },
+  { src: "/showcase/img-5.jpg", style: { top: "35%", right: "5%", width: 180, height: 130 }, speed: 0.035, rotate: -4, zIndex: 2 },
+  { src: "/showcase/img-6.jpg", style: { top: "50%", right: "-3%", width: 160, height: 220 }, speed: 0.03, rotate: 3, zIndex: 1 },
+  { src: "/showcase/model-1.jpg", style: { top: "70%", right: "10%", width: 140, height: 180 }, speed: 0.02, rotate: -5, zIndex: 4 },
 ];
 
 const ServiceImagesPage = () => {
@@ -42,42 +47,36 @@ const ServiceImagesPage = () => {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  return (
-    <div data-theme="dark" className="min-h-screen bg-background text-foreground">
-      <LandingNavbar />
-
-      {/* Hero with Parallax Images */}
-      <section 
-        ref={heroRef}
-        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black px-6 pt-20"
-      >
-        {/* Floating Images with Parallax */}
-        {floatingImages.map((img, i) => (
-          <motion.div
-            key={i}
-            className={`absolute ${img.className} overflow-hidden rounded-2xl shadow-2xl pointer-events-none hidden md:block`}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1,
-              x: mousePosition.x * 100 * img.speed * (i % 2 === 0 ? 1 : -1),
-              y: mousePosition.y * 100 * img.speed * (i % 2 === 0 ? -1 : 1),
-              rotate: img.rotate + mousePosition.x * 5 * img.speed,
-            }}
-            transition={{ 
-              opacity: { duration: 0.8, delay: i * 0.1 },
-              scale: { duration: 0.8, delay: i * 0.1 },
-              x: { duration: 0.3, ease: "easeOut" },
-              y: { duration: 0.3, ease: "easeOut" },
-              rotate: { duration: 0.3, ease: "easeOut" },
-            }}
-          >
-            <img 
-              src={img.src} 
-              alt="" 
-              className="w-full h-full object-cover"
-            />
-          </motion.div>
+  const renderFloatingImage = (img: typeof leftImages[0], index: number, side: 'left' | 'right') => (
+    <motion.div
+      key={`${side}-${index}`}
+      className="absolute overflow-hidden rounded-xl shadow-2xl pointer-events-none hidden lg:block"
+      style={{
+        ...img.style,
+        zIndex: img.zIndex,
+      }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ 
+        opacity: 1, 
+        scale: 1,
+        x: mousePosition.x * 60 * img.speed * (side === 'left' ? 1 : -1),
+        y: mousePosition.y * 60 * img.speed,
+        rotate: img.rotate + mousePosition.x * 3,
+      }}
+      transition={{ 
+        opacity: { duration: 0.8, delay: index * 0.15 },
+        scale: { duration: 0.8, delay: index * 0.15 },
+        x: { duration: 0.2, ease: "easeOut" },
+        y: { duration: 0.2, ease: "easeOut" },
+        rotate: { duration: 0.3, ease: "easeOut" },
+      }}
+    >
+      <img 
+        src={img.src} 
+        alt="" 
+        className="w-full h-full object-cover"
+      />
+    </motion.div>
         ))}
 
         {/* Center Content */}
