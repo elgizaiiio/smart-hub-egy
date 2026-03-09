@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Sparkles, ImagePlus, Clapperboard, TerminalSquare, FolderKanban, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -17,11 +16,11 @@ interface DesktopSidebarProps {
 }
 
 const mainNav = [
-  { path: "/", label: "Chat", icon: Sparkles },
-  { path: "/images", label: "Images", icon: ImagePlus },
-  { path: "/videos", label: "Videos", icon: Clapperboard },
-  { path: "/code", label: "Code", icon: TerminalSquare },
-  { path: "/files", label: "Files", icon: FolderKanban },
+  { path: "/", label: "Chat" },
+  { path: "/images", label: "Images" },
+  { path: "/videos", label: "Videos" },
+  { path: "/code", label: "Code" },
+  { path: "/files", label: "Files" },
 ];
 
 const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId }: DesktopSidebarProps) => {
@@ -63,76 +62,78 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
-  const NavItem = ({ path, label, icon: Icon }: { path: string; label: string; icon: any }) => {
-    const active = isActive(path);
-    return (
-      <button
-        onClick={() => navigate(path)}
-        className={`w-full flex flex-col items-center gap-1 py-2.5 rounded-xl text-[10px] font-medium transition-all ${
-          active
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
-        }`}
-      >
-        <Icon className="w-[22px] h-[22px]" strokeWidth={active ? 2 : 1.5} />
-        <span className="leading-none">{label}</span>
-      </button>
-    );
-  };
-
   return (
-    <aside className="hidden md:flex flex-col items-center w-[72px] h-[100dvh] bg-sidebar border-r border-sidebar-border shrink-0">
-      {/* Logo */}
+    <aside className="hidden md:flex flex-col w-[200px] h-[100dvh] bg-sidebar/60 backdrop-blur-xl border-r border-sidebar-border/30 shrink-0">
+      {/* Brand */}
       <button
         onClick={() => { onNewChat?.(); navigate("/"); }}
-        className="w-full flex items-center justify-center py-5 hover:opacity-80 transition-opacity"
+        className="px-5 pt-6 pb-8 text-left hover:opacity-70 transition-opacity"
       >
-        <span className="text-3xl font-extrabold bg-gradient-to-b from-[hsl(0,0%,85%)] to-[hsl(0,0%,55%)] bg-clip-text text-transparent drop-shadow-sm">M</span>
+        <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
+          Mira
+        </span>
       </button>
 
-      {/* Main Navigation */}
-      <nav className="flex flex-col items-center gap-0.5 w-full px-1.5">
-        {mainNav.map((item) => (
-          <NavItem key={item.path} {...item} />
-        ))}
+      {/* Navigation */}
+      <nav className="flex flex-col px-3 gap-0.5">
+        {mainNav.map((item) => {
+          const active = isActive(item.path);
+          return (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
+                active
+                  ? "text-sidebar-foreground bg-sidebar-accent/60 backdrop-blur-sm"
+                  : "text-sidebar-foreground/45 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30"
+              }`}
+            >
+              {item.label}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Bottom Section */}
-      <div className="flex flex-col items-center w-full px-2 pb-4 gap-3">
-        {/* Credits Display */}
+      {/* Bottom */}
+      <div className="flex flex-col px-3 pb-4 gap-2">
+        {/* Credits */}
         <button
           onClick={() => navigate("/pricing")}
-          className="w-[58px] text-center py-1 rounded-lg text-[11px] font-bold text-sidebar-foreground/80 hover:text-sidebar-foreground transition-all"
+          className="flex items-center justify-between px-3 py-2 rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors"
         >
-          <span className="text-[18px] font-extrabold bg-gradient-to-b from-sidebar-foreground to-sidebar-foreground/50 bg-clip-text text-transparent leading-none">{credits.toFixed(0)}</span>
-          <span className="block text-[9px] font-medium text-sidebar-foreground/40 mt-0.5">credits</span>
+          <span className="text-[12px] font-medium">Credits</span>
+          <span className="text-[13px] font-semibold tabular-nums text-sidebar-foreground/70">
+            {credits.toFixed(0)}
+          </span>
         </button>
 
-        {/* Upgrade Button */}
+        {/* Upgrade */}
         <button
           onClick={() => navigate("/pricing")}
-          className="w-[58px] py-2 rounded-xl text-[10px] font-bold bg-gradient-to-b from-primary via-primary to-primary/70 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all"
+          className="w-full px-3 py-2 rounded-lg text-[12px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-center"
         >
-          PRO ✦
+          Upgrade to Pro
         </button>
 
-        {/* User Avatar */}
+        {/* User */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="mt-1 group relative">
-              <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-sidebar-border group-hover:ring-primary/50 transition-all">
+            <button className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-sidebar-accent/30 transition-colors w-full">
+              <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-sidebar-border/50 shrink-0">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                  <div className="w-full h-full bg-primary/15 flex items-center justify-center text-[11px] font-semibold text-primary">
                     {initial}
                   </div>
                 )}
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-sidebar" />
+              <span className="text-[12px] font-medium text-sidebar-foreground/70 truncate">
+                {userName}
+              </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="end" className="w-44">
