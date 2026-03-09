@@ -421,8 +421,8 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.3 }}
             className="relative rounded-2xl bg-yellow-400 p-6 flex flex-col justify-between lg:row-span-2"
           >
-            <div className="w-16 h-16 flex items-center justify-center">
-              <Sparkles className="w-12 h-12 text-black" />
+            <div className="w-16 h-16 flex items-center justify-center text-4xl font-black text-black">
+              AI
             </div>
             <div>
               <h3 className="text-2xl font-bold text-black">Brand-ready outputs.</h3>
