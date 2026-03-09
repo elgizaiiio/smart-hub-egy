@@ -415,7 +415,7 @@ serve(async (req) => {
           }
           fieldRows.push(row);
         }
-        fieldRows.push([{ text: "🗑 إعادة ضبط", callback_data: `reset_${modelId}` }]);
+        fieldRows.push([{ text: "🗑 إعادة ضبط", callback_data: `reset_${modelId}` }, { text: "🚫 إخفاء النموذج", callback_data: `hide_${modelId}` }]);
         fieldRows.push([{ text: "🔙 رجوع", callback_data: "edit_menu" }]);
 
         await send(BOT_TOKEN, chatId, msgId,
