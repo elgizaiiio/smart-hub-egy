@@ -45,14 +45,16 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
 
   useEffect(() => {
     const load = async () => {
+      const mediaType = mode === "images" ? "image" : "video";
       const { data } = await supabase
         .from("showcase_items" as any)
         .select("*")
+        .eq("media_type", mediaType)
         .order("display_order", { ascending: true });
       if (data) setDbItems(data as unknown as ShowcaseItem[]);
     };
     load();
-  }, []);
+  }, [mode]);
 
   const isImage = mode === "images";
   const staticItems = isImage ? staticImages : staticVideos;
