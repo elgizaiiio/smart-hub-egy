@@ -218,7 +218,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
                 onClick={() => navigate("/pricing")}
                 className="w-9 h-9 flex items-center justify-center rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors"
               >
-                <CreditCard className="w-4 h-4" />
+                <span className="text-[11px] font-bold tabular-nums">{credits.toFixed(0)}</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="text-xs">
@@ -245,7 +245,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
                 onClick={() => navigate("/pricing")}
                 className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
               >
-                <Crown className="w-4 h-4" />
+                <Sparkles className="w-4 h-4" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="text-xs">
