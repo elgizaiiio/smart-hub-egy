@@ -56,7 +56,7 @@ const ServiceImagesPage = () => {
         ref={heroRef}
         className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black px-6 pt-20"
       >
-        {/* LEFT side floating images */}
+        {/* LEFT side floating images - each moves independently */}
         {leftImages.map((img, i) => (
           <motion.div
             key={`left-${i}`}
@@ -71,20 +71,20 @@ const ServiceImagesPage = () => {
             initial={{ opacity: 0, x: -50 }}
             animate={{ 
               opacity: 1, 
-              x: mousePosition.x * 30,
-              y: mousePosition.y * 20,
+              x: mousePosition.x * img.speedX,
+              y: mousePosition.y * img.speedY,
             }}
             transition={{ 
               opacity: { duration: 1, delay: i * 0.2 },
-              x: { duration: 0.3, ease: "easeOut" },
-              y: { duration: 0.3, ease: "easeOut" },
+              x: { duration: 0.2 + i * 0.1, ease: "easeOut" },
+              y: { duration: 0.2 + i * 0.1, ease: "easeOut" },
             }}
           >
             <img src={img.src} alt="" className="w-full h-full object-cover" />
           </motion.div>
         ))}
 
-        {/* RIGHT side floating images */}
+        {/* RIGHT side floating images - each moves independently */}
         {rightImages.map((img, i) => (
           <motion.div
             key={`right-${i}`}
@@ -99,13 +99,13 @@ const ServiceImagesPage = () => {
             initial={{ opacity: 0, x: 50 }}
             animate={{ 
               opacity: 1, 
-              x: mousePosition.x * -30,
-              y: mousePosition.y * 20,
+              x: mousePosition.x * -img.speedX,
+              y: mousePosition.y * img.speedY,
             }}
             transition={{ 
               opacity: { duration: 1, delay: i * 0.2 },
-              x: { duration: 0.3, ease: "easeOut" },
-              y: { duration: 0.3, ease: "easeOut" },
+              x: { duration: 0.25 + i * 0.08, ease: "easeOut" },
+              y: { duration: 0.25 + i * 0.08, ease: "easeOut" },
             }}
           >
             <img src={img.src} alt="" className="w-full h-full object-cover" />
