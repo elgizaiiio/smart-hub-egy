@@ -431,15 +431,13 @@ const ChatPage = () => {
                   </div>
 
                   {/* Connect your tools bar */}
-                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-secondary/40 border border-border/30">
+                  <button
+                    onClick={() => setConnectorsOpen(true)}
+                    className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-secondary/40 border border-border/30 hover:bg-secondary/60 transition-colors"
+                  >
                     <span className="text-xs text-muted-foreground">Connect your tools to Megsy</span>
-                    <button
-                      onClick={() => navigate("/settings/integrations")}
-                      className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
-                    >
-                      Browse →
-                    </button>
-                  </div>
+                    <span className="text-xs text-primary font-medium">Browse →</span>
+                  </button>
                 </div>
               </motion.div>
             </div>
