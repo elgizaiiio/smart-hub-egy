@@ -19,8 +19,14 @@ interface DesktopSidebarProps {
 
 const mainNav = [
   { path: "/chat", label: "Chat", icon: MessageSquare },
-  { path: "/images", label: "Images", icon: ImageIcon },
-  { path: "/videos", label: "Videos", icon: Video },
+  { path: "/images", label: "Images", icon: ImageIcon, subItems: [
+    { path: "/images/studio", label: "Studio", icon: Layers },
+    { path: "/images/agent", label: "Agent", icon: Bot },
+  ]},
+  { path: "/videos", label: "Videos", icon: Video, subItems: [
+    { path: "/videos/studio", label: "Studio", icon: Layers },
+    { path: "/videos/agent", label: "Agent", icon: Bot },
+  ]},
   { path: "/code", label: "Code", icon: Code2 },
   { path: "/files", label: "Files", icon: FolderOpen },
 ];
