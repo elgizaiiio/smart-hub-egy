@@ -13,19 +13,18 @@ const features = [
   { icon: Image, title: "Style Control", desc: "Choose from dozens of artistic styles or create your own unique visual identity." },
 ];
 
-// LEFT side images - moved down and away from edges
+// LEFT side images
 const leftImages = [
-  { src: "/showcase/model-1.jpg", top: "20%", left: "2%", width: 180, height: 150, speedX: 15, speedY: 10, zIndex: 1 },
-  { src: "/showcase/img-1.jpg", top: "35%", left: "5%", width: 280, height: 380, speedX: 25, speedY: 18, zIndex: 2 },
-  { src: "/showcase/img-2.jpg", top: "58%", left: "15%", width: 240, height: 320, speedX: 35, speedY: 22, zIndex: 3 },
+  { src: "/showcase/model-3.jpg", top: "20%", left: "3%", width: 200, height: 260, speedX: 15, speedY: 10, zIndex: 1 },
+  { src: "/showcase/img-3.jpg", top: "38%", left: "6%", width: 260, height: 340, speedX: 25, speedY: 18, zIndex: 2 },
+  { src: "/showcase/model-5.jpg", top: "60%", left: "12%", width: 220, height: 280, speedX: 35, speedY: 22, zIndex: 3 },
 ];
 
-// RIGHT side images - moved down and away from edges
+// RIGHT side images
 const rightImages = [
-  { src: "/showcase/img-4.jpg", top: "18%", right: "3%", width: 240, height: 320, speedX: 20, speedY: 12, zIndex: 1 },
-  { src: "/showcase/img-5.jpg", top: "42%", right: "8%", width: 300, height: 180, speedX: 30, speedY: 20, zIndex: 2 },
-  { src: "/showcase/model-2.jpg", top: "55%", right: "2%", width: 220, height: 300, speedX: 18, speedY: 25, zIndex: 3 },
-  { src: "/showcase/img-6.jpg", top: "70%", right: "18%", width: 180, height: 240, speedX: 40, speedY: 15, zIndex: 4 },
+  { src: "/showcase/img-6.jpg", top: "20%", right: "4%", width: 220, height: 290, speedX: 20, speedY: 12, zIndex: 1 },
+  { src: "/showcase/model-4.jpg", top: "42%", right: "8%", width: 280, height: 200, speedX: 30, speedY: 20, zIndex: 2 },
+  { src: "/showcase/model-6.jpg", top: "58%", right: "3%", width: 240, height: 320, speedX: 18, speedY: 25, zIndex: 3 },
 ];
 
 const ServiceImagesPage = () => {
