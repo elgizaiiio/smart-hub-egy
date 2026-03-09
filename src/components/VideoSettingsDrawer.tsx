@@ -97,12 +97,12 @@ const VideoSettingsDrawer = ({
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4">
               
-              <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
               
-                <X className="w-5 h-5" />
-              </button>
+
+
+
+
+            
             </div>
 
             {/* Sections */}
