@@ -100,7 +100,7 @@ const BottomInputBar = ({
   };
 
   const currentAspect = settings.dimensions.label;
-  const iconInfo = MODEL_ICONS[selectedModel.id] || { letter: "AI", gradient: "from-gray-400 to-gray-500" };
+  const emoji = PROVIDER_ICONS[selectedModel.id] || "🤖";
 
   const chipClass =
     "shrink-0 px-3 py-2 rounded-xl text-xs font-medium " +
