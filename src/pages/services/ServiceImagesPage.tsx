@@ -4,47 +4,94 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Sparkles, Zap, Wand2, Loader2, Send, User, Bot } from "lucide-react";
 
-// Scenarios for the demo - using unique images not on the page
+
+// Scenarios for the demo - many models and unique images
 const demoScenarios = [
   {
     userPrompt: "Create a majestic phoenix rising from flames with vibrant orange and gold colors",
-    aiResponse: "I'll create a stunning phoenix image with fiery colors and dynamic composition for you...",
+    aiResponse: "Creating a stunning phoenix image with fiery colors and dynamic composition",
     image: "/api-showcase/showcase-1.png",
     model: "Flux Pro",
     size: "1024 x 1024"
   },
   {
     userPrompt: "Generate a futuristic cyberpunk cityscape at night with neon lights",
-    aiResponse: "Creating a detailed cyberpunk city scene with atmospheric neon lighting...",
+    aiResponse: "Generating a detailed cyberpunk city scene with atmospheric neon lighting",
     image: "/api-showcase/showcase-2.jpg",
     model: "SDXL Ultra",
     size: "1920 x 1080"
   },
   {
     userPrompt: "Design an elegant portrait of a woman in golden hour lighting",
-    aiResponse: "Generating a beautiful portrait with warm, cinematic golden hour aesthetics...",
+    aiResponse: "Generating a beautiful portrait with warm cinematic golden hour aesthetics",
     image: "/api-showcase/showcase-3.jpg",
     model: "Midjourney v6",
     size: "1024 x 1536"
   },
   {
-    userPrompt: "Create an abstract art piece with flowing geometric shapes",
-    aiResponse: "I'm crafting an abstract composition with dynamic geometric elements...",
+    userPrompt: "Create an abstract art piece with flowing geometric shapes and gradients",
+    aiResponse: "Crafting an abstract composition with dynamic geometric elements",
     image: "/api-showcase/showcase-4.jpg",
     model: "DALL-E 3",
     size: "1024 x 1024"
   },
-];
-
-const generatedImages = [
-  { src: "/showcase/model-1.jpg", prompt: "Portrait of a fashion model in golden hour light", model: "Flux Pro", size: "1024 x 1024" },
-  { src: "/showcase/img-1.jpg", prompt: "Cyberpunk city street with neon reflections at night", model: "Nano Banana", size: "1344 x 768" },
-  { src: "/showcase/model-2.jpg", prompt: "Elegant woman in minimalist studio photography", model: "SDXL Ultra", size: "1024 x 1536" },
-  { src: "/showcase/img-4.jpg", prompt: "Surreal dreamscape with floating islands and waterfalls", model: "Flux Pro", size: "1920 x 1080" },
-  { src: "/showcase/model-3.jpg", prompt: "Dramatic portrait with cinematic color grading", model: "Midjourney v6", size: "1024 x 1024" },
-  { src: "/showcase/img-5.jpg", prompt: "Abstract geometric art with vibrant gradients", model: "DALL-E 3", size: "1024 x 1024" },
+  {
+    userPrompt: "A serene Japanese garden with cherry blossoms and a koi pond",
+    aiResponse: "Creating a tranquil Japanese garden scene with delicate cherry blossoms",
+    image: "/showcase/img-1.jpg",
+    model: "Stable Diffusion 3",
+    size: "1344 x 768"
+  },
+  {
+    userPrompt: "Photorealistic portrait of a fashion model in studio lighting",
+    aiResponse: "Generating a high-quality fashion portrait with professional studio lighting",
+    image: "/showcase/model-1.jpg",
+    model: "Leonardo AI",
+    size: "1024 x 1536"
+  },
+  {
+    userPrompt: "Futuristic space station orbiting a distant planet with nebula background",
+    aiResponse: "Creating a detailed sci-fi space station with cosmic nebula backdrop",
+    image: "/showcase/img-4.jpg",
+    model: "Flux Dev",
+    size: "1920 x 1080"
+  },
+  {
+    userPrompt: "Minimalist black and white architectural photography",
+    aiResponse: "Generating a clean minimalist architectural composition",
+    image: "/showcase/model-2.jpg",
+    model: "Ideogram 2.0",
+    size: "1024 x 1024"
+  },
+  {
+    userPrompt: "Fantasy dragon in a mystical forest with magical lighting",
+    aiResponse: "Creating a majestic dragon scene with enchanted forest atmosphere",
+    image: "/showcase/img-5.jpg",
+    model: "Playground v2.5",
+    size: "1024 x 1024"
+  },
+  {
+    userPrompt: "Vintage car on a coastal road during sunset",
+    aiResponse: "Generating a classic car scene with beautiful coastal sunset lighting",
+    image: "/showcase/img-6.jpg",
+    model: "Kandinsky 3",
+    size: "1920 x 1080"
+  },
+  {
+    userPrompt: "Portrait with dramatic rim lighting and dark background",
+    aiResponse: "Creating a dramatic portrait with cinematic rim lighting effects",
+    image: "/showcase/model-3.jpg",
+    model: "Flux Pro Ultra",
+    size: "1024 x 1536"
+  },
+  {
+    userPrompt: "Underwater scene with colorful coral reef and tropical fish",
+    aiResponse: "Generating a vibrant underwater coral reef ecosystem",
+    image: "/showcase/img-3.jpg",
+    model: "SDXL Turbo",
+    size: "1344 x 768"
+  },
 ];
 
 const howItWorksSteps = [
@@ -337,8 +384,8 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.1 }}
             className="relative rounded-2xl bg-primary p-6 flex flex-col justify-between lg:row-span-2"
           >
-            <div className="w-16 h-16 flex items-center justify-center">
-              <Zap className="w-12 h-12 text-black" />
+            <div className="w-16 h-16 flex items-center justify-center text-4xl font-black text-black">
+              01
             </div>
             <div>
               <h3 className="text-2xl font-bold text-black">From idea to execution, effortlessly.</h3>
@@ -374,8 +421,8 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.3 }}
             className="relative rounded-2xl bg-yellow-400 p-6 flex flex-col justify-between lg:row-span-2"
           >
-            <div className="w-16 h-16 flex items-center justify-center">
-              <Sparkles className="w-12 h-12 text-black" />
+            <div className="w-16 h-16 flex items-center justify-center text-4xl font-black text-black">
+              AI
             </div>
             <div>
               <h3 className="text-2xl font-bold text-black">Brand-ready outputs.</h3>
@@ -459,8 +506,9 @@ const ServiceImagesPage = () => {
                   <motion.div 
                     animate={phase === 'generating' ? { rotate: 360 } : { rotate: 0 }}
                     transition={{ duration: 1, repeat: phase === 'generating' ? Infinity : 0, ease: "linear" }}
+                    className="w-4 h-4 text-primary text-xs font-bold"
                   >
-                    <Sparkles className="w-4 h-4 text-primary" />
+                    M
                   </motion.div>
                   <span className="text-sm font-medium">Megsy Image AI</span>
                 </div>
@@ -486,8 +534,8 @@ const ServiceImagesPage = () => {
                           <div className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5">
                             <p className="text-sm text-primary-foreground">{currentScenario.userPrompt}</p>
                           </div>
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                            <User className="w-4 h-4 text-muted-foreground" />
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-xs font-bold text-muted-foreground">
+                            U
                           </div>
                         </div>
                       </motion.div>
@@ -504,8 +552,8 @@ const ServiceImagesPage = () => {
                         className="flex justify-start"
                       >
                         <div className="flex items-start gap-2 max-w-[85%]">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                            <Bot className="w-4 h-4 text-primary" />
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
+                            M
                           </div>
                           <div className="text-sm text-foreground/90">
                             {typedAiText}
@@ -532,17 +580,16 @@ const ServiceImagesPage = () => {
                         className="flex justify-start"
                       >
                         <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                            <Bot className="w-4 h-4 text-primary" />
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
+                            M
                           </div>
                           <div className="rounded-2xl border border-border/30 bg-muted/30 p-4">
                             <div className="flex items-center gap-3">
                               <motion.div
+                                className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent"
                                 animate={{ rotate: 360 }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                              >
-                                <Loader2 className="w-6 h-6 text-primary" />
-                              </motion.div>
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              />
                               <div>
                                 <p className="text-sm font-medium">Creating your image...</p>
                                 <p className="text-xs text-muted-foreground">Using {currentScenario.model}</p>
@@ -574,8 +621,8 @@ const ServiceImagesPage = () => {
                         className="flex justify-start"
                       >
                         <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                            <Bot className="w-4 h-4 text-primary" />
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
+                            M
                           </div>
                           <div className="space-y-2">
                             <div className="relative rounded-xl overflow-hidden border border-border/30 max-w-[280px]">
@@ -590,12 +637,11 @@ const ServiceImagesPage = () => {
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.3 }}
                               >
-                                <Sparkles className="w-3 h-3 text-primary" />
                                 <span className="text-white/90">{currentScenario.model}</span>
                               </motion.div>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              ✨ Generated • {currentScenario.size}
+                              Generated | {currentScenario.size}
                             </p>
                           </div>
                         </div>
@@ -613,8 +659,9 @@ const ServiceImagesPage = () => {
                         rotate: [0, 15, -15, 0]
                       } : {}}
                       transition={{ duration: 0.6, repeat: phase === 'typing-user' ? Infinity : 0 }}
+                      className="text-primary text-sm"
                     >
-                      <Sparkles className="w-4 h-4 text-primary" />
+                      ★
                     </motion.div>
                     <div className="flex-1 text-sm text-foreground min-h-[24px]">
                       {phase === 'typing-user' ? (
@@ -630,8 +677,8 @@ const ServiceImagesPage = () => {
                         <span className="text-muted-foreground/50">Describe your image...</span>
                       )}
                     </div>
-                    <button className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                      <Send className="w-4 h-4 text-primary" />
+                    <button className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm">
+                      ↑
                     </button>
                   </div>
                 </div>
