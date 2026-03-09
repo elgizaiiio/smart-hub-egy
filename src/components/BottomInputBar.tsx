@@ -314,7 +314,7 @@ const BottomInputBar = ({
               {isGenerating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <span>Generate</span>
+                <span>Generate · {creditCost} MC</span>
               )}
             </button>
           </div>
