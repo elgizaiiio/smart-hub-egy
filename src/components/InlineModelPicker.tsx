@@ -84,7 +84,7 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
           className="absolute bottom-full left-0 right-0 mb-2 z-40"
         >
           <div className="max-w-4xl mx-auto">
-            <div className="bg-[#1a1a1a]/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[70vh] flex flex-col">
+            <div className="bg-[#0d0d0d]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[70vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
                 <h2 className="text-base font-semibold text-white">Models</h2>
