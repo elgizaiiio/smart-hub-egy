@@ -249,10 +249,9 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           {/* Credits */}
           <button
             onClick={() => navigate("/pricing")}
-            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors tabular-nums"
           >
-            <Coins className="w-3.5 h-3.5" />
-            <span className="tabular-nums">{credits.toFixed(0)} MC</span>
+            {credits.toFixed(0)} MC
           </button>
 
           {/* Subscribe */}
