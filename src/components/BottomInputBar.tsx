@@ -22,7 +22,7 @@ const ASPECT_RATIOS: ImageDimensions[] = [
   { width: 1080, height: 1920, label: "9:16" },
 ];
 
-const QUALITIES = ["1K", "2K", "4K"];
+const QUALITIES = ["512px", "1K", "2K", "4K"];
 
 // Model icon info
 const MODEL_ICONS: Record<string, { letter: string; gradient: string }> = {
