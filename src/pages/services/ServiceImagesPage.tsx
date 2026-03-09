@@ -195,7 +195,7 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.2 }}
             className="relative rounded-2xl overflow-hidden lg:col-span-2 lg:row-span-1"
           >
-            <img src="/showcase/img-3.jpg" alt="" className="w-full h-full object-cover" />
+            <img src="/showcase/img-1.jpg" alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-0 left-0 p-6">
               <h3 className="text-xl font-bold text-white">Diverse styles, professional polish.</h3>
