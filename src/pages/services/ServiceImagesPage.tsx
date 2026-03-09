@@ -4,7 +4,39 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Sparkles, Zap, Wand2, Loader2 } from "lucide-react";
+import { Sparkles, Zap, Wand2, Loader2, Send, User, Bot } from "lucide-react";
+
+// Scenarios for the demo - using unique images not on the page
+const demoScenarios = [
+  {
+    userPrompt: "Create a majestic phoenix rising from flames with vibrant orange and gold colors",
+    aiResponse: "I'll create a stunning phoenix image with fiery colors and dynamic composition for you...",
+    image: "/api-showcase/showcase-1.png",
+    model: "Flux Pro",
+    size: "1024 x 1024"
+  },
+  {
+    userPrompt: "Generate a futuristic cyberpunk cityscape at night with neon lights",
+    aiResponse: "Creating a detailed cyberpunk city scene with atmospheric neon lighting...",
+    image: "/api-showcase/showcase-2.jpg",
+    model: "SDXL Ultra",
+    size: "1920 x 1080"
+  },
+  {
+    userPrompt: "Design an elegant portrait of a woman in golden hour lighting",
+    aiResponse: "Generating a beautiful portrait with warm, cinematic golden hour aesthetics...",
+    image: "/api-showcase/showcase-3.jpg",
+    model: "Midjourney v6",
+    size: "1024 x 1536"
+  },
+  {
+    userPrompt: "Create an abstract art piece with flowing geometric shapes",
+    aiResponse: "I'm crafting an abstract composition with dynamic geometric elements...",
+    image: "/api-showcase/showcase-4.jpg",
+    model: "DALL-E 3",
+    size: "1024 x 1024"
+  },
+];
 
 const generatedImages = [
   { src: "/showcase/model-1.jpg", prompt: "Portrait of a fashion model in golden hour light", model: "Flux Pro", size: "1024 x 1024" },
@@ -60,61 +92,108 @@ const rightImages = [
   { src: "/showcase/model-6.jpg", top: "58%", right: "3%", width: 240, height: 320, speedX: 18, speedY: 25, zIndex: 3 },
 ];
 
+type DemoPhase = 'idle' | 'typing-user' | 'typing-ai' | 'generating' | 'complete';
+
 const ServiceImagesPage = () => {
   const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
   
-  // Interactive mockup state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [typedPrompt, setTypedPrompt] = useState("");
-  const [showImage, setShowImage] = useState(true);
-  const [history, setHistory] = useState<number[]>([0]);
-  const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Demo chat state
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [phase, setPhase] = useState<DemoPhase>('idle');
+  const [typedUserText, setTypedUserText] = useState("");
+  const [typedAiText, setTypedAiText] = useState("");
+  const [showUserMessage, setShowUserMessage] = useState(false);
+  const [showAiMessage, setShowAiMessage] = useState(false);
+  const [showImage, setShowImage] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const currentGen = generatedImages[currentImageIndex];
+  const currentScenario = demoScenarios[scenarioIndex];
 
-  const startGeneration = useCallback((nextIndex: number) => {
-    setShowImage(false);
-    setIsGenerating(true);
-    setTypedPrompt("");
-    
-    const prompt = generatedImages[nextIndex].prompt;
-    let charIndex = 0;
-    
-    const typeChar = () => {
-      if (charIndex <= prompt.length) {
-        setTypedPrompt(prompt.slice(0, charIndex));
-        charIndex++;
-        typingRef.current = setTimeout(typeChar, 30 + Math.random() * 40);
+  // Type text character by character
+  const typeText = useCallback((
+    text: string, 
+    setter: (val: string) => void, 
+    onComplete: () => void,
+    speed = 35
+  ) => {
+    let index = 0;
+    const type = () => {
+      if (index <= text.length) {
+        setter(text.slice(0, index));
+        index++;
+        timeoutRef.current = setTimeout(type, speed + Math.random() * 25);
       } else {
-        // Typing done, simulate generation delay
-        setTimeout(() => {
-          setCurrentImageIndex(nextIndex);
-          setShowImage(true);
-          setIsGenerating(false);
-          setHistory(prev => [nextIndex, ...prev].slice(0, 6));
-        }, 1200);
+        onComplete();
       }
     };
-    
-    typingRef.current = setTimeout(typeChar, 300);
+    type();
   }, []);
 
-  // Auto-cycle every 6 seconds
+  // Start demo cycle
+  const startDemo = useCallback(() => {
+    // Reset state
+    setTypedUserText("");
+    setTypedAiText("");
+    setShowUserMessage(false);
+    setShowAiMessage(false);
+    setShowImage(false);
+    setPhase('typing-user');
+
+    // Phase 1: Type user message in input
+    typeText(currentScenario.userPrompt, setTypedUserText, () => {
+      // Show user message bubble
+      setShowUserMessage(true);
+      
+      timeoutRef.current = setTimeout(() => {
+        // Phase 2: Type AI response
+        setPhase('typing-ai');
+        typeText(currentScenario.aiResponse, setTypedAiText, () => {
+          setShowAiMessage(true);
+          
+          timeoutRef.current = setTimeout(() => {
+            // Phase 3: Show loading
+            setPhase('generating');
+            
+            timeoutRef.current = setTimeout(() => {
+              // Phase 4: Show image
+              setPhase('complete');
+              setShowImage(true);
+              
+              // Wait and start next cycle
+              timeoutRef.current = setTimeout(() => {
+                setScenarioIndex(prev => (prev + 1) % demoScenarios.length);
+              }, 4000);
+            }, 2500);
+          }, 800);
+        }, 25);
+      }, 600);
+    }, 40);
+  }, [currentScenario, typeText]);
+
+  // Auto-start demo
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isGenerating) {
-        const next = (currentImageIndex + 1) % generatedImages.length;
-        startGeneration(next);
-      }
-    }, 6000);
+    const timer = setTimeout(startDemo, 1000);
     return () => {
-      clearInterval(interval);
-      if (typingRef.current) clearTimeout(typingRef.current);
+      clearTimeout(timer);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [currentImageIndex, isGenerating, startGeneration]);
+  }, [scenarioIndex]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left - rect.width / 2) / rect.width;
+        const y = (e.clientY - rect.top - rect.height / 2) / rect.height;
+        setMousePosition({ x, y });
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
