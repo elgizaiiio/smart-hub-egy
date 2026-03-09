@@ -157,6 +157,14 @@ const ServiceImagesPage = () => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentScenario = demoScenarios[scenarioIndex];
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [typedUserText, typedAiText, phase, showImage, showUserMessage, showAiMessage]);
 
   // Type text character by character
   const typeText = useCallback((
@@ -500,27 +508,9 @@ const ServiceImagesPage = () => {
             className="relative"
           >
             <div className="rounded-2xl border border-border/30 bg-card/50 overflow-hidden backdrop-blur-sm">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-                <div className="flex items-center gap-2">
-                  <motion.div 
-                    animate={phase === 'generating' ? { rotate: 360 } : { rotate: 0 }}
-                    transition={{ duration: 1, repeat: phase === 'generating' ? Infinity : 0, ease: "linear" }}
-                    className="w-4 h-4 text-primary text-xs font-bold"
-                  >
-                    M
-                  </motion.div>
-                  <span className="text-sm font-medium">Megsy Image AI</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className={phase === 'generating' ? "text-amber-400" : "text-primary"}>●</span>
-                  {phase === 'generating' ? "Creating..." : phase === 'complete' ? "Done" : "Active"}
-                </div>
-              </div>
-
               {/* Chat Messages Area */}
               <div className="h-[400px] flex flex-col">
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
                   {/* User Message */}
                   <AnimatePresence>
                     {showUserMessage && (
@@ -573,11 +563,7 @@ const ServiceImagesPage = () => {
                         exit={{ opacity: 0 }}
                         className="flex justify-start"
                       >
-                        <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
-                            M
-                          </div>
-                          <div className="rounded-2xl border border-border/30 bg-muted/30 p-4">
+                        <div className="rounded-2xl border border-border/30 bg-muted/30 p-4">
                             <div className="flex items-center gap-3">
                               <motion.div
                                 className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent"
@@ -598,7 +584,6 @@ const ServiceImagesPage = () => {
                                 transition={{ duration: 2.3, ease: "easeInOut" }}
                               />
                             </motion.div>
-                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -614,11 +599,7 @@ const ServiceImagesPage = () => {
                         transition={{ duration: 0.5 }}
                         className="flex justify-start"
                       >
-                        <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
-                            M
-                          </div>
-                          <div className="space-y-2">
+                        <div className="space-y-2">
                             <div className="relative rounded-xl overflow-hidden border border-border/30 max-w-[280px]">
                               <img 
                                 src={currentScenario.image} 
@@ -637,7 +618,6 @@ const ServiceImagesPage = () => {
                             <p className="text-xs text-muted-foreground">
                               Generated | {currentScenario.size}
                             </p>
-                          </div>
                         </div>
                       </motion.div>
                     )}
