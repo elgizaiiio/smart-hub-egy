@@ -116,7 +116,19 @@ const ServiceImagesPage = () => {
     };
   }, [currentImageIndex, isGenerating, startGeneration]);
 
-  return (
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left - rect.width / 2) / rect.width;
+        const y = (e.clientY - rect.top - rect.height / 2) / rect.height;
+        setMousePosition({ x, y });
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
     <div data-theme="dark" className="min-h-screen bg-background text-foreground">
       <LandingNavbar />
 
