@@ -160,11 +160,11 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId, mode = "i
               {/* Model Grid */}
               <div className="flex-1 overflow-y-auto p-3">
                 <div className="grid grid-cols-2 gap-2">
-                  {imageModels.map((model) => {
+                  {models.map((model) => {
                     const isSelected = selectedModelId === model.id;
                     const isNew = NEW_MODELS.includes(model.id);
                     const isFree = model.credits === 0;
-                    const badges = MODEL_BADGES[model.id] || [];
+                    const badges = mode === "videos" ? (VIDEO_BADGES[model.id] || []) : (MODEL_BADGES[model.id] || []);
                     const logo = MODEL_LOGOS[model.id];
 
                     return (
