@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Copy, ThumbsUp, MessageSquare, RotateCcw, Check, ExternalLink, Share2 } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, MessageSquare, RotateCcw, Check, ExternalLink, Share2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import ThinkingLoader from "./ThinkingLoader";
 
