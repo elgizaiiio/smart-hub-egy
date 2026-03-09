@@ -484,9 +484,14 @@ const ImagesPage = () => {
           selectedModelId={selectedModel.id}
         />
 
-        <MobileSettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)}>
-          {settingsPanelContent}
-        </MobileSettingsDrawer>
+        <ImageSettingsDrawer
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          settings={settings}
+          onSettingsChange={setSettings}
+          selectedModel={selectedModel}
+          onOpenModelPicker={() => { setSettingsOpen(false); setModelPickerOpen(true); }}
+        />
 
         {/* Showcase / content area */}
         <div className="flex-1 overflow-y-auto pb-48">
