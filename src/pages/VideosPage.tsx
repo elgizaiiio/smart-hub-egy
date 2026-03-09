@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Paperclip, Download, Loader2, Settings2, Video, Image as ImageIcon, X, Trash2, Coins, Sparkles } from "lucide-react";
+import { Menu, Download, Loader2, Settings2, Video, Image as ImageIcon, X, Trash2, ArrowUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ import ThinkingLoader from "@/components/ThinkingLoader";
 import ShowcaseGrid from "@/components/ShowcaseGrid";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
 import VideoBottomInputBar, { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "@/components/VideoBottomInputBar";
+import VideoSettingsDrawer from "@/components/VideoSettingsDrawer";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 import { getVideoModelCapability } from "@/lib/videoModelCapabilities";
 
