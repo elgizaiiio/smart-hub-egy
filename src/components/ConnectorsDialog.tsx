@@ -141,15 +141,6 @@ const ConnectorsDialog = ({ open, onOpenChange, onNavigateIntegrations }: Connec
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-secondary/30 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/50"
               />
             </div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-border bg-secondary/30 text-sm text-foreground outline-none"
-            >
-              {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
             <button
               onClick={() => { onOpenChange(false); onNavigateIntegrations(); }}
               className="px-3 py-2 rounded-lg border border-border bg-secondary/30 text-sm text-foreground hover:bg-accent transition-colors whitespace-nowrap"
