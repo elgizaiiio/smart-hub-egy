@@ -662,11 +662,26 @@ serve(async (req) => {
 
       // تعيين قيمة
       if (d.startsWith("sv_")) {
-        const parts = d.replace("sv_", "").split("_");
-        const field = parts[0];
-        const value = parts.slice(1).join("_");
+        const raw = d.replace("sv_", "");
         const session = await loadSession(sb, chatId);
         if (!session?.adminModelId) return new Response("OK");
+
+        // Handle compound field names like fal_id, openrouter_id
+        const knownFields = FIELDS.map(f => f.key);
+        let field = "";
+        let value = "";
+        for (const f of knownFields) {
+          if (raw.startsWith(f + "_")) {
+            field = f;
+            value = raw.slice(f.length + 1);
+            break;
+          }
+        }
+        if (!field) {
+          const parts = raw.split("_");
+          field = parts[0];
+          value = parts.slice(1).join("_");
+        }
 
         if (value === "custom") {
           await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
