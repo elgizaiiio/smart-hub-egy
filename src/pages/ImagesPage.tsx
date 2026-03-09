@@ -442,10 +442,30 @@ const ImagesPage = () => {
     );
   }
 
-  // ── Mobile Layout (unchanged) ──
+  // ── Mobile Layout (Artlist-style matching Videos) ──
+
+  const MODEL_LOGOS: Record<string, string> = {
+    "megsy-v1-img": "/model-logos/megsy.png",
+    "gpt-image": "/model-logos/openai.svg",
+    "gpt-image-1": "/model-logos/openai.svg",
+    "nano-banana-2": "/model-logos/google.ico",
+    "nano-banana-pro": "/model-logos/google.ico",
+    "flux-kontext": "/model-logos/bfl.png",
+    "flux-2-pro": "/model-logos/bfl.png",
+    "ideogram-3": "/model-logos/ideogram.png",
+    "seedream-4": "/model-logos/bytedance.ico",
+    "seedream-5-lite": "/model-logos/bytedance.ico",
+    "recraft-v4": "/model-logos/recraft.png",
+    "grok-imagine": "/model-logos/xai.ico",
+    "lucid-origin": "/model-logos/fal.ico",
+    "lucid-realism": "/model-logos/fal.ico",
+  };
+
+  const currentLogo = MODEL_LOGOS[selectedModel.id];
+
   return (
     <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
-      <div className="h-full flex bg-background">
+      <div className="h-full flex flex-col bg-background relative">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -467,154 +487,158 @@ const ImagesPage = () => {
           {settingsPanelContent}
         </MobileSettingsDrawer>
 
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Top Bar */}
-          <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border">
-            <button onClick={() => setSidebarOpen(true)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+        {/* Showcase / content area */}
+        <div className="flex-1 overflow-y-auto pb-48">
+          {/* Top bar */}
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-xl">
+            <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground">
               <Menu className="w-5 h-5" />
             </button>
-
-            {capability.acceptsImages && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
-            )}
-
-            <div className="flex-1 relative">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleGenerate();
-                  }
-                }}
-                placeholder="Describe the image..."
-                rows={1}
-                className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/40 py-2 max-h-20"
-                style={{ minHeight: "36px" }}
-              />
-            </div>
-
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              <Settings2 className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={handleGenerate}
-              disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
-              className="shrink-0 h-10 px-5 flex items-center gap-2.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-30 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
-            >
-              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              <div className="flex items-center gap-1 pl-2 border-l border-primary-foreground/20">
-                <Coins className="w-3.5 h-3.5" />
-                <span className="text-xs">{creditCost}</span>
-              </div>
-            </button>
           </div>
 
-          {/* Tabs */}
-          <div className="shrink-0 flex items-center gap-1 px-4 py-2 border-b border-border">
-            <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-              <ImageIcon className="w-3.5 h-3.5" />
-              Image
-            </button>
-            <button
-              onClick={() => navigate("/videos")}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-            >
-              <Video className="w-3.5 h-3.5" />
-              Video
-            </button>
-          </div>
-
-          {/* Attached images */}
-          {attachedImages.length > 0 && (
-            <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border overflow-x-auto">
-              {attachedImages.map((img) => (
-                <div key={img.id} className="relative shrink-0">
-                  <img src={img.dataUrl} alt={img.name} className="w-12 h-12 rounded-xl object-cover border border-border" />
-                  <button
-                    onClick={() => setAttachedImages((prev) => prev.filter((i) => i.id !== img.id))}
-                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center"
-                  >
-                    ×
-                  </button>
+          {/* Generated images */}
+          {generatedImages.length > 0 && (
+            <div className="px-2 py-2">
+              {isGenerating && (
+                <div className="mb-4 flex justify-center">
+                  <ThinkingLoader />
                 </div>
-              ))}
+              )}
+              <div className="columns-2 gap-2">
+                {generatedImages.map((img) => (
+                  <motion.div
+                    key={img.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="break-inside-avoid mb-2 group relative rounded-2xl overflow-hidden"
+                  >
+                    <img
+                      src={img.url}
+                      alt={img.prompt}
+                      className="w-full rounded-2xl object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end p-2">
+                      <div className="flex gap-1.5">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white">{img.model}</span>
+                      </div>
+                      <button
+                        onClick={() => handleDownload(img.url, img.prompt)}
+                        className="ml-auto w-6 h-6 flex items-center justify-center rounded-md bg-white/20 text-white"
+                      >
+                        <Download className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            {isGenerating && generatedImages.length === 0 && (
-              <div className="flex items-center justify-center py-20">
-                <ThinkingLoader />
-              </div>
-            )}
+          {/* Showcase grid when no images */}
+          {generatedImages.length === 0 && !isGenerating && (
+            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
+          )}
 
-            {!isGenerating && generatedImages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center px-4">
+          {isGenerating && generatedImages.length === 0 && (
+            <div className="flex items-center justify-center py-20">
+              <ThinkingLoader />
+            </div>
+          )}
+        </div>
+
+        {/* ── Bottom Artlist-style input bar ── */}
+        <div className="absolute bottom-0 left-0 right-0 z-30" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+          <div className="mx-3">
+            {/* Attached images */}
+            <AnimatePresence>
+              {attachedImages.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="w-24 h-24 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-5"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center gap-2 px-3 pb-2"
                 >
-                  <ImageIcon className="w-12 h-12 text-primary/30" />
-                </motion.div>
-                <h2 className="font-display text-xl font-bold text-foreground mb-2">AI Creation</h2>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  Describe what you want to see and let AI bring your vision to life
-                </p>
-              </div>
-            )}
-
-            {generatedImages.length > 0 && (
-              <div className="max-w-5xl mx-auto px-4 py-4">
-                {isGenerating && (
-                  <div className="mb-6">
-                    <ThinkingLoader />
-                  </div>
-                )}
-                <div className="columns-2 gap-3">
-                  {generatedImages.map((img) => (
-                    <motion.div
-                      key={img.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="break-inside-avoid mb-3 group relative rounded-2xl overflow-hidden"
-                    >
-                      <img
-                        src={img.url}
-                        alt={img.prompt}
-                        className="w-full rounded-2xl object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end p-2">
-                        <div className="flex gap-1.5">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white">{img.model}</span>
-                        </div>
-                        <button
-                          onClick={() => handleDownload(img.url, img.prompt)}
-                          className="ml-auto w-6 h-6 flex items-center justify-center rounded-md bg-white/20 text-white"
-                        >
-                          <Download className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </motion.div>
+                  {attachedImages.map((img) => (
+                    <div key={img.id} className="relative shrink-0">
+                      <img src={img.dataUrl} alt={img.name} className="w-12 h-12 rounded-xl object-cover border border-border" />
+                      <button
+                        onClick={() => setAttachedImages((prev) => prev.filter((i) => i.id !== img.id))}
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
-                </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="bg-muted/80 backdrop-blur-3xl border border-border rounded-2xl shadow-lg">
+              {/* Top chips row */}
+              <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+                {/* Settings chip */}
+                <button
+                  onClick={() => setSettingsOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  {currentLogo ? (
+                    <img src={currentLogo} alt={selectedModel.name} className="w-4 h-4 rounded-full object-cover" />
+                  ) : (
+                    <Settings2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>{selectedModel.name}</span>
+                </button>
               </div>
-            )}
+
+              {/* Text input */}
+              <div className="px-4 py-2">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Describe the image you want to create"
+                  rows={1}
+                  className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-foreground/30 max-h-20"
+                  style={{ minHeight: "32px" }}
+                />
+              </div>
+
+              {/* Bottom icons row */}
+              <div className="flex items-center justify-between px-4 pb-3">
+                <div className="flex items-center gap-2">
+                  {/* Attach image */}
+                  {capability.acceptsImages && (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-muted/60 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Send button */}
+                <button
+                  onClick={handleGenerate}
+                  disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
+                  className="w-11 h-11 flex items-center justify-center rounded-full bg-muted border border-border text-foreground disabled:opacity-30 hover:bg-accent transition-colors"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <ArrowUp className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
+
+        <ShowcaseDetailModal
+          item={selectedShowcaseItem}
+          onClose={() => setSelectedShowcaseItem(null)}
+          onRecreate={handleRecreate}
+        />
 
         <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} multiple />
       </div>
