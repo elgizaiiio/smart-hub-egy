@@ -114,6 +114,9 @@ interface BotSession {
   showcaseDuration?: string;
   showcaseStyle?: string;
   showcaseItemId?: string;
+  // Add model flow
+  addModelStep?: string;
+  addModelData?: Record<string, string>;
 }
 
 // ---- Helpers ----
