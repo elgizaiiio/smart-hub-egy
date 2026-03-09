@@ -334,15 +334,6 @@ const ChatPage = () => {
             )}
           </div>
 
-          {/* Center: plan badge (empty state only) */}
-          {!hasConversation && (
-            <button
-              onClick={() => navigate("/pricing")}
-              className="absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs text-muted-foreground hover:text-foreground bg-secondary/60 border border-border/50 transition-colors"
-            >
-              Free plan · <span className="text-foreground font-medium">Upgrade</span>
-            </button>
-          )}
 
           {/* Right: Share button */}
           <div className="flex items-center gap-2">
@@ -563,6 +554,16 @@ const ChatPage = () => {
                   )}
                 </AnimatePresence>
 
+                {!hasConversation && (
+                  <div className="hidden md:flex justify-center mb-2">
+                    <button
+                      onClick={() => navigate("/pricing")}
+                      className="px-3 py-1 rounded-full text-xs text-muted-foreground hover:text-foreground bg-secondary/60 border border-border/50 transition-colors"
+                    >
+                      Free plan · <span className="text-foreground font-medium">Upgrade</span>
+                    </button>
+                  </div>
+                )}
                 <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
               </div>
               <p className="text-[10px] text-center text-muted-foreground/50 mt-1">Megsy is AI and can make mistakes. Please double-check responses.</p>
