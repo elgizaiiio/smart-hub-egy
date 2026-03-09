@@ -1,4 +1,3 @@
-import { useState, useCallback } from "react";
 import DesktopSidebar from "@/components/DesktopSidebar";
 
 interface AppLayoutProps {
@@ -10,13 +9,13 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children, onSelectConversation, onNewChat, activeConversationId }: AppLayoutProps) => {
   return (
-    <div className="flex h-[100dvh] w-full bg-background">
+    <div className="flex flex-col h-[100dvh] w-full bg-background">
       <DesktopSidebar
         onSelectConversation={onSelectConversation}
         onNewChat={onNewChat}
         activeConversationId={activeConversationId}
       />
-      <main className="flex-1 min-w-0 h-[100dvh] overflow-hidden">
+      <main className="flex-1 min-w-0 overflow-hidden">
         {children}
       </main>
     </div>
