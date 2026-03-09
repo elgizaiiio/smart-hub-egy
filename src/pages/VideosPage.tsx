@@ -12,7 +12,7 @@ import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import ThinkingLoader from "@/components/ThinkingLoader";
-import ShowcaseGrid from "@/components/ShowcaseGrid";
+import AppShowcaseGallery from "@/components/AppShowcaseGallery";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
 import VideoBottomInputBar, { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "@/components/VideoBottomInputBar";
 import VideoSettingsDrawer from "@/components/VideoSettingsDrawer";

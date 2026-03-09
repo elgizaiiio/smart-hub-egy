@@ -14,7 +14,7 @@ import ModelPickerSheet from "@/components/ModelPickerSheet";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import ImageSettingsPanel, { DEFAULT_SETTINGS, type ImageSettings, type ImageStyle } from "@/components/ImageSettingsPanel";
 import ImageSettingsDrawer from "@/components/ImageSettingsDrawer";
-import ShowcaseGrid from "@/components/ShowcaseGrid";
+import AppShowcaseGallery from "@/components/AppShowcaseGallery";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
 import BottomInputBar from "@/components/BottomInputBar";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
