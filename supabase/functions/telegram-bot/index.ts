@@ -1890,6 +1890,46 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // إدخال fal suffix بعد اختيار البادئة
+      if (session?.adminAction === "awaiting_fal_suffix" && text && session.adminModelId) {
+        const prefix = session.addModelData?._falPrefix || "fal-ai/";
+        const fullId = prefix + text.trim();
+        const config = await getModelConfig(sb, session.adminModelId);
+        config.fal_id = fullId;
+        await setModelConfig(sb, session.adminModelId, config);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم تحديث *fal_id* → \`${fullId}\``,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+            [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+          ]}),
+        });
+        await saveSession(sb, chatId, { adminAction: "idle" });
+        return new Response("OK");
+      }
+
+      // إدخال OpenRouter suffix بعد اختيار البادئة
+      if (session?.adminAction === "awaiting_or_suffix" && text && session.adminModelId) {
+        const prefix = session.addModelData?._orPrefix || "";
+        const fullId = prefix + text.trim();
+        const config = await getModelConfig(sb, session.adminModelId);
+        config.openrouter_id = fullId;
+        await setModelConfig(sb, session.adminModelId, config);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم تحديث *openrouter_id* → \`${fullId}\``,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+            [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+          ]}),
+        });
+        await saveSession(sb, chatId, { adminAction: "idle" });
+        return new Response("OK");
+      }
+
       // إدخال قيمة حقل
       if (session?.adminAction === "awaiting_value" && text && session.adminModelId && session.adminField) {
         const config = await getModelConfig(sb, session.adminModelId);
