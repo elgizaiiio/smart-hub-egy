@@ -112,7 +112,7 @@ const BottomInputBar = ({
     "w-40 p-1.5 rounded-xl border border-border " +
     "bg-popover backdrop-blur-3xl shadow-lg";
 
-  const itemBase = "w-full text-left text-xs px-3 py-2 rounded-lg transition-colors";
+  const itemBase = "w-full text-left text-xs px-3 py-2 rounded-lg transition-colors text-popover-foreground";
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
