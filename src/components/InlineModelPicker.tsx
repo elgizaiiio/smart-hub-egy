@@ -26,6 +26,7 @@ const MODEL_BADGES: Record<string, string[]> = {
 
 // Real provider logos (from public/model-logos/)
 const MODEL_LOGOS: Record<string, string> = {
+  // Image models
   "megsy-v1-img": "/model-logos/megsy.png",
   "gpt-image": "/model-logos/openai.svg",
   "gpt-image-1": "/model-logos/openai.svg",
@@ -42,15 +43,54 @@ const MODEL_LOGOS: Record<string, string> = {
   "imagineart-1.5": "/model-logos/fal.ico",
   "fal-hidream-i1": "/model-logos/fal.ico",
   "fal-aura-v2": "/model-logos/fal.ico",
+  // Video models
+  "megsy-video": "/model-logos/megsy.png",
+  "megsy-video-i2v": "/model-logos/megsy.png",
+  "veo-3.1": "/model-logos/google.ico",
+  "veo-3.1-fast": "/model-logos/google.ico",
+  "veo-3.1-fast-i2v": "/model-logos/google.ico",
+  "kling-3-pro": "/model-logos/kling.png",
+  "kling-3-pro-i2v": "/model-logos/kling.png",
+  "kling-o1": "/model-logos/kling.png",
+  "kling-o1-i2v": "/model-logos/kling.png",
+  "kling-avatar-pro": "/model-logos/kling.png",
+  "kling-avatar-std": "/model-logos/kling.png",
+  "openai-sora": "/model-logos/openai.svg",
+  "openai-sora-i2v": "/model-logos/openai.svg",
+  "pika-2.2": "/model-logos/pika.png",
+  "luma-dream": "/model-logos/luma.png",
+  "seedance-pro": "/model-logos/bytedance.ico",
+  "wan-2.6": "/model-logos/fal.ico",
+  "wan-2.6-i2v": "/model-logos/fal.ico",
+  "wan-flf": "/model-logos/fal.ico",
+  "pixverse-5.5": "/model-logos/fal.ico",
+  "pixverse-5.5-i2v": "/model-logos/fal.ico",
+  "sadtalker": "/model-logos/fal.ico",
+  "sync-lipsync": "/model-logos/fal.ico",
 };
 
-const NEW_MODELS = ["nano-banana-2", "seedream-5-lite", "ideogram-3"];
+const NEW_MODELS = ["nano-banana-2", "seedream-5-lite", "ideogram-3", "veo-3.1", "kling-3-pro"];
+
+const VIDEO_BADGES: Record<string, string[]> = {
+  "veo-3.1": ["Audio", "8s"],
+  "veo-3.1-fast": ["Fast", "5s"],
+  "kling-3-pro": ["Cinematic", "10s"],
+  "kling-o1": ["Balanced", "5s"],
+  "openai-sora": ["Realistic", "5s"],
+  "pika-2.2": ["Creative", "4s"],
+  "luma-dream": ["Smooth", "5s"],
+  "seedance-pro": ["Budget", "5s"],
+  "megsy-video": ["Default", "5s"],
+  "wan-2.6": ["Open-source", "5s"],
+  "pixverse-5.5": ["Effects", "5s"],
+};
 
 interface InlineModelPickerProps {
   open: boolean;
   onClose: () => void;
   onSelect: (model: ModelOption) => void;
   selectedModelId: string;
+  mode?: "images" | "videos";
 }
 
 const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineModelPickerProps) => {
