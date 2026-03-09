@@ -337,7 +337,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
 
               
-                <h2 className="text-lg font-bold text-foreground">Models</h2>
+                <h2 className="text-lg font-bold text-foreground px-[147px]">Models</h2>
                 
 
 
