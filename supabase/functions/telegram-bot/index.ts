@@ -596,6 +596,70 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ---- Capabilities toggle ----
+      if (d.startsWith("cap_") && d !== "cap_save") {
+        const capKey = d.replace("cap_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        const current = (config.capabilities || "").split(",").filter(Boolean);
+        const idx = current.indexOf(capKey);
+        if (idx >= 0) current.splice(idx, 1); else current.push(capKey);
+        config.capabilities = current.join(",");
+        await setModelConfig(sb, session.adminModelId, config);
+        // Re-render toggle grid
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < CAPABILITY_OPTIONS.length; i += 2) {
+          const row: { text: string; callback_data: string }[] = [];
+          const c1 = CAPABILITY_OPTIONS[i];
+          row.push({ text: `${current.includes(c1.key) ? "✅" : "⬜"} ${c1.label}`, callback_data: `cap_${c1.key}` });
+          if (CAPABILITY_OPTIONS[i + 1]) {
+            const c2 = CAPABILITY_OPTIONS[i + 1];
+            row.push({ text: `${current.includes(c2.key) ? "✅" : "⬜"} ${c2.label}`, callback_data: `cap_${c2.key}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "💾 حفظ القدرات", callback_data: "cap_save" }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🛠 *قدرات النموذج* لـ \`${session.adminModelId}\`\n\nالمحدد: ${current.length > 0 ? current.join(", ") : "لا شيء"}\n\nاضغط لتفعيل/تعطيل:`, rows);
+        return new Response("OK");
+      }
+
+      if (d === "cap_save") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم حفظ القدرات: \`${config.capabilities || "لا شيء"}\``, [
+          [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
+        await saveSession(sb, chatId, { adminAction: "idle" });
+        return new Response("OK");
+      }
+
+      // ---- fal prefix selection ----
+      if (d.startsWith("falpfx_")) {
+        const idx = parseInt(d.replace("falpfx_", ""));
+        const prefix = FAL_PREFIXES[idx]?.value || "fal-ai/";
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_fal_suffix", adminField: "fal_id" });
+        await send(BOT_TOKEN, chatId, msgId, `🔗 البادئة: \`${prefix}\`\n\nأدخل باقي المعرف:\nمثال: إذا المعرف \`fal-ai/nano-banana-pro/edit\`\nأدخل: \`nano-banana-pro/edit\``, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
+        // Store prefix temporarily
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_fal_suffix", adminField: "fal_id", addModelData: { ...session.addModelData, _falPrefix: prefix } });
+        return new Response("OK");
+      }
+
+      // ---- OpenRouter prefix selection ----
+      if (d.startsWith("orpfx_")) {
+        const prefix = d.replace("orpfx_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_or_suffix", adminField: "openrouter_id", addModelData: { ...session.addModelData, _orPrefix: prefix } });
+        await send(BOT_TOKEN, chatId, msgId, `🔗 البادئة: \`${prefix}\`\n\nأدخل اسم النموذج:\nمثال: \`gpt-5\` أو \`gemini-2.5-pro\``, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
+        return new Response("OK");
+      }
+
       // تعيين قيمة
       if (d.startsWith("sv_")) {
         const parts = d.replace("sv_", "").split("_");
