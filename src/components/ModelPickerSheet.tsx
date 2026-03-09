@@ -331,12 +331,12 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
             
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4">
-                <button
-                onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                 
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
+
+
+
+
+              
                 <h2 className="text-lg font-bold text-foreground">Models</h2>
                 
 
