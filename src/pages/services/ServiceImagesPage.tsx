@@ -365,6 +365,9 @@ const ServiceImagesPage = () => {
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
       </section>
 
+      {/* Real Image Generator — Desktop Only */}
+      <ImageGenerator />
+
       {/* Why Creatives Choose Megsy */}
       <section className="mx-auto max-w-7xl px-6 py-28">
         <motion.div
