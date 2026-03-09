@@ -325,20 +325,7 @@ const ChatPage = () => {
                     <MoreVertical className="w-4.5 h-4.5" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
-                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Share2 className="w-4 h-4 text-muted-foreground" />
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toast.success("Starred!")} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Star className="w-4 h-4 text-muted-foreground" />
-                    Star
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setRenameValue(conversationTitle); setIsRenaming(true); }} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Pencil className="w-4 h-4 text-muted-foreground" />
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuContent align="end" className="w-48 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
                   <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
                     <Trash2 className="w-4 h-4" />
                     Delete
