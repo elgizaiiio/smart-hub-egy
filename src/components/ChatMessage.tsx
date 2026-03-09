@@ -138,11 +138,8 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               <button onClick={() => onLike?.(liked === true ? null : true)} className={`p-1.5 rounded-lg transition-colors ${liked === true ? "text-foreground bg-accent" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`} title="Like">
                 <ThumbsUp className="w-4 h-4" />
               </button>
-              <button className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-colors" title="Comment">
-                <MessageSquare className="w-4 h-4" />
-              </button>
-              <button className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-colors" title="Retry">
-                <RotateCcw className="w-4 h-4" />
+              <button onClick={() => onLike?.(liked === false ? null : false)} className={`p-1.5 rounded-lg transition-colors ${liked === false ? "text-foreground bg-accent" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`} title="Dislike">
+                <ThumbsDown className="w-4 h-4" />
               </button>
             </div>
           )}
