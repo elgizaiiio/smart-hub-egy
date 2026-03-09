@@ -1,10 +1,19 @@
-import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Image, Sparkles, Zap, Wand2 } from "lucide-react";
+import { Sparkles, Zap, Wand2, Loader2 } from "lucide-react";
+
+const generatedImages = [
+  { src: "/showcase/model-1.jpg", prompt: "Portrait of a fashion model in golden hour light", model: "Flux Pro", size: "1024 x 1024" },
+  { src: "/showcase/img-1.jpg", prompt: "Cyberpunk city street with neon reflections at night", model: "Nano Banana", size: "1344 x 768" },
+  { src: "/showcase/model-2.jpg", prompt: "Elegant woman in minimalist studio photography", model: "SDXL Ultra", size: "1024 x 1536" },
+  { src: "/showcase/img-4.jpg", prompt: "Surreal dreamscape with floating islands and waterfalls", model: "Flux Pro", size: "1920 x 1080" },
+  { src: "/showcase/model-3.jpg", prompt: "Dramatic portrait with cinematic color grading", model: "Midjourney v6", size: "1024 x 1024" },
+  { src: "/showcase/img-5.jpg", prompt: "Abstract geometric art with vibrant gradients", model: "DALL-E 3", size: "1024 x 1024" },
+];
 
 const howItWorksSteps = [
   { 
