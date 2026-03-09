@@ -584,7 +584,6 @@ const ServiceImagesPage = () => {
                                 transition={{ duration: 2.3, ease: "easeInOut" }}
                               />
                             </motion.div>
-                          </div>
                         </div>
                       </motion.div>
                     )}
