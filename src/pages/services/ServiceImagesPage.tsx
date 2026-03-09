@@ -60,7 +60,7 @@ const ServiceImagesPage = () => {
         {leftImages.map((img, i) => (
           <motion.div
             key={`left-${i}`}
-            className="absolute overflow-hidden rounded-xl shadow-2xl pointer-events-none hidden lg:block"
+            className="absolute overflow-hidden rounded-lg pointer-events-none hidden lg:block"
             style={{
               top: img.top,
               left: img.left,
@@ -68,20 +68,16 @@ const ServiceImagesPage = () => {
               height: img.height,
               zIndex: img.zIndex,
             }}
-            initial={{ opacity: 0, scale: 0.8, x: -100 }}
+            initial={{ opacity: 0, x: -50 }}
             animate={{ 
               opacity: 1, 
-              scale: 1,
-              x: mousePosition.x * 50 * img.speed,
-              y: mousePosition.y * 40 * img.speed,
-              rotate: img.rotate + mousePosition.x * 2,
+              x: mousePosition.x * 30,
+              y: mousePosition.y * 20,
             }}
             transition={{ 
-              opacity: { duration: 0.8, delay: i * 0.15 },
-              scale: { duration: 0.8, delay: i * 0.15 },
-              x: { duration: 0.15, ease: "easeOut" },
-              y: { duration: 0.15, ease: "easeOut" },
-              rotate: { duration: 0.2, ease: "easeOut" },
+              opacity: { duration: 1, delay: i * 0.2 },
+              x: { duration: 0.3, ease: "easeOut" },
+              y: { duration: 0.3, ease: "easeOut" },
             }}
           >
             <img src={img.src} alt="" className="w-full h-full object-cover" />
@@ -92,7 +88,7 @@ const ServiceImagesPage = () => {
         {rightImages.map((img, i) => (
           <motion.div
             key={`right-${i}`}
-            className="absolute overflow-hidden rounded-xl shadow-2xl pointer-events-none hidden lg:block"
+            className="absolute overflow-hidden rounded-lg pointer-events-none hidden lg:block"
             style={{
               top: img.top,
               right: img.right,
@@ -100,20 +96,16 @@ const ServiceImagesPage = () => {
               height: img.height,
               zIndex: img.zIndex,
             }}
-            initial={{ opacity: 0, scale: 0.8, x: 100 }}
+            initial={{ opacity: 0, x: 50 }}
             animate={{ 
               opacity: 1, 
-              scale: 1,
-              x: mousePosition.x * -50 * img.speed,
-              y: mousePosition.y * 40 * img.speed,
-              rotate: img.rotate - mousePosition.x * 2,
+              x: mousePosition.x * -30,
+              y: mousePosition.y * 20,
             }}
             transition={{ 
-              opacity: { duration: 0.8, delay: i * 0.15 },
-              scale: { duration: 0.8, delay: i * 0.15 },
-              x: { duration: 0.15, ease: "easeOut" },
-              y: { duration: 0.15, ease: "easeOut" },
-              rotate: { duration: 0.2, ease: "easeOut" },
+              opacity: { duration: 1, delay: i * 0.2 },
+              x: { duration: 0.3, ease: "easeOut" },
+              y: { duration: 0.3, ease: "easeOut" },
             }}
           >
             <img src={img.src} alt="" className="w-full h-full object-cover" />
