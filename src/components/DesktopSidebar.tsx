@@ -16,7 +16,7 @@ interface DesktopSidebarProps {
 }
 
 const mainNav = [
-  { path: "/", label: "Chat" },
+  { path: "/chat", label: "Chat" },
   { path: "/images", label: "Images" },
   { path: "/videos", label: "Videos" },
   { path: "/code", label: "Code" },
@@ -76,13 +76,13 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const initial = userName.charAt(0).toUpperCase() || "U";
 
   const isActive = (path: string) =>
-    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
     <aside className="hidden md:flex flex-col w-[180px] h-[100dvh] bg-sidebar/60 backdrop-blur-xl border-r border-sidebar-border/30 shrink-0">
       {/* Brand */}
       <button
-        onClick={() => { onNewChat?.(); navigate("/"); }}
+        onClick={() => { onNewChat?.(); navigate("/chat"); }}
         className="px-4 pt-5 pb-6 text-left hover:opacity-70 transition-opacity"
       >
         <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
@@ -122,7 +122,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
                 key={chat.id}
                 onClick={() => {
                   onSelectConversation?.(chat.id);
-                  navigate("/");
+                  navigate("/chat");
                 }}
                 className={`w-full text-left px-3 py-1.5 rounded-lg text-[12px] transition-all truncate ${
                   activeConversationId === chat.id
