@@ -563,16 +563,16 @@ serve(async (req) => {
         // fal_id - prefix suggestions
         if (field === "fal_id") {
           await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          const config = await getModelConfig(sb, session.adminModelId);
           const prefixRows: { text: string; callback_data: string }[][] = [];
           for (let i = 0; i < FAL_PREFIXES.length; i += 2) {
             const row: { text: string; callback_data: string }[] = [];
             row.push({ text: FAL_PREFIXES[i].label, callback_data: `falpfx_${i}` });
             if (FAL_PREFIXES[i + 1]) row.push({ text: FAL_PREFIXES[i + 1].label, callback_data: `falpfx_${i + 1}` });
-            rows.push(row);
+            prefixRows.push(row);
           }
           prefixRows.push([{ text: "✏️ إدخال يدوي كامل", callback_data: "sv_fal_id_custom" }]);
           prefixRows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
-          const config = await getModelConfig(sb, session.adminModelId);
           await send(BOT_TOKEN, chatId, msgId, `🔗 *معرف fal.ai* لـ \`${session.adminModelId}\`\nالحالي: \`${config.fal_id || "غير محدد"}\`\n\nاختر بادئة أو أدخل المعرف كاملاً:\nمثال: \`fal-ai/nano-banana-pro/edit\``, prefixRows);
           return new Response("OK");
         }
