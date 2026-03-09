@@ -159,8 +159,8 @@ const BottomInputBar = ({
                 onClick={() => setModelPickerOpen(!modelPickerOpen)}
                 className={
                   "shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium " +
-                  "bg-foreground/[0.06] backdrop-blur-3xl border border-foreground/[0.10] text-foreground/80 " +
-                  "hover:bg-foreground/[0.10] hover:border-foreground/[0.16] hover:text-foreground transition-all duration-300 ease-out"
+                  "bg-muted/80 backdrop-blur-3xl border border-border text-foreground " +
+                  "hover:bg-accent hover:border-border transition-all duration-300 ease-out"
                 }
               >
                 <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center`}>
