@@ -22,7 +22,7 @@ const ASPECT_RATIOS: ImageDimensions[] = [
   { width: 1080, height: 1920, label: "9:16" },
 ];
 
-const QUALITIES = ["1K", "2K", "4K"];
+const QUALITIES = ["512px", "1K", "2K", "4K"];
 
 // Model icon info
 const MODEL_ICONS: Record<string, { letter: string; gradient: string }> = {
@@ -71,6 +71,7 @@ const BottomInputBar = ({
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [selectedQuality, setSelectedQuality] = useState("2K");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Animated placeholder
@@ -195,18 +196,27 @@ const BottomInputBar = ({
                 <PopoverTrigger asChild>
                   <button className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors">
                     <Sparkles className="w-3 h-3" />
-                    2K
+                    {selectedQuality}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-32 p-2 bg-[#252525] border-white/10" align="start">
-                  {QUALITIES.map((q) => (
-                    <button
-                      key={q}
-                      className="w-full text-left text-xs px-3 py-2 rounded-lg transition-colors text-white/70 hover:bg-white/5 hover:text-white"
-                    >
-                      {q}
-                    </button>
-                  ))}
+                <PopoverContent className="w-32 p-3 bg-[#1a1a1a] border-white/10" align="start">
+                  <p className="text-xs text-white/50 mb-2 font-medium">Quality</p>
+                  <div className="space-y-0.5">
+                    {QUALITIES.map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => setSelectedQuality(q)}
+                        className="w-full flex items-center justify-between text-xs px-2 py-1.5 rounded-md transition-colors text-white/80 hover:bg-white/5"
+                      >
+                        {q}
+                        {selectedQuality === q && (
+                          <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </PopoverContent>
               </Popover>
 
