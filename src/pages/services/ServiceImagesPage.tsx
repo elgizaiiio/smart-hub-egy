@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Image, Sparkles, Zap, Wand2, Star } from "lucide-react";
+import { Image, Sparkles, Zap, Wand2 } from "lucide-react";
 
 const features = [
   { icon: Sparkles, title: "Text to Image", desc: "Describe your vision and watch Megsy Pro bring it to life with photorealistic quality." },
@@ -13,19 +13,19 @@ const features = [
   { icon: Image, title: "Style Control", desc: "Choose from dozens of artistic styles or create your own unique visual identity." },
 ];
 
-// LEFT side images - large, edge-positioned, overlapping
+// LEFT side images - moved down and away from edges
 const leftImages = [
-  { src: "/showcase/model-1.jpg", top: "5%", left: "-8%", width: 220, height: 180, speed: 0.015, rotate: 0, zIndex: 1 },
-  { src: "/showcase/img-1.jpg", top: "18%", left: "-5%", width: 320, height: 450, speed: 0.02, rotate: 0, zIndex: 2 },
-  { src: "/showcase/img-2.jpg", top: "45%", left: "12%", width: 280, height: 400, speed: 0.025, rotate: 0, zIndex: 3 },
+  { src: "/showcase/model-1.jpg", top: "20%", left: "2%", width: 180, height: 150, speedX: 15, speedY: 10, zIndex: 1 },
+  { src: "/showcase/img-1.jpg", top: "35%", left: "5%", width: 280, height: 380, speedX: 25, speedY: 18, zIndex: 2 },
+  { src: "/showcase/img-2.jpg", top: "58%", left: "15%", width: 240, height: 320, speedX: 35, speedY: 22, zIndex: 3 },
 ];
 
-// RIGHT side images - large, edge-positioned, overlapping
+// RIGHT side images - moved down and away from edges
 const rightImages = [
-  { src: "/showcase/img-4.jpg", top: "3%", right: "-10%", width: 280, height: 380, speed: 0.02, rotate: 0, zIndex: 1 },
-  { src: "/showcase/img-5.jpg", top: "35%", right: "0%", width: 350, height: 200, speed: 0.025, rotate: 0, zIndex: 2 },
-  { src: "/showcase/model-2.jpg", top: "48%", right: "-5%", width: 260, height: 350, speed: 0.018, rotate: 0, zIndex: 3 },
-  { src: "/showcase/img-6.jpg", top: "65%", right: "15%", width: 200, height: 280, speed: 0.022, rotate: 0, zIndex: 4 },
+  { src: "/showcase/img-4.jpg", top: "18%", right: "3%", width: 240, height: 320, speedX: 20, speedY: 12, zIndex: 1 },
+  { src: "/showcase/img-5.jpg", top: "42%", right: "8%", width: 300, height: 180, speedX: 30, speedY: 20, zIndex: 2 },
+  { src: "/showcase/model-2.jpg", top: "55%", right: "2%", width: 220, height: 300, speedX: 18, speedY: 25, zIndex: 3 },
+  { src: "/showcase/img-6.jpg", top: "70%", right: "18%", width: 180, height: 240, speedX: 40, speedY: 15, zIndex: 4 },
 ];
 
 const ServiceImagesPage = () => {
@@ -56,7 +56,7 @@ const ServiceImagesPage = () => {
         ref={heroRef}
         className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black px-6 pt-20"
       >
-        {/* LEFT side floating images */}
+        {/* LEFT side floating images - each moves independently */}
         {leftImages.map((img, i) => (
           <motion.div
             key={`left-${i}`}
@@ -71,20 +71,20 @@ const ServiceImagesPage = () => {
             initial={{ opacity: 0, x: -50 }}
             animate={{ 
               opacity: 1, 
-              x: mousePosition.x * 30,
-              y: mousePosition.y * 20,
+              x: mousePosition.x * img.speedX,
+              y: mousePosition.y * img.speedY,
             }}
             transition={{ 
               opacity: { duration: 1, delay: i * 0.2 },
-              x: { duration: 0.3, ease: "easeOut" },
-              y: { duration: 0.3, ease: "easeOut" },
+              x: { duration: 0.2 + i * 0.1, ease: "easeOut" },
+              y: { duration: 0.2 + i * 0.1, ease: "easeOut" },
             }}
           >
             <img src={img.src} alt="" className="w-full h-full object-cover" />
           </motion.div>
         ))}
 
-        {/* RIGHT side floating images */}
+        {/* RIGHT side floating images - each moves independently */}
         {rightImages.map((img, i) => (
           <motion.div
             key={`right-${i}`}
@@ -99,13 +99,13 @@ const ServiceImagesPage = () => {
             initial={{ opacity: 0, x: 50 }}
             animate={{ 
               opacity: 1, 
-              x: mousePosition.x * -30,
-              y: mousePosition.y * 20,
+              x: mousePosition.x * -img.speedX,
+              y: mousePosition.y * img.speedY,
             }}
             transition={{ 
               opacity: { duration: 1, delay: i * 0.2 },
-              x: { duration: 0.3, ease: "easeOut" },
-              y: { duration: 0.3, ease: "easeOut" },
+              x: { duration: 0.25 + i * 0.08, ease: "easeOut" },
+              y: { duration: 0.25 + i * 0.08, ease: "easeOut" },
             }}
           >
             <img src={img.src} alt="" className="w-full h-full object-cover" />
@@ -132,16 +132,6 @@ const ServiceImagesPage = () => {
             whether you're prototyping products, scaling content, or creating for yourself.
           </p>
 
-          {/* Star Rating */}
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 fill-primary text-primary" />
-              ))}
-            </div>
-            <span className="text-lg font-bold text-white">4.9</span>
-            <span className="text-sm text-white/50">based on 12.5K Ratings</span>
-          </div>
 
           {/* CTA Button */}
           <div className="mt-10">
