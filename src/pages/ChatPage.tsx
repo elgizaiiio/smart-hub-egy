@@ -12,6 +12,7 @@ import ModelSelector, { getDefaultModel, type ModelOption } from "@/components/M
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
 import { streamChat } from "@/lib/streamChat";
+import ConnectorsDialog from "@/components/ConnectorsDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
