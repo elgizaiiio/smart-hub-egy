@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
+import BentoShowcase from "@/components/landing/BentoShowcase";
 
 
 // Scenarios for the demo - many models and unique images
@@ -629,6 +630,8 @@ const ServiceImagesPage = () => {
           </motion.div>
         </div>
       </section>
+
+      <BentoShowcase />
 
       {/* CTA */}
       <section className="mx-auto max-w-5xl px-6 py-28 text-center">
