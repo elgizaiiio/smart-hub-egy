@@ -1,95 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-## خطة إعادة تصميم صفحة الصور بالكامل (على طريقة Leonardo.AI)
+## ✅ Completed
 
-### الوضع الحالي
-صفحة `/images` حالياً عبارة عن chat-based interface بسيط: prompt bar في الأسفل + عرض الصور كمحادثة. لا يوجد sidebar إعدادات ولا خيارات متقدمة مثل الأبعاد أو الأسلوب أو عدد الصور.
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-### التصميم الجديد (مثل Leonardo.AI)
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│ Desktop Sidebar │  Prompt Bar + Generate Button          │
-│ (existing)      │──────────────────────────────────────── │
-│                 │ [Image] [Video] tabs                    │
-│                 │──────────────────────────────────────── │
-│  ┌────────────┐ │                                        │
-│  │ LEFT PANEL │ │   Generated Images Grid                │
-│  │            │ │   (each with prompt, model, size tags)  │
-│  │ Model ▼   │ │                                        │
-│  │ Style ▼   │ │                                        │
-│  │ Dimensions │ │                                        │
-│  │ Num Images │ │                                        │
-│  │ Private ⊘ │ │                                        │
-│  │            │ │                                        │
-│  │ Reset      │ │                                        │
-│  └────────────┘ │                                        │
-└─────────────────────────────────────────────────────────┘
-```
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-### الملفات المتأثرة
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-| الملف | التغيير |
-|---|---|
-| `src/pages/ImagesPage.tsx` | **إعادة كتابة كاملة** — من chat interface إلى Leonardo-style layout |
-| `src/components/ImageSettingsPanel.tsx` | **جديد** — اللوحة الجانبية اليسرى (Model, Style, Dimensions, Number, Private) |
-| `src/components/ModelSelector.tsx` | تعديل طفيف لدعم فتح model picker من اللوحة الجانبية |
-| `supabase/functions/generate-image/index.ts` | تعديل لدعم `num_images`, `image_size`, `style` parameters |
-| `src/lib/imageModelCapabilities.ts` | إضافة أنماط الأسلوب (styles) |
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
-### التفاصيل
-
-**1. اللوحة الجانبية اليسرى (`ImageSettingsPanel`)**
-- **Model**: dropdown يفتح ModelPickerSheet الموجود حالياً
-- **Style**: dropdown بالخيارات: Cinematic, Creative, Dynamic, Fashion, None, Portrait, Stock Photo, Vibrant
-- **Image Dimensions**: أزرار 2:3, 1:1, 16:9, Custom + عند الضغط على Custom يظهر popover بـ:
-  - Aspect Ratio preview
-  - Slider (Wide ↔ Tall)
-  - Socials: Twitter/X (4:3), Instagram (4:5), TikTok (9:16)
-  - Devices: Desktop (16:9), Square (1:1)
-- **Number of Images**: أزرار 1, 2, 3, 4
-- **Private Mode**: toggle switch
-- **Reset to Defaults**: زر في الأسفل
-
-**2. المنطقة الرئيسية**
-- **Prompt bar** في الأعلى (مثل Leonardo): حقل نص + زر Generate أخضر/بنفسجي على اليمين
-- **Tabs**: Image | Video (Video يوجه لـ `/videos`)
-- **Generated images**: تظهر كـ grid/list. كل صورة تظهر مع:
-  - الصورة نفسها
-  - الـ prompt المستخدم
-  - اسم الموديل + الحجم + السرعة كـ tags
-  - زر menu (⋯) للتحميل والمشاركة
-- يتم تجميع الصور حسب اليوم (Today, Yesterday...)
-
-**3. تعديل Edge Function**
-- إضافة parameter `num_images` لطلب عدة صور في طلب واحد (بعض موديلات fal تدعم `num_images`)
-- إضافة `image_size` parameter (e.g., `{ width: 1024, height: 1024 }`)
-- إضافة `style` parameter يتم إلحاقه بالـ prompt كـ suffix أو يمرر للموديلات التي تدعمه
-
-**4. الموديلات الجديدة المطلوبة**
-بناءً على ما ذكرته، سيتم إضافة هذه الموديلات الناقصة:
-
-| الموديل | fal.ai Endpoint |
-|---|---|
-| Nano Banana Pro | `fal-ai/nano-banana-pro` (already mapped to megsy-v1-img) |
-| Lucid Origin | `fal-ai/flux-pro/v1.1` |
-| Lucid Realism | `fal-ai/flux/dev` |
-| FLUX.1 Kontext | `fal-ai/flux-pro/kontext/text-to-image` |
-| FLUX Dev | `fal-ai/flux/dev` |
-| FLUX Schnell | `fal-ai/flux/schnell` |
-| Phoenix 1.0 | `fal-ai/flux-pro/v1` |
-| GPT-Image-1 | `fal-ai/gpt-image-1` |
-| Seedream 4.0 | `fal-ai/bytedance/seedream/v4/text-to-image` |
-
-سيتم تحديث `MODEL_MAP` في edge function + `modelDetails.ts` + `ModelSelector.tsx` + `imageModelCapabilities.ts`.
-
-**5. Mobile**
-- على الموبايل: اللوحة الجانبية تصبح collapsible drawer يفتح من أيقونة settings
-- الـ prompt bar يبقى في الأعلى
-
-### ملاحظات
-- التصميم يتبع الـ dark theme الحالي
-- كل الأنيميشن بـ framer-motion
-- يبقى نظام المحادثات والحفظ كما هو
-- يبقى نظام الـ credits كما هو
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists

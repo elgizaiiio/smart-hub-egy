@@ -204,9 +204,78 @@ export const ALL_MODEL_DETAILS: ModelDetail[] = [
     notes: "Include the target URL in your prompt for QR functionality.",
   },
 
-  // ═══════════════════════════════════════════
-  // IMAGE TOOLS (require image input)
-  // ═══════════════════════════════════════════
+  // New models
+  {
+    id: "nano-banana-pro", name: "Nano Banana Pro", type: "image", credits: 4,
+    description: "Consistency & infographics powered by Gemini 3 Pro.",
+    longDescription: "Nano Banana Pro delivers consistent, high-quality images with excellent text rendering. Great for infographics, branded content, and professional visuals.",
+    icon: "Image", modes: ["text-to-image", "image-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "fast", quality: "high",
+  },
+  {
+    id: "lucid-origin", name: "Lucid Origin", type: "image", credits: 3,
+    description: "Excellent prompt adherence and text rendering for HD output.",
+    longDescription: "Lucid Origin excels at precise prompt following with crisp HD output. Supports style and content references for guided generation.",
+    icon: "Eye", modes: ["text-to-image", "style-ref", "content-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "standard", quality: "high",
+  },
+  {
+    id: "lucid-realism", name: "Lucid Realism", type: "image", credits: 3,
+    description: "Best for pairing with video generation, creating cinematic shots.",
+    longDescription: "Lucid Realism creates photorealistic images perfect for video-to-image workflows and cinematic scene generation with natural lighting.",
+    icon: "Camera", modes: ["text-to-image", "style-ref", "content-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "standard", quality: "high",
+  },
+  {
+    id: "gpt-image-1", name: "GPT-Image-1", type: "image", credits: 4,
+    description: "State-of-the-art image generation model by OpenAI.",
+    longDescription: "OpenAI's original GPT Image model with excellent generation quality, strong prompt adherence, and support for image references.",
+    icon: "Sparkles", modes: ["text-to-image", "image-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "standard", quality: "high",
+  },
+  {
+    id: "seedream-4-0", name: "Seedream 4.0", type: "image", credits: 2,
+    description: "Ultra-high quality for consistent image generations and editing.",
+    longDescription: "ByteDance Seedream 4.0 provides ultra-consistent image generation with excellent editing support and image reference capabilities.",
+    icon: "Image", modes: ["text-to-image", "image-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "fast", quality: "high",
+  },
+  {
+    id: "flux-kontext-std", name: "FLUX.1 Kontext", type: "image", credits: 2,
+    description: "Built for precise, controllable image generation and editing.",
+    longDescription: "FLUX.1 Kontext provides controllable generation with strong text rendering and editing capabilities. Ideal for iterative creative work.",
+    icon: "Type", modes: ["text-to-image", "image-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "standard", quality: "high",
+  },
+  {
+    id: "flux-dev", name: "FLUX Dev", type: "image", credits: 2,
+    description: "Flexible model for creating detailed, realistic images.",
+    longDescription: "FLUX Dev is a versatile development model supporting style, content, and element references for highly detailed and realistic image generation.",
+    icon: "Code", modes: ["text-to-image", "style-ref", "content-ref", "elements"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "standard", quality: "high",
+  },
+  {
+    id: "flux-schnell", name: "FLUX Schnell", type: "image", credits: 1,
+    description: "High-speed model for fast, quality outputs.",
+    longDescription: "FLUX Schnell is optimized for speed while maintaining good quality. Perfect for rapid prototyping and quick iterations with style and content reference support.",
+    icon: "Zap", modes: ["text-to-image", "style-ref", "content-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "fast", quality: "standard",
+  },
+  {
+    id: "phoenix-1", name: "Phoenix 1.0", type: "image", credits: 3,
+    description: "Exceptional prompt adherence and text rendering.",
+    longDescription: "Phoenix 1.0 delivers outstanding prompt adherence with support for image-to-image, style, content, and character references. Ideal for professional creative workflows.",
+    icon: "Flame", modes: ["text-to-image", "image-to-image", "style-ref", "content-ref", "character-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "standard", quality: "high",
+  },
+  {
+    id: "phoenix-0.9", name: "Phoenix 0.9", type: "image", credits: 2,
+    description: "Preview of our foundational model.",
+    longDescription: "Phoenix 0.9 is the preview version of our foundational model with full reference support including image-to-image, style, content, and character references.",
+    icon: "Flame", modes: ["text-to-image", "image-to-image", "style-ref", "content-ref", "character-ref"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "Megsy", speed: "standard", quality: "standard",
+  },
+
   {
     id: "nano-banana-edit", name: "Nano Banana Edit", type: "image-tool", credits: 2,
     description: "Edit images with text instructions. Supports up to 4 images.",
