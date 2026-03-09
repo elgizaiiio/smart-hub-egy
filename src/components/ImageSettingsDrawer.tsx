@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, ChevronRight, Check } from "lucide-react";
 import type { ModelOption } from "@/components/ModelSelector";
 import type { ImageSettings, ImageStyle, ImageDimensions } from "@/components/ImageSettingsPanel";
+import { usePageSettings, type PageSettingsImages } from "@/hooks/usePageSettings";
 
-const STYLES: {value: ImageStyle;label: string;icon: string;}[] = [
+const ALL_STYLES: {value: ImageStyle;label: string;icon: string;}[] = [
 { value: "none", label: "None", icon: "🚫" },
 { value: "dynamic", label: "Dynamic", icon: "⚡" },
 { value: "cinematic", label: "Cinematic", icon: "🎬" },
@@ -16,8 +17,7 @@ const STYLES: {value: ImageStyle;label: string;icon: string;}[] = [
 { value: "anime", label: "Anime", icon: "✨" },
 { value: "3d-render", label: "3D Render", icon: "🧊" }];
 
-
-const ASPECT_RATIOS: {dims: ImageDimensions;label: string;}[] = [
+const ALL_ASPECT_RATIOS: {dims: ImageDimensions;label: string;}[] = [
 { dims: { width: 1024, height: 1024, label: "1:1" }, label: "1:1" },
 { dims: { width: 768, height: 1024, label: "2:3" }, label: "2:3" },
 { dims: { width: 1024, height: 768, label: "3:2" }, label: "3:2" },
@@ -26,9 +26,6 @@ const ASPECT_RATIOS: {dims: ImageDimensions;label: string;}[] = [
 { dims: { width: 1200, height: 900, label: "4:3" }, label: "4:3" },
 { dims: { width: 1080, height: 1350, label: "4:5" }, label: "4:5" },
 { dims: { width: 1080, height: 1920, label: "TikTok 9:16" }, label: "TikTok 9:16" }];
-
-
-const NUM_IMAGES = [1, 2, 3, 4];
 
 type ExpandedSection = "style" | "aspect" | "numImages" | "negative" | null;
 
@@ -50,6 +47,12 @@ const ImageSettingsDrawer = ({
   onOpenModelPicker
 }: ImageSettingsDrawerProps) => {
   const [expanded, setExpanded] = useState<ExpandedSection>(null);
+  const { settings: pageSettings } = usePageSettings("images");
+  const ps = pageSettings as PageSettingsImages;
+
+  const STYLES = useMemo(() => ALL_STYLES.filter(s => ps.styles.includes(s.value)), [ps.styles]);
+  const ASPECT_RATIOS = useMemo(() => ALL_ASPECT_RATIOS.filter(ar => ps.aspectRatios.includes(ar.label)), [ps.aspectRatios]);
+  const NUM_IMAGES = useMemo(() => Array.from({ length: ps.maxImages }, (_, i) => i + 1), [ps.maxImages]);
 
   const toggle = (section: ExpandedSection) => {
     setExpanded((prev) => prev === section ? null : section);

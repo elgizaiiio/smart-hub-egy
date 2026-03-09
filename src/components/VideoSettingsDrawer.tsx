@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, ChevronRight, Check } from "lucide-react";
 import type { ModelOption } from "@/components/ModelSelector";
 import type { VideoSettings, VideoDimensions } from "@/components/VideoBottomInputBar";
+import { usePageSettings, type PageSettingsVideos } from "@/hooks/usePageSettings";
 
-const ASPECT_RATIOS: {dims: VideoDimensions;icon: React.ReactNode;}[] = [
+const ALL_ASPECT_RATIOS: {dims: VideoDimensions;icon: React.ReactNode;}[] = [
 {
   dims: { width: 1024, height: 1024, label: "1:1" },
   icon: <div className="w-4 h-4 border-2 border-current rounded-sm" />
@@ -38,10 +39,6 @@ const ASPECT_RATIOS: {dims: VideoDimensions;icon: React.ReactNode;}[] = [
   icon: <div className="w-7 h-3 border-2 border-current rounded-sm" />
 }];
 
-
-const DURATIONS = [4, 5, 6, 8, 10];
-const RESOLUTIONS = ["720p", "1080p", "2K", "4K"];
-
 type ExpandedSection = "aspect" | "duration" | "resolution" | "negative" | null;
 
 interface VideoSettingsDrawerProps {
@@ -62,6 +59,12 @@ const VideoSettingsDrawer = ({
   onOpenModelPicker
 }: VideoSettingsDrawerProps) => {
   const [expanded, setExpanded] = useState<ExpandedSection>(null);
+  const { settings: pageSettings } = usePageSettings("videos");
+  const ps = pageSettings as PageSettingsVideos;
+
+  const ASPECT_RATIOS = useMemo(() => ALL_ASPECT_RATIOS.filter(ar => ps.aspectRatios.includes(ar.dims.label)), [ps.aspectRatios]);
+  const DURATIONS = useMemo(() => ps.durations, [ps.durations]);
+  const RESOLUTIONS = useMemo(() => ps.resolutions, [ps.resolutions]);
 
   const toggle = (section: ExpandedSection) => {
     setExpanded((prev) => prev === section ? null : section);

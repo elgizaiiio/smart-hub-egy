@@ -221,8 +221,40 @@ function mainMenuKB() {
     [{ text: "👥 إدارة المستخدمين", callback_data: "users_menu" }],
     [{ text: "🔑 OAuth Apps", callback_data: "oauth_menu" }],
     [{ text: "🎨 معرض العرض (Showcase)", callback_data: "showcase_menu" }],
+    [{ text: "⚙️ إعدادات الصفحات", callback_data: "pagesettings_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
+}
+
+// ---- Page Settings Defaults ----
+const DEFAULT_PAGE_IMAGES = {
+  styles: ["none", "dynamic", "cinematic", "creative", "fashion", "portrait", "stock-photo", "vibrant", "anime", "3d-render"],
+  aspectRatios: ["2:3", "1:1", "16:9"],
+  maxImages: 4,
+  defaultStyle: "dynamic",
+  defaultAspect: "1:1",
+  defaultNumImages: 1,
+};
+
+const DEFAULT_PAGE_VIDEOS = {
+  aspectRatios: ["9:16", "16:9", "1:1", "4:3"],
+  durations: [4, 5, 6, 8, 10],
+  resolutions: ["720p", "1080p", "2K", "4K"],
+  defaultAspect: "16:9",
+  defaultDuration: 5,
+  defaultResolution: "1080p",
+};
+
+async function getPageSettings(sb: ReturnType<typeof createClient>, page: "images" | "videos") {
+  const defaults = page === "images" ? DEFAULT_PAGE_IMAGES : DEFAULT_PAGE_VIDEOS;
+  const { data } = await sb.from("memories").select("value").eq("key", `page_settings_${page}`).maybeSingle();
+  if (!data) return { ...defaults };
+  try { return { ...defaults, ...JSON.parse(data.value) }; } catch { return { ...defaults }; }
+}
+
+async function savePageSettings(sb: ReturnType<typeof createClient>, page: "images" | "videos", settings: Record<string, unknown>) {
+  await sb.from("memories").delete().eq("key", `page_settings_${page}`);
+  await sb.from("memories").insert({ key: `page_settings_${page}`, value: JSON.stringify(settings) });
 }
 
 serve(async (req) => {
@@ -852,6 +884,249 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ==================== إعدادات الصفحات ====================
+      if (d === "pagesettings_menu") {
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId, "⚙️ *إعدادات الصفحات*\n\nإدارة الخيارات المتاحة في صفحات التطبيق:", [
+          [{ text: "🖼 إعدادات الصور", callback_data: "ps_images" }],
+          [{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }],
+          [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // ---- Image page settings ----
+      if (d === "ps_images") {
+        const s = await getPageSettings(sb, "images") as typeof DEFAULT_PAGE_IMAGES;
+        await send(BOT_TOKEN, chatId, msgId,
+          `🖼 *إعدادات صفحة الصور*\n\n` +
+          `🎨 الأنماط: \`${s.styles.join(", ")}\`\n` +
+          `📐 النسب: \`${s.aspectRatios.join(", ")}\`\n` +
+          `🔢 أقصى عدد صور: \`${s.maxImages}\`\n` +
+          `✨ النمط الافتراضي: \`${s.defaultStyle}\`\n` +
+          `📐 النسبة الافتراضية: \`${s.defaultAspect}\`\n` +
+          `🔢 العدد الافتراضي: \`${s.defaultNumImages}\``,
+          [
+            [{ text: "🎨 تعديل الأنماط", callback_data: "ps_img_styles" }],
+            [{ text: "📐 تعديل النسب", callback_data: "ps_img_aspects" }],
+            [{ text: "🔢 أقصى عدد صور", callback_data: "ps_img_max" }],
+            [{ text: "✨ النمط الافتراضي", callback_data: "ps_img_defstyle" }],
+            [{ text: "📐 النسبة الافتراضية", callback_data: "ps_img_defaspect" }],
+            [{ text: "🔢 العدد الافتراضي", callback_data: "ps_img_defnum" }],
+            [{ text: "🗑 إعادة ضبط", callback_data: "ps_img_reset" }],
+            [{ text: "🔙 رجوع", callback_data: "pagesettings_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "ps_img_styles") {
+        await saveSession(sb, chatId, { adminAction: "ps_img_styles" });
+        await send(BOT_TOKEN, chatId, msgId,
+          "🎨 *تعديل الأنماط*\n\nأدخل الأنماط مفصولة بفواصل:\n\n" +
+          "الأنماط المتاحة:\n`none, dynamic, cinematic, creative, fashion, portrait, stock-photo, vibrant, anime, 3d-render`",
+          [[{ text: "🔙 إلغاء", callback_data: "ps_images" }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "ps_img_aspects") {
+        await saveSession(sb, chatId, { adminAction: "ps_img_aspects" });
+        await send(BOT_TOKEN, chatId, msgId,
+          "📐 *تعديل نسب العرض*\n\nأدخل النسب مفصولة بفواصل:\n\nمثال: `2:3, 1:1, 16:9, 4:3, 9:16`",
+          [[{ text: "🔙 إلغاء", callback_data: "ps_images" }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "ps_img_max") {
+        await saveSession(sb, chatId, { adminAction: "ps_img_max" });
+        await send(BOT_TOKEN, chatId, msgId, "🔢 *أقصى عدد صور*\n\nاختر العدد:", [
+          [{ text: "1", callback_data: "psv_img_max_1" }, { text: "2", callback_data: "psv_img_max_2" }],
+          [{ text: "4", callback_data: "psv_img_max_4" }, { text: "8", callback_data: "psv_img_max_8" }],
+          [{ text: "🔙 إلغاء", callback_data: "ps_images" }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d === "ps_img_defstyle") {
+        const s = await getPageSettings(sb, "images") as typeof DEFAULT_PAGE_IMAGES;
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < s.styles.length; i += 3) {
+          const row: { text: string; callback_data: string }[] = [];
+          for (let j = i; j < Math.min(i + 3, s.styles.length); j++) {
+            const st = s.styles[j];
+            row.push({ text: `${st === s.defaultStyle ? "✅ " : ""}${st}`, callback_data: `psv_img_defstyle_${st}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "🔙 إلغاء", callback_data: "ps_images" }]);
+        await send(BOT_TOKEN, chatId, msgId, "✨ *اختر النمط الافتراضي:*", rows);
+        return new Response("OK");
+      }
+
+      if (d === "ps_img_defaspect") {
+        const s = await getPageSettings(sb, "images") as typeof DEFAULT_PAGE_IMAGES;
+        const rows = s.aspectRatios.map(ar => [{
+          text: `${ar === s.defaultAspect ? "✅ " : ""}${ar}`,
+          callback_data: `psv_img_defaspect_${ar}`,
+        }]);
+        rows.push([{ text: "🔙 إلغاء", callback_data: "ps_images" }]);
+        await send(BOT_TOKEN, chatId, msgId, "📐 *اختر النسبة الافتراضية:*", rows);
+        return new Response("OK");
+      }
+
+      if (d === "ps_img_defnum") {
+        await send(BOT_TOKEN, chatId, msgId, "🔢 *اختر العدد الافتراضي للصور:*", [
+          [{ text: "1", callback_data: "psv_img_defnum_1" }, { text: "2", callback_data: "psv_img_defnum_2" }],
+          [{ text: "3", callback_data: "psv_img_defnum_3" }, { text: "4", callback_data: "psv_img_defnum_4" }],
+          [{ text: "🔙 إلغاء", callback_data: "ps_images" }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d === "ps_img_reset") {
+        await sb.from("memories").delete().eq("key", "page_settings_images");
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم إعادة ضبط إعدادات الصور.", [
+          [{ text: "🔙 رجوع", callback_data: "ps_images" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // Handle image settings quick values
+      if (d.startsWith("psv_img_")) {
+        const rest = d.replace("psv_img_", "");
+        const idx = rest.indexOf("_");
+        const field = rest.slice(0, idx);
+        const value = rest.slice(idx + 1);
+        const s = await getPageSettings(sb, "images") as typeof DEFAULT_PAGE_IMAGES;
+
+        if (field === "max") (s as any).maxImages = parseInt(value);
+        else if (field === "defstyle") (s as any).defaultStyle = value;
+        else if (field === "defaspect") (s as any).defaultAspect = value;
+        else if (field === "defnum") (s as any).defaultNumImages = parseInt(value);
+
+        await savePageSettings(sb, "images", s);
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم التحديث!`, [
+          [{ text: "🖼 إعدادات الصور", callback_data: "ps_images" }],
+          [{ text: "🔙 القائمة", callback_data: "pagesettings_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // ---- Video page settings ----
+      if (d === "ps_videos") {
+        const s = await getPageSettings(sb, "videos") as typeof DEFAULT_PAGE_VIDEOS;
+        await send(BOT_TOKEN, chatId, msgId,
+          `🎬 *إعدادات صفحة الفيديو*\n\n` +
+          `📐 النسب: \`${s.aspectRatios.join(", ")}\`\n` +
+          `⏱ المدد: \`${s.durations.join(", ")}s\`\n` +
+          `📺 الدقات: \`${s.resolutions.join(", ")}\`\n` +
+          `📐 النسبة الافتراضية: \`${s.defaultAspect}\`\n` +
+          `⏱ المدة الافتراضية: \`${s.defaultDuration}s\`\n` +
+          `📺 الدقة الافتراضية: \`${s.defaultResolution}\``,
+          [
+            [{ text: "📐 تعديل النسب", callback_data: "ps_vid_aspects" }],
+            [{ text: "⏱ تعديل المدد", callback_data: "ps_vid_durations" }],
+            [{ text: "📺 تعديل الدقات", callback_data: "ps_vid_resolutions" }],
+            [{ text: "📐 النسبة الافتراضية", callback_data: "ps_vid_defaspect" }],
+            [{ text: "⏱ المدة الافتراضية", callback_data: "ps_vid_defdur" }],
+            [{ text: "📺 الدقة الافتراضية", callback_data: "ps_vid_defres" }],
+            [{ text: "🗑 إعادة ضبط", callback_data: "ps_vid_reset" }],
+            [{ text: "🔙 رجوع", callback_data: "pagesettings_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "ps_vid_aspects") {
+        await saveSession(sb, chatId, { adminAction: "ps_vid_aspects" });
+        await send(BOT_TOKEN, chatId, msgId,
+          "📐 *تعديل نسب العرض للفيديو*\n\nأدخل النسب مفصولة بفواصل:\n\nمثال: `9:16, 16:9, 1:1, 4:3`",
+          [[{ text: "🔙 إلغاء", callback_data: "ps_videos" }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "ps_vid_durations") {
+        await saveSession(sb, chatId, { adminAction: "ps_vid_durations" });
+        await send(BOT_TOKEN, chatId, msgId,
+          "⏱ *تعديل المدد المتاحة*\n\nأدخل المدد بالثواني مفصولة بفواصل:\n\nمثال: `4, 5, 6, 8, 10`",
+          [[{ text: "🔙 إلغاء", callback_data: "ps_videos" }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "ps_vid_resolutions") {
+        await saveSession(sb, chatId, { adminAction: "ps_vid_resolutions" });
+        await send(BOT_TOKEN, chatId, msgId,
+          "📺 *تعديل الدقات المتاحة*\n\nأدخل الدقات مفصولة بفواصل:\n\nمثال: `720p, 1080p, 2K, 4K`",
+          [[{ text: "🔙 إلغاء", callback_data: "ps_videos" }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "ps_vid_defaspect") {
+        const s = await getPageSettings(sb, "videos") as typeof DEFAULT_PAGE_VIDEOS;
+        const rows = s.aspectRatios.map(ar => [{
+          text: `${ar === s.defaultAspect ? "✅ " : ""}${ar}`,
+          callback_data: `psv_vid_defaspect_${ar}`,
+        }]);
+        rows.push([{ text: "🔙 إلغاء", callback_data: "ps_videos" }]);
+        await send(BOT_TOKEN, chatId, msgId, "📐 *اختر النسبة الافتراضية:*", rows);
+        return new Response("OK");
+      }
+
+      if (d === "ps_vid_defdur") {
+        const s = await getPageSettings(sb, "videos") as typeof DEFAULT_PAGE_VIDEOS;
+        const rows = [s.durations.map(dur => ({
+          text: `${dur === s.defaultDuration ? "✅ " : ""}${dur}s`,
+          callback_data: `psv_vid_defdur_${dur}`,
+        }))];
+        rows.push([{ text: "🔙 إلغاء", callback_data: "ps_videos" }]);
+        await send(BOT_TOKEN, chatId, msgId, "⏱ *اختر المدة الافتراضية:*", rows);
+        return new Response("OK");
+      }
+
+      if (d === "ps_vid_defres") {
+        const s = await getPageSettings(sb, "videos") as typeof DEFAULT_PAGE_VIDEOS;
+        const rows = [s.resolutions.map(res => ({
+          text: `${res === s.defaultResolution ? "✅ " : ""}${res}`,
+          callback_data: `psv_vid_defres_${res}`,
+        }))];
+        rows.push([{ text: "🔙 إلغاء", callback_data: "ps_videos" }]);
+        await send(BOT_TOKEN, chatId, msgId, "📺 *اختر الدقة الافتراضية:*", rows);
+        return new Response("OK");
+      }
+
+      if (d === "ps_vid_reset") {
+        await sb.from("memories").delete().eq("key", "page_settings_videos");
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم إعادة ضبط إعدادات الفيديو.", [
+          [{ text: "🔙 رجوع", callback_data: "ps_videos" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // Handle video settings quick values
+      if (d.startsWith("psv_vid_")) {
+        const rest = d.replace("psv_vid_", "");
+        const idx = rest.indexOf("_");
+        const field = rest.slice(0, idx);
+        const value = rest.slice(idx + 1);
+        const s = await getPageSettings(sb, "videos") as typeof DEFAULT_PAGE_VIDEOS;
+
+        if (field === "defaspect") (s as any).defaultAspect = value;
+        else if (field === "defdur") (s as any).defaultDuration = parseInt(value);
+        else if (field === "defres") (s as any).defaultResolution = value;
+
+        await savePageSettings(sb, "videos", s);
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم التحديث!`, [
+          [{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }],
+          [{ text: "🔙 القائمة", callback_data: "pagesettings_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
       // ==================== الإحصائيات ====================
       if (d === "stats") {
         const { count: userCount } = await sb.from("profiles").select("*", { count: "exact", head: true });
@@ -898,6 +1173,77 @@ serve(async (req) => {
       }
 
       const session = await loadSession(sb, chatId);
+
+      // ---- Page settings text inputs ----
+      if (session?.adminAction?.startsWith("ps_") && text) {
+        const action = session.adminAction;
+        const input = text.trim();
+
+        if (action === "ps_img_styles") {
+          const styles = input.split(",").map(s => s.trim()).filter(Boolean);
+          const s = await getPageSettings(sb, "images");
+          (s as any).styles = styles;
+          await savePageSettings(sb, "images", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث الأنماط: \`${styles.join(", ")}\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🖼 إعدادات الصور", callback_data: "ps_images" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        if (action === "ps_img_aspects") {
+          const aspects = input.split(",").map(s => s.trim()).filter(Boolean);
+          const s = await getPageSettings(sb, "images");
+          (s as any).aspectRatios = aspects;
+          await savePageSettings(sb, "images", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث النسب: \`${aspects.join(", ")}\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🖼 إعدادات الصور", callback_data: "ps_images" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        if (action === "ps_vid_aspects") {
+          const aspects = input.split(",").map(s => s.trim()).filter(Boolean);
+          const s = await getPageSettings(sb, "videos");
+          (s as any).aspectRatios = aspects;
+          await savePageSettings(sb, "videos", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث النسب: \`${aspects.join(", ")}\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        if (action === "ps_vid_durations") {
+          const durations = input.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+          const s = await getPageSettings(sb, "videos");
+          (s as any).durations = durations;
+          await savePageSettings(sb, "videos", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث المدد: \`${durations.join(", ")}s\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        if (action === "ps_vid_resolutions") {
+          const resolutions = input.split(",").map(s => s.trim()).filter(Boolean);
+          const s = await getPageSettings(sb, "videos");
+          (s as any).resolutions = resolutions;
+          await savePageSettings(sb, "videos", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث الدقات: \`${resolutions.join(", ")}\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }]] }),
+          });
+          return new Response("OK");
+        }
+      }
 
       // ---- Showcase text inputs ----
       // Step 2: receive prompt
