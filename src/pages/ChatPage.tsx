@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2 } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -307,14 +307,35 @@ const ChatPage = () => {
             </button>
 
             {hasConversation && conversationId ? (
+              <span className="text-sm font-medium text-foreground truncate max-w-[200px]">
+                {conversationTitle || "Untitled"}
+              </span>
+            ) : (
+              <div className="hidden md:block" />
+            )}
+          </div>
+
+          {/* Center: Unlock Pro on mobile */}
+          {!hasConversation && (
+            <div className="absolute left-1/2 -translate-x-1/2 md:hidden">
+              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
+            </div>
+          )}
+
+          {/* Right: More menu */}
+          <div className="flex items-center gap-2">
+            {hasConversation && conversationId && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-secondary/50 transition-colors text-sm font-medium text-foreground max-w-[200px]">
-                    <span className="truncate">{conversationTitle || "Untitled"}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                    <MoreVertical className="w-4.5 h-4.5" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-52 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
+                <DropdownMenuContent align="end" className="w-52 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
+                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
+                    <Share2 className="w-4 h-4 text-muted-foreground" />
+                    Share
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => toast.success("Starred!")} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
                     <Star className="w-4 h-4 text-muted-foreground" />
                     Star
@@ -330,27 +351,6 @@ const ChatPage = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
-              <div className="hidden md:block" />
-            )}
-          </div>
-
-          {/* Center: Unlock Pro on mobile */}
-          {!hasConversation && (
-            <div className="absolute left-1/2 -translate-x-1/2 md:hidden">
-              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
-            </div>
-          )}
-
-          {/* Right: Share button */}
-          <div className="flex items-center gap-2">
-            {hasConversation && conversationId && (
-              <button
-                onClick={handleShare}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-foreground bg-secondary hover:bg-accent border border-border/50 transition-colors"
-              >
-                Share
-              </button>
             )}
           </div>
         </div>
