@@ -6,45 +6,92 @@ import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
 import { Sparkles, Zap, Wand2, Loader2, Send, User, Bot } from "lucide-react";
 
-// Scenarios for the demo - using unique images not on the page
+// Scenarios for the demo - many models and unique images
 const demoScenarios = [
   {
     userPrompt: "Create a majestic phoenix rising from flames with vibrant orange and gold colors",
-    aiResponse: "I'll create a stunning phoenix image with fiery colors and dynamic composition for you...",
+    aiResponse: "Creating a stunning phoenix image with fiery colors and dynamic composition",
     image: "/api-showcase/showcase-1.png",
     model: "Flux Pro",
     size: "1024 x 1024"
   },
   {
     userPrompt: "Generate a futuristic cyberpunk cityscape at night with neon lights",
-    aiResponse: "Creating a detailed cyberpunk city scene with atmospheric neon lighting...",
+    aiResponse: "Generating a detailed cyberpunk city scene with atmospheric neon lighting",
     image: "/api-showcase/showcase-2.jpg",
     model: "SDXL Ultra",
     size: "1920 x 1080"
   },
   {
     userPrompt: "Design an elegant portrait of a woman in golden hour lighting",
-    aiResponse: "Generating a beautiful portrait with warm, cinematic golden hour aesthetics...",
+    aiResponse: "Generating a beautiful portrait with warm cinematic golden hour aesthetics",
     image: "/api-showcase/showcase-3.jpg",
     model: "Midjourney v6",
     size: "1024 x 1536"
   },
   {
-    userPrompt: "Create an abstract art piece with flowing geometric shapes",
-    aiResponse: "I'm crafting an abstract composition with dynamic geometric elements...",
+    userPrompt: "Create an abstract art piece with flowing geometric shapes and gradients",
+    aiResponse: "Crafting an abstract composition with dynamic geometric elements",
     image: "/api-showcase/showcase-4.jpg",
     model: "DALL-E 3",
     size: "1024 x 1024"
   },
-];
-
-const generatedImages = [
-  { src: "/showcase/model-1.jpg", prompt: "Portrait of a fashion model in golden hour light", model: "Flux Pro", size: "1024 x 1024" },
-  { src: "/showcase/img-1.jpg", prompt: "Cyberpunk city street with neon reflections at night", model: "Nano Banana", size: "1344 x 768" },
-  { src: "/showcase/model-2.jpg", prompt: "Elegant woman in minimalist studio photography", model: "SDXL Ultra", size: "1024 x 1536" },
-  { src: "/showcase/img-4.jpg", prompt: "Surreal dreamscape with floating islands and waterfalls", model: "Flux Pro", size: "1920 x 1080" },
-  { src: "/showcase/model-3.jpg", prompt: "Dramatic portrait with cinematic color grading", model: "Midjourney v6", size: "1024 x 1024" },
-  { src: "/showcase/img-5.jpg", prompt: "Abstract geometric art with vibrant gradients", model: "DALL-E 3", size: "1024 x 1024" },
+  {
+    userPrompt: "A serene Japanese garden with cherry blossoms and a koi pond",
+    aiResponse: "Creating a tranquil Japanese garden scene with delicate cherry blossoms",
+    image: "/showcase/img-1.jpg",
+    model: "Stable Diffusion 3",
+    size: "1344 x 768"
+  },
+  {
+    userPrompt: "Photorealistic portrait of a fashion model in studio lighting",
+    aiResponse: "Generating a high-quality fashion portrait with professional studio lighting",
+    image: "/showcase/model-1.jpg",
+    model: "Leonardo AI",
+    size: "1024 x 1536"
+  },
+  {
+    userPrompt: "Futuristic space station orbiting a distant planet with nebula background",
+    aiResponse: "Creating a detailed sci-fi space station with cosmic nebula backdrop",
+    image: "/showcase/img-4.jpg",
+    model: "Flux Dev",
+    size: "1920 x 1080"
+  },
+  {
+    userPrompt: "Minimalist black and white architectural photography",
+    aiResponse: "Generating a clean minimalist architectural composition",
+    image: "/showcase/model-2.jpg",
+    model: "Ideogram 2.0",
+    size: "1024 x 1024"
+  },
+  {
+    userPrompt: "Fantasy dragon in a mystical forest with magical lighting",
+    aiResponse: "Creating a majestic dragon scene with enchanted forest atmosphere",
+    image: "/showcase/img-5.jpg",
+    model: "Playground v2.5",
+    size: "1024 x 1024"
+  },
+  {
+    userPrompt: "Vintage car on a coastal road during sunset",
+    aiResponse: "Generating a classic car scene with beautiful coastal sunset lighting",
+    image: "/showcase/img-6.jpg",
+    model: "Kandinsky 3",
+    size: "1920 x 1080"
+  },
+  {
+    userPrompt: "Portrait with dramatic rim lighting and dark background",
+    aiResponse: "Creating a dramatic portrait with cinematic rim lighting effects",
+    image: "/showcase/model-3.jpg",
+    model: "Flux Pro Ultra",
+    size: "1024 x 1536"
+  },
+  {
+    userPrompt: "Underwater scene with colorful coral reef and tropical fish",
+    aiResponse: "Generating a vibrant underwater coral reef ecosystem",
+    image: "/showcase/img-3.jpg",
+    model: "SDXL Turbo",
+    size: "1344 x 768"
+  },
 ];
 
 const howItWorksSteps = [
