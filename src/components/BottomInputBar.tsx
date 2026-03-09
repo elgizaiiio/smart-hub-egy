@@ -25,18 +25,18 @@ const ASPECT_RATIOS: ImageDimensions[] = [
 
 const QUALITIES = ["512px", "1K", "2K", "4K"];
 
-const MODEL_ICONS: Record<string, { letter: string; gradient: string }> = {
-  "nano-banana-2": { letter: "G", gradient: "from-yellow-400 to-orange-500" },
-  "nano-banana-pro": { letter: "G", gradient: "from-yellow-400 to-orange-500" },
-  "seedream-4": { letter: "Iu", gradient: "from-blue-400 to-purple-500" },
-  "seedream-5-lite": { letter: "Iu", gradient: "from-blue-400 to-purple-500" },
-  "gpt-image": { letter: "G", gradient: "from-green-400 to-emerald-500" },
-  "ideogram-3": { letter: "△", gradient: "from-pink-400 to-rose-500" },
-  "flux-kontext": { letter: "△", gradient: "from-cyan-400 to-blue-500" },
-  "flux-2-pro": { letter: "△", gradient: "from-cyan-400 to-blue-500" },
-  "grok-imagine": { letter: "◇", gradient: "from-purple-400 to-violet-500" },
-  "recraft-v4": { letter: "R", gradient: "from-orange-400 to-red-500" },
-  "megsy-v1-img": { letter: "M", gradient: "from-primary to-primary/70" },
+const PROVIDER_ICONS: Record<string, string> = {
+  "nano-banana-2": "🍌",
+  "nano-banana-pro": "🍌",
+  "seedream-4": "🌊",
+  "seedream-5-lite": "🌊",
+  "gpt-image": "🤖",
+  "ideogram-3": "△",
+  "flux-kontext": "⚡",
+  "flux-2-pro": "⚡",
+  "grok-imagine": "✖",
+  "recraft-v4": "🎨",
+  "megsy-v1-img": "✦",
 };
 
 type DropdownId = "aspect" | "quality" | "count" | null;
@@ -100,7 +100,7 @@ const BottomInputBar = ({
   };
 
   const currentAspect = settings.dimensions.label;
-  const iconInfo = MODEL_ICONS[selectedModel.id] || { letter: "AI", gradient: "from-gray-400 to-gray-500" };
+  const emoji = PROVIDER_ICONS[selectedModel.id] || "🤖";
 
   const chipClass =
     "shrink-0 px-3 py-2 rounded-xl text-xs font-medium " +
@@ -163,9 +163,7 @@ const BottomInputBar = ({
                   "hover:bg-accent hover:border-border transition-all duration-300 ease-out"
                 }
               >
-                <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center`}>
-                  <span className="text-[8px] font-bold text-black">{iconInfo.letter}</span>
-                </div>
+                <span className="text-sm">{emoji}</span>
                 {selectedModel.name}
                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${modelPickerOpen ? "rotate-180" : ""}`} />
               </button>
