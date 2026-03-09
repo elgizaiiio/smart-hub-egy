@@ -104,13 +104,13 @@ const BottomInputBar = ({
 
   const chipClass =
     "shrink-0 px-3 py-2 rounded-xl text-xs font-medium " +
-    "bg-foreground/[0.06] backdrop-blur-3xl border border-foreground/[0.10] " +
-    "text-foreground/80 hover:bg-foreground/[0.10] hover:border-foreground/[0.16] hover:text-foreground " +
+    "bg-muted/80 backdrop-blur-3xl border border-border " +
+    "text-foreground hover:bg-accent hover:border-border " +
     "transition-all duration-300 ease-out";
 
   const menuClass =
-    "w-40 p-1.5 rounded-xl border border-foreground/[0.12] " +
-    "bg-foreground/[0.08] backdrop-blur-3xl shadow-lg";
+    "w-40 p-1.5 rounded-xl border border-border " +
+    "bg-popover backdrop-blur-3xl shadow-lg";
 
   const itemBase = "w-full text-left text-xs px-3 py-2 rounded-lg transition-colors";
 
