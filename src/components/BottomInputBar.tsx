@@ -295,22 +295,17 @@ const BottomInputBar = ({
             <button
               onClick={onGenerate}
               disabled={!input.trim() || isGenerating}
-              className="shrink-0 h-10 px-5 flex items-center gap-2 rounded-xl font-semibold text-sm 
-                transition-all duration-300 disabled:opacity-30 
-                bg-[#f5d90a] text-black hover:bg-[#e5c900] hover:shadow-[0_0_20px_rgba(245,217,10,0.3)]
-                active:scale-[0.97]"
+              className={`shrink-0 h-10 px-6 flex items-center justify-center rounded-xl font-semibold text-sm 
+                transition-all duration-300 disabled:opacity-30 active:scale-[0.97]
+                ${input.trim()
+                  ? "bg-[#f5d90a] text-black hover:bg-[#e5c900] hover:shadow-[0_0_20px_rgba(245,217,10,0.3)]"
+                  : "bg-white text-black hover:bg-white/90"
+                }`}
             >
               {isGenerating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Generate</span>
-                  <div className="flex items-center gap-1 pl-2 border-l border-black/20">
-                    <Coins className="w-3 h-3" />
-                    <span className="text-xs">{creditCost}</span>
-                  </div>
-                </>
+                <span>Generate</span>
               )}
             </button>
           </div>
