@@ -6,11 +6,35 @@ import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
 import { Image, Sparkles, Zap, Wand2 } from "lucide-react";
 
-const features = [
-  { icon: Sparkles, title: "Text to Image", desc: "Describe your vision and watch Megsy Pro bring it to life with photorealistic quality." },
-  { icon: Wand2, title: "Image Editing", desc: "Refine, enhance, and transform your images with intelligent AI-powered editing tools." },
-  { icon: Zap, title: "Instant Generation", desc: "Get results in seconds, not minutes. Megsy Pro is optimized for speed without sacrificing quality." },
-  { icon: Image, title: "Style Control", desc: "Choose from dozens of artistic styles or create your own unique visual identity." },
+const howItWorksSteps = [
+  { 
+    number: "1", 
+    title: "Prompt or Upload", 
+    desc: "Type a text prompt or start from an existing image.",
+    bg: "bg-primary",
+    textColor: "text-primary-foreground"
+  },
+  { 
+    number: "2", 
+    title: "Pick a Style", 
+    desc: "Choose Auto for the best model match, or pick your own for full control.",
+    bg: "bg-yellow-400",
+    textColor: "text-black"
+  },
+  { 
+    number: "3", 
+    title: "Refine & Adjust", 
+    desc: "Use advanced editing tools to polish your results perfectly.",
+    bg: "bg-rose-500",
+    textColor: "text-white"
+  },
+  { 
+    number: "4", 
+    title: "Export & Share", 
+    desc: "Download in any format or share directly to your platforms.",
+    bg: "bg-purple-500",
+    textColor: "text-white"
+  },
 ];
 
 // LEFT side images
