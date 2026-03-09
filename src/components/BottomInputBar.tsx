@@ -70,19 +70,28 @@ const ChipDropdown = ({
   children: React.ReactNode;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onCloseRef.current();
+      }
     };
-    if (open) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, onClose]);
+    // Delay to avoid the click that opened it from immediately closing it
+    const id = setTimeout(() => document.addEventListener("mousedown", handler), 0);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener("mousedown", handler);
+    };
+  }, [open]);
 
   return (
     <div ref={ref} className="relative shrink-0">
       <button
-        onClick={onToggle}
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
         className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium 
           bg-white/[0.06] backdrop-blur-2xl border border-white/[0.08] text-white/80 
           hover:bg-white/[0.1] hover:border-white/[0.15] hover:text-white
@@ -305,7 +314,7 @@ const BottomInputBar = ({
               {isGenerating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <span>Generate</span>
+                <span>Generate · {creditCost} MC</span>
               )}
             </button>
           </div>
