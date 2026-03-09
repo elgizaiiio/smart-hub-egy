@@ -82,7 +82,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
     <aside className="hidden md:flex flex-col w-[180px] h-[100dvh] bg-sidebar/60 backdrop-blur-xl border-r border-sidebar-border/30 shrink-0">
       {/* Brand */}
       <button
-        onClick={() => { onNewChat?.(); navigate("/"); }}
+        onClick={() => { onNewChat?.(); navigate("/chat"); }}
         className="px-4 pt-5 pb-6 text-left hover:opacity-70 transition-opacity"
       >
         <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
