@@ -24,25 +24,24 @@ const MODEL_BADGES: Record<string, string[]> = {
   "megsy-v1-img": ["Image Ref"],
 };
 
-// Real provider emoji icons for each model
-const PROVIDER_ICONS: Record<string, string> = {
-  "nano-banana-2": "🍌",
-  "nano-banana-pro": "🍌",
-  "seedream-4": "🌊",
-  "seedream-5-lite": "🌊",
-  "gpt-image": "🤖",
-  "gpt-image-1": "🤖",
-  "ideogram-3": "△",
-  "flux-kontext": "⚡",
-  "flux-2-pro": "⚡",
-  "grok-imagine": "✖",
-  "recraft-v4": "🎨",
-  "lucid-origin": "🔮",
-  "imagineart-1.5": "🎭",
-  "megsy-v1-img": "✦",
-  "fal-hidream-i1": "💭",
-  "fal-aura-v2": "✨",
-  "fal-flux-realism": "⚡",
+// Real provider logos (from public/model-logos/)
+const MODEL_LOGOS: Record<string, string> = {
+  "megsy-v1-img": "/model-logos/megsy.png",
+  "gpt-image": "/model-logos/openai.svg",
+  "gpt-image-1": "/model-logos/openai.svg",
+  "nano-banana-2": "/model-logos/google.ico",
+  "nano-banana-pro": "/model-logos/google.ico",
+  "flux-kontext": "/model-logos/bfl.png",
+  "flux-2-pro": "/model-logos/bfl.png",
+  "fal-flux-realism": "/model-logos/bfl.png",
+  "ideogram-3": "/model-logos/ideogram.png",
+  "seedream-4": "/model-logos/bytedance.ico",
+  "seedream-5-lite": "/model-logos/bytedance.ico",
+  "recraft-v4": "/model-logos/recraft.png",
+  "grok-imagine": "/model-logos/xai.ico",
+  "imagineart-1.5": "/model-logos/fal.ico",
+  "fal-hidream-i1": "/model-logos/fal.ico",
+  "fal-aura-v2": "/model-logos/fal.ico",
 };
 
 const NEW_MODELS = ["nano-banana-2", "seedream-5-lite", "ideogram-3"];
@@ -103,7 +102,7 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
           className="absolute bottom-full left-0 right-0 mb-2 z-40"
         >
           <div className="max-w-4xl mx-auto">
-            <div className="bg-popover backdrop-blur-3xl border border-border rounded-2xl shadow-lg overflow-hidden max-h-[70vh] flex flex-col">
+            <div className="bg-popover/80 backdrop-blur-3xl border border-border rounded-2xl shadow-lg overflow-hidden max-h-[70vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-3.5 border-b border-border shrink-0">
                 <h2 className="text-sm font-semibold text-foreground">Models</h2>
@@ -123,7 +122,7 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
                     const isNew = NEW_MODELS.includes(model.id);
                     const isFree = model.credits === 0;
                     const badges = MODEL_BADGES[model.id] || [];
-                    const emoji = PROVIDER_ICONS[model.id] || "🤖";
+                    const logo = MODEL_LOGOS[model.id];
 
                     return (
                       <motion.button
@@ -131,10 +130,10 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleSelect(model)}
-                        className={`relative flex flex-col p-3.5 rounded-xl text-left transition-all duration-300 ${
+                        className={`relative flex flex-col p-3.5 rounded-xl text-left transition-all duration-300 backdrop-blur-xl ${
                           isSelected
-                            ? "bg-accent border border-primary/30 shadow-sm"
-                            : "bg-muted/50 border border-border hover:bg-accent hover:border-border"
+                            ? "bg-accent/80 border border-primary/30 shadow-sm"
+                            : "bg-muted/40 border border-border/50 hover:bg-accent/60 hover:border-border"
                         }`}
                       >
                         {/* Selected check */}
@@ -145,11 +144,17 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
                         )}
 
                         {/* Top row */}
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-base">{emoji}</span>
+                        <div className="flex items-center gap-2.5 mb-2">
+                          {logo && (
+                            <img
+                              src={logo}
+                              alt=""
+                              className="w-5 h-5 rounded-md object-contain pointer-events-auto"
+                            />
+                          )}
                           <span className="text-[13px] font-semibold text-foreground">{model.name}</span>
                           {isNew && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-warning text-warning-foreground font-bold uppercase tracking-wide">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-warning text-black font-bold uppercase tracking-wide">
                               New
                             </span>
                           )}
@@ -165,8 +170,8 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
                           {model.description}
                         </p>
 
-                        {/* Badges */}
-                        {badges.length > 0 && (
+                        {/* Badges + Credits */}
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1 flex-wrap">
                             {badges.map((badge) => (
                               <span
@@ -177,7 +182,10 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
                               </span>
                             ))}
                           </div>
-                        )}
+                          {model.credits > 0 && (
+                            <span className="text-[10px] text-muted-foreground font-medium">{model.credits} MC</span>
+                          )}
+                        </div>
                       </motion.button>
                     );
                   })}
