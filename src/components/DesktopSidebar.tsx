@@ -93,7 +93,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
         onClick={() => { onNewChat?.(); navigate("/"); }}
         className="w-full flex items-center justify-center py-4 hover:opacity-80 transition-opacity"
       >
-        <img src={logo} alt="Megsy" className="w-9 h-9 object-contain pointer-events-auto" />
+        <span className="text-2xl font-bold text-primary">M</span>
       </button>
 
       {/* Main Navigation */}
