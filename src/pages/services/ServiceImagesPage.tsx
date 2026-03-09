@@ -148,15 +148,6 @@ const ServiceImagesPage = () => {
           transition={{ duration: 0.7, delay: 0.3 }}
           className="relative z-10 mx-auto max-w-4xl text-center"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary"
-          >
-            <Sparkles className="w-4 h-4" />
-            AI Image Generation
-          </motion.div>
 
           <h1 className="font-display text-5xl font-black uppercase leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl">
             <span className="block">Turn Words</span>
