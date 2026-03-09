@@ -599,11 +599,7 @@ const ServiceImagesPage = () => {
                         transition={{ duration: 0.5 }}
                         className="flex justify-start"
                       >
-                        <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
-                            M
-                          </div>
-                          <div className="space-y-2">
+                        <div className="space-y-2">
                             <div className="relative rounded-xl overflow-hidden border border-border/30 max-w-[280px]">
                               <img 
                                 src={currentScenario.image} 
