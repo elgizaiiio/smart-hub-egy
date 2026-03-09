@@ -93,14 +93,17 @@ interface InlineModelPickerProps {
   mode?: "images" | "videos";
 }
 
-const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineModelPickerProps) => {
+const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId, mode = "images" }: InlineModelPickerProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  const imageModels = useMemo(() => {
+  const models = useMemo(() => {
+    if (mode === "videos") {
+      return ALL_MODEL_DETAILS.filter(m => m.type === "video" || m.type === "video-i2v").slice(0, 12);
+    }
     return ALL_MODEL_DETAILS.filter(m => m.type === "image").slice(0, 12);
-  }, []);
+  }, [mode]);
 
   // Close on outside click
   useEffect(() => {
