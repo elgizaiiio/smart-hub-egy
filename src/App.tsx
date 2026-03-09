@@ -124,7 +124,7 @@ const App = () => {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/egypt" element={<EgyptPage />} />
-                <Route path="/apis" element={<PricingPage />} />
+                <Route path="/apis" element={<>{typeof window !== 'undefined' && (window.location.href = 'https://api.megsyai.com')}</>} />
                 <Route path="/services/images" element={<ServiceImagesPage />} />
                 <Route path="/services/videos" element={<ServiceVideosPage />} />
                 <Route path="/services/chat" element={<ServiceChatPage />} />
