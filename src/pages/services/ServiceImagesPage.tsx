@@ -650,38 +650,6 @@ const ServiceImagesPage = () => {
                   </AnimatePresence>
                 </div>
 
-                {/* Input Area */}
-                <div className="border-t border-border/30 p-3 bg-muted/20">
-                  <div className="flex items-center gap-2 rounded-xl border border-border/30 bg-background/50 px-3 py-2">
-                    <motion.div
-                      animate={phase === 'typing-user' ? { 
-                        scale: [1, 1.2, 1],
-                        rotate: [0, 15, -15, 0]
-                      } : {}}
-                      transition={{ duration: 0.6, repeat: phase === 'typing-user' ? Infinity : 0 }}
-                      className="text-primary text-sm"
-                    >
-                      ★
-                    </motion.div>
-                    <div className="flex-1 text-sm text-foreground min-h-[24px]">
-                      {phase === 'typing-user' ? (
-                        <>
-                          {typedUserText}
-                          <motion.span
-                            className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle"
-                            animate={{ opacity: [1, 0] }}
-                            transition={{ duration: 0.5, repeat: Infinity }}
-                          />
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground/50">Describe your image...</span>
-                      )}
-                    </div>
-                    <button className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm">
-                      ↑
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </motion.div>
