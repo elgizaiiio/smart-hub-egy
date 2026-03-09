@@ -215,8 +215,8 @@ const BottomInputBar = ({
                         }}
                         className={`${itemBase} ${
                           selectedQuality === q
-                            ? "bg-foreground/[0.12] text-foreground font-semibold"
-                            : "text-foreground/70 hover:bg-foreground/[0.08] hover:text-foreground"
+                            ? "bg-accent text-accent-foreground font-semibold"
+                            : "hover:bg-accent hover:text-accent-foreground"
                         }`}
                       >
                         {q}
