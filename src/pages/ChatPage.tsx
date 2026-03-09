@@ -667,7 +667,7 @@ const ChatPage = () => {
                 )}
                 <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
               </div>
-              <p className="text-[10px] text-center text-muted-foreground/50 mt-1">Megsy is AI and can make mistakes. Please double-check responses.</p>
+              
               <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
               <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
             </div>
