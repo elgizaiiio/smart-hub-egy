@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
-  User, CreditCard, Gift, Globe, Paintbrush, Activity, Info, LogOut, ExternalLink, X,
+  User, CreditCard, Gift, Globe, Paintbrush, Activity, Info, LogOut, ExternalLink, X, Code2, Flag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/layouts/AppLayout";
