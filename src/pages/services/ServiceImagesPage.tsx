@@ -563,11 +563,7 @@ const ServiceImagesPage = () => {
                         exit={{ opacity: 0 }}
                         className="flex justify-start"
                       >
-                        <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
-                            M
-                          </div>
-                          <div className="rounded-2xl border border-border/30 bg-muted/30 p-4">
+                        <div className="rounded-2xl border border-border/30 bg-muted/30 p-4">
                             <div className="flex items-center gap-3">
                               <motion.div
                                 className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent"
