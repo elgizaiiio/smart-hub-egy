@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MessageSquare, Image, Film, Code2, FolderOpen, Coins, ChevronDown } from "lucide-react";
+import { Sparkles, ImagePlus, Clapperboard, TerminalSquare, FolderKanban, Coins, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
