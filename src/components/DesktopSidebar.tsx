@@ -122,7 +122,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
                 key={chat.id}
                 onClick={() => {
                   onSelectConversation?.(chat.id);
-                  navigate("/");
+                  navigate("/chat");
                 }}
                 className={`w-full text-left px-3 py-1.5 rounded-lg text-[12px] transition-all truncate ${
                   activeConversationId === chat.id
