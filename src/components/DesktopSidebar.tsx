@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, LayoutGrid, Image, Film, Code2, FileText, Settings, Coins, MoreHorizontal, Heart, FileCode, ChevronDown } from "lucide-react";
+import { MessageSquare, Image, Film, Code2, FolderOpen, Coins, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,11 +17,11 @@ interface DesktopSidebarProps {
 }
 
 const mainNav = [
-  { path: "/", label: "Home", icon: Home },
-  { path: "/images", label: "Image", icon: Image },
-  { path: "/videos", label: "Video", icon: Film },
+  { path: "/", label: "Chat", icon: MessageSquare },
+  { path: "/images", label: "Images", icon: Image },
+  { path: "/videos", label: "Videos", icon: Film },
   { path: "/code", label: "Code", icon: Code2 },
-  { path: "/files", label: "Files", icon: FileText },
+  { path: "/files", label: "Files", icon: FolderOpen },
 ];
 
 const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId }: DesktopSidebarProps) => {
@@ -64,23 +63,18 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
-  const NavItem = ({ path, label, icon: Icon, badge }: { path: string; label: string; icon: any; badge?: string }) => {
+  const NavItem = ({ path, label, icon: Icon }: { path: string; label: string; icon: any }) => {
     const active = isActive(path);
     return (
       <button
         onClick={() => navigate(path)}
-        className={`w-full flex flex-col items-center gap-1.5 py-2 rounded-xl text-[11px] font-medium transition-all relative ${
+        className={`w-full flex flex-col items-center gap-1 py-2.5 rounded-xl text-[10px] font-medium transition-all ${
           active
             ? "bg-sidebar-accent text-sidebar-accent-foreground"
             : "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
         }`}
       >
-        {badge && (
-          <span className="absolute -top-1 right-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-500 text-white leading-none">
-            {badge}
-          </span>
-        )}
-        <Icon className="w-5 h-5" strokeWidth={active ? 2 : 1.5} />
+        <Icon className="w-[22px] h-[22px]" strokeWidth={active ? 2 : 1.5} />
         <span className="leading-none">{label}</span>
       </button>
     );
@@ -91,9 +85,9 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       {/* Logo */}
       <button
         onClick={() => { onNewChat?.(); navigate("/"); }}
-        className="w-full flex items-center justify-center py-4 hover:opacity-80 transition-opacity"
+        className="w-full flex items-center justify-center py-5 hover:opacity-80 transition-opacity"
       >
-        <span className="text-2xl font-bold text-primary">M</span>
+        <span className="text-3xl font-extrabold bg-gradient-to-b from-[hsl(0,0%,85%)] to-[hsl(0,0%,55%)] bg-clip-text text-transparent drop-shadow-sm">M</span>
       </button>
 
       {/* Main Navigation */}
@@ -106,45 +100,8 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Bottom Navigation */}
-      <div className="flex flex-col items-center gap-0.5 w-full px-1.5 pb-2">
-        {/* Plans */}
-        <NavItem path="/pricing" label="Plans" icon={Heart} />
-
-        {/* API */}
-        <button
-          onClick={() => window.open("https://api.smarthubing.com", "_blank")}
-          className="w-full flex flex-col items-center gap-1.5 py-2 rounded-xl text-[11px] font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 transition-all"
-        >
-          <FileCode className="w-5 h-5" strokeWidth={1.5} />
-          <span className="leading-none">API</span>
-        </button>
-
-        {/* More */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="w-full flex flex-col items-center gap-1.5 py-2 rounded-xl text-[11px] font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 transition-all">
-              <MoreHorizontal className="w-5 h-5" strokeWidth={1.5} />
-              <span className="leading-none">More</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="end" className="w-44">
-            <DropdownMenuItem onClick={() => window.open("https://status.smarthubing.com", "_blank")}>
-              Status
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.open("https://about.smarthubing.com", "_blank")}>
-              About
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/referrals")}>
-              Referrals
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Settings */}
-        <NavItem path="/settings" label="Settings" icon={Settings} />
-
+      {/* Bottom Section */}
+      <div className="flex flex-col items-center gap-1 w-full px-1.5 pb-3">
         {/* Credits */}
         <button
           onClick={() => navigate("/pricing")}
@@ -162,7 +119,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           Upgrade
         </button>
 
-        {/* User Avatar + Chevron */}
+        {/* User Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-0.5 mt-1 group">
