@@ -76,7 +76,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const initial = userName.charAt(0).toUpperCase() || "U";
 
   const isActive = (path: string) =>
-    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
     <aside className="hidden md:flex flex-col w-[180px] h-[100dvh] bg-sidebar/60 backdrop-blur-xl border-r border-sidebar-border/30 shrink-0">
