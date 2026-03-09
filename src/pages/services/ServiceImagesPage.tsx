@@ -549,9 +549,6 @@ const ServiceImagesPage = () => {
                         className="flex justify-start"
                       >
                         <div className="flex items-start gap-2 max-w-[85%]">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
-                            M
-                          </div>
                           <div className="text-sm text-foreground/90">
                             {typedAiText}
                             {phase === 'typing-ai' && (
