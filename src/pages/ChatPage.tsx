@@ -690,58 +690,63 @@ const ChatPage = () => {
         />
 
         {/* Share Dialog */}
-        <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-          <DialogContent className="sm:max-w-md gap-3">
-            <DialogHeader>
-              <DialogTitle className="text-lg">Chat shared</DialogTitle>
-              <DialogDescription>Future messages aren't included</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-1 rounded-xl border border-border overflow-hidden">
+        <Dialog open={shareDialogOpen} onOpenChange={(open) => { setShareDialogOpen(open); if (!open) setGeneratedShareUrl(null); }}>
+          <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden">
+            <div className="px-5 pt-5 pb-4">
+              <DialogHeader className="mb-0">
+                <DialogTitle className="text-base font-semibold">Share chat</DialogTitle>
+                <DialogDescription className="text-xs">Future messages aren't included</DialogDescription>
+              </DialogHeader>
+            </div>
+
+            <div className="border-t border-border">
               <button
-                onClick={() => setShareMode("private")}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 transition-colors ${shareMode === "private" ? "bg-accent/50" : "hover:bg-secondary/50"}`}
+                onClick={() => { setShareMode("private"); setGeneratedShareUrl(null); }}
+                className={`w-full flex items-center gap-3 px-5 py-3 transition-colors ${shareMode === "private" ? "bg-accent/40" : "hover:bg-accent/20"}`}
               >
-                <Lock className="w-4.5 h-4.5 text-muted-foreground shrink-0" />
-                <div className="text-left flex-1">
-                  <p className="text-sm font-semibold text-foreground">Keep private</p>
-                  <p className="text-xs text-muted-foreground">Only you have access</p>
+                <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Keep private</p>
+                  <p className="text-[11px] text-muted-foreground">Only you have access</p>
                 </div>
-                {shareMode === "private" && <span className="text-primary text-lg">✓</span>}
+                {shareMode === "private" && <span className="text-primary shrink-0">✓</span>}
               </button>
-              <div className="h-px bg-border" />
+              <div className="h-px bg-border mx-5" />
               <button
                 onClick={() => setShareMode("public")}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 transition-colors ${shareMode === "public" ? "bg-accent/50" : "hover:bg-secondary/50"}`}
+                className={`w-full flex items-center gap-3 px-5 py-3 transition-colors ${shareMode === "public" ? "bg-accent/40" : "hover:bg-accent/20"}`}
               >
-                <Globe className="w-4.5 h-4.5 text-muted-foreground shrink-0" />
-                <div className="text-left flex-1">
-                  <p className="text-sm font-semibold text-foreground">Create public link</p>
-                  <p className="text-xs text-muted-foreground">Anyone with the link can view</p>
+                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Create public link</p>
+                  <p className="text-[11px] text-muted-foreground">Anyone with the link can view</p>
                 </div>
-                {shareMode === "public" && <span className="text-primary text-lg">✓</span>}
+                {shareMode === "public" && <span className="text-primary shrink-0">✓</span>}
               </button>
             </div>
-            {shareMode === "public" && (
-              <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5">
-                <span className="flex-1 text-xs text-muted-foreground truncate">Share link will be generated...</span>
-                <button
-                  onClick={handleCreateShareLink}
-                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-accent/50 transition-colors"
-                >
-                  Copy link
-                </button>
-              </div>
-            )}
-            {shareMode === "private" && (
-              <div className="flex justify-end">
-                <button
-                  onClick={handleCreateShareLink}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
-                >
-                  Save
-                </button>
-              </div>
-            )}
+
+            <div className="px-5 py-4 border-t border-border">
+              {shareMode === "public" && generatedShareUrl ? (
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2">
+                  <span className="flex-1 text-xs text-muted-foreground truncate select-all">{generatedShareUrl}</span>
+                  <button
+                    onClick={handleCopyShareLink}
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-accent/50 transition-colors"
+                  >
+                    Copy link
+                  </button>
+                </div>
+              ) : (
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleCreateShareLink}
+                    className="px-4 py-2 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity"
+                  >
+                    {shareMode === "public" ? "Create link" : "Save"}
+                  </button>
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
 
