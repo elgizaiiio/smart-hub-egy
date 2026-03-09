@@ -307,29 +307,9 @@ const ChatPage = () => {
             </button>
 
             {hasConversation && conversationId ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-secondary/50 transition-colors text-sm font-medium text-foreground max-w-[200px]">
-                    <span className="truncate">{conversationTitle || "Untitled"}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-52 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
-                  <DropdownMenuItem onClick={() => toast.success("Starred!")} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Star className="w-4 h-4 text-muted-foreground" />
-                    Star
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setRenameValue(conversationTitle); setIsRenaming(true); }} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Pencil className="w-4 h-4 text-muted-foreground" />
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1" />
-                  <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <span className="text-sm font-medium text-foreground truncate max-w-[200px]">
+                {conversationTitle || "Untitled"}
+              </span>
             ) : (
               <div className="hidden md:block" />
             )}
