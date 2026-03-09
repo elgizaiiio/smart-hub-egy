@@ -12,7 +12,8 @@ import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import ThinkingLoader from "@/components/ThinkingLoader";
-import ImageSettingsPanel, { MobileSettingsDrawer, DEFAULT_SETTINGS, type ImageSettings, type ImageStyle } from "@/components/ImageSettingsPanel";
+import ImageSettingsPanel, { DEFAULT_SETTINGS, type ImageSettings, type ImageStyle } from "@/components/ImageSettingsPanel";
+import ImageSettingsDrawer from "@/components/ImageSettingsDrawer";
 import ShowcaseGrid from "@/components/ShowcaseGrid";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
 import BottomInputBar from "@/components/BottomInputBar";
@@ -483,9 +484,14 @@ const ImagesPage = () => {
           selectedModelId={selectedModel.id}
         />
 
-        <MobileSettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)}>
-          {settingsPanelContent}
-        </MobileSettingsDrawer>
+        <ImageSettingsDrawer
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          settings={settings}
+          onSettingsChange={setSettings}
+          selectedModel={selectedModel}
+          onOpenModelPicker={() => { setSettingsOpen(false); setModelPickerOpen(true); }}
+        />
 
         {/* Showcase / content area */}
         <div className="flex-1 overflow-y-auto pb-48">

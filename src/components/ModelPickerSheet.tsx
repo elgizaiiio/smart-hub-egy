@@ -309,8 +309,8 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
   };
 
-  // Video mode: bottom sheet popup
-  if (mode === "videos") {
+  // Video & Images mode: bottom sheet popup
+  if (mode === "videos" || mode === "images") {
     return createPortal(
       <AnimatePresence>
         {open &&
@@ -348,7 +348,18 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
               {/* Model list */}
               <div className="flex-1 overflow-y-auto">
-                {allModels.map((model, i) => renderModelRow(model, i < allModels.length - 1))}
+                {mode === "images" && tab === "models" ? (
+                  <>
+                    {featuredModels.map((model, i) => renderModelRow(model, i < featuredModels.length - 1))}
+                    {otherModels.length > 0 && (
+                      <div className="border-t border-border">
+                        {otherModels.map((model, i) => renderModelRow(model, i < otherModels.length - 1))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  allModels.map((model, i) => renderModelRow(model, i < allModels.length - 1))
+                )}
               </div>
             </motion.div>
           </>
@@ -358,7 +369,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     );
   }
 
-  // Images/Chat mode: full-screen sheet
+  // Chat mode: full-screen sheet
   return createPortal(
     <AnimatePresence>
       {open &&
@@ -493,20 +504,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
         /* LIST VIEW */
         <div className="flex-1 overflow-y-auto">
               <div className="max-w-2xl mx-auto">
-                {mode === "images" && tab === "models" ?
-            <>
-                    {featuredModels.length > 0 &&
-              <div>
-                        {featuredModels.map((model, i) => renderModelRow(model, i < featuredModels.length - 1))}
-                      </div>
-              }
-                    {otherModels.length > 0 &&
-              <div className="border-t border-border">
-                        {otherModels.map((model, i) => renderModelRow(model, i < otherModels.length - 1))}
-                      </div>
-              }
-                  </> :
-
             <div>
                     {allModels.length === 0 ?
               <div className="text-center py-16">
@@ -516,7 +513,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
               allModels.map((model, i) => renderModelRow(model, i < allModels.length - 1))
               }
                   </div>
-            }
               </div>
             </div>)
         }
