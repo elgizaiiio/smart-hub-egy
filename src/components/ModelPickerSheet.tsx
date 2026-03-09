@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, HelpCircle, Star, Sparkles, X } from "lucide-react";
+import { ArrowLeft, X, Check } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ALL_MODEL_DETAILS, type ModelDetail, type ModelType } from "@/lib/modelDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,150 @@ const MODE_TYPES: Record<PickerMode, { models: ModelType[]; tools: ModelType[]; 
   chat: { models: ["chat"], tools: [], modelLabel: "Models", toolLabel: "" },
 };
 
+// Brand logos
+const MODEL_LOGOS: Record<string, string> = {
+  // Image models
+  "megsy-v1-img": "/model-logos/megsy.png",
+  "gpt-image": "/model-logos/openai.svg",
+  "gpt-image-1": "/model-logos/openai.svg",
+  "nano-banana-2": "/model-logos/google.ico",
+  "nano-banana-pro": "/model-logos/google.ico",
+  "flux-kontext": "/model-logos/bfl.png",
+  "flux-kontext-std": "/model-logos/bfl.png",
+  "flux-2-pro": "/model-logos/bfl.png",
+  "flux-dev": "/model-logos/bfl.png",
+  "flux-schnell": "/model-logos/bfl.png",
+  "fal-flux-realism": "/model-logos/bfl.png",
+  "ideogram-3": "/model-logos/ideogram.png",
+  "seedream-4": "/model-logos/bytedance.ico",
+  "seedream-4-0": "/model-logos/bytedance.ico",
+  "seedream-5-lite": "/model-logos/bytedance.ico",
+  "recraft-v4": "/model-logos/recraft.png",
+  "grok-imagine": "/model-logos/xai.ico",
+  "imagineart-1.5": "/model-logos/fal.ico",
+  "fal-hidream-i1": "/model-logos/fal.ico",
+  "fal-aura-v2": "/model-logos/fal.ico",
+  "fal-stable-cascade": "/model-logos/fal.ico",
+  "fal-omnigen2": "/model-logos/fal.ico",
+  "lucid-origin": "/model-logos/fal.ico",
+  "lucid-realism": "/model-logos/fal.ico",
+  "phoenix-1": "/model-logos/fal.ico",
+  "phoenix-0.9": "/model-logos/fal.ico",
+  "logo-creator": "/model-logos/megsy.png",
+  "sticker-maker": "/model-logos/megsy.png",
+  "qr-art": "/model-logos/megsy.png",
+  // Image tools
+  "nano-banana-edit": "/model-logos/google.ico",
+  "object-remover": "/model-logos/megsy.png",
+  "watermark-remover": "/model-logos/megsy.png",
+  "image-extender": "/model-logos/megsy.png",
+  "flux-pro-editor": "/model-logos/bfl.png",
+  "image-variations": "/model-logos/megsy.png",
+  "photo-colorizer": "/model-logos/megsy.png",
+  "bg-remover": "/model-logos/megsy.png",
+  "4k-upscaler": "/model-logos/megsy.png",
+  "face-enhancer": "/model-logos/megsy.png",
+  "creative-upscaler": "/model-logos/megsy.png",
+  "old-photo-restorer": "/model-logos/megsy.png",
+  "bg-replacer": "/model-logos/megsy.png",
+  "style-transfer": "/model-logos/megsy.png",
+  "ai-relighting": "/model-logos/megsy.png",
+  "photo-to-cartoon": "/model-logos/megsy.png",
+  "product-photo": "/model-logos/megsy.png",
+  "ai-headshot": "/model-logos/megsy.png",
+  // Video models
+  "megsy-video": "/model-logos/megsy.png",
+  "megsy-video-i2v": "/model-logos/megsy.png",
+  "veo-3.1": "/model-logos/google.ico",
+  "veo-3.1-fast": "/model-logos/google.ico",
+  "veo-3.1-fast-i2v": "/model-logos/google.ico",
+  "kling-3-pro": "/model-logos/kling.png",
+  "kling-3-pro-i2v": "/model-logos/kling.png",
+  "kling-o1": "/model-logos/kling.png",
+  "kling-o1-i2v": "/model-logos/kling.png",
+  "kling-avatar-pro": "/model-logos/kling.png",
+  "kling-avatar-std": "/model-logos/kling.png",
+  "openai-sora": "/model-logos/openai.svg",
+  "openai-sora-i2v": "/model-logos/openai.svg",
+  "pika-2.2": "/model-logos/pika.png",
+  "luma-dream": "/model-logos/luma.png",
+  "seedance-pro": "/model-logos/bytedance.ico",
+  "wan-2.6": "/model-logos/fal.ico",
+  "wan-2.6-i2v": "/model-logos/fal.ico",
+  "wan-flf": "/model-logos/fal.ico",
+  "pixverse-5.5": "/model-logos/fal.ico",
+  "pixverse-5.5-i2v": "/model-logos/fal.ico",
+  "sadtalker": "/model-logos/fal.ico",
+  "sync-lipsync": "/model-logos/fal.ico",
+};
+
+// Capability badges per model
+const MODEL_BADGES: Record<string, string[]> = {
+  // Image models
+  "nano-banana-2": ["Multi-Image Input", "4K"],
+  "nano-banana-pro": ["Multi-Image Input", "4K"],
+  "seedream-4": ["Multi-Image Input", "3K"],
+  "seedream-4-0": ["Multi-Image Input", "3K"],
+  "seedream-5-lite": ["Multi-Image Input", "4K"],
+  "gpt-image": ["Multi-Image Input", "4K"],
+  "gpt-image-1": ["Multi-Image Input", "1K"],
+  "ideogram-3": ["1K", "Styles"],
+  "flux-kontext": ["Image Input", "2K"],
+  "flux-kontext-std": ["Image Input", "2K"],
+  "flux-2-pro": ["Image Guidance", "2K"],
+  "grok-imagine": ["Image Input", "1K"],
+  "recraft-v4": ["2K"],
+  "lucid-origin": ["Style Ref", "Content Ref"],
+  "lucid-realism": ["Style Ref", "Content Ref"],
+  "imagineart-1.5": ["Multi-Image Input", "4K"],
+  "fal-hidream-i1": ["Multi-Image Input", "2K"],
+  "fal-aura-v2": ["1K"],
+  "fal-flux-realism": ["2K"],
+  "megsy-v1-img": ["Image Ref"],
+  "flux-dev": ["Style Ref", "Content Ref", "Elements"],
+  "flux-schnell": ["Style Ref", "Content Ref"],
+  "phoenix-1": ["Image to Image", "Style Ref", "Content Ref"],
+  "phoenix-0.9": ["Image to Image", "Style Ref", "Content Ref"],
+  // Video models
+  "megsy-video": ["Default", "5s"],
+  "veo-3.1": ["Audio", "8s"],
+  "veo-3.1-fast": ["Fast", "5s"],
+  "kling-3-pro": ["Cinematic", "10s"],
+  "kling-o1": ["Balanced", "5s"],
+  "openai-sora": ["Realistic", "5s"],
+  "pika-2.2": ["Creative", "4s"],
+  "luma-dream": ["Smooth", "5s"],
+  "seedance-pro": ["Budget", "5s"],
+  "wan-2.6": ["Open-source", "5s"],
+  "pixverse-5.5": ["Effects", "5s"],
+  // I2V
+  "megsy-video-i2v": ["Image Input"],
+  "kling-3-pro-i2v": ["Image Input", "Cinematic"],
+  "kling-o1-i2v": ["Image Input"],
+  "veo-3.1-fast-i2v": ["Image Input", "Fast"],
+  "openai-sora-i2v": ["Image Input"],
+  "pixverse-5.5-i2v": ["Image Input"],
+  "wan-2.6-i2v": ["Image Input"],
+  "wan-flf": ["First-Last Frame"],
+  "kling-avatar-pro": ["Face Input", "Pro"],
+  "kling-avatar-std": ["Face Input"],
+  "sadtalker": ["Face Input"],
+  "sync-lipsync": ["Lip Sync"],
+  // Image tools
+  "nano-banana-edit": ["Multi-Image Input"],
+  "object-remover": ["Image Input"],
+  "watermark-remover": ["Image Input"],
+  "image-extender": ["Image Input"],
+  "flux-pro-editor": ["Image Input"],
+  "image-variations": ["Multi-Image Input"],
+  "bg-remover": ["Image Input"],
+  "4k-upscaler": ["Image Input"],
+  "face-enhancer": ["Image Input"],
+  "creative-upscaler": ["Image Input"],
+};
+
+const NEW_MODELS = ["nano-banana-2", "seedream-5-lite", "ideogram-3", "veo-3.1", "kling-3-pro"];
+
 // Featured model IDs (shown at top)
 const FEATURED_IMAGE_IDS = [
   "nano-banana-2",
@@ -31,37 +175,6 @@ const FEATURED_IMAGE_IDS = [
   "gpt-image",
   "nano-banana-pro",
 ];
-
-// Capability badges per model
-const MODEL_BADGES: Record<string, string[]> = {
-  "nano-banana-2": ["Image Ref"],
-  "seedream-4": ["Image Ref"],
-  "lucid-origin": ["Style Ref", "Content Ref"],
-  "flux-2-pro": ["Image Guidance"],
-  "gpt-image": ["Image Ref"],
-  "nano-banana-pro": ["Image Ref"],
-  "seedream-4-0": ["Image Ref"],
-  "megsy-v1-img": ["Image Ref"],
-  "lucid-realism": ["Style Ref", "Content Ref"],
-  "ideogram-3": [],
-  "gpt-image-1": ["Image Ref"],
-  "flux-kontext": ["Image Ref"],
-  "flux-kontext-std": ["Image Ref"],
-  "flux-dev": ["Style Ref", "Content Ref", "Elements"],
-  "flux-schnell": ["Style Ref", "Content Ref"],
-  "phoenix-1": ["Image to Image", "Style Ref", "Content Ref", "Character Ref"],
-  "phoenix-0.9": ["Image to Image", "Style Ref", "Content Ref", "Character Ref"],
-};
-
-// Provider icons
-const PROVIDER_ICONS: Record<string, React.ReactNode> = {
-  "nano-banana-2": <span className="text-[10px]">🍌</span>,
-  "seedream-4": <span className="text-[10px]">🌊</span>,
-  "lucid-origin": <span className="text-[10px]">🔮</span>,
-  "flux-2-pro": <span className="text-[10px]">⚡</span>,
-  "gpt-image": <span className="text-[10px]">🤖</span>,
-  "nano-banana-pro": <span className="text-[10px]">🍌</span>,
-};
 
 interface ModelMediaRecord {
   model_id: string;
@@ -120,69 +233,104 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
   if (!open) return null;
 
-  const renderModelRow = (model: ModelDetail) => {
+  const renderModelRow = (model: ModelDetail, showBorder = true) => {
     const isSelected = selectedModelId === model.id;
-    const media = mediaMap[model.id];
+    const logo = MODEL_LOGOS[model.id];
     const badges = MODEL_BADGES[model.id] || [];
-    const isNew = model.id === "nano-banana-2";
+    const isNew = NEW_MODELS.includes(model.id);
+    const isFree = model.credits === 0;
+    const media = mediaMap[model.id];
 
     return (
       <motion.button
         key={model.id}
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
         onClick={() => handleSelect(model)}
-        className={`w-full flex items-start gap-3 p-3 rounded-xl transition-all text-left group ${
-          isSelected
-            ? "bg-primary/10 border border-primary/30"
-            : "hover:bg-secondary/60 border border-transparent"
+        className={`w-full text-left transition-all group ${
+          showBorder ? "border-b border-border/50" : ""
         }`}
       >
-        {/* Thumbnail */}
-        <div className="w-14 h-14 rounded-xl overflow-hidden bg-secondary shrink-0">
-          {media ? (
-            media.media_type === "video" ? (
-              <video src={media.media_url} className="w-full h-full object-cover" autoPlay muted loop playsInline />
+        <div className={`relative flex items-start gap-3 px-4 py-4 ${
+          isSelected ? "bg-primary/5" : "hover:bg-muted/40"
+        }`}>
+          {/* Logo */}
+          <div className="shrink-0 mt-0.5">
+            {logo ? (
+              <img
+                src={logo}
+                alt=""
+                className="w-6 h-6 rounded-md object-contain"
+              />
             ) : (
-              <img src={media.media_url} alt={model.name} className="w-full h-full object-cover" loading="lazy" />
-            )
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <span className="text-lg opacity-30">AI</span>
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-semibold text-foreground">{model.name}</span>
-            {PROVIDER_ICONS[model.id] && PROVIDER_ICONS[model.id]}
-            {isNew && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold">New</span>
+              <div className="w-6 h-6 rounded-md bg-primary/20 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-primary">AI</span>
+              </div>
             )}
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-1 mb-1.5">{model.description}</p>
-          {badges.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {badges.map(badge => (
-                <span
-                  key={badge}
-                  className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium"
-                >
-                  {badge}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Price */}
-        <div className="shrink-0 flex flex-col items-end gap-1">
-          <span className="text-[11px] font-semibold text-muted-foreground">
-            {model.credits > 0 ? `${model.credits} MC` : "Free"}
-          </span>
-          {isSelected && <span className="w-2 h-2 rounded-full bg-primary" />}
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            {/* Name row */}
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-sm font-semibold text-foreground">{model.name}</span>
+              {isNew && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-warning text-black font-bold uppercase tracking-wide">
+                  New
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-relaxed">
+              {model.description}
+            </p>
+
+            {/* Badges + optional media preview */}
+            <div className="flex items-end justify-between gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {badges.map(badge => (
+                  <span
+                    key={badge}
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-muted/80 text-muted-foreground font-medium"
+                  >
+                    {badge}
+                  </span>
+                ))}
+              </div>
+
+              {/* Small media preview for models that have it */}
+              {media && (
+                <div className="shrink-0 flex gap-1">
+                  {media.media_type === "video" ? (
+                    <video
+                      src={media.media_url}
+                      className="w-12 h-12 rounded-lg object-cover"
+                      autoPlay muted loop playsInline
+                    />
+                  ) : (
+                    <img
+                      src={media.media_url}
+                      alt=""
+                      className="w-12 h-12 rounded-lg object-cover"
+                      loading="lazy"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Price badge */}
+          <div className="shrink-0">
+            <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${
+              isFree
+                ? "border border-border text-muted-foreground"
+                : "border border-border text-muted-foreground"
+            }`}>
+              {isFree ? "FREE" : `${model.credits} MC`}
+            </span>
+          </div>
         </div>
       </motion.button>
     );
@@ -198,7 +346,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
           className="fixed inset-0 z-50 bg-background flex flex-col"
         >
           {/* Top Bar */}
-          <div className="shrink-0 bg-background sticky top-0 z-10 border-b border-border">
+          <div className="shrink-0 bg-background sticky top-0 z-10">
             <div className="max-w-2xl mx-auto px-4 pt-3 pb-2 flex items-center gap-3">
               <button
                 onClick={() => { if (detailModel) setDetailModel(null); else onClose(); }}
@@ -223,10 +371,8 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
             {hasTools && !detailModel && (
               <div className="max-w-2xl mx-auto px-4 pb-2">
                 <div className="flex bg-secondary rounded-full p-1">
-                  {["Image", "Video", "Legacy"].map((label, i) => {
-                    const tabKey = i === 0 ? "models" : i === 1 ? "tools" : "models";
+                  {(mode === "images" ? ["Image", "Tools"] : ["Video", "Tools"]).map((label, i) => {
                     const isActive = (i === 0 && tab === "models") || (i === 1 && tab === "tools");
-                    if (i === 2 && mode !== "images") return null;
                     return (
                       <button
                         key={label}
@@ -297,12 +443,10 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                         <td className="px-4 py-3 text-foreground font-medium text-right">{detailModel.modes.join(", ")}</td>
                       </tr>
                       {detailModel.acceptsImages && (
-                        <>
-                          <tr className="border-b border-border">
-                            <td className="px-4 py-3 text-muted-foreground">Max Images</td>
-                            <td className="px-4 py-3 text-foreground font-medium text-right">{detailModel.maxImages}</td>
-                          </tr>
-                        </>
+                        <tr className="border-b border-border">
+                          <td className="px-4 py-3 text-muted-foreground">Max Images</td>
+                          <td className="px-4 py-3 text-foreground font-medium text-right">{detailModel.maxImages}</td>
+                        </tr>
                       )}
                       <tr>
                         <td className="px-4 py-3 text-muted-foreground">MC</td>
@@ -325,49 +469,30 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
               </div>
             </div>
           ) : (
-            /* LIST VIEW - Leonardo style with Featured/Other sections */
+            /* LIST VIEW */
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-2xl mx-auto px-4 py-3">
+              <div className="max-w-2xl mx-auto">
                 {mode === "images" && tab === "models" ? (
                   <>
-                    {/* Featured Section */}
                     {featuredModels.length > 0 && (
-                      <div className="mb-4">
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                          <Sparkles className="w-4 h-4 text-primary" />
-                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Featured</span>
-                        </div>
-                        <div className="space-y-1">
-                          {featuredModels.map(model => renderModelRow(model))}
-                        </div>
+                      <div>
+                        {featuredModels.map((model, i) => renderModelRow(model, i < featuredModels.length - 1))}
                       </div>
                     )}
-
-                    {/* Separator */}
-                    <div className="border-t border-border my-4" />
-
-                    {/* Other Models Section */}
                     {otherModels.length > 0 && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                          <Star className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Other Models</span>
-                        </div>
-                        <div className="space-y-1">
-                          {otherModels.map(model => renderModelRow(model))}
-                        </div>
+                      <div className="border-t border-border">
+                        {otherModels.map((model, i) => renderModelRow(model, i < otherModels.length - 1))}
                       </div>
                     )}
                   </>
                 ) : (
-                  /* Non-image or tools: simple list */
-                  <div className="space-y-1">
+                  <div>
                     {allModels.length === 0 ? (
                       <div className="text-center py-16">
                         <p className="text-muted-foreground text-sm">No models found.</p>
                       </div>
                     ) : (
-                      allModels.map(model => renderModelRow(model))
+                      allModels.map((model, i) => renderModelRow(model, i < allModels.length - 1))
                     )}
                   </div>
                 )}
