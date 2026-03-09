@@ -17,11 +17,11 @@ interface DesktopSidebarProps {
 }
 
 const mainNav = [
-  { path: "/", label: "Chat", icon: MessageSquare },
-  { path: "/images", label: "Images", icon: Image },
-  { path: "/videos", label: "Videos", icon: Film },
-  { path: "/code", label: "Code", icon: Code2 },
-  { path: "/files", label: "Files", icon: FolderOpen },
+  { path: "/", label: "Chat", icon: Sparkles },
+  { path: "/images", label: "Images", icon: ImagePlus },
+  { path: "/videos", label: "Videos", icon: Clapperboard },
+  { path: "/code", label: "Code", icon: TerminalSquare },
+  { path: "/files", label: "Files", icon: FolderKanban },
 ];
 
 const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId }: DesktopSidebarProps) => {
