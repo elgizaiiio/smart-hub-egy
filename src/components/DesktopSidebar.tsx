@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, ChevronDown, Coins } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 
 interface DesktopSidebarProps {
