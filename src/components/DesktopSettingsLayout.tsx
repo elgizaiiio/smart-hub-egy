@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
-  User, CreditCard, Gift, Globe, Paintbrush, Activity, Info, LogOut, ExternalLink, X,
+  User, CreditCard, Gift, Globe, Paintbrush, Activity, Info, LogOut, ExternalLink, X, Code2, Flag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/layouts/AppLayout";
@@ -20,6 +20,11 @@ const NAV_ITEMS: NavItem[] = [
   { id: "billing", label: "Billing", icon: CreditCard, path: "/settings/billing" },
   { id: "customization", label: "Customization", icon: Paintbrush, path: "/settings/customization" },
   { id: "referrals", label: "Referrals", icon: Gift, path: "/settings/referrals" },
+];
+
+const EXTRA_NAV: NavItem[] = [
+  { id: "apis", label: "APIs", icon: Code2, path: "/apis" },
+  { id: "egypt", label: "Egypt 🇪🇬", icon: Flag, path: "/egypt" },
 ];
 
 const EXTERNAL_LINKS: NavItem[] = [
@@ -68,6 +73,22 @@ export function DesktopSettingsLayout({ children, title, subtitle }: DesktopSett
                         ? "bg-muted text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+
+              <div className="h-px bg-border/30 my-3" />
+
+              {EXTRA_NAV.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate(item.path)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200"
                   >
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
