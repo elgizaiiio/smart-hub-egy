@@ -85,7 +85,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const chatModels = getModelsForMode("chat");
 
   return (
-    <div className="relative">
+    <div className="relative flex flex-col gap-2">
       <div className="relative flex flex-col rounded-2xl border border-border/60 bg-secondary/40 backdrop-blur-md overflow-visible">
         {/* Text area */}
         <textarea
@@ -109,9 +109,9 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Model selector */}
+            {/* Model selector - desktop only */}
             {selectedModel && onModelChange && (
-              <div className="relative" ref={modelMenuRef}>
+              <div className="relative hidden md:block" ref={modelMenuRef}>
                 <button
                   onClick={() => setModelMenuOpen(!modelMenuOpen)}
                   className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
@@ -162,6 +162,40 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </div>
         </div>
       </div>
+
+      {/* Model selector - mobile only, below input */}
+      {selectedModel && onModelChange && (
+        <div className="relative md:hidden flex justify-center" ref={modelMenuRef}>
+          <button
+            onClick={() => setModelMenuOpen(!modelMenuOpen)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+          >
+            {selectedModel.name}
+            <ChevronDown className="w-3 h-3" />
+          </button>
+          <AnimatePresence>
+            {modelMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.15 }}
+                className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 w-48 rounded-xl border border-border bg-popover shadow-lg py-1 z-50"
+              >
+                {getModelsForMode("chat").map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => { onModelChange(m); setModelMenuOpen(false); }}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors ${selectedModel.id === m.id ? "text-primary bg-primary/5" : "text-foreground hover:bg-accent/50"}`}
+                  >
+                    {m.name}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 };
