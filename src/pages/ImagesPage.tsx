@@ -360,8 +360,27 @@ const ImagesPage = () => {
 
         {/* ── Desktop Left Settings Panel ── */}
         {!isMobile && (
-          <div className="w-[240px] shrink-0 border-r border-border bg-card flex flex-col p-4 hidden md:flex">
-            {settingsPanelContent}
+          <div className="w-[260px] shrink-0 border-r border-border bg-card flex flex-col hidden md:flex">
+            {/* Top bar */}
+            <div className="shrink-0 px-4 pt-4 pb-3 border-b border-border space-y-3">
+              <h2 className="text-sm font-bold text-foreground">Image Generation</h2>
+              <div className="flex bg-secondary rounded-lg p-1">
+                <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold bg-background text-foreground shadow-sm">
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  Image
+                </button>
+                <button
+                  onClick={() => navigate("/videos")}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  Video
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {settingsPanelContent}
+            </div>
           </div>
         )}
 
