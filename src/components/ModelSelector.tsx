@@ -23,15 +23,27 @@ const CHAT_MODELS: ModelOption[] = [
 ];
 
 export const IMAGE_MODELS: ModelOption[] = [
-  { id: "megsy-v1-img", name: "Megsy v1", credits: "4", category: "model" },
-  { id: "gpt-image", name: "GPT Image 1.5", credits: "5", category: "model" },
+  // Featured
   { id: "nano-banana-2", name: "Nano Banana 2", credits: "4", category: "model" },
-  { id: "flux-kontext", name: "FLUX Kontext Max", credits: "3", category: "model" },
-  { id: "ideogram-3", name: "Ideogram 3", credits: "3", category: "model" },
+  { id: "seedream-4", name: "Seedream 4.5", credits: "2", category: "model" },
+  { id: "lucid-origin", name: "Lucid Origin", credits: "3", category: "model" },
+  { id: "flux-2-pro", name: "FLUX.2 Pro", credits: "5", category: "model" },
+  { id: "gpt-image", name: "GPT Image-1.5", credits: "5", category: "model" },
+  { id: "nano-banana-pro", name: "Nano Banana Pro", credits: "4", category: "model" },
+  // Other Models
+  { id: "seedream-4-0", name: "Seedream 4.0", credits: "2", category: "model" },
+  { id: "megsy-v1-img", name: "Nano Banana", credits: "4", category: "model" },
+  { id: "lucid-realism", name: "Lucid Realism", credits: "3", category: "model" },
+  { id: "ideogram-3", name: "Ideogram 3.0", credits: "3", category: "model" },
+  { id: "gpt-image-1", name: "GPT-Image-1", credits: "4", category: "model" },
+  { id: "flux-kontext", name: "FLUX.1 Kontext Max", credits: "3", category: "model" },
+  { id: "flux-kontext-std", name: "FLUX.1 Kontext", credits: "2", category: "model" },
+  { id: "flux-dev", name: "FLUX Dev", credits: "2", category: "model" },
+  { id: "flux-schnell", name: "FLUX Schnell", credits: "1", category: "model" },
+  { id: "phoenix-1", name: "Phoenix 1.0", credits: "3", category: "model" },
+  { id: "phoenix-0.9", name: "Phoenix 0.9", credits: "2", category: "model" },
   { id: "seedream-5-lite", name: "Seedream 5 Lite", credits: "2", category: "model" },
   { id: "recraft-v4", name: "Recraft V4", credits: "3", category: "model" },
-  { id: "flux-2-pro", name: "FLUX 2 Pro", credits: "5", category: "model" },
-  { id: "seedream-4", name: "Seedream 4.5", credits: "2", category: "model" },
   { id: "grok-imagine", name: "Grok Imagine", credits: "3", category: "model" },
   { id: "imagineart-1.5", name: "ImagineArt 1.5", credits: "2", category: "model" },
   { id: "fal-hidream-i1", name: "HiDream I1 Full", credits: "2", category: "model" },
@@ -42,6 +54,7 @@ export const IMAGE_MODELS: ModelOption[] = [
   { id: "logo-creator", name: "Logo Creator", credits: "2", category: "model" },
   { id: "sticker-maker", name: "Sticker Maker", credits: "2", category: "model" },
   { id: "qr-art", name: "QR Art", credits: "2", category: "model" },
+  // Tools (require image)
   { id: "nano-banana-edit", name: "Nano Banana Edit", credits: "2", category: "tool", requiresImage: true },
   { id: "object-remover", name: "Object Remover", credits: "2", category: "tool", requiresImage: true },
   { id: "watermark-remover", name: "Watermark Remover", credits: "2", category: "tool", requiresImage: true },
