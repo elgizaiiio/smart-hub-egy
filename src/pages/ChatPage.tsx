@@ -453,8 +453,6 @@ const ChatPage = () => {
                 </button>
               </div>
             </div>
-              </motion.div>
-            </div>
           ) : (
             <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
               {messages.map((msg, i) => (
