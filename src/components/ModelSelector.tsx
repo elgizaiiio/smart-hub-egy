@@ -221,9 +221,6 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, colorClass }: Model
                 >
                   <span className="hidden md:inline-flex"><ModelBrandIcon modelId={m.id} /></span>
                   <span className="font-medium">{m.name}</span>
-                  {selectedModel.id === m.id && (
-                    <span className="ml-auto w-2 h-2 rounded-full bg-primary" />
-                  )}
                 </button>
               ))}
             </motion.div>
