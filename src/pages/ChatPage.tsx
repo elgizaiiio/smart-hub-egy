@@ -482,8 +482,20 @@ const ChatPage = () => {
                                 <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
                               </div>
                             </button>
-                            <div className="px-3 py-2">
-                              <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
+                            <div className="border-t border-border mt-1 pt-1">
+                              <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Model</p>
+                              {getModelsForMode("chat").map((m) => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => setSelectedModel(m)}
+                                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
+                                    selectedModel.id === m.id ? "bg-primary/10 text-primary" : "hover:bg-accent/50"
+                                  }`}
+                                >
+                                  <span className="text-sm font-medium">{m.name}</span>
+                                  {selectedModel.id === m.id && <span className="text-xs text-primary">✓</span>}
+                                </button>
+                              ))}
                             </div>
                             <div className="border-t border-border mt-1 pt-1">
                               <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
