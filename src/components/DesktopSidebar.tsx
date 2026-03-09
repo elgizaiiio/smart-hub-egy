@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, CreditCard, Crown, PanelLeftClose, PanelLeft, MessageCircle, Settings, LogOut, User, Sparkles } from "lucide-react";
+import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, CreditCard, Crown, PanelLeftClose, PanelLeft, MessageCircle, Settings, LogOut, User, Sparkles, Layers, Bot } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +19,14 @@ interface DesktopSidebarProps {
 
 const mainNav = [
   { path: "/chat", label: "Chat", icon: MessageSquare },
-  { path: "/images", label: "Images", icon: ImageIcon },
-  { path: "/videos", label: "Videos", icon: Video },
+  { path: "/images", label: "Images", icon: ImageIcon, subItems: [
+    { path: "/images/studio", label: "Studio", icon: Layers },
+    { path: "/images/agent", label: "Agent", icon: Bot },
+  ]},
+  { path: "/videos", label: "Videos", icon: Video, subItems: [
+    { path: "/videos/studio", label: "Studio", icon: Layers },
+    { path: "/videos/agent", label: "Agent", icon: Bot },
+  ]},
   { path: "/code", label: "Code", icon: Code2 },
   { path: "/files", label: "Files", icon: FolderOpen },
 ];
@@ -82,6 +88,9 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
   const initial = userName.charAt(0).toUpperCase() || "U";
 
   const isActive = (path: string) =>
+    location.pathname === path;
+
+  const isInSection = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
@@ -110,42 +119,84 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       <nav className={`flex flex-col ${collapsed ? "px-1.5 items-center" : "px-2.5"} gap-0.5`}>
         {mainNav.map((item) => {
           const active = isActive(item.path);
+          const inSection = isInSection(item.path);
           const Icon = item.icon;
+          const showSubs = !collapsed && inSection && item.subItems;
 
           if (collapsed) {
             return (
-              <Tooltip key={item.path} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => navigate(item.path)}
-                    className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-                      active
-                        ? "text-sidebar-foreground bg-sidebar-accent/60"
-                        : "text-sidebar-foreground/45 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs">
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
+              <div key={item.path} className="flex flex-col items-center gap-0.5">
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => navigate(item.path)}
+                      className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
+                        inSection
+                          ? "text-sidebar-foreground bg-sidebar-accent/60"
+                          : "text-sidebar-foreground/45 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+                {inSection && item.subItems && item.subItems.map(sub => (
+                  <Tooltip key={sub.path} delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => navigate(sub.path)}
+                        className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
+                          isActive(sub.path)
+                            ? "text-sidebar-foreground bg-sidebar-accent/50"
+                            : "text-sidebar-foreground/35 hover:text-sidebar-foreground/65 hover:bg-sidebar-accent/25"
+                        }`}
+                      >
+                        <sub.icon className="w-3.5 h-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs">{sub.label}</TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
             );
           }
 
           return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`w-full text-left px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
-                active
-                  ? "text-sidebar-foreground bg-sidebar-accent/60 backdrop-blur-sm"
-                  : "text-sidebar-foreground/45 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30"
-              }`}
-            >
-              {item.label}
-            </button>
+            <div key={item.path}>
+              <button
+                onClick={() => navigate(item.path)}
+                className={`w-full text-left px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
+                  active
+                    ? "text-sidebar-foreground bg-sidebar-accent/60 backdrop-blur-sm"
+                    : inSection
+                    ? "text-sidebar-foreground bg-sidebar-accent/40"
+                    : "text-sidebar-foreground/45 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30"
+                }`}
+              >
+                {item.label}
+              </button>
+              {showSubs && (
+                <div className="ml-3 mt-0.5 space-y-0.5 border-l border-sidebar-border/30 pl-2">
+                  {item.subItems!.map(sub => (
+                    <button
+                      key={sub.path}
+                      onClick={() => navigate(sub.path)}
+                      className={`w-full text-left px-3 py-1 rounded-lg text-[12px] font-medium transition-all flex items-center gap-2 ${
+                        isActive(sub.path)
+                          ? "text-sidebar-foreground bg-sidebar-accent/50"
+                          : "text-sidebar-foreground/40 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent/25"
+                      }`}
+                    >
+                      <sub.icon className="w-3.5 h-3.5" />
+                      {sub.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
