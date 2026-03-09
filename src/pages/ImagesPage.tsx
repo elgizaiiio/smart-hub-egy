@@ -616,9 +616,9 @@ const ImagesPage = () => {
                   {capability.acceptsImages && (
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-10 h-10 flex items-center justify-center rounded-full bg-muted/60 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                      className="w-9 h-9 flex items-center justify-center rounded-xl bg-secondary/80 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent hover:border-primary/30 transition-all duration-200"
                     >
-                      <Paperclip className="w-4 h-4" />
+                      <Paperclip className="w-[18px] h-[18px]" />
                     </button>
                   )}
                 </div>
