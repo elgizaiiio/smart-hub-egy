@@ -219,12 +219,12 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.2 }}
             className="relative rounded-2xl overflow-hidden lg:col-span-2 lg:row-span-1"
           >
-            <img src="/showcase/img-2.jpg" alt="" className="w-full h-full object-cover" />
+            <img src="/showcase/img-5.jpg" alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
             <div className="absolute bottom-0 left-0 p-6 z-10">
-              <h3 className="text-xl font-bold text-white drop-shadow-lg">أساليب متعددة، جودة احترافية.</h3>
+              <h3 className="text-xl font-bold text-white drop-shadow-lg">Endless creative possibilities.</h3>
               <p className="mt-2 text-sm text-white/90 max-w-sm drop-shadow-md">
-                من الواقعية إلى الفن الجريء. صمم، اعرض، وانشر بدون أي عوائق إبداعية.
+                From hyperrealistic renders to abstract art. Create, iterate, and ship without creative limits.
               </p>
             </div>
           </motion.div>
@@ -241,9 +241,9 @@ const ServiceImagesPage = () => {
               <Sparkles className="w-12 h-12 text-black" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-black">تناسق وتحكم كامل.</h3>
+              <h3 className="text-2xl font-bold text-black">Brand-ready outputs.</h3>
               <p className="mt-3 text-sm text-black/70">
-                حافظ على الشخصيات والأنماط وعناصر العلامة التجارية متناسقة في كل مخرجاتك، مثالي للمصممين والمسوقين.
+                Maintain visual consistency across campaigns. Perfect for teams who need cohesive brand imagery at scale.
               </p>
             </div>
           </motion.div>
@@ -256,12 +256,12 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.4 }}
             className="relative rounded-2xl overflow-hidden lg:col-span-2 lg:row-span-1"
           >
-            <img src="/showcase/img-4.jpg" alt="" className="w-full h-full object-cover" />
+            <img src="/showcase/model-2.jpg" alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
             <div className="absolute bottom-0 left-0 p-6 z-10">
-              <h3 className="text-xl font-bold text-white drop-shadow-lg">مصمم للمبدعين الحقيقيين.</h3>
+              <h3 className="text-xl font-bold text-white drop-shadow-lg">Pro tools, zero complexity.</h3>
               <p className="mt-2 text-sm text-white/90 max-w-sm drop-shadow-md">
-                مع أدوات متقدمة مثل AI Canvas وتحويل الصور، تجاوز المألوف وقدم صوراً بهدف.
+                AI Canvas, style transfer, and smart upscaling. Professional features made simple for every creator.
               </p>
             </div>
           </motion.div>
