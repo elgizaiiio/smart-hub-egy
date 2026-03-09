@@ -268,26 +268,117 @@ const ServiceImagesPage = () => {
         </div>
       </section>
 
-      {/* Features */}
+      {/* How It Works */}
       <section className="mx-auto max-w-7xl px-6 py-20">
-        <h2 className="font-display text-center text-4xl font-black uppercase md:text-5xl">
-          Everything You Need
-        </h2>
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-10 transition-colors hover:border-primary/20 hover:bg-primary/[0.03]"
-            >
-              <f.icon className="h-10 w-10 text-primary" />
-              <h3 className="mt-5 text-xl font-bold">{f.title}</h3>
-              <p className="mt-3 text-base text-muted-foreground">{f.desc}</p>
-            </motion.div>
-          ))}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="font-display text-4xl font-black uppercase md:text-5xl lg:text-6xl">
+            HOW MEGSY'S AI
+            <br />
+            <span className="text-primary">IMAGE GENERATOR WORKS</span>
+          </h2>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+            Create with text or images, refine with pro features, and export visuals ready to share.
+          </p>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
+          {/* Left - Steps */}
+          <div className="flex flex-col gap-3">
+            {howItWorksSteps.map((step, i) => (
+              <motion.div
+                key={step.number}
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className={`${step.bg} rounded-2xl p-5 flex items-start gap-4 transition-transform hover:scale-[1.02]`}
+              >
+                <span className={`text-5xl font-black ${step.textColor} opacity-60`}>{step.number}</span>
+                <div className="flex-1">
+                  <h3 className={`text-lg font-bold ${step.textColor}`}>{step.title}</h3>
+                  <p className={`text-sm ${step.textColor} opacity-80 mt-1`}>{step.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Right - Interface Mockup */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="relative"
+          >
+            <div className="rounded-2xl border border-white/10 bg-black/50 overflow-hidden backdrop-blur-sm">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">AI Creation</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="text-primary">●</span> 999,996,047 credits
+                </div>
+              </div>
+              
+              {/* Content */}
+              <div className="grid grid-cols-[auto_1fr_auto] gap-2 p-3">
+                {/* Left thumbnails */}
+                <div className="flex flex-col gap-2">
+                  {[1, 2, 3, 4, 5].map((_, i) => (
+                    <div key={i} className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-900 border border-white/10" />
+                  ))}
+                </div>
+                
+                {/* Main image area */}
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-red-900 via-red-800 to-black">
+                  <div className="absolute top-3 left-3 px-2 py-1 rounded bg-black/50 text-xs flex items-center gap-1">
+                    <Wand2 className="w-3 h-3" /> Ultra Upscale
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-32 h-40 bg-gradient-to-t from-black/50 to-transparent rounded-lg" />
+                  </div>
+                </div>
+                
+                {/* Right panel */}
+                <div className="w-44 space-y-3">
+                  <div className="rounded-lg bg-white/5 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">P</div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Today</p>
+                        <p className="text-xs font-medium">MegsyUser</p>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="text-white font-medium">Prompt</span> · Iterate
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
+                      Same character playing piano against a red background
+                    </p>
+                    <div className="flex items-center gap-1 mt-2 text-[10px] text-primary">
+                      <Sparkles className="w-3 h-3" /> Nano Banana · 1344 x 768
+                    </div>
+                  </div>
+                  
+                  {/* Action buttons */}
+                  <div className="space-y-1.5">
+                    {["Remix", "Upscale", "Create Video", "Use as Guide"].map((action) => (
+                      <button key={action} className="w-full text-xs py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-left flex items-center gap-2">
+                        <Zap className="w-3 h-3 text-primary" /> {action}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
