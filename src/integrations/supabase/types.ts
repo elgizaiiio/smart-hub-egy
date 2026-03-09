@@ -657,6 +657,51 @@ export type Database = {
         }
         Relationships: []
       }
+      showcase_items: {
+        Row: {
+          aspect_ratio: string
+          created_at: string
+          display_order: number
+          duration: string | null
+          id: string
+          media_type: string
+          media_url: string
+          model_id: string
+          model_name: string
+          prompt: string
+          quality: string
+          style: string | null
+        }
+        Insert: {
+          aspect_ratio?: string
+          created_at?: string
+          display_order?: number
+          duration?: string | null
+          id?: string
+          media_type?: string
+          media_url: string
+          model_id?: string
+          model_name?: string
+          prompt?: string
+          quality?: string
+          style?: string | null
+        }
+        Update: {
+          aspect_ratio?: string
+          created_at?: string
+          display_order?: number
+          duration?: string | null
+          id?: string
+          media_type?: string
+          media_url?: string
+          model_id?: string
+          model_name?: string
+          prompt?: string
+          quality?: string
+          style?: string | null
+        }
+        Relationships: []
+      }
       status_subscribers: {
         Row: {
           channel: string

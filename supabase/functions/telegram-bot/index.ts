@@ -83,6 +83,9 @@ const FIELDS = [
 
 const MC_PRESETS = [5, 10, 25, 50, 100, 500];
 
+const SHOWCASE_ASPECTS = ["1:1", "2:3", "3:2", "4:3", "16:9", "9:16", "4:5"];
+const SHOWCASE_QUALITIES = ["1K", "2K", "4K", "8K"];
+
 interface BotSession {
   page?: "images" | "videos";
   modelIndex?: number;
@@ -91,10 +94,21 @@ interface BotSession {
   adminModelId?: string;
   adminField?: string;
   adminUserId?: string;
-  // OAuth session fields
   oauthStep?: string;
   oauthAppName?: string;
   oauthAppId?: string;
+  // Showcase session fields
+  showcaseStep?: string;
+  showcaseMediaUrl?: string;
+  showcaseMediaType?: string;
+  showcasePrompt?: string;
+  showcaseModelId?: string;
+  showcaseModelName?: string;
+  showcaseAspect?: string;
+  showcaseQuality?: string;
+  showcaseDuration?: string;
+  showcaseStyle?: string;
+  showcaseItemId?: string;
 }
 
 // ---- Helpers ----
@@ -206,6 +220,7 @@ function mainMenuKB() {
     [{ text: "✏️ تعديل النماذج", callback_data: "edit_menu" }],
     [{ text: "👥 إدارة المستخدمين", callback_data: "users_menu" }],
     [{ text: "🔑 OAuth Apps", callback_data: "oauth_menu" }],
+    [{ text: "🎨 معرض العرض (Showcase)", callback_data: "showcase_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
 }
@@ -670,6 +685,173 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ==================== معرض العرض (Showcase) ====================
+      if (d === "showcase_menu") {
+        await clearSession(sb, chatId);
+        const { count } = await sb.from("showcase_items").select("*", { count: "exact", head: true });
+        await send(BOT_TOKEN, chatId, msgId, `🎨 *معرض العرض (Showcase)*\n\nعناصر المعرض: *${count || 0}*\n\nإدارة المحتوى المعروض في صفحة الصور:`, [
+          [{ text: "➕ إضافة عنصر جديد", callback_data: "sc_add" }],
+          [{ text: "📋 عرض العناصر", callback_data: "sc_list_0" }],
+          [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d === "sc_add") {
+        await saveSession(sb, chatId, { showcaseStep: "awaiting_media" });
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: "🎨 *إضافة عنصر جديد للمعرض*\n\n📤 الخطوة 1/6: أرسل صورة أو فيديو:",
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "showcase_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      // Showcase: select aspect ratio
+      if (d.startsWith("sc_ar_")) {
+        const ar = d.replace("sc_ar_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        session.showcaseAspect = ar;
+        session.showcaseStep = "awaiting_quality";
+        await saveSession(sb, chatId, session);
+        await send(BOT_TOKEN, chatId, msgId, `📐 نسبة العرض: *${ar}*\n\n🎯 الخطوة 5/6: اختر الجودة:`, [
+          ...SHOWCASE_QUALITIES.map(q => [{ text: q, callback_data: `sc_q_${q}` }]),
+          [{ text: "❌ إلغاء", callback_data: "showcase_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // Showcase: select quality
+      if (d.startsWith("sc_q_")) {
+        const q = d.replace("sc_q_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        session.showcaseQuality = q;
+        session.showcaseStep = "awaiting_duration";
+        await saveSession(sb, chatId, session);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ الجودة: *${q}*\n\n⏱ الخطوة 6/6: أدخل المدة (مثلاً: 8 sec) أو اكتب "skip" لتخطيها:`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "⏭ تخطي (بدون مدة)", callback_data: "sc_skip_duration" }],
+            [{ text: "❌ إلغاء", callback_data: "showcase_menu" }],
+          ]}),
+        });
+        return new Response("OK");
+      }
+
+      // Showcase: skip duration
+      if (d === "sc_skip_duration") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        await saveShowcaseItem(sb, BOT_TOKEN, chatId, session, null);
+        return new Response("OK");
+      }
+
+      // Showcase: select model for showcase
+      if (d.startsWith("sc_model_")) {
+        const modelId = d.replace("sc_model_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        session.showcaseModelId = modelId;
+        session.showcaseModelName = MODEL_NAMES[modelId] || modelId;
+        session.showcaseStep = "awaiting_aspect";
+        await saveSession(sb, chatId, session);
+        await send(BOT_TOKEN, chatId, msgId, `✅ النموذج: *${session.showcaseModelName}*\n\n📐 الخطوة 4/6: اختر نسبة العرض:`, [
+          ...SHOWCASE_ASPECTS.map(ar => [{ text: ar, callback_data: `sc_ar_${ar}` }]),
+          [{ text: "❌ إلغاء", callback_data: "showcase_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // Showcase: model category
+      if (d.startsWith("sc_cat_")) {
+        const catKey = d.replace("sc_cat_", "");
+        const cat = CATEGORIES.find(c => c.key === catKey);
+        if (!cat) return new Response("OK");
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < cat.models.length; i += 2) {
+          const row: { text: string; callback_data: string }[] = [];
+          row.push({ text: MODEL_NAMES[cat.models[i]] || cat.models[i], callback_data: `sc_model_${cat.models[i]}` });
+          if (cat.models[i + 1]) row.push({ text: MODEL_NAMES[cat.models[i + 1]] || cat.models[i + 1], callback_data: `sc_model_${cat.models[i + 1]}` });
+          rows.push(row);
+        }
+        rows.push([{ text: "🔙 رجوع", callback_data: "sc_add" }]);
+        await send(BOT_TOKEN, chatId, msgId, `🎯 اختر النموذج من *${cat.label}*:`, rows);
+        return new Response("OK");
+      }
+
+      // Showcase: list items
+      if (d.startsWith("sc_list_")) {
+        const page = parseInt(d.replace("sc_list_", "")) || 0;
+        const perPage = 5;
+        const { data: items, count } = await sb.from("showcase_items")
+          .select("*", { count: "exact" })
+          .order("display_order", { ascending: true })
+          .range(page * perPage, (page + 1) * perPage - 1);
+
+        if (!items || items.length === 0) {
+          await send(BOT_TOKEN, chatId, msgId, "📋 لا توجد عناصر في المعرض.", [
+            [{ text: "➕ إضافة عنصر", callback_data: "sc_add" }],
+            [{ text: "🔙 رجوع", callback_data: "showcase_menu" }],
+          ]);
+          return new Response("OK");
+        }
+
+        const total = count || 0;
+        const totalPages = Math.ceil(total / perPage);
+        const rows = items.map((item: any) => [{
+          text: `${item.media_type === "video" ? "🎬" : "🖼"} ${(item.prompt || "بدون وصف").slice(0, 25)}${item.prompt?.length > 25 ? "…" : ""}`,
+          callback_data: `sc_view_${item.id}`,
+        }]);
+
+        const nav: { text: string; callback_data: string }[] = [];
+        if (page > 0) nav.push({ text: "◀️", callback_data: `sc_list_${page - 1}` });
+        nav.push({ text: `${page + 1}/${totalPages}`, callback_data: "noop" });
+        if (page < totalPages - 1) nav.push({ text: "▶️", callback_data: `sc_list_${page + 1}` });
+        rows.push(nav);
+        rows.push([{ text: "🔙 رجوع", callback_data: "showcase_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `📋 *عناصر المعرض* (${total})`, rows);
+        return new Response("OK");
+      }
+
+      // Showcase: view single item
+      if (d.startsWith("sc_view_")) {
+        const itemId = d.replace("sc_view_", "");
+        const { data: item } = await sb.from("showcase_items").select("*").eq("id", itemId).single();
+        if (!item) { await send(BOT_TOKEN, chatId, msgId, "❌ العنصر غير موجود", [[{ text: "🔙 رجوع", callback_data: "sc_list_0" }]]); return new Response("OK"); }
+
+        await send(BOT_TOKEN, chatId, msgId,
+          `🎨 *عنصر المعرض*\n\n` +
+          `📝 البرومبت: ${(item as any).prompt || "—"}\n` +
+          `🤖 النموذج: *${(item as any).model_name || "—"}*\n` +
+          `📐 النسبة: ${(item as any).aspect_ratio}\n` +
+          `🎯 الجودة: ${(item as any).quality}\n` +
+          `⏱ المدة: ${(item as any).duration || "—"}\n` +
+          `📸 النوع: ${(item as any).media_type}\n` +
+          `🔢 الترتيب: ${(item as any).display_order}`,
+          [
+            [{ text: "🗑 حذف", callback_data: `sc_del_${itemId}` }],
+            [{ text: "🔙 رجوع", callback_data: "sc_list_0" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      // Showcase: delete item
+      if (d.startsWith("sc_del_")) {
+        const itemId = d.replace("sc_del_", "");
+        await sb.from("showcase_items").delete().eq("id", itemId);
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم حذف العنصر من المعرض.", [
+          [{ text: "📋 عرض العناصر", callback_data: "sc_list_0" }],
+          [{ text: "🔙 رجوع", callback_data: "showcase_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
       // ==================== الإحصائيات ====================
       if (d === "stats") {
         const { count: userCount } = await sb.from("profiles").select("*", { count: "exact", head: true });
@@ -677,6 +859,7 @@ serve(async (req) => {
         const { count: msgCount } = await sb.from("messages").select("*", { count: "exact", head: true });
         const { count: projectCount } = await sb.from("projects").select("*", { count: "exact", head: true });
         const { count: oauthCount } = await sb.from("oauth_clients").select("*", { count: "exact", head: true });
+        const { count: showcaseCount } = await sb.from("showcase_items").select("*", { count: "exact", head: true });
         const imgMedia = await getExistingMedia(sb, IMAGE_MODELS);
         const vidMedia = await getExistingMedia(sb, VIDEO_MODELS);
 
@@ -687,6 +870,7 @@ serve(async (req) => {
           `📝 الرسائل: *${msgCount || 0}*\n` +
           `💻 المشاريع: *${projectCount || 0}*\n` +
           `🔑 OAuth Apps: *${oauthCount || 0}*\n` +
+          `🎨 Showcase: *${showcaseCount || 0}*\n` +
           `🖼 وسائط الصور: *${imgMedia.size}/${IMAGE_MODELS.length}*\n` +
           `🎬 وسائط الفيديو: *${vidMedia.size}/${VIDEO_MODELS.length}*`,
           [[{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]]
@@ -714,6 +898,91 @@ serve(async (req) => {
       }
 
       const session = await loadSession(sb, chatId);
+
+      // ---- Showcase text inputs ----
+      // Step 2: receive prompt
+      if (session?.showcaseStep === "awaiting_prompt" && text) {
+        session.showcasePrompt = text.trim();
+        session.showcaseStep = "awaiting_model";
+        await saveSession(sb, chatId, session);
+        // Show model categories
+        const rows = CATEGORIES.map(c => [{
+          text: `${c.emoji} ${c.label}`,
+          callback_data: `sc_cat_${c.key}`,
+        }]);
+        rows.push([{ text: "❌ إلغاء", callback_data: "showcase_menu" }]);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ البرومبت: *${text.trim().slice(0, 50)}${text.trim().length > 50 ? "…" : ""}*\n\n🤖 الخطوة 3/6: اختر قسم النموذج:`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: rows }),
+        });
+        return new Response("OK");
+      }
+
+      // Step 6: receive duration text
+      if (session?.showcaseStep === "awaiting_duration" && text) {
+        const duration = text.trim().toLowerCase() === "skip" ? null : text.trim();
+        await saveShowcaseItem(sb, BOT_TOKEN, chatId, session, duration);
+        return new Response("OK");
+      }
+
+      // Step 1: receive media for showcase
+      if (session?.showcaseStep === "awaiting_media") {
+        let fileId: string | null = null;
+        let mediaType: "image" | "video" = "image";
+
+        if (message.photo?.length > 0) { fileId = message.photo[message.photo.length - 1].file_id; mediaType = "image"; }
+        else if (message.video) { fileId = message.video.file_id; mediaType = "video"; }
+        else if (message.animation) { fileId = message.animation.file_id; mediaType = "video"; }
+        else if (message.document) {
+          const mime = message.document.mime_type || "";
+          if (mime.startsWith("image/")) { fileId = message.document.file_id; mediaType = "image"; }
+          else if (mime.startsWith("video/")) { fileId = message.document.file_id; mediaType = "video"; }
+        }
+
+        if (!fileId) {
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: "أرسل صورة أو فيديو فقط.",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "showcase_menu" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل تحميل الملف." }); return new Response("OK"); }
+
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || (mediaType === "image" ? "jpg" : "mp4");
+        const storagePath = `showcase/${crypto.randomUUID()}.${ext}`;
+
+        const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, {
+          contentType: mediaType === "image" ? `image/${ext}` : `video/${ext}`,
+          upsert: true,
+        });
+
+        if (uploadError) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ في الرفع: ${uploadError.message}` });
+          return new Response("OK");
+        }
+
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        session.showcaseMediaUrl = urlData.publicUrl;
+        session.showcaseMediaType = mediaType;
+        session.showcaseStep = "awaiting_prompt";
+        await saveSession(sb, chatId, session);
+
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ تم رفع ${mediaType === "image" ? "الصورة" : "الفيديو"} بنجاح!\n\n📝 الخطوة 2/6: أدخل البرومبت (الوصف):`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "showcase_menu" }]] }),
+        });
+        return new Response("OK");
+      }
 
       // ---- OAuth text inputs ----
       if (session?.oauthStep === "awaiting_name" && text) {
@@ -867,7 +1136,7 @@ serve(async (req) => {
         return new Response("OK");
       }
 
-      // رفع صورة / فيديو
+      // رفع صورة / فيديو (model media upload)
       if (session?.page && session.models) {
         const currentModelId = session.models[session.modelIndex || 0];
         const currentModelName = MODEL_NAMES[currentModelId] || currentModelId;
@@ -1006,4 +1275,50 @@ async function applyMcChange(sb: ReturnType<typeof createClient>, token: string,
       [{ text: "🔙 المستخدمين", callback_data: "users_menu" }],
     ]
   );
+}
+
+// ---- Showcase save helper ----
+async function saveShowcaseItem(sb: ReturnType<typeof createClient>, token: string, chatId: number, session: BotSession, duration: string | null) {
+  // Get max display_order
+  const { data: maxOrder } = await sb.from("showcase_items")
+    .select("display_order")
+    .order("display_order", { ascending: false })
+    .limit(1);
+  const nextOrder = (maxOrder && maxOrder.length > 0 ? (maxOrder[0] as any).display_order : 0) + 1;
+
+  const { error } = await sb.from("showcase_items").insert({
+    media_url: session.showcaseMediaUrl,
+    media_type: session.showcaseMediaType || "image",
+    prompt: session.showcasePrompt || "",
+    model_id: session.showcaseModelId || "",
+    model_name: session.showcaseModelName || "",
+    aspect_ratio: session.showcaseAspect || "1:1",
+    quality: session.showcaseQuality || "2K",
+    duration: duration,
+    display_order: nextOrder,
+  });
+
+  await clearSession(sb, chatId);
+
+  if (error) {
+    await tg(token, "sendMessage", { chat_id: chatId, text: `❌ خطأ في الحفظ: ${error.message}` });
+    return;
+  }
+
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text: `✅ *تم إضافة العنصر للمعرض بنجاح!*\n\n` +
+      `📝 البرومبت: ${(session.showcasePrompt || "").slice(0, 50)}\n` +
+      `🤖 النموذج: ${session.showcaseModelName}\n` +
+      `📐 النسبة: ${session.showcaseAspect}\n` +
+      `🎯 الجودة: ${session.showcaseQuality}\n` +
+      (duration ? `⏱ المدة: ${duration}\n` : "") +
+      `🔢 الترتيب: ${nextOrder}`,
+    parse_mode: "Markdown",
+    reply_markup: JSON.stringify({ inline_keyboard: [
+      [{ text: "➕ إضافة عنصر آخر", callback_data: "sc_add" }],
+      [{ text: "📋 عرض المعرض", callback_data: "sc_list_0" }],
+      [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+    ]}),
+  });
 }

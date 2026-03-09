@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Paperclip, Sparkles, Download, Loader2, Settings2, Image as ImageIcon, Video, MoreHorizontal, Trash2, Coins, Zap, ChevronLeft } from "lucide-react";
+import { Menu, Paperclip, Sparkles, Download, Loader2, Settings2, Image as ImageIcon, Video, MoreHorizontal, Trash2, Coins, Zap, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,10 @@ import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import ImageSettingsPanel, { MobileSettingsDrawer, DEFAULT_SETTINGS, type ImageSettings, type ImageStyle } from "@/components/ImageSettingsPanel";
+import ShowcaseGrid from "@/components/ShowcaseGrid";
+import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
+import BottomInputBar from "@/components/BottomInputBar";
+import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 import {
   getImageModelCapability,
 } from "@/lib/imageModelCapabilities";
@@ -22,14 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const PLACEHOLDERS = [
-  "A cyberpunk cityscape at sunset...",
-  "Oil painting of a serene lake...",
-  "Professional product photo...",
-  "Anime character with flowing hair...",
-  "Minimalist logo design...",
-];
 
 interface GeneratedImage {
   id: string;
@@ -71,32 +67,6 @@ const STYLE_SUFFIX: Record<ImageStyle, string> = {
   "3d-render": ", 3D render, Octane render, Blender, CGI, volumetric lighting",
 };
 
-// Group images by day
-const groupByDay = (images: GeneratedImage[]) => {
-  const groups: { label: string; images: GeneratedImage[] }[] = [];
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 86400000);
-
-  const grouped: Record<string, GeneratedImage[]> = {};
-  images.forEach(img => {
-    const d = new Date(img.createdAt);
-    const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    let label: string;
-    if (day.getTime() === today.getTime()) label = "Today";
-    else if (day.getTime() === yesterday.getTime()) label = "Yesterday";
-    else label = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    if (!grouped[label]) grouped[label] = [];
-    grouped[label].push(img);
-  });
-
-  Object.entries(grouped).forEach(([label, imgs]) => {
-    groups.push({ label, images: imgs });
-  });
-
-  return groups;
-};
-
 const ImagesPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -106,37 +76,18 @@ const ImagesPage = () => {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("images"));
   const [input, setInput] = useState("");
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const [settings, setSettings] = useState<ImageSettings>(DEFAULT_SETTINGS);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [selectedShowcaseItem, setSelectedShowcaseItem] = useState<ShowcaseItem | null>(null);
+  const [showResults, setShowResults] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const capability = useMemo(() => getImageModelCapability(selectedModel.id), [selectedModel.id]);
   const creditCost = (Number(selectedModel.credits) || 1) * settings.numImages;
 
-  // Animated placeholder
-  useEffect(() => {
-    if (input) return;
-    const target = PLACEHOLDERS[placeholderIdx];
-    let i = 0;
-    setDisplayedPlaceholder("");
-    const t = setInterval(() => {
-      if (i < target.length) {
-        setDisplayedPlaceholder(target.slice(0, i + 1));
-        i += 1;
-      } else {
-        clearInterval(t);
-        setTimeout(() => setPlaceholderIdx((p) => (p + 1) % PLACEHOLDERS.length), 2500);
-      }
-    }, 50);
-    return () => clearInterval(t);
-  }, [placeholderIdx, input]);
-
-  // Clear images when model doesn't support them
   useEffect(() => {
     if (!capability.acceptsImages && attachedImages.length > 0) {
       setAttachedImages([]);
@@ -192,6 +143,7 @@ const ImagesPage = () => {
 
     setInput("");
     setIsGenerating(true);
+    setShowResults(true);
 
     const convId = await createOrGetConversation(trimmed || "Image Generation");
     if (convId) await saveMessage(convId, "user", trimmed);
@@ -285,10 +237,12 @@ const ImagesPage = () => {
     setConversationId(null);
     setInput("");
     setAttachedImages([]);
+    setShowResults(false);
   };
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
+    setShowResults(true);
     const { data: msgs } = await supabase
       .from("messages")
       .select("*")
@@ -324,7 +278,10 @@ const ImagesPage = () => {
     a.click();
   };
 
-  const dayGroups = useMemo(() => groupByDay(generatedImages), [generatedImages]);
+  const handleRecreate = (item: ShowcaseItem) => {
+    setInput(item.prompt);
+    setSelectedShowcaseItem(null);
+  };
 
   const settingsPanelContent = (
     <ImageSettingsPanel
@@ -336,10 +293,158 @@ const ImagesPage = () => {
     />
   );
 
+  // ── Desktop Layout (Artlist-style) ──
+  if (!isMobile) {
+    return (
+      <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
+        <div className="h-full flex bg-background relative">
+          <ModelPickerSheet
+            open={modelPickerOpen}
+            onClose={() => setModelPickerOpen(false)}
+            onSelect={(m) => { setSelectedModel(m); setModelPickerOpen(false); }}
+            mode="images"
+            selectedModelId={selectedModel.id}
+          />
+
+          <ShowcaseDetailModal
+            item={selectedShowcaseItem}
+            onClose={() => setSelectedShowcaseItem(null)}
+            onRecreate={handleRecreate}
+          />
+
+          {/* Results overlay */}
+          <AnimatePresence>
+            {showResults && generatedImages.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-20 bg-background overflow-y-auto"
+              >
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-border sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+                  <button
+                    onClick={() => setShowResults(false)}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <h2 className="text-sm font-bold text-foreground">Generated Images</h2>
+                  <span className="text-xs text-muted-foreground">{generatedImages.length} images</span>
+                </div>
+
+                <div className="max-w-6xl mx-auto px-6 py-6">
+                  {isGenerating && (
+                    <div className="mb-6">
+                      <ThinkingLoader />
+                    </div>
+                  )}
+                  <div className="columns-2 lg:columns-3 xl:columns-4 gap-4">
+                    {generatedImages.map((img) => (
+                      <motion.div
+                        key={img.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="break-inside-avoid mb-4 group relative rounded-2xl overflow-hidden"
+                      >
+                        <img
+                          src={img.url}
+                          alt={img.prompt}
+                          className="w-full rounded-2xl object-cover pointer-events-auto"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end p-3">
+                          <div className="flex-1">
+                            <p className="text-white text-xs line-clamp-2 mb-1">{img.prompt}</p>
+                            <div className="flex gap-1.5">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white backdrop-blur-sm">{img.model}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white backdrop-blur-sm">{img.dimensions}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleDownload(img.url, img.prompt)}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setGeneratedImages((prev) => prev.filter((g) => g.id !== img.id))}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-red-500/50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Main: Showcase gallery */}
+          <div className="flex-1 overflow-y-auto pb-32">
+            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
+
+            {/* Empty state when no showcase items */}
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="w-24 h-24 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-5"
+              >
+                <ImageIcon className="w-12 h-12 text-primary/30" />
+              </motion.div>
+              <h2 className="font-display text-xl font-bold text-foreground mb-2">AI Image Creation</h2>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Describe what you want to see and let AI bring your vision to life
+              </p>
+            </div>
+          </div>
+
+          {/* Attached images floating preview */}
+          {attachedImages.length > 0 && (
+            <div className="absolute bottom-[120px] left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 bg-card/95 backdrop-blur-xl border border-border rounded-xl">
+              {attachedImages.map((img) => (
+                <div key={img.id} className="relative shrink-0">
+                  <img src={img.dataUrl} alt={img.name} className="w-12 h-12 rounded-xl object-cover border border-border pointer-events-auto" />
+                  <button
+                    onClick={() => setAttachedImages((prev) => prev.filter((i) => i.id !== img.id))}
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bottom input bar */}
+          <BottomInputBar
+            input={input}
+            onInputChange={setInput}
+            onGenerate={handleGenerate}
+            isGenerating={isGenerating}
+            selectedModel={selectedModel}
+            onOpenModelPicker={() => setModelPickerOpen(true)}
+            settings={settings}
+            onSettingsChange={setSettings}
+            creditCost={creditCost}
+            canAttach={capability.acceptsImages}
+            onAttach={() => fileInputRef.current?.click()}
+          />
+
+          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileAttach} multiple />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // ── Mobile Layout (unchanged) ──
   return (
     <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
       <div className="h-full flex bg-background">
-        {/* Mobile Sidebar */}
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -349,7 +454,6 @@ const ImagesPage = () => {
           currentMode="images"
         />
 
-        {/* Model Picker Sheet */}
         <ModelPickerSheet
           open={modelPickerOpen}
           onClose={() => setModelPickerOpen(false)}
@@ -358,50 +462,17 @@ const ImagesPage = () => {
           selectedModelId={selectedModel.id}
         />
 
-        {/* ── Desktop Left Settings Panel ── */}
-        {!isMobile && (
-          <div className="w-[260px] shrink-0 border-r border-border bg-card flex flex-col hidden md:flex">
-            {/* Top bar */}
-            <div className="shrink-0 px-4 pt-4 pb-3 border-b border-border space-y-3">
-              <h2 className="text-sm font-bold text-foreground">Image Generation</h2>
-              <div className="flex bg-secondary rounded-lg p-1">
-                <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold bg-background text-foreground shadow-sm">
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  Image
-                </button>
-                <button
-                  onClick={() => navigate("/videos")}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Video className="w-3.5 h-3.5" />
-                  Video
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              {settingsPanelContent}
-            </div>
-          </div>
-        )}
+        <MobileSettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+          {settingsPanelContent}
+        </MobileSettingsDrawer>
 
-        {/* Mobile Settings Drawer */}
-        {isMobile && (
-          <MobileSettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)}>
-            {settingsPanelContent}
-          </MobileSettingsDrawer>
-        )}
-
-        {/* ── Main Content ── */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* ── Top Bar: Prompt + Generate ── */}
+          {/* Top Bar */}
           <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border">
-            {isMobile && (
-              <button onClick={() => setSidebarOpen(true)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                <Menu className="w-5 h-5" />
-              </button>
-            )}
+            <button onClick={() => setSidebarOpen(true)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+              <Menu className="w-5 h-5" />
+            </button>
 
-            {/* Attach button */}
             {capability.acceptsImages && (
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -411,7 +482,6 @@ const ImagesPage = () => {
               </button>
             )}
 
-            {/* Prompt input */}
             <div className="flex-1 relative">
               <textarea
                 value={input}
@@ -422,34 +492,26 @@ const ImagesPage = () => {
                     handleGenerate();
                   }
                 }}
-                placeholder={displayedPlaceholder}
+                placeholder="Describe the image..."
                 rows={1}
                 className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/40 py-2 max-h-20"
                 style={{ minHeight: "36px" }}
               />
             </div>
 
-            {isMobile && (
-              <button
-                onClick={() => setSettingsOpen(true)}
-                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <Settings2 className="w-5 h-5" />
-              </button>
-            )}
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <Settings2 className="w-5 h-5" />
+            </button>
 
-            {/* Generate Button - Leonardo style */}
             <button
               onClick={handleGenerate}
               disabled={(!input.trim() && attachedImages.length === 0) || isGenerating}
               className="shrink-0 h-10 px-5 flex items-center gap-2.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-30 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
             >
-              {isGenerating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Sparkles className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">Generate</span>
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               <div className="flex items-center gap-1 pl-2 border-l border-primary-foreground/20">
                 <Coins className="w-3.5 h-3.5" />
                 <span className="text-xs">{creditCost}</span>
@@ -457,7 +519,7 @@ const ImagesPage = () => {
             </button>
           </div>
 
-          {/* ── Tabs ── */}
+          {/* Tabs */}
           <div className="shrink-0 flex items-center gap-1 px-4 py-2 border-b border-border">
             <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
               <ImageIcon className="w-3.5 h-3.5" />
@@ -472,7 +534,7 @@ const ImagesPage = () => {
             </button>
           </div>
 
-          {/* ── Attached images preview ── */}
+          {/* Attached images */}
           {attachedImages.length > 0 && (
             <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border overflow-x-auto">
               {attachedImages.map((img) => (
@@ -489,7 +551,7 @@ const ImagesPage = () => {
             </div>
           )}
 
-          {/* ── Generated Images - Leonardo Layout ── */}
+          {/* Content */}
           <div className="flex-1 overflow-y-auto">
             {isGenerating && generatedImages.length === 0 && (
               <div className="flex items-center justify-center py-20">
@@ -513,93 +575,41 @@ const ImagesPage = () => {
               </div>
             )}
 
-            {dayGroups.length > 0 && (
+            {generatedImages.length > 0 && (
               <div className="max-w-5xl mx-auto px-4 py-4">
                 {isGenerating && (
                   <div className="mb-6">
                     <ThinkingLoader />
                   </div>
                 )}
-
-                {dayGroups.map((group) => (
-                  <div key={group.label} className="mb-8">
-                    <h3 className="text-sm font-semibold text-foreground mb-4">{group.label}</h3>
-
-                    <div className="space-y-6">
-                      {group.images.map((img) => (
-                        <motion.div
-                          key={img.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4 }}
-                          className="flex gap-4 md:gap-6"
+                <div className="columns-2 gap-3">
+                  {generatedImages.map((img) => (
+                    <motion.div
+                      key={img.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="break-inside-avoid mb-3 group relative rounded-2xl overflow-hidden"
+                    >
+                      <img
+                        src={img.url}
+                        alt={img.prompt}
+                        className="w-full rounded-2xl object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end p-2">
+                        <div className="flex gap-1.5">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white">{img.model}</span>
+                        </div>
+                        <button
+                          onClick={() => handleDownload(img.url, img.prompt)}
+                          className="ml-auto w-6 h-6 flex items-center justify-center rounded-md bg-white/20 text-white"
                         >
-                          {/* Image */}
-                          <div className="w-full max-w-lg shrink-0">
-                            <div className="relative group rounded-2xl overflow-hidden bg-secondary">
-                              <img
-                                src={img.url}
-                                alt={img.prompt}
-                                className="w-full object-cover"
-                                loading="lazy"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Metadata - Right side (desktop) */}
-                          <div className="hidden md:flex flex-col justify-between min-w-0 flex-1 py-1">
-                            <div>
-                              <p className="text-sm text-foreground leading-relaxed line-clamp-4 mb-3">
-                                {img.prompt}
-                              </p>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[11px] px-2.5 py-1 rounded-md bg-primary/10 text-primary font-medium">
-                                  {img.model}
-                                </span>
-                                <span className="text-[11px] px-2.5 py-1 rounded-md bg-secondary text-muted-foreground font-medium">
-                                  {img.dimensions}
-                                </span>
-                                <span className="text-[11px] px-2.5 py-1 rounded-md bg-secondary text-muted-foreground font-medium flex items-center gap-1">
-                                  <Zap className="w-3 h-3" />
-                                  {img.speed || "Fast"}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="mt-3">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                                    <MoreHorizontal className="w-5 h-5" />
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className="w-40">
-                                  <DropdownMenuItem onClick={() => handleDownload(img.url, img.prompt)}>
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(img.url); toast.success("Link copied!"); }}>
-                                    Copy Link
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => setGeneratedImages((prev) => prev.filter((g) => g.id !== img.id))}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Remove
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-
-                          {/* Mobile: metadata below image is handled inline */}
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                          <Download className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
