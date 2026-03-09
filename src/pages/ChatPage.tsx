@@ -12,6 +12,7 @@ import ModelSelector, { getDefaultModel, type ModelOption } from "@/components/M
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
 import { streamChat } from "@/lib/streamChat";
+import ConnectorsDialog from "@/components/ConnectorsDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,6 +77,7 @@ const ChatPage = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [connectorsOpen, setConnectorsOpen] = useState(false);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -429,15 +431,13 @@ const ChatPage = () => {
                   </div>
 
                   {/* Connect your tools bar */}
-                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-secondary/40 border border-border/30">
+                  <button
+                    onClick={() => setConnectorsOpen(true)}
+                    className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-secondary/40 border border-border/30 hover:bg-secondary/60 transition-colors"
+                  >
                     <span className="text-xs text-muted-foreground">Connect your tools to Megsy</span>
-                    <button
-                      onClick={() => navigate("/settings/integrations")}
-                      className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
-                    >
-                      Browse →
-                    </button>
-                  </div>
+                    <span className="text-xs text-primary font-medium">Browse →</span>
+                  </button>
                 </div>
               </motion.div>
             </div>
@@ -652,6 +652,13 @@ const ChatPage = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Connectors Dialog */}
+        <ConnectorsDialog
+          open={connectorsOpen}
+          onOpenChange={setConnectorsOpen}
+          onNavigateIntegrations={() => navigate("/settings/integrations")}
+        />
       </div>
     </AppLayout>
   );
