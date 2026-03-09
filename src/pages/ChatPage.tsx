@@ -357,103 +357,102 @@ const ChatPage = () => {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full px-4">
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
-                {/* Greeting */}
-              <div className="flex items-center justify-center gap-2 mb-4">
-                  <PegtopIcon className="text-primary" />
-                  <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Megsy chat?</h2>
-                </div>
-
-                {/* Mobile shortcut buttons under title */}
-                <div className="flex md:hidden items-center justify-center gap-2 mb-6 flex-wrap">
-                  <button onClick={() => navigate("/images")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                    <Image className="w-3.5 h-3.5" />
-                    Photos
-                  </button>
-                  <button onClick={() => navigate("/files")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                    <FileUp className="w-3.5 h-3.5" />
-                    Files
-                  </button>
-                  <button onClick={() => navigate("/videos")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                    <Camera className="w-3.5 h-3.5" />
-                    Videos
-                  </button>
-                  <button onClick={() => navigate("/code")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                    <FolderPlus className="w-3.5 h-3.5" />
-                    Code
-                  </button>
-                </div>
-
-                {/* Input area */}
-                <div className="w-full max-w-2xl mx-auto space-y-2">
-                  <div className="relative">
-                    <AnimatePresence>
-                      {plusMenuOpen && (
-                        <>
-                          <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
-                          {/* Mobile: opens upward from bottom; Desktop: opens downward */}
-                          <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 md:bottom-auto md:top-full md:mt-2 md:mb-0 left-0 z-40 glass-panel p-3 w-72">
-                            <div className="grid grid-cols-3 gap-2 mb-3">
-                              <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                                <Camera className="w-5 h-5 text-muted-foreground" />
-                                <span className="text-[11px] text-foreground">Camera</span>
-                              </button>
-                              <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                                <Image className="w-5 h-5 text-muted-foreground" />
-                                <span className="text-[11px] text-foreground">Photos</span>
-                              </button>
-                              <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                                <FileUp className="w-5 h-5 text-muted-foreground" />
-                                <span className="text-[11px] text-foreground">Files</span>
-                              </button>
-                            </div>
-                            <div className="border-t border-border pt-2 space-y-1">
-                              <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
-                                <span className="text-sm text-foreground">Web search</span>
-                                <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                                  <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
-                                </div>
-                              </button>
-                              {/* Model selector inside + menu */}
-                              <div className="px-3 py-2">
-                                <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
-                              </div>
-                              <div className="border-t border-border mt-1 pt-1">
-                                <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
-                                <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                  <span className="text-sm text-foreground">Learning Mode</span>
-                                  {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
-                                </button>
-                                <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                  <span className="text-sm text-foreground">Shopping Mode</span>
-                                  {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
-                                </button>
-                              </div>
-                              <div className="border-t border-border mt-1 pt-1">
-                                <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                                  <span className="text-sm text-foreground">Integrations</span>
-                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
-                                </button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
-
-                    <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
+            <div className="flex flex-col h-full px-4">
+              {/* Title centered in available space */}
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
+                  {/* Greeting */}
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <PegtopIcon className="text-primary" />
+                    <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Megsy chat?</h2>
                   </div>
 
-                  {/* Connect your tools bar */}
-                  <button
-                    onClick={() => setConnectorsOpen(true)}
-                    className="hidden md:flex items-center justify-between w-full px-3 py-2 rounded-xl bg-secondary/40 border border-border/30 hover:bg-secondary/60 transition-colors"
-                  >
-                    <span className="text-xs text-muted-foreground">Connect your tools to Megsy</span>
-                    <span className="text-xs text-primary font-medium">Browse →</span>
-                  </button>
+                  {/* Mobile shortcut buttons under title - no icons */}
+                  <div className="flex md:hidden items-center justify-center gap-2 mb-6 flex-wrap">
+                    <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                      Photos
+                    </button>
+                    <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                      Files
+                    </button>
+                    <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                      Videos
+                    </button>
+                    <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                      Code
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Input pinned to bottom */}
+              <div className="shrink-0 pb-3 md:pb-5 w-full max-w-2xl mx-auto space-y-2">
+                <div className="relative">
+                  <AnimatePresence>
+                    {plusMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
+                        <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 md:bottom-auto md:top-full md:mt-2 md:mb-0 left-0 z-40 glass-panel p-3 w-72">
+                          <div className="grid grid-cols-3 gap-2 mb-3">
+                            <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                              <Camera className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-[11px] text-foreground">Camera</span>
+                            </button>
+                            <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                              <Image className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-[11px] text-foreground">Photos</span>
+                            </button>
+                            <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+                              <FileUp className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-[11px] text-foreground">Files</span>
+                            </button>
+                          </div>
+                          <div className="border-t border-border pt-2 space-y-1">
+                            <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
+                              <span className="text-sm text-foreground">Web search</span>
+                              <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+                                <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+                              </div>
+                            </button>
+                            <div className="px-3 py-2">
+                              <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
+                            </div>
+                            <div className="border-t border-border mt-1 pt-1">
+                              <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
+                              <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                                <span className="text-sm text-foreground">Learning Mode</span>
+                                {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
+                              </button>
+                              <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                                <span className="text-sm text-foreground">Shopping Mode</span>
+                                {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
+                              </button>
+                            </div>
+                            <div className="border-t border-border mt-1 pt-1">
+                              <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+                                <span className="text-sm text-foreground">Integrations</span>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+
+                  <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
                 </div>
+
+                {/* Connect your tools bar */}
+                <button
+                  onClick={() => setConnectorsOpen(true)}
+                  className="hidden md:flex items-center justify-between w-full px-3 py-2 rounded-xl bg-secondary/40 border border-border/30 hover:bg-secondary/60 transition-colors"
+                >
+                  <span className="text-xs text-muted-foreground">Connect your tools to Megsy</span>
+                  <span className="text-xs text-primary font-medium">Browse →</span>
+                </button>
+              </div>
+            </div>
               </motion.div>
             </div>
           ) : (
