@@ -219,12 +219,12 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.2 }}
             className="relative rounded-2xl overflow-hidden lg:col-span-2 lg:row-span-1"
           >
-            <img src="/showcase/img-1.jpg" alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            <div className="absolute bottom-0 left-0 p-6">
-              <h3 className="text-xl font-bold text-white">Diverse styles, professional polish.</h3>
-              <p className="mt-2 text-sm text-white/70 max-w-sm">
-                Go from photorealism to bold artistic aesthetics. Prototype, pitch, or publish without encountering creative roadblocks.
+            <img src="/showcase/img-2.jpg" alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
+            <div className="absolute bottom-0 left-0 p-6 z-10">
+              <h3 className="text-xl font-bold text-white drop-shadow-lg">أساليب متعددة، جودة احترافية.</h3>
+              <p className="mt-2 text-sm text-white/90 max-w-sm drop-shadow-md">
+                من الواقعية إلى الفن الجريء. صمم، اعرض، وانشر بدون أي عوائق إبداعية.
               </p>
             </div>
           </motion.div>
@@ -241,9 +241,9 @@ const ServiceImagesPage = () => {
               <Sparkles className="w-12 h-12 text-black" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-black">Consistency and control.</h3>
+              <h3 className="text-2xl font-bold text-black">تناسق وتحكم كامل.</h3>
               <p className="mt-3 text-sm text-black/70">
-                Keep characters, styles, and brand elements streamlined across every output; perfect for designers, marketers, and creators who need to stay on brand.
+                حافظ على الشخصيات والأنماط وعناصر العلامة التجارية متناسقة في كل مخرجاتك، مثالي للمصممين والمسوقين.
               </p>
             </div>
           </motion.div>
@@ -256,12 +256,12 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.4 }}
             className="relative rounded-2xl overflow-hidden lg:col-span-2 lg:row-span-1"
           >
-            <img src="/showcase/model-1.jpg" alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            <div className="absolute bottom-0 left-0 p-6">
-              <h3 className="text-xl font-bold text-white">Built for real creatives.</h3>
-              <p className="mt-2 text-sm text-white/70 max-w-sm">
-                With advanced tools like AI Canvas, Image-to-Image, and Style Transfer, you can go beyond ordinary and deliver visuals with purpose.
+            <img src="/showcase/img-4.jpg" alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
+            <div className="absolute bottom-0 left-0 p-6 z-10">
+              <h3 className="text-xl font-bold text-white drop-shadow-lg">مصمم للمبدعين الحقيقيين.</h3>
+              <p className="mt-2 text-sm text-white/90 max-w-sm drop-shadow-md">
+                مع أدوات متقدمة مثل AI Canvas وتحويل الصور، تجاوز المألوف وقدم صوراً بهدف.
               </p>
             </div>
           </motion.div>
