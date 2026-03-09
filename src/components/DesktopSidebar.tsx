@@ -243,9 +243,9 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
             <TooltipTrigger asChild>
               <button
                 onClick={() => navigate("/pricing")}
-                className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors"
               >
-                <Sparkles className="w-4 h-4" />
+                <Crown className="w-4 h-4" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="text-xs">
