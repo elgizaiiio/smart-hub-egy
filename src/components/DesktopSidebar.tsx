@@ -123,13 +123,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
     { label: "Code", href: "/code" },
   ];
 
-  const navItems: NavItem[] = [
-    chatNav,
-    imagesNav,
-    videosNav,
-    filesNav,
-    { label: "Code", href: "/code" },
-  ];
+  // navItems already defined above
 
   const handleAction = (action: string) => {
     closeMenu();
