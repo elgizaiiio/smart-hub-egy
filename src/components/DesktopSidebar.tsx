@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, CreditCard, Crown, PanelLeftClose, PanelLeft, MessageCircle, Settings, LogOut, User } from "lucide-react";
+import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, CreditCard, Crown, PanelLeftClose, PanelLeft, MessageCircle, Settings, LogOut, User, Sparkles } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
