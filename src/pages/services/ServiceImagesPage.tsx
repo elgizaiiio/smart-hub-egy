@@ -13,19 +13,19 @@ const features = [
   { icon: Image, title: "Style Control", desc: "Choose from dozens of artistic styles or create your own unique visual identity." },
 ];
 
-// LEFT side images - stacked/overlapping cluster
+// LEFT side images - large, edge-positioned, overlapping
 const leftImages = [
-  { src: "/showcase/img-1.jpg", top: "8%", left: "-3%", width: 180, height: 260, speed: 0.02, rotate: -8, zIndex: 3 },
-  { src: "/showcase/img-2.jpg", top: "32%", left: "6%", width: 200, height: 300, speed: 0.03, rotate: 5, zIndex: 2 },
-  { src: "/showcase/img-3.jpg", top: "65%", left: "-1%", width: 190, height: 150, speed: 0.025, rotate: -3, zIndex: 1 },
+  { src: "/showcase/model-1.jpg", top: "5%", left: "-8%", width: 220, height: 180, speed: 0.015, rotate: 0, zIndex: 1 },
+  { src: "/showcase/img-1.jpg", top: "18%", left: "-5%", width: 320, height: 450, speed: 0.02, rotate: 0, zIndex: 2 },
+  { src: "/showcase/img-2.jpg", top: "45%", left: "12%", width: 280, height: 400, speed: 0.025, rotate: 0, zIndex: 3 },
 ];
 
-// RIGHT side images - stacked/overlapping cluster  
+// RIGHT side images - large, edge-positioned, overlapping
 const rightImages = [
-  { src: "/showcase/img-4.jpg", top: "5%", right: "-5%", width: 200, height: 300, speed: 0.025, rotate: 6, zIndex: 3 },
-  { src: "/showcase/img-5.jpg", top: "38%", right: "8%", width: 170, height: 120, speed: 0.035, rotate: -4, zIndex: 2 },
-  { src: "/showcase/img-6.jpg", top: "52%", right: "-2%", width: 150, height: 200, speed: 0.03, rotate: 3, zIndex: 1 },
-  { src: "/showcase/model-1.jpg", top: "72%", right: "5%", width: 140, height: 180, speed: 0.02, rotate: -5, zIndex: 4 },
+  { src: "/showcase/img-4.jpg", top: "3%", right: "-10%", width: 280, height: 380, speed: 0.02, rotate: 0, zIndex: 1 },
+  { src: "/showcase/img-5.jpg", top: "35%", right: "0%", width: 350, height: 200, speed: 0.025, rotate: 0, zIndex: 2 },
+  { src: "/showcase/model-2.jpg", top: "48%", right: "-5%", width: 260, height: 350, speed: 0.018, rotate: 0, zIndex: 3 },
+  { src: "/showcase/img-6.jpg", top: "65%", right: "15%", width: 200, height: 280, speed: 0.022, rotate: 0, zIndex: 4 },
 ];
 
 const ServiceImagesPage = () => {
