@@ -108,12 +108,12 @@ const ServiceImagesPage = () => {
       </section>
 
       {/* CTA */}
-      <section className="mx-auto max-w-3xl px-6 py-24 text-center">
-        <h2 className="font-display text-3xl font-black uppercase md:text-5xl">
+      <section className="mx-auto max-w-5xl px-6 py-28 text-center">
+        <h2 className="font-display text-4xl font-black uppercase md:text-6xl">
           Ready to Create?
         </h2>
-        <p className="mt-4 text-muted-foreground">Join thousands of creators using Megsy Pro to bring their ideas to life.</p>
-        <FancyButton onClick={() => navigate("/auth")} className="mt-8 text-base px-10 py-3">
+        <p className="mt-6 text-lg text-muted-foreground">Join thousands of creators using Megsy Pro to bring their ideas to life.</p>
+        <FancyButton onClick={() => navigate("/auth")} className="mt-10 text-lg px-12 py-4">
           Get Started Free
         </FancyButton>
       </section>
