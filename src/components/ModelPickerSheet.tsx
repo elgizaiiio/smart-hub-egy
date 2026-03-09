@@ -239,7 +239,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     const badges = MODEL_BADGES[model.id] || [];
     const isNew = NEW_MODELS.includes(model.id);
     const isFree = model.credits === 0;
-    const media = mediaMap[model.id];
 
     return (
       <motion.button
@@ -286,48 +285,22 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
               {model.description}
             </p>
 
-            {/* Badges + optional media preview */}
-            <div className="flex items-end justify-between gap-2">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {badges.map(badge => (
-                  <span
-                    key={badge}
-                    className="text-[10px] px-2 py-0.5 rounded-md bg-muted/80 text-muted-foreground font-medium"
-                  >
-                    {badge}
-                  </span>
-                ))}
-              </div>
-
-              {/* Small media preview for models that have it */}
-              {media && (
-                <div className="shrink-0 flex gap-1">
-                  {media.media_type === "video" ? (
-                    <video
-                      src={media.media_url}
-                      className="w-12 h-12 rounded-lg object-cover"
-                      autoPlay muted loop playsInline
-                    />
-                  ) : (
-                    <img
-                      src={media.media_url}
-                      alt=""
-                      className="w-12 h-12 rounded-lg object-cover"
-                      loading="lazy"
-                    />
-                  )}
-                </div>
-              )}
+            {/* Badges */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {badges.map(badge => (
+                <span
+                  key={badge}
+                  className="text-[10px] px-2 py-0.5 rounded-md bg-muted/80 text-muted-foreground font-medium"
+                >
+                  {badge}
+                </span>
+              ))}
             </div>
           </div>
 
           {/* Price badge */}
           <div className="shrink-0">
-            <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${
-              isFree
-                ? "border border-border text-muted-foreground"
-                : "border border-border text-muted-foreground"
-            }`}>
+            <span className="text-[10px] px-2 py-1 rounded-md font-semibold border border-border text-muted-foreground">
               {isFree ? "FREE" : `${model.credits} MC`}
             </span>
           </div>
