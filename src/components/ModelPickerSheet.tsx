@@ -18,7 +18,7 @@ interface ModelPickerSheetProps {
 
 const MODE_TYPES: Record<PickerMode, { models: ModelType[]; tools: ModelType[]; modelLabel: string; toolLabel: string }> = {
   images: { models: ["image"], tools: ["image-tool"], modelLabel: "Models", toolLabel: "Tools" },
-  videos: { models: ["video"], tools: ["video-i2v", "video-avatar"], modelLabel: "Models", toolLabel: "Tools" },
+  videos: { models: ["video"], tools: [], modelLabel: "Models", toolLabel: "" },
   chat: { models: ["chat"], tools: [], modelLabel: "Models", toolLabel: "" },
 };
 
