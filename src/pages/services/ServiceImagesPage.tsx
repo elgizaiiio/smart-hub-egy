@@ -15,17 +15,17 @@ const features = [
 
 // LEFT side images - stacked/overlapping cluster
 const leftImages = [
-  { src: "/showcase/img-1.jpg", style: { top: "8%", left: "-5%", width: 180, height: 240 }, speed: 0.02, rotate: -8, zIndex: 3 },
-  { src: "/showcase/img-2.jpg", style: { top: "25%", left: "8%", width: 200, height: 280 }, speed: 0.03, rotate: 5, zIndex: 2 },
-  { src: "/showcase/img-3.jpg", style: { top: "55%", left: "-2%", width: 220, height: 160 }, speed: 0.025, rotate: -3, zIndex: 1 },
+  { src: "/showcase/img-1.jpg", top: "8%", left: "-3%", width: 180, height: 260, speed: 0.02, rotate: -8, zIndex: 3 },
+  { src: "/showcase/img-2.jpg", top: "32%", left: "6%", width: 200, height: 300, speed: 0.03, rotate: 5, zIndex: 2 },
+  { src: "/showcase/img-3.jpg", top: "65%", left: "-1%", width: 190, height: 150, speed: 0.025, rotate: -3, zIndex: 1 },
 ];
 
 // RIGHT side images - stacked/overlapping cluster  
 const rightImages = [
-  { src: "/showcase/img-4.jpg", style: { top: "5%", right: "-8%", width: 200, height: 280 }, speed: 0.025, rotate: 6, zIndex: 3 },
-  { src: "/showcase/img-5.jpg", style: { top: "35%", right: "5%", width: 180, height: 130 }, speed: 0.035, rotate: -4, zIndex: 2 },
-  { src: "/showcase/img-6.jpg", style: { top: "50%", right: "-3%", width: 160, height: 220 }, speed: 0.03, rotate: 3, zIndex: 1 },
-  { src: "/showcase/model-1.jpg", style: { top: "70%", right: "10%", width: 140, height: 180 }, speed: 0.02, rotate: -5, zIndex: 4 },
+  { src: "/showcase/img-4.jpg", top: "5%", right: "-5%", width: 200, height: 300, speed: 0.025, rotate: 6, zIndex: 3 },
+  { src: "/showcase/img-5.jpg", top: "38%", right: "8%", width: 170, height: 120, speed: 0.035, rotate: -4, zIndex: 2 },
+  { src: "/showcase/img-6.jpg", top: "52%", right: "-2%", width: 150, height: 200, speed: 0.03, rotate: 3, zIndex: 1 },
+  { src: "/showcase/model-1.jpg", top: "72%", right: "5%", width: 140, height: 180, speed: 0.02, rotate: -5, zIndex: 4 },
 ];
 
 const ServiceImagesPage = () => {
@@ -47,36 +47,77 @@ const ServiceImagesPage = () => {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const renderFloatingImage = (img: typeof leftImages[0], index: number, side: 'left' | 'right') => (
-    <motion.div
-      key={`${side}-${index}`}
-      className="absolute overflow-hidden rounded-xl shadow-2xl pointer-events-none hidden lg:block"
-      style={{
-        ...img.style,
-        zIndex: img.zIndex,
-      }}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ 
-        opacity: 1, 
-        scale: 1,
-        x: mousePosition.x * 60 * img.speed * (side === 'left' ? 1 : -1),
-        y: mousePosition.y * 60 * img.speed,
-        rotate: img.rotate + mousePosition.x * 3,
-      }}
-      transition={{ 
-        opacity: { duration: 0.8, delay: index * 0.15 },
-        scale: { duration: 0.8, delay: index * 0.15 },
-        x: { duration: 0.2, ease: "easeOut" },
-        y: { duration: 0.2, ease: "easeOut" },
-        rotate: { duration: 0.3, ease: "easeOut" },
-      }}
-    >
-      <img 
-        src={img.src} 
-        alt="" 
-        className="w-full h-full object-cover"
-      />
-    </motion.div>
+  return (
+    <div data-theme="dark" className="min-h-screen bg-background text-foreground">
+      <LandingNavbar />
+
+      {/* Hero with Parallax Images */}
+      <section 
+        ref={heroRef}
+        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black px-6 pt-20"
+      >
+        {/* LEFT side floating images */}
+        {leftImages.map((img, i) => (
+          <motion.div
+            key={`left-${i}`}
+            className="absolute overflow-hidden rounded-xl shadow-2xl pointer-events-none hidden lg:block"
+            style={{
+              top: img.top,
+              left: img.left,
+              width: img.width,
+              height: img.height,
+              zIndex: img.zIndex,
+            }}
+            initial={{ opacity: 0, scale: 0.8, x: -100 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1,
+              x: mousePosition.x * 50 * img.speed,
+              y: mousePosition.y * 40 * img.speed,
+              rotate: img.rotate + mousePosition.x * 2,
+            }}
+            transition={{ 
+              opacity: { duration: 0.8, delay: i * 0.15 },
+              scale: { duration: 0.8, delay: i * 0.15 },
+              x: { duration: 0.15, ease: "easeOut" },
+              y: { duration: 0.15, ease: "easeOut" },
+              rotate: { duration: 0.2, ease: "easeOut" },
+            }}
+          >
+            <img src={img.src} alt="" className="w-full h-full object-cover" />
+          </motion.div>
+        ))}
+
+        {/* RIGHT side floating images */}
+        {rightImages.map((img, i) => (
+          <motion.div
+            key={`right-${i}`}
+            className="absolute overflow-hidden rounded-xl shadow-2xl pointer-events-none hidden lg:block"
+            style={{
+              top: img.top,
+              right: img.right,
+              width: img.width,
+              height: img.height,
+              zIndex: img.zIndex,
+            }}
+            initial={{ opacity: 0, scale: 0.8, x: 100 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1,
+              x: mousePosition.x * -50 * img.speed,
+              y: mousePosition.y * 40 * img.speed,
+              rotate: img.rotate - mousePosition.x * 2,
+            }}
+            transition={{ 
+              opacity: { duration: 0.8, delay: i * 0.15 },
+              scale: { duration: 0.8, delay: i * 0.15 },
+              x: { duration: 0.15, ease: "easeOut" },
+              y: { duration: 0.15, ease: "easeOut" },
+              rotate: { duration: 0.2, ease: "easeOut" },
+            }}
+          >
+            <img src={img.src} alt="" className="w-full h-full object-cover" />
+          </motion.div>
         ))}
 
         {/* Center Content */}
@@ -84,16 +125,16 @@ const ServiceImagesPage = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="relative z-10 mx-auto max-w-5xl text-center"
+          className="relative z-10 mx-auto max-w-4xl text-center px-4"
         >
-          <h1 className="font-display text-5xl font-black uppercase leading-[1.1] tracking-tight md:text-7xl lg:text-8xl">
+          <h1 className="font-display text-4xl font-black uppercase leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
             <span className="text-white">THE AI IMAGE </span>
             <span className="text-primary">GENERATOR</span>
             <br />
             <span className="text-primary">FOR AMBITIOUS CREATIVES</span>
           </h1>
           
-          <p className="mx-auto mt-8 max-w-3xl text-lg text-white/60 md:text-xl leading-relaxed">
+          <p className="mx-auto mt-8 max-w-2xl text-base text-white/60 sm:text-lg md:text-xl leading-relaxed">
             Turn text into images, transform images into new styles, or refine visuals with pro-level precision.
             Megsy's AI image generator gives you speed, consistency, and control,
             whether you're prototyping products, scaling content, or creating for yourself.
@@ -101,7 +142,7 @@ const ServiceImagesPage = () => {
 
           {/* Star Rating */}
           <div className="mt-8 flex items-center justify-center gap-3">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="h-5 w-5 fill-primary text-primary" />
               ))}
