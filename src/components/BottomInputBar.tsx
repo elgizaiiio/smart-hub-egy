@@ -95,42 +95,8 @@ const BottomInputBar = ({
     <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-          {/* Top row: Mode icons + Input + Expand */}
+          {/* Top row: Input + Expand */}
           <div className="flex items-start gap-3 px-4 pt-4 pb-3">
-            {/* Left mode icons */}
-            <div className="flex flex-col gap-1 shrink-0">
-              <button
-                onClick={() => setActiveMode("image")}
-                className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-                  activeMode === "image"
-                    ? "bg-white/10 text-white"
-                    : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                }`}
-              >
-                <ImageIcon className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setActiveMode("video")}
-                className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-                  activeMode === "video"
-                    ? "bg-white/10 text-white"
-                    : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                }`}
-              >
-                <Video className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setActiveMode("audio")}
-                className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-                  activeMode === "audio"
-                    ? "bg-white/10 text-white"
-                    : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                }`}
-              >
-                <AudioLines className="w-4 h-4" />
-              </button>
-            </div>
-
             {/* Input area */}
             <div className="flex-1 min-w-0">
               <textarea
