@@ -97,7 +97,11 @@ const App = () => {
                 <Route path="/share/:shareId" element={<SharedChatPage />} />
                 <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                 <Route path="/images" element={<ProtectedRoute><ImagesPage /></ProtectedRoute>} />
+                <Route path="/images/studio" element={<ProtectedRoute><ImageStudioPage /></ProtectedRoute>} />
+                <Route path="/images/agent" element={<ProtectedRoute><ImageAgentPage /></ProtectedRoute>} />
                 <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
+                <Route path="/videos/studio" element={<ProtectedRoute><VideoStudioPage /></ProtectedRoute>} />
+                <Route path="/videos/agent" element={<ProtectedRoute><VideoAgentPage /></ProtectedRoute>} />
                 <Route path="/files" element={<ProtectedRoute><FilesPage /></ProtectedRoute>} />
                 <Route path="/code" element={<ProtectedRoute><ProgrammingPage /></ProtectedRoute>} />
                 <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace /></ProtectedRoute>} />
