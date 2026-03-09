@@ -132,16 +132,6 @@ const ServiceImagesPage = () => {
             whether you're prototyping products, scaling content, or creating for yourself.
           </p>
 
-          {/* Star Rating */}
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 fill-primary text-primary" />
-              ))}
-            </div>
-            <span className="text-lg font-bold text-white">4.9</span>
-            <span className="text-sm text-white/50">based on 12.5K Ratings</span>
-          </div>
 
           {/* CTA Button */}
           <div className="mt-10">
