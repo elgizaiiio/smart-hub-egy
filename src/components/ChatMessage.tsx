@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Copy, ThumbsUp, ThumbsDown, MessageSquare, RotateCcw, Check, ExternalLink, Share2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import ThinkingLoader from "./ThinkingLoader";
+import ThinkingLoader, { SparklesBadge } from "./ThinkingLoader";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
