@@ -412,7 +412,7 @@ const ChatPage = () => {
                                     <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
                                   </div>
                                 </button>
-                                <div className="px-3 py-2">
+                                <div className="px-3 py-2 md:hidden">
                                   <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
                                 </div>
                                 <div className="border-t border-border mt-1 pt-1">
