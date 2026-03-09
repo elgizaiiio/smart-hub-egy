@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { ALL_MODEL_DETAILS, type ModelDetail } from "@/lib/modelDetails";
 import type { ModelOption } from "./ModelSelector";
 
-// Model badges/capabilities
 const MODEL_BADGES: Record<string, string[]> = {
   "nano-banana-2": ["Multi-Image Input", "4K"],
   "nano-banana-pro": ["Multi-Image Input", "4K"],
@@ -25,7 +24,6 @@ const MODEL_BADGES: Record<string, string[]> = {
   "megsy-v1-img": ["Image Ref"],
 };
 
-// Icons for models
 const MODEL_ICONS: Record<string, { letter: string; gradient: string }> = {
   "nano-banana-2": { letter: "G", gradient: "from-yellow-400 to-orange-500" },
   "nano-banana-pro": { letter: "G", gradient: "from-yellow-400 to-orange-500" },
@@ -46,7 +44,6 @@ const MODEL_ICONS: Record<string, { letter: string; gradient: string }> = {
   "fal-flux-realism": { letter: "F", gradient: "from-sky-400 to-blue-500" },
 };
 
-// New models
 const NEW_MODELS = ["nano-banana-2", "seedream-5-lite", "ideogram-3"];
 
 interface InlineModelPickerProps {
@@ -78,27 +75,28 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.97 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className="absolute bottom-full left-0 right-0 mb-2 z-40"
         >
           <div className="max-w-4xl mx-auto">
-            <div className="bg-[#0d0d0d]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[70vh] flex flex-col">
+            <div className="bg-black/40 backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-[0_16px_64px_rgba(0,0,0,0.6)] overflow-hidden max-h-[70vh] flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
-                <h2 className="text-base font-semibold text-white">Models</h2>
+              <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06] shrink-0">
+                <h2 className="text-sm font-semibold text-white/90">Models</h2>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/[0.08] transition-all duration-200"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Model Grid */}
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="flex-1 overflow-y-auto p-3">
+                <div className="grid grid-cols-2 gap-2">
                   {imageModels.map((model) => {
                     const isSelected = selectedModelId === model.id;
                     const isNew = NEW_MODELS.includes(model.id);
@@ -110,46 +108,51 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId }: InlineM
                       <motion.button
                         key={model.id}
                         whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => handleSelect(model)}
-                        className={`relative flex flex-col p-4 rounded-xl text-left transition-all ${
+                        className={`relative flex flex-col p-3.5 rounded-xl text-left transition-all duration-300 ${
                           isSelected
-                            ? "bg-[#2a3a2a] border-2 border-[#4a7a4a]"
-                            : "bg-[#252525] border border-white/5 hover:bg-[#2a2a2a] hover:border-white/10"
+                            ? "bg-white/[0.1] border border-white/[0.2] shadow-[inset_0_0_20px_rgba(255,255,255,0.03)]"
+                            : "bg-white/[0.03] border border-white/[0.04] hover:bg-white/[0.06] hover:border-white/[0.1]"
                         }`}
                       >
-                        {/* Top row: Icon + Name + NEW badge + FREE badge */}
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-5 h-5 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center`}>
-                              <span className="text-[10px] font-bold text-black">{iconInfo.letter}</span>
-                            </div>
-                            <span className="text-sm font-semibold text-white">{model.name}</span>
-                            {isNew && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#f5d90a] text-black font-bold uppercase">
-                                New
-                              </span>
-                            )}
+                        {/* Selected check */}
+                        {isSelected && (
+                          <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
                           </div>
+                        )}
+
+                        {/* Top row */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-5 h-5 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center shadow-sm`}>
+                            <span className="text-[10px] font-bold text-black">{iconInfo.letter}</span>
+                          </div>
+                          <span className="text-[13px] font-semibold text-white/90">{model.name}</span>
+                          {isNew && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#f5d90a]/90 text-black font-bold uppercase tracking-wide">
+                              New
+                            </span>
+                          )}
                           {isFree && (
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-white/80 font-medium">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/[0.1] text-white/70 font-medium">
                               FREE
                             </span>
                           )}
                         </div>
 
                         {/* Description */}
-                        <p className="text-xs text-white/50 line-clamp-2 mb-3">
+                        <p className="text-[11px] text-white/35 line-clamp-2 mb-2.5 leading-relaxed">
                           {model.description}
                         </p>
 
                         {/* Badges */}
                         {badges.length > 0 && (
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1 flex-wrap">
                             {badges.map((badge) => (
                               <span
                                 key={badge}
-                                className="text-[10px] px-2 py-1 rounded-md bg-[#333] text-white/70 font-medium"
+                                className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/[0.06] text-white/50 font-medium"
                               >
                                 {badge}
                               </span>
