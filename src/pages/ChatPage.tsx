@@ -8,7 +8,7 @@ import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
-import ModelSelector, { getDefaultModel, type ModelOption } from "@/components/ModelSelector";
+import ModelSelector, { getDefaultModel, getModelsForMode, type ModelOption } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
 import { streamChat } from "@/lib/streamChat";
