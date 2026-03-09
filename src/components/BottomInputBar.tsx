@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Loader2, Coins, Image as ImageIcon, Expand, ChevronDown, Check } from "lucide-react";
+import { Loader2, Expand, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ModelOption } from "@/components/ModelSelector";
-import type { ImageSettings, ImageStyle, ImageDimensions } from "@/components/ImageSettingsPanel";
+import type { ImageSettings, ImageDimensions } from "@/components/ImageSettingsPanel";
 import InlineModelPicker from "./InlineModelPicker";
 
 const PLACEHOLDERS = [
@@ -38,6 +39,8 @@ const MODEL_ICONS: Record<string, { letter: string; gradient: string }> = {
   "megsy-v1-img": { letter: "M", gradient: "from-primary to-primary/70" },
 };
 
+type DropdownId = "aspect" | "quality" | "count" | null;
+
 interface BottomInputBarProps {
   input: string;
   onInputChange: (val: string) => void;
@@ -52,73 +55,6 @@ interface BottomInputBarProps {
   canAttach: boolean;
   onAttach: () => void;
 }
-
-// Dropdown component for chips
-const ChipDropdown = ({
-  open,
-  onToggle,
-  onClose,
-  label,
-  icon,
-  children,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  onClose: () => void;
-  label: React.ReactNode;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onCloseRef.current();
-      }
-    };
-    // Delay to avoid the click that opened it from immediately closing it
-    const id = setTimeout(() => document.addEventListener("mousedown", handler), 0);
-    return () => {
-      clearTimeout(id);
-      document.removeEventListener("mousedown", handler);
-    };
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium 
-          bg-white/[0.06] backdrop-blur-2xl border border-white/[0.08] text-white/80 
-          hover:bg-white/[0.1] hover:border-white/[0.15] hover:text-white
-          transition-all duration-300 ease-out"
-      >
-        {icon}
-        {label}
-        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.97 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-full mb-2 left-0 min-w-[140px] 
-              bg-black/60 backdrop-blur-3xl border border-white/[0.1] 
-              rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden p-1.5 z-50"
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
 
 const BottomInputBar = ({
   input,
@@ -138,9 +74,10 @@ const BottomInputBar = ({
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState("2K");
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<DropdownId>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Animated placeholder
   useEffect(() => {
     if (input) return;
     const target = PLACEHOLDERS[placeholderIdx];
@@ -162,12 +99,20 @@ const BottomInputBar = ({
     onSettingsChange({ ...settings, [key]: value });
   };
 
-  const toggleDropdown = (id: string) => {
-    setActiveDropdown(prev => prev === id ? null : id);
-  };
-
   const currentAspect = settings.dimensions.label;
   const iconInfo = MODEL_ICONS[selectedModel.id] || { letter: "AI", gradient: "from-gray-400 to-gray-500" };
+
+  const chipClass =
+    "shrink-0 px-3 py-2 rounded-xl text-xs font-medium " +
+    "bg-foreground/[0.06] backdrop-blur-3xl border border-foreground/[0.10] " +
+    "text-foreground/80 hover:bg-foreground/[0.10] hover:border-foreground/[0.16] hover:text-foreground " +
+    "transition-all duration-300 ease-out";
+
+  const menuClass =
+    "w-40 p-1.5 rounded-xl border border-foreground/[0.12] " +
+    "bg-foreground/[0.08] backdrop-blur-3xl shadow-lg";
+
+  const itemBase = "w-full text-left text-xs px-3 py-2 rounded-lg transition-colors";
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
@@ -184,7 +129,7 @@ const BottomInputBar = ({
         />
 
         {/* Main glass container */}
-        <div className="bg-black/20 backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-visible">
+        <div className="bg-foreground/[0.08] backdrop-blur-3xl border border-foreground/[0.10] rounded-2xl shadow-lg overflow-visible">
           {/* Input area */}
           <div className="flex items-start gap-3 px-5 pt-4 pb-3">
             <div className="flex-1 min-w-0">
@@ -200,11 +145,11 @@ const BottomInputBar = ({
                 }}
                 placeholder={displayedPlaceholder}
                 rows={1}
-                className="w-full bg-transparent border-none outline-none resize-none text-sm text-white placeholder:text-white/25 py-2 max-h-24"
+                className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-foreground/30 py-2 max-h-24"
                 style={{ minHeight: "40px" }}
               />
             </div>
-            <button className="w-8 h-8 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors mt-1">
+            <button className="w-8 h-8 flex items-center justify-center text-foreground/40 hover:text-foreground/70 transition-colors mt-1">
               <Expand className="w-4 h-4" />
             </button>
           </div>
@@ -212,13 +157,14 @@ const BottomInputBar = ({
           {/* Bottom controls row */}
           <div className="flex items-center justify-between gap-3 px-4 pb-4">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-              {/* Model chip */}
+              {/* Model chip (keeps its tiny logo) */}
               <button
                 onClick={() => setModelPickerOpen(!modelPickerOpen)}
-                className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium 
-                  bg-white/[0.06] backdrop-blur-2xl border border-white/[0.08] text-white/80 
-                  hover:bg-white/[0.1] hover:border-white/[0.15] hover:text-white
-                  transition-all duration-300 ease-out"
+                className={
+                  "shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium " +
+                  "bg-foreground/[0.06] backdrop-blur-3xl border border-foreground/[0.10] text-foreground/80 " +
+                  "hover:bg-foreground/[0.10] hover:border-foreground/[0.16] hover:text-foreground transition-all duration-300 ease-out"
+                }
               >
                 <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center`}>
                   <span className="text-[8px] font-bold text-black">{iconInfo.letter}</span>
@@ -227,95 +173,102 @@ const BottomInputBar = ({
                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${modelPickerOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Aspect Ratio chip */}
-              <ChipDropdown
-                open={activeDropdown === "aspect"}
-                onToggle={() => toggleDropdown("aspect")}
-                onClose={() => setActiveDropdown(null)}
-                icon={<div className="w-3 h-2.5 border border-current rounded-[2px]" />}
-                label={currentAspect}
-              >
-                {ASPECT_RATIOS.map((ar) => (
-                  <button
-                    key={ar.label}
-                    onClick={() => { updateSetting("dimensions", ar); setActiveDropdown(null); }}
-                    className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg transition-all duration-200
-                      ${settings.dimensions.label === ar.label
-                        ? "bg-white/[0.1] text-white"
-                        : "text-white/60 hover:bg-white/[0.06] hover:text-white/90"
-                      }`}
-                  >
-                    {ar.label}
-                    {settings.dimensions.label === ar.label && <Check className="w-3.5 h-3.5 text-white/80" />}
-                  </button>
-                ))}
-              </ChipDropdown>
+              {/* Aspect ratio (NO icons) */}
+              <Popover open={openDropdown === "aspect"} onOpenChange={(o) => setOpenDropdown(o ? "aspect" : null)}>
+                <PopoverTrigger asChild>
+                  <button className={chipClass}>{currentAspect}</button>
+                </PopoverTrigger>
+                <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
+                  <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Aspect</p>
+                  <div className="space-y-0.5">
+                    {ASPECT_RATIOS.map((ar) => (
+                      <button
+                        key={ar.label}
+                        onClick={() => {
+                          updateSetting("dimensions", ar);
+                          setOpenDropdown(null);
+                        }}
+                        className={`${itemBase} ${
+                          settings.dimensions.label === ar.label
+                            ? "bg-foreground/[0.12] text-foreground font-semibold"
+                            : "text-foreground/70 hover:bg-foreground/[0.08] hover:text-foreground"
+                        }`}
+                      >
+                        {ar.label}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-              {/* Quality chip */}
-              <ChipDropdown
-                open={activeDropdown === "quality"}
-                onToggle={() => toggleDropdown("quality")}
-                onClose={() => setActiveDropdown(null)}
-                icon={<Sparkles className="w-3 h-3" />}
-                label={selectedQuality}
-              >
-                {QUALITIES.map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => { setSelectedQuality(q); setActiveDropdown(null); }}
-                    className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg transition-all duration-200
-                      ${selectedQuality === q
-                        ? "bg-white/[0.1] text-white"
-                        : "text-white/60 hover:bg-white/[0.06] hover:text-white/90"
-                      }`}
-                  >
-                    {q}
-                    {selectedQuality === q && <Check className="w-3.5 h-3.5 text-white/80" />}
-                  </button>
-                ))}
-              </ChipDropdown>
+              {/* Quality (NO icons) */}
+              <Popover open={openDropdown === "quality"} onOpenChange={(o) => setOpenDropdown(o ? "quality" : null)}>
+                <PopoverTrigger asChild>
+                  <button className={chipClass}>{selectedQuality}</button>
+                </PopoverTrigger>
+                <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
+                  <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Quality</p>
+                  <div className="space-y-0.5">
+                    {QUALITIES.map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => {
+                          setSelectedQuality(q);
+                          setOpenDropdown(null);
+                        }}
+                        className={`${itemBase} ${
+                          selectedQuality === q
+                            ? "bg-foreground/[0.12] text-foreground font-semibold"
+                            : "text-foreground/70 hover:bg-foreground/[0.08] hover:text-foreground"
+                        }`}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-              {/* Image count chip */}
-              <ChipDropdown
-                open={activeDropdown === "count"}
-                onToggle={() => toggleDropdown("count")}
-                onClose={() => setActiveDropdown(null)}
-                icon={<ImageIcon className="w-3 h-3" />}
-                label={`${settings.numImages} Image${settings.numImages > 1 ? "s" : ""}`}
-              >
-                {[1, 2, 3, 4].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => { updateSetting("numImages", n); setActiveDropdown(null); }}
-                    className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg transition-all duration-200
-                      ${settings.numImages === n
-                        ? "bg-white/[0.1] text-white"
-                        : "text-white/60 hover:bg-white/[0.06] hover:text-white/90"
-                      }`}
-                  >
-                    {n} Image{n > 1 ? "s" : ""}
-                    {settings.numImages === n && <Check className="w-3.5 h-3.5 text-white/80" />}
+              {/* Images count (NO icons) */}
+              <Popover open={openDropdown === "count"} onOpenChange={(o) => setOpenDropdown(o ? "count" : null)}>
+                <PopoverTrigger asChild>
+                  <button className={chipClass}>
+                    {settings.numImages} Image{settings.numImages > 1 ? "s" : ""}
                   </button>
-                ))}
-              </ChipDropdown>
+                </PopoverTrigger>
+                <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
+                  <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Images</p>
+                  <div className="space-y-0.5">
+                    {[1, 2, 3, 4].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => {
+                          updateSetting("numImages", n);
+                          setOpenDropdown(null);
+                        }}
+                        className={`${itemBase} ${
+                          settings.numImages === n
+                            ? "bg-foreground/[0.12] text-foreground font-semibold"
+                            : "text-foreground/70 hover:bg-foreground/[0.08] hover:text-foreground"
+                        }`}
+                      >
+                        {n} Image{n > 1 ? "s" : ""}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
-            {/* Generate button */}
+            {/* Generate button (white -> warning when text) */}
             <button
               onClick={onGenerate}
               disabled={!input.trim() || isGenerating}
               className={`shrink-0 h-10 px-6 flex items-center justify-center rounded-xl font-semibold text-sm 
                 transition-all duration-300 disabled:opacity-30 active:scale-[0.97]
-                ${input.trim()
-                  ? "bg-[#f5d90a] text-black hover:bg-[#e5c900] hover:shadow-[0_0_20px_rgba(245,217,10,0.3)]"
-                  : "bg-white text-black hover:bg-white/90"
-                }`}
+                ${input.trim() ? "bg-warning text-background hover:bg-warning/90" : "bg-foreground text-background hover:bg-foreground/90"}`}
             >
-              {isGenerating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <span>Generate · {creditCost} MC</span>
-              )}
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Generate · {creditCost} MC</span>}
             </button>
           </div>
         </div>
