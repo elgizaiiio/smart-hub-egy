@@ -78,6 +78,7 @@ const ChatPage = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
+  const [modelsExpanded, setModelsExpanded] = useState(false);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -483,19 +484,29 @@ const ChatPage = () => {
                               </div>
                             </button>
                             <div className="border-t border-border mt-1 pt-1">
-                              <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Model</p>
-                              {getModelsForMode("chat").map((m) => (
-                                <button
-                                  key={m.id}
-                                  onClick={() => setSelectedModel(m)}
-                                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
-                                    selectedModel.id === m.id ? "bg-primary/10 text-primary" : "hover:bg-accent/50"
-                                  }`}
-                                >
-                                  <span className="text-sm font-medium">{m.name}</span>
-                                  {selectedModel.id === m.id && <span className="text-xs text-primary">✓</span>}
-                                </button>
-                              ))}
+                              <button
+                                onClick={() => setModelsExpanded(!modelsExpanded)}
+                                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
+                              >
+                                <span className="text-sm text-foreground">{selectedModel.name}</span>
+                                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${modelsExpanded ? "rotate-180" : ""}`} />
+                              </button>
+                              {modelsExpanded && (
+                                <div className="space-y-0.5 mt-1">
+                                  {getModelsForMode("chat").map((m) => (
+                                    <button
+                                      key={m.id}
+                                      onClick={() => { setSelectedModel(m); setModelsExpanded(false); }}
+                                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
+                                        selectedModel.id === m.id ? "bg-primary/10 text-primary" : "hover:bg-accent/50"
+                                      }`}
+                                    >
+                                      <span className="text-sm">{m.name}</span>
+                                      {selectedModel.id === m.id && <span className="text-xs text-primary">✓</span>}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <div className="border-t border-border mt-1 pt-1">
                               <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
