@@ -198,18 +198,31 @@ const VideoBottomInputBar = ({
 
         {/* Main glass container */}
         <div className="bg-muted/80 backdrop-blur-3xl border border-border rounded-2xl shadow-lg overflow-visible">
-          {/* Input area */}
+          {/* Input area with media buttons */}
           <div className="flex items-start gap-3 px-5 pt-4 pb-3">
-            {/* Media upload button */}
-            {canAttach && (
+            {/* Left media type buttons (vertical stack like Artlist) */}
+            <div className="shrink-0 flex flex-col gap-1.5 pt-1">
               <button
                 onClick={onAttach}
-                className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-primary/30 transition-all duration-200"
                 title="Attach image"
               >
-                <Paperclip className="w-4 h-4" />
+                <ImageIcon className="w-4 h-4" />
               </button>
-            )}
+              <button
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary transition-all duration-200"
+                title="Video mode (active)"
+              >
+                <Film className="w-4 h-4" />
+              </button>
+              <button
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border transition-all duration-200 opacity-50 cursor-not-allowed"
+                title="Audio (coming soon)"
+                disabled
+              >
+                <AudioLines className="w-4 h-4" />
+              </button>
+            </div>
 
             <div className="flex-1 min-w-0">
               <textarea
