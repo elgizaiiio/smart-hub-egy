@@ -64,20 +64,57 @@ const ServiceImagesPage = () => {
   const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
+  
+  // Interactive mockup state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [typedPrompt, setTypedPrompt] = useState("");
+  const [showImage, setShowImage] = useState(true);
+  const [history, setHistory] = useState<number[]>([0]);
+  const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (heroRef.current) {
-        const rect = heroRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left - rect.width / 2) / rect.width;
-        const y = (e.clientY - rect.top - rect.height / 2) / rect.height;
-        setMousePosition({ x, y });
+  const currentGen = generatedImages[currentImageIndex];
+
+  const startGeneration = useCallback((nextIndex: number) => {
+    setShowImage(false);
+    setIsGenerating(true);
+    setTypedPrompt("");
+    
+    const prompt = generatedImages[nextIndex].prompt;
+    let charIndex = 0;
+    
+    const typeChar = () => {
+      if (charIndex <= prompt.length) {
+        setTypedPrompt(prompt.slice(0, charIndex));
+        charIndex++;
+        typingRef.current = setTimeout(typeChar, 30 + Math.random() * 40);
+      } else {
+        // Typing done, simulate generation delay
+        setTimeout(() => {
+          setCurrentImageIndex(nextIndex);
+          setShowImage(true);
+          setIsGenerating(false);
+          setHistory(prev => [nextIndex, ...prev].slice(0, 6));
+        }, 1200);
       }
     };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    
+    typingRef.current = setTimeout(typeChar, 300);
   }, []);
+
+  // Auto-cycle every 6 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isGenerating) {
+        const next = (currentImageIndex + 1) % generatedImages.length;
+        startGeneration(next);
+      }
+    }, 6000);
+    return () => {
+      clearInterval(interval);
+      if (typingRef.current) clearTimeout(typingRef.current);
+    };
+  }, [currentImageIndex, isGenerating, startGeneration]);
 
   return (
     <div data-theme="dark" className="min-h-screen bg-background text-foreground">
