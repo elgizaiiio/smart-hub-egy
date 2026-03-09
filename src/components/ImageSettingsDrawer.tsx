@@ -47,6 +47,12 @@ const ImageSettingsDrawer = ({
   onOpenModelPicker
 }: ImageSettingsDrawerProps) => {
   const [expanded, setExpanded] = useState<ExpandedSection>(null);
+  const { settings: pageSettings } = usePageSettings("images");
+  const ps = pageSettings as PageSettingsImages;
+
+  const STYLES = useMemo(() => ALL_STYLES.filter(s => ps.styles.includes(s.value)), [ps.styles]);
+  const ASPECT_RATIOS = useMemo(() => ALL_ASPECT_RATIOS.filter(ar => ps.aspectRatios.includes(ar.label)), [ps.aspectRatios]);
+  const NUM_IMAGES = useMemo(() => Array.from({ length: ps.maxImages }, (_, i) => i + 1), [ps.maxImages]);
 
   const toggle = (section: ExpandedSection) => {
     setExpanded((prev) => prev === section ? null : section);
