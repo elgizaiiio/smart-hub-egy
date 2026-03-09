@@ -536,6 +536,61 @@ serve(async (req) => {
           return new Response("OK");
         }
 
+        // Capabilities - toggle selection
+        if (field === "capabilities") {
+          const config = await getModelConfig(sb, session.adminModelId);
+          const current = (config.capabilities || "").split(",").filter(Boolean);
+          await saveSession(sb, chatId, { ...session, adminAction: "cap_editing", adminField: field });
+          const rows: { text: string; callback_data: string }[][] = [];
+          for (let i = 0; i < CAPABILITY_OPTIONS.length; i += 2) {
+            const row: { text: string; callback_data: string }[] = [];
+            const c1 = CAPABILITY_OPTIONS[i];
+            const on1 = current.includes(c1.key);
+            row.push({ text: `${on1 ? "✅" : "⬜"} ${c1.label}`, callback_data: `cap_${c1.key}` });
+            if (CAPABILITY_OPTIONS[i + 1]) {
+              const c2 = CAPABILITY_OPTIONS[i + 1];
+              const on2 = current.includes(c2.key);
+              row.push({ text: `${on2 ? "✅" : "⬜"} ${c2.label}`, callback_data: `cap_${c2.key}` });
+            }
+            rows.push(row);
+          }
+          rows.push([{ text: "💾 حفظ القدرات", callback_data: "cap_save" }]);
+          rows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+          await send(BOT_TOKEN, chatId, msgId, `🛠 *قدرات النموذج* لـ \`${session.adminModelId}\`\n\nالمحدد: ${current.length > 0 ? current.join(", ") : "لا شيء"}\n\nاضغط لتفعيل/تعطيل:`, rows);
+          return new Response("OK");
+        }
+
+        // fal_id - prefix suggestions
+        if (field === "fal_id") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          const prefixRows: { text: string; callback_data: string }[][] = [];
+          for (let i = 0; i < FAL_PREFIXES.length; i += 2) {
+            const row: { text: string; callback_data: string }[] = [];
+            row.push({ text: FAL_PREFIXES[i].label, callback_data: `falpfx_${i}` });
+            if (FAL_PREFIXES[i + 1]) row.push({ text: FAL_PREFIXES[i + 1].label, callback_data: `falpfx_${i + 1}` });
+            rows.push(row);
+          }
+          prefixRows.push([{ text: "✏️ إدخال يدوي كامل", callback_data: "sv_fal_id_custom" }]);
+          prefixRows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+          const config = await getModelConfig(sb, session.adminModelId);
+          await send(BOT_TOKEN, chatId, msgId, `🔗 *معرف fal.ai* لـ \`${session.adminModelId}\`\nالحالي: \`${config.fal_id || "غير محدد"}\`\n\nاختر بادئة أو أدخل المعرف كاملاً:\nمثال: \`fal-ai/nano-banana-pro/edit\``, prefixRows);
+          return new Response("OK");
+        }
+
+        // openrouter_id - common prefixes
+        if (field === "openrouter_id") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          const config = await getModelConfig(sb, session.adminModelId);
+          await send(BOT_TOKEN, chatId, msgId, `🔗 *معرف OpenRouter* لـ \`${session.adminModelId}\`\nالحالي: \`${config.openrouter_id || "غير محدد"}\`\n\nاختر بادئة أو أدخل المعرف:`, [
+            [{ text: "openai/", callback_data: "orpfx_openai/" }, { text: "google/", callback_data: "orpfx_google/" }],
+            [{ text: "x-ai/", callback_data: "orpfx_x-ai/" }, { text: "deepseek/", callback_data: "orpfx_deepseek/" }],
+            [{ text: "meta-llama/", callback_data: "orpfx_meta-llama/" }, { text: "anthropic/", callback_data: "orpfx_anthropic/" }],
+            [{ text: "✏️ إدخال يدوي", callback_data: "sv_openrouter_id_custom" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
+          return new Response("OK");
+        }
+
         await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
         await send(BOT_TOKEN, chatId, msgId, `✏️ ${fieldLabel}\n\nأدخل القيمة الجديدة لـ \`${session.adminModelId}\`:`, [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]]);
         return new Response("OK");
