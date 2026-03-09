@@ -506,8 +506,9 @@ const ServiceImagesPage = () => {
                   <motion.div 
                     animate={phase === 'generating' ? { rotate: 360 } : { rotate: 0 }}
                     transition={{ duration: 1, repeat: phase === 'generating' ? Infinity : 0, ease: "linear" }}
+                    className="w-4 h-4 text-primary text-xs font-bold"
                   >
-                    <Sparkles className="w-4 h-4 text-primary" />
+                    M
                   </motion.div>
                   <span className="text-sm font-medium">Megsy Image AI</span>
                 </div>
@@ -533,8 +534,8 @@ const ServiceImagesPage = () => {
                           <div className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5">
                             <p className="text-sm text-primary-foreground">{currentScenario.userPrompt}</p>
                           </div>
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                            <User className="w-4 h-4 text-muted-foreground" />
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-xs font-bold text-muted-foreground">
+                            U
                           </div>
                         </div>
                       </motion.div>
@@ -551,8 +552,8 @@ const ServiceImagesPage = () => {
                         className="flex justify-start"
                       >
                         <div className="flex items-start gap-2 max-w-[85%]">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                            <Bot className="w-4 h-4 text-primary" />
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
+                            M
                           </div>
                           <div className="text-sm text-foreground/90">
                             {typedAiText}
@@ -579,17 +580,16 @@ const ServiceImagesPage = () => {
                         className="flex justify-start"
                       >
                         <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                            <Bot className="w-4 h-4 text-primary" />
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
+                            M
                           </div>
                           <div className="rounded-2xl border border-border/30 bg-muted/30 p-4">
                             <div className="flex items-center gap-3">
                               <motion.div
+                                className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent"
                                 animate={{ rotate: 360 }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                              >
-                                <Loader2 className="w-6 h-6 text-primary" />
-                              </motion.div>
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              />
                               <div>
                                 <p className="text-sm font-medium">Creating your image...</p>
                                 <p className="text-xs text-muted-foreground">Using {currentScenario.model}</p>
@@ -621,8 +621,8 @@ const ServiceImagesPage = () => {
                         className="flex justify-start"
                       >
                         <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                            <Bot className="w-4 h-4 text-primary" />
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary">
+                            M
                           </div>
                           <div className="space-y-2">
                             <div className="relative rounded-xl overflow-hidden border border-border/30 max-w-[280px]">
@@ -637,7 +637,6 @@ const ServiceImagesPage = () => {
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.3 }}
                               >
-                                <Sparkles className="w-3 h-3 text-primary" />
                                 <span className="text-white/90">{currentScenario.model}</span>
                               </motion.div>
                             </div>
@@ -660,8 +659,9 @@ const ServiceImagesPage = () => {
                         rotate: [0, 15, -15, 0]
                       } : {}}
                       transition={{ duration: 0.6, repeat: phase === 'typing-user' ? Infinity : 0 }}
+                      className="text-primary text-sm"
                     >
-                      <Sparkles className="w-4 h-4 text-primary" />
+                      ★
                     </motion.div>
                     <div className="flex-1 text-sm text-foreground min-h-[24px]">
                       {phase === 'typing-user' ? (
@@ -677,8 +677,8 @@ const ServiceImagesPage = () => {
                         <span className="text-muted-foreground/50">Describe your image...</span>
                       )}
                     </div>
-                    <button className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                      <Send className="w-4 h-4 text-primary" />
+                    <button className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm">
+                      ↑
                     </button>
                   </div>
                 </div>
