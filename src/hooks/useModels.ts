@@ -34,9 +34,10 @@ export function useDynamicModels() {
         let result = ALL_MODEL_DETAILS.filter(m => !hidden.includes(m.id));
 
         // Apply overrides
-        result = result.map(m => {
-          const ov = overrides[m.id];
+        const applyOv = (m: ModelDetail, ov?: Record<string, string>): ModelDetail => {
           if (!ov) return m;
+          let customization: Record<string, any> | undefined;
+          if (ov.customization) { try { customization = JSON.parse(ov.customization); } catch {} }
           return {
             ...m,
             ...(ov.name && { name: ov.name }),
@@ -46,8 +47,13 @@ export function useDynamicModels() {
             ...(ov.quality && { quality: ov.quality as ModelDetail["quality"] }),
             ...(ov.requiresImage !== undefined && { requiresImage: ov.requiresImage === "true" }),
             ...(ov.maxImages !== undefined && { maxImages: Number(ov.maxImages) }),
+            ...(ov.type && { type: ov.type as ModelDetail["type"] }),
+            ...(customization && { customization }),
+            ...(ov.icon_url && { iconUrl: ov.icon_url }),
           };
-        });
+        };
+
+        result = result.map(m => applyOv(m, overrides[m.id]));
 
         // Add new models
         if (added.length > 0) {
@@ -69,7 +75,7 @@ export function useDynamicModels() {
             speed: a.speed || "standard",
             quality: a.quality || "high",
           }));
-          result = [...result, ...newModels];
+          result = [...result, ...newModels.map(m => applyOv(m, overrides[m.id]))];
         }
 
         setModels(result);

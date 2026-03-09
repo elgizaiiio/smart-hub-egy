@@ -14,18 +14,7 @@ import ModelPickerSheet from "@/components/ModelPickerSheet";
 import StudioLoader from "@/components/StudioLoader";
 import { getImageModelCapability } from "@/lib/imageModelCapabilities";
 
-const STYLE_SUFFIX: Record<string, string> = {
-  none: "",
-  cinematic: ", cinematic lighting, dramatic shadows, film grain, movie still",
-  creative: ", creative art style, imaginative composition, artistic",
-  dynamic: ", dynamic composition, energetic, motion blur, dramatic angles",
-  fashion: ", fashion photography, editorial style, studio lighting, vogue",
-  portrait: ", portrait photography, shallow depth of field, bokeh, studio lighting",
-  "stock-photo": ", professional stock photography, clean composition, commercial",
-  vibrant: ", vibrant colors, saturated, colorful, high contrast",
-  anime: ", anime style, manga art, Japanese animation, cel shading",
-  "3d-render": ", 3D render, Octane render, Blender, CGI, volumetric lighting",
-};
+// Style suffixes removed — styles are now per-model via admin bot customization
 
 interface GeneratedImage {
   id: string;
@@ -103,8 +92,7 @@ const ImageStudioPage = () => {
     if (!prompt) return;
     const cost = (Number(model.credits) || 1) * s.numImages;
     if (userId && !hasEnoughCredits(cost)) { toast.error("Insufficient MC credits."); return; }
-    const styleSuffix = STYLE_SUFFIX[s.style] || "";
-    const finalPrompt = prompt + styleSuffix;
+    const finalPrompt = prompt;
     setInput("");
     setIsGenerating(true);
     setProgress(0);
