@@ -71,8 +71,10 @@ const VideoSettingsDrawer = ({
     onSettingsChange({ ...settings, [key]: value });
   };
 
-  const sectionClass =
-    "w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-muted/60 text-sm font-medium text-foreground transition-colors hover:bg-muted/80";
+  // Get the current aspect ratio icon for display in the header
+  const currentAspectIcon = ASPECT_RATIOS.find(
+    (ar) => ar.dims.label === settings.dimensions.label
+  )?.icon;
 
   return (
     <AnimatePresence>
@@ -111,7 +113,7 @@ const VideoSettingsDrawer = ({
                   onClose();
                   onOpenModelPicker();
                 }}
-                className={sectionClass}
+                className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-muted/60 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
               >
                 <span>Model</span>
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -121,13 +123,20 @@ const VideoSettingsDrawer = ({
               </button>
 
               {/* Aspect Ratio */}
-              <div>
-                <button onClick={() => toggle("aspect")} className={sectionClass}>
+              <div className={`rounded-2xl transition-colors ${expanded === "aspect" ? "bg-muted/60" : ""}`}>
+                <button
+                  onClick={() => toggle("aspect")}
+                  className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
+                    expanded === "aspect" ? "" : "bg-muted/60 hover:bg-muted/80"
+                  }`}
+                >
                   <span>Aspect Ratio</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <div className="w-4 h-3 border-2 border-current rounded-sm" />
+                    <span className="text-muted-foreground">{currentAspectIcon}</span>
                     <span className="text-xs">{settings.dimensions.label}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${expanded === "aspect" ? "rotate-180" : ""}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${expanded === "aspect" ? "rotate-180" : ""}`}
+                    />
                   </div>
                 </button>
                 <AnimatePresence>
@@ -138,7 +147,7 @@ const VideoSettingsDrawer = ({
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="py-2 space-y-0.5">
+                      <div className="px-2 pb-3 space-y-0.5">
                         {ASPECT_RATIOS.map((ar) => {
                           const isActive = settings.dimensions.label === ar.dims.label;
                           return (
@@ -148,7 +157,7 @@ const VideoSettingsDrawer = ({
                                 updateSetting("dimensions", ar.dims);
                                 setExpanded(null);
                               }}
-                              className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl text-sm transition-colors ${
+                              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm transition-colors ${
                                 isActive
                                   ? "bg-primary/10 text-primary"
                                   : "text-foreground/70 hover:bg-muted/40"
@@ -167,12 +176,19 @@ const VideoSettingsDrawer = ({
               </div>
 
               {/* Duration */}
-              <div>
-                <button onClick={() => toggle("duration")} className={sectionClass}>
+              <div className={`rounded-2xl transition-colors ${expanded === "duration" ? "bg-muted/60" : ""}`}>
+                <button
+                  onClick={() => toggle("duration")}
+                  className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
+                    expanded === "duration" ? "" : "bg-muted/60 hover:bg-muted/80"
+                  }`}
+                >
                   <span>Duration</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <span className="text-xs">{settings.duration}s</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${expanded === "duration" ? "rotate-180" : ""}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${expanded === "duration" ? "rotate-180" : ""}`}
+                    />
                   </div>
                 </button>
                 <AnimatePresence>
@@ -183,7 +199,7 @@ const VideoSettingsDrawer = ({
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="py-2 space-y-0.5">
+                      <div className="px-2 pb-3 space-y-0.5">
                         {DURATIONS.map((d) => {
                           const isActive = settings.duration === d;
                           return (
@@ -193,7 +209,7 @@ const VideoSettingsDrawer = ({
                                 updateSetting("duration", d);
                                 setExpanded(null);
                               }}
-                              className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl text-sm transition-colors ${
+                              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm transition-colors ${
                                 isActive
                                   ? "bg-primary/10 text-primary"
                                   : "text-foreground/70 hover:bg-muted/40"
@@ -211,12 +227,19 @@ const VideoSettingsDrawer = ({
               </div>
 
               {/* Resolution */}
-              <div>
-                <button onClick={() => toggle("resolution")} className={sectionClass}>
+              <div className={`rounded-2xl transition-colors ${expanded === "resolution" ? "bg-muted/60" : ""}`}>
+                <button
+                  onClick={() => toggle("resolution")}
+                  className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
+                    expanded === "resolution" ? "" : "bg-muted/60 hover:bg-muted/80"
+                  }`}
+                >
                   <span>Resolution</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <span className="text-xs">{settings.resolution}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${expanded === "resolution" ? "rotate-180" : ""}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${expanded === "resolution" ? "rotate-180" : ""}`}
+                    />
                   </div>
                 </button>
                 <AnimatePresence>
@@ -227,7 +250,7 @@ const VideoSettingsDrawer = ({
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="py-2 space-y-0.5">
+                      <div className="px-2 pb-3 space-y-0.5">
                         {RESOLUTIONS.map((r) => {
                           const isActive = settings.resolution === r;
                           return (
@@ -237,7 +260,7 @@ const VideoSettingsDrawer = ({
                                 updateSetting("resolution", r);
                                 setExpanded(null);
                               }}
-                              className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl text-sm transition-colors ${
+                              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm transition-colors ${
                                 isActive
                                   ? "bg-primary/10 text-primary"
                                   : "text-foreground/70 hover:bg-muted/40"
@@ -255,10 +278,17 @@ const VideoSettingsDrawer = ({
               </div>
 
               {/* Negative Prompt */}
-              <div>
-                <button onClick={() => toggle("negative")} className={sectionClass}>
+              <div className={`rounded-2xl transition-colors ${expanded === "negative" ? "bg-muted/60" : ""}`}>
+                <button
+                  onClick={() => toggle("negative")}
+                  className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
+                    expanded === "negative" ? "" : "bg-muted/60 hover:bg-muted/80"
+                  }`}
+                >
                   <span>Negative Prompt</span>
-                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expanded === "negative" ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground transition-transform ${expanded === "negative" ? "rotate-180" : ""}`}
+                  />
                 </button>
                 <AnimatePresence>
                   {expanded === "negative" && (
@@ -268,8 +298,10 @@ const VideoSettingsDrawer = ({
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="py-3 px-2 space-y-2">
-                        <p className="text-xs text-muted-foreground">Describe what to exclude from your video</p>
+                      <div className="px-4 pb-4 space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Describe what to exclude from your video
+                        </p>
                         <textarea
                           value={settings.negativePrompt}
                           onChange={(e) => updateSetting("negativePrompt", e.target.value)}
