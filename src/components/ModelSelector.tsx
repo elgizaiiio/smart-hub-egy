@@ -195,7 +195,7 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, colorClass }: Model
           onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
           className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-medium transition-colors ${colorClass || "bg-primary text-primary-foreground hover:bg-primary/90"}`}
         >
-          <ModelBrandIcon modelId={selectedModel.id} />
+          <span className="hidden md:inline-flex"><ModelBrandIcon modelId={selectedModel.id} /></span>
           {selectedModel.name}
           <ChevronDown className="w-3 h-3" />
         </button>
