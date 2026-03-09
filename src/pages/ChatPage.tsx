@@ -306,13 +306,7 @@ const ChatPage = () => {
               <Menu className="w-5 h-5" />
             </button>
 
-            {hasConversation && conversationId ? (
-              <span className="text-sm font-medium text-foreground truncate max-w-[200px]">
-                {conversationTitle || "Untitled"}
-              </span>
-            ) : (
-              <div className="hidden md:block" />
-            )}
+            <div className="hidden md:block" />
           </div>
 
           {/* Center: Unlock Pro on mobile */}
