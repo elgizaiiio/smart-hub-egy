@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, X, Check } from "lucide-react";
 import { createPortal } from "react-dom";
-import { ALL_MODEL_DETAILS, type ModelDetail, type ModelType } from "@/lib/modelDetails";
+import { type ModelDetail, type ModelType } from "@/lib/modelDetails";
+import { useDynamicModels } from "@/hooks/useModels";
 import { supabase } from "@/integrations/supabase/client";
 import type { ModelOption } from "./ModelSelector";
 
