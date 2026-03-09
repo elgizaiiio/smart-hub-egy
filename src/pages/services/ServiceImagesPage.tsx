@@ -534,9 +534,6 @@ const ServiceImagesPage = () => {
                           <div className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5">
                             <p className="text-sm text-primary-foreground">{currentScenario.userPrompt}</p>
                           </div>
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-xs font-bold text-muted-foreground">
-                            U
-                          </div>
                         </div>
                       </motion.div>
                     )}
