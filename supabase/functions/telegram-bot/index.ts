@@ -1174,6 +1174,77 @@ serve(async (req) => {
 
       const session = await loadSession(sb, chatId);
 
+      // ---- Page settings text inputs ----
+      if (session?.adminAction?.startsWith("ps_") && text) {
+        const action = session.adminAction;
+        const input = text.trim();
+
+        if (action === "ps_img_styles") {
+          const styles = input.split(",").map(s => s.trim()).filter(Boolean);
+          const s = await getPageSettings(sb, "images");
+          (s as any).styles = styles;
+          await savePageSettings(sb, "images", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث الأنماط: \`${styles.join(", ")}\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🖼 إعدادات الصور", callback_data: "ps_images" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        if (action === "ps_img_aspects") {
+          const aspects = input.split(",").map(s => s.trim()).filter(Boolean);
+          const s = await getPageSettings(sb, "images");
+          (s as any).aspectRatios = aspects;
+          await savePageSettings(sb, "images", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث النسب: \`${aspects.join(", ")}\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🖼 إعدادات الصور", callback_data: "ps_images" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        if (action === "ps_vid_aspects") {
+          const aspects = input.split(",").map(s => s.trim()).filter(Boolean);
+          const s = await getPageSettings(sb, "videos");
+          (s as any).aspectRatios = aspects;
+          await savePageSettings(sb, "videos", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث النسب: \`${aspects.join(", ")}\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        if (action === "ps_vid_durations") {
+          const durations = input.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+          const s = await getPageSettings(sb, "videos");
+          (s as any).durations = durations;
+          await savePageSettings(sb, "videos", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث المدد: \`${durations.join(", ")}s\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        if (action === "ps_vid_resolutions") {
+          const resolutions = input.split(",").map(s => s.trim()).filter(Boolean);
+          const s = await getPageSettings(sb, "videos");
+          (s as any).resolutions = resolutions;
+          await savePageSettings(sb, "videos", s);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: `✅ تم تحديث الدقات: \`${resolutions.join(", ")}\``, parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🎬 إعدادات الفيديو", callback_data: "ps_videos" }]] }),
+          });
+          return new Response("OK");
+        }
+      }
+
       // ---- Showcase text inputs ----
       // Step 2: receive prompt
       if (session?.showcaseStep === "awaiting_prompt" && text) {
