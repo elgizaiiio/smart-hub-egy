@@ -14,7 +14,7 @@ import ModelPickerSheet from "@/components/ModelPickerSheet";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import ImageSettingsPanel, { DEFAULT_SETTINGS, type ImageSettings, type ImageStyle } from "@/components/ImageSettingsPanel";
 import ImageSettingsDrawer from "@/components/ImageSettingsDrawer";
-import ShowcaseGrid from "@/components/ShowcaseGrid";
+import AppShowcaseGallery from "@/components/AppShowcaseGallery";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
 import BottomInputBar from "@/components/BottomInputBar";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
@@ -384,24 +384,9 @@ const ImagesPage = () => {
             )}
           </AnimatePresence>
 
-          {/* Main: Showcase gallery */}
+          {/* Main: Landing-style showcase gallery */}
           <div className="flex-1 overflow-y-auto pb-32">
-            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
-
-            {/* Empty state when no showcase items */}
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-24 h-24 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-5"
-              >
-                <ImageIcon className="w-12 h-12 text-primary/30" />
-              </motion.div>
-              <h2 className="font-display text-xl font-bold text-foreground mb-2">AI Image Creation</h2>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Describe what you want to see and let AI bring your vision to life
-              </p>
-            </div>
+            <AppShowcaseGallery mode="images" onItemClick={setSelectedShowcaseItem} />
           </div>
 
           {/* Attached images floating preview */}
@@ -543,7 +528,7 @@ const ImagesPage = () => {
 
           {/* Showcase grid when no images */}
           {generatedImages.length === 0 && !isGenerating && (
-            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
+            <AppShowcaseGallery mode="images" onItemClick={setSelectedShowcaseItem} />
           )}
 
           {isGenerating && generatedImages.length === 0 && (

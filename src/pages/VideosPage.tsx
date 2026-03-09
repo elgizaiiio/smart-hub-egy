@@ -12,7 +12,7 @@ import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import ThinkingLoader from "@/components/ThinkingLoader";
-import ShowcaseGrid from "@/components/ShowcaseGrid";
+import AppShowcaseGallery from "@/components/AppShowcaseGallery";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
 import VideoBottomInputBar, { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "@/components/VideoBottomInputBar";
 import VideoSettingsDrawer from "@/components/VideoSettingsDrawer";
@@ -343,24 +343,9 @@ const VideosPage = () => {
             )}
           </AnimatePresence>
 
-          {/* Main: Showcase gallery */}
+          {/* Main: Landing-style showcase gallery */}
           <div className="flex-1 overflow-y-auto pb-32">
-            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
-
-            {/* Empty state */}
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-24 h-24 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-5"
-              >
-                <Video className="w-12 h-12 text-primary/30" />
-              </motion.div>
-              <h2 className="font-display text-xl font-bold text-foreground mb-2">AI Video Creation</h2>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Describe what you want to see and let AI bring your vision to life as video
-              </p>
-            </div>
+            <AppShowcaseGallery mode="videos" onItemClick={setSelectedShowcaseItem} />
           </div>
 
           {/* Bottom input bar */}
@@ -483,7 +468,7 @@ const VideosPage = () => {
 
           {/* Showcase grid when no videos */}
           {generatedVideos.length === 0 && !isGenerating && (
-            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
+            <AppShowcaseGallery mode="videos" onItemClick={setSelectedShowcaseItem} />
           )}
 
           {isGenerating && generatedVideos.length === 0 && (
