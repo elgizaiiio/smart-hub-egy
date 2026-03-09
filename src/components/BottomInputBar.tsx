@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Expand, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ModelOption } from "@/components/ModelSelector";
@@ -104,15 +104,15 @@ const BottomInputBar = ({
 
   const chipClass =
     "shrink-0 px-3 py-2 rounded-xl text-xs font-medium " +
-    "bg-foreground/[0.06] backdrop-blur-3xl border border-foreground/[0.10] " +
-    "text-foreground/80 hover:bg-foreground/[0.10] hover:border-foreground/[0.16] hover:text-foreground " +
+    "bg-muted/80 backdrop-blur-3xl border border-border " +
+    "text-foreground hover:bg-accent hover:border-border " +
     "transition-all duration-300 ease-out";
 
   const menuClass =
-    "w-40 p-1.5 rounded-xl border border-foreground/[0.12] " +
-    "bg-foreground/[0.08] backdrop-blur-3xl shadow-lg";
+    "w-40 p-1.5 rounded-xl border border-border " +
+    "bg-popover backdrop-blur-3xl shadow-lg";
 
-  const itemBase = "w-full text-left text-xs px-3 py-2 rounded-lg transition-colors";
+  const itemBase = "w-full text-left text-xs px-3 py-2 rounded-lg transition-colors text-popover-foreground";
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
@@ -129,7 +129,7 @@ const BottomInputBar = ({
         />
 
         {/* Main glass container */}
-        <div className="bg-foreground/[0.08] backdrop-blur-3xl border border-foreground/[0.10] rounded-2xl shadow-lg overflow-visible">
+        <div className="bg-muted/80 backdrop-blur-3xl border border-border rounded-2xl shadow-lg overflow-visible">
           {/* Input area */}
           <div className="flex items-start gap-3 px-5 pt-4 pb-3">
             <div className="flex-1 min-w-0">
@@ -149,9 +149,6 @@ const BottomInputBar = ({
                 style={{ minHeight: "40px" }}
               />
             </div>
-            <button className="w-8 h-8 flex items-center justify-center text-foreground/40 hover:text-foreground/70 transition-colors mt-1">
-              <Expand className="w-4 h-4" />
-            </button>
           </div>
 
           {/* Bottom controls row */}
@@ -162,8 +159,8 @@ const BottomInputBar = ({
                 onClick={() => setModelPickerOpen(!modelPickerOpen)}
                 className={
                   "shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium " +
-                  "bg-foreground/[0.06] backdrop-blur-3xl border border-foreground/[0.10] text-foreground/80 " +
-                  "hover:bg-foreground/[0.10] hover:border-foreground/[0.16] hover:text-foreground transition-all duration-300 ease-out"
+                  "bg-muted/80 backdrop-blur-3xl border border-border text-foreground " +
+                  "hover:bg-accent hover:border-border transition-all duration-300 ease-out"
                 }
               >
                 <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center`}>
@@ -190,8 +187,8 @@ const BottomInputBar = ({
                         }}
                         className={`${itemBase} ${
                           settings.dimensions.label === ar.label
-                            ? "bg-foreground/[0.12] text-foreground font-semibold"
-                            : "text-foreground/70 hover:bg-foreground/[0.08] hover:text-foreground"
+                            ? "bg-accent text-accent-foreground font-semibold"
+                            : "hover:bg-accent hover:text-accent-foreground"
                         }`}
                       >
                         {ar.label}
@@ -218,8 +215,8 @@ const BottomInputBar = ({
                         }}
                         className={`${itemBase} ${
                           selectedQuality === q
-                            ? "bg-foreground/[0.12] text-foreground font-semibold"
-                            : "text-foreground/70 hover:bg-foreground/[0.08] hover:text-foreground"
+                            ? "bg-accent text-accent-foreground font-semibold"
+                            : "hover:bg-accent hover:text-accent-foreground"
                         }`}
                       >
                         {q}
@@ -248,8 +245,8 @@ const BottomInputBar = ({
                         }}
                         className={`${itemBase} ${
                           settings.numImages === n
-                            ? "bg-foreground/[0.12] text-foreground font-semibold"
-                            : "text-foreground/70 hover:bg-foreground/[0.08] hover:text-foreground"
+                            ? "bg-accent text-accent-foreground font-semibold"
+                            : "hover:bg-accent hover:text-accent-foreground"
                         }`}
                       >
                         {n} Image{n > 1 ? "s" : ""}
