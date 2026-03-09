@@ -363,6 +363,8 @@ serve(async (req) => {
       // ==================== تعديل النماذج ====================
       if (d === "edit_menu") {
         const kb = catsKB("edit");
+        kb.push([{ text: "➕ إضافة نموذج جديد", callback_data: "add_model" }]);
+        kb.push([{ text: "👁 النماذج المخفية", callback_data: "hidden_models" }]);
         kb.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
         await send(BOT_TOKEN, chatId, msgId, "✏️ *تعديل النماذج*\n\nاختر القسم:", kb);
         return new Response("OK");
