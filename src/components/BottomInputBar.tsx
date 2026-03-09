@@ -129,7 +129,7 @@ const BottomInputBar = ({
         />
 
         {/* Main glass container */}
-        <div className="bg-foreground/[0.08] backdrop-blur-3xl border border-foreground/[0.10] rounded-2xl shadow-lg overflow-visible">
+        <div className="bg-muted/80 backdrop-blur-3xl border border-border rounded-2xl shadow-lg overflow-visible">
           {/* Input area */}
           <div className="flex items-start gap-3 px-5 pt-4 pb-3">
             <div className="flex-1 min-w-0">
