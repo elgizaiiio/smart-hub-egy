@@ -25,18 +25,20 @@ const ASPECT_RATIOS: ImageDimensions[] = [
 
 const QUALITIES = ["512px", "1K", "2K", "4K"];
 
-const PROVIDER_ICONS: Record<string, string> = {
-  "nano-banana-2": "🍌",
-  "nano-banana-pro": "🍌",
-  "seedream-4": "🌊",
-  "seedream-5-lite": "🌊",
-  "gpt-image": "🤖",
-  "ideogram-3": "△",
-  "flux-kontext": "⚡",
-  "flux-2-pro": "⚡",
-  "grok-imagine": "✖",
-  "recraft-v4": "🎨",
-  "megsy-v1-img": "✦",
+const MODEL_LOGOS: Record<string, string> = {
+  "megsy-v1-img": "/model-logos/megsy.png",
+  "gpt-image": "/model-logos/openai.svg",
+  "gpt-image-1": "/model-logos/openai.svg",
+  "nano-banana-2": "/model-logos/google.ico",
+  "nano-banana-pro": "/model-logos/google.ico",
+  "flux-kontext": "/model-logos/bfl.png",
+  "flux-2-pro": "/model-logos/bfl.png",
+  "fal-flux-realism": "/model-logos/bfl.png",
+  "ideogram-3": "/model-logos/ideogram.png",
+  "seedream-4": "/model-logos/bytedance.ico",
+  "seedream-5-lite": "/model-logos/bytedance.ico",
+  "recraft-v4": "/model-logos/recraft.png",
+  "grok-imagine": "/model-logos/xai.ico",
 };
 
 type DropdownId = "aspect" | "quality" | "count" | null;
