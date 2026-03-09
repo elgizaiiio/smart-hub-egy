@@ -268,10 +268,8 @@ function mainMenuKB() {
 
 // ---- Page Settings Defaults ----
 const DEFAULT_PAGE_IMAGES = {
-  styles: ["none", "dynamic", "cinematic", "creative", "fashion", "portrait", "stock-photo", "vibrant", "anime", "3d-render"],
   aspectRatios: ["2:3", "1:1", "16:9"],
   maxImages: 4,
-  defaultStyle: "dynamic",
   defaultAspect: "1:1",
   defaultNumImages: 1,
 };
