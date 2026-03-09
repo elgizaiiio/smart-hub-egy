@@ -222,12 +222,19 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
   }, [allModels, mode, tab]);
 
   const handleSelect = (model: ModelDetail) => {
+    let cust: Record<string, any> | undefined;
+    if (model.customization) {
+      cust = typeof model.customization === 'string' ? JSON.parse(model.customization as string) : model.customization;
+    }
     onSelect({
       id: model.id,
       name: model.name,
       credits: model.credits.toString(),
       requiresImage: model.requiresImage,
-      category: model.type.includes("tool") || model.type.includes("i2v") || model.type.includes("avatar") ? "tool" : "model"
+      category: model.type.includes("tool") || model.type.includes("i2v") || model.type.includes("avatar") ? "tool" : "model",
+      customization: cust,
+      iconUrl: model.iconUrl,
+      badges: model.badges,
     });
     onClose();
     setDetailModel(null);
