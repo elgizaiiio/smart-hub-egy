@@ -631,6 +631,8 @@ const ServiceImagesPage = () => {
         </div>
       </section>
 
+      <BentoShowcase />
+
       {/* CTA */}
       <section className="mx-auto max-w-5xl px-6 py-28 text-center">
         <h2 className="font-display text-4xl font-black uppercase md:text-6xl">
