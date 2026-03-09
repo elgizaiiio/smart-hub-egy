@@ -28,6 +28,10 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [isTyping, setIsTyping] = useState(true);
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const modelMenuRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isTyping, setIsTyping] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
