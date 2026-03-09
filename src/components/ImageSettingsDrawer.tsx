@@ -118,7 +118,7 @@ const ImageSettingsDrawer = ({
                 
                   <span>Style</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-xs">{currentStyle?.icon} {currentStyle?.label}</span>
+                    <span className="text-xs">{currentStyle?.label}</span>
                     <ChevronDown
                     className={`w-4 h-4 transition-transform ${expanded === "style" ? "rotate-180" : ""}`} />
                   
