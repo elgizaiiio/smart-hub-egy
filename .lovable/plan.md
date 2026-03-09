@@ -1,48 +1,73 @@
 
-# Megsy Platform - Credits + Real Programming + Integrations
 
-## ✅ Completed
+## Plan: Auth-Aware Navbar + Complete All Service Pages + Settings Cleanup
 
-### 1. Credit System
-- Created `credit_transactions` table in Supabase
-- Created `deduct_credits` database function (SECURITY DEFINER)
-- Created `deduct-credits` edge function
-- Created `useCredits` hook for frontend credit checking
-- Updated `generate-image` edge function to deduct credits
-- Updated `generate-video` edge function to deduct credits
-- Updated ImagesPage and VideosPage to check credits before generation
-- Chat remains free
+This is a large task with several components. Here's the breakdown:
 
-### 2. Real Programming System (Sprites.dev)
-- Created `sprites-sandbox` edge function for Sprites.dev API management
-- Actions: create, exec, write-file, write-files, status, destroy
-- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
-- Rebuilt `CodeWorkspace.tsx` with:
-  - Plan → Build workflow with credit deduction (5 credits per build)
-  - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Sprite
-  - Real preview via iframe pointing to Sprite URL
-  - Conversation persistence to Supabase
-  - Project saving with files_snapshot
+---
 
-### 3. GitHub Integration
-- Created `github-repo` edge function via Composio
-- Actions: check-connection, create-repo, push-files
-- Push to GitHub button in CodeWorkspace plus menu
-- Creates new repo and pushes all project files
+### 1. Auth-Aware LandingNavbar
 
-### 4. Database
-- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
-- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
+**File: `src/components/landing/LandingNavbar.tsx`**
 
-### 5. OAuth2 "Login with Megsy"
-- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
-- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
-- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
-- Built `/oauth/authorize` consent screen page
-- Updated App.tsx routes and config.toml
+- Add `supabase` auth state listener to detect if user is logged in
+- When **logged out**: Show "Log in" + "Start Creating" buttons (current behavior)
+- When **logged in**: Show a profile avatar button (using `Avatar` component) that navigates to `/settings` or `/chat`
+- Fetch user avatar from Supabase profile, fallback to initials
+- Apply to both desktop and mobile menu
 
-### 6. Secrets Required
-- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
-- `COMPOSIO_API_KEY` ✅ Already exists
-- `FAL_API_KEY` ✅ Already exists
+---
+
+### 2. Settings Desktop: Remove "Overview"
+
+**File: `src/components/DesktopSettingsLayout.tsx`**
+
+- Remove "Overview" from `NAV_ITEMS` array (the item with `id: "overview"` and `path: "/settings"`)
+- Make "Billing" the first item, or redirect `/settings` to `/settings/billing`
+
+**File: `src/pages/SettingsPage.tsx`**
+
+- Update desktop branch: instead of showing "Welcome" with `DesktopSettingsHome`, show the Billing page content or redirect to `/settings/billing`
+
+---
+
+### 3. Expand Service Pages to Massive Landing-Style Pages
+
+All 4 thin service pages need to become massive, matching the landing page aesthetic with real Megsy content. Each will include:
+- Giant hero with floating images or background media
+- Stats/numbers section
+- Bento grid features section
+- Interactive demo or showcase gallery
+- How it works steps
+- FAQ section
+- CTA section
+- Use existing showcase images from `/showcase/` and `/api-showcase/`
+
+**Pages to expand:**
+- `src/pages/services/ServiceVideosPage.tsx` — Currently ~100 lines, needs expansion to ~500+ with video demos, model showcase, bento grid
+- `src/pages/services/ServiceChatPage.tsx` — Currently ~100 lines, needs expansion with chat demo, model list, features grid
+- `src/pages/services/ServiceFilesPage.tsx` — Currently ~100 lines, needs expansion with file analysis showcase, supported formats, use cases
+- `src/pages/services/ServiceCodePage.tsx` — Currently ~100 lines, needs expansion with code workspace preview, deployment showcase, tech stack
+
+**Note:** `ServiceImagesPage.tsx` is already massive (~650 lines) and serves as the template for the others.
+
+---
+
+### 4. Generate New Images
+
+Generate supporting images for the service pages where needed (code workspace preview, file analysis demo, video generation preview).
+
+---
+
+### Summary of Files to Edit
+
+| File | Change |
+|---|---|
+| `LandingNavbar.tsx` | Add auth state, show avatar when logged in |
+| `DesktopSettingsLayout.tsx` | Remove "Overview" nav item |
+| `SettingsPage.tsx` | Redirect desktop to billing or remove overview |
+| `ServiceVideosPage.tsx` | Massive expansion with real content |
+| `ServiceChatPage.tsx` | Massive expansion with real content |
+| `ServiceFilesPage.tsx` | Massive expansion with real content |
+| `ServiceCodePage.tsx` | Massive expansion with real content |
+
