@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import ImageGenerator from "@/components/ImageGenerator";
 
 
 
@@ -364,9 +363,6 @@ const ServiceImagesPage = () => {
         {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
       </section>
-
-      {/* Real Image Generator — Desktop Only */}
-      <ImageGenerator />
 
       {/* Why Creatives Choose Megsy */}
       <section className="mx-auto max-w-7xl px-6 py-28">
