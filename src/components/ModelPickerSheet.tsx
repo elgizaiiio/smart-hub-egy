@@ -309,8 +309,8 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
   };
 
-  // Video mode: bottom sheet popup
-  if (mode === "videos") {
+  // Video & Images mode: bottom sheet popup
+  if (mode === "videos" || mode === "images") {
     return createPortal(
       <AnimatePresence>
         {open &&
