@@ -115,45 +115,13 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
     ],
   };
 
-  const imagesNav: DropdownNav = {
-    label: "Images",
-    columns: [
-      {
-        title: "AI Images",
-        items: [
-          { label: "Image Generator", desc: "Create stunning AI visuals", action: "/images" },
-          { label: "Image Studio", desc: "Advanced generation workspace", action: "/images/studio" },
-          { label: "Image Agent", desc: "AI assistant for prompts & models", action: "/images/agent" },
-        ],
-      },
-    ],
-  };
-
-  const videosNav: DropdownNav = {
-    label: "Videos",
-    columns: [
-      {
-        title: "AI Videos",
-        items: [
-          { label: "Video Generator", desc: "Generate cinematic AI videos", action: "/videos" },
-          { label: "Video Studio", desc: "Advanced video workspace", action: "/videos/studio" },
-          { label: "Video Agent", desc: "AI assistant for video creation", action: "/videos/agent" },
-        ],
-      },
-    ],
-  };
-
-  const filesNav: DropdownNav = {
-    label: "Files",
-    columns: [
-      {
-        title: "Files",
-        items: [
-          { label: "All Files", desc: "Browse your uploaded files", action: "/files" },
-        ],
-      },
-    ],
-  };
+  const navItems: NavItem[] = [
+    chatNav,
+    { label: "Images", href: "/images" },
+    { label: "Videos", href: "/videos" },
+    { label: "Files", href: "/files" },
+    { label: "Code", href: "/code" },
+  ];
 
   const navItems: NavItem[] = [
     chatNav,
