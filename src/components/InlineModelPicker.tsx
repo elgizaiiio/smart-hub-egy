@@ -1,7 +1,8 @@
 import { useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
-import { ALL_MODEL_DETAILS, type ModelDetail } from "@/lib/modelDetails";
+import { type ModelDetail } from "@/lib/modelDetails";
+import { useDynamicModels } from "@/hooks/useModels";
 import type { ModelOption } from "./ModelSelector";
 
 const MODEL_BADGES: Record<string, string[]> = {
@@ -97,13 +98,14 @@ const InlineModelPicker = ({ open, onClose, onSelect, selectedModelId, mode = "i
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const { models: allModels } = useDynamicModels();
 
   const models = useMemo(() => {
     if (mode === "videos") {
-      return ALL_MODEL_DETAILS.filter(m => m.type === "video" || m.type === "video-i2v").slice(0, 12);
+      return allModels.filter(m => m.type === "video" || m.type === "video-i2v").slice(0, 12);
     }
-    return ALL_MODEL_DETAILS.filter(m => m.type === "image").slice(0, 12);
-  }, [mode]);
+    return allModels.filter(m => m.type === "image").slice(0, 12);
+  }, [mode, allModels]);
 
   // Close on outside click
   useEffect(() => {

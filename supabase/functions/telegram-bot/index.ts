@@ -75,6 +75,11 @@ const FIELDS = [
   { key: "name", label: "الاسم" },
   { key: "credits", label: "التكلفة (MC)" },
   { key: "description", label: "الوصف" },
+  { key: "type", label: "النوع" },
+  { key: "speed", label: "السرعة" },
+  { key: "quality", label: "الجودة" },
+  { key: "requiresImage", label: "يتطلب صورة" },
+  { key: "maxImages", label: "أقصى عدد صور" },
   { key: "fal_id", label: "معرف fal.ai" },
   { key: "openrouter_id", label: "معرف OpenRouter" },
   { key: "provider", label: "المزود" },
@@ -109,6 +114,9 @@ interface BotSession {
   showcaseDuration?: string;
   showcaseStyle?: string;
   showcaseItemId?: string;
+  // Add model flow
+  addModelStep?: string;
+  addModelData?: Record<string, string>;
 }
 
 // ---- Helpers ----
@@ -355,6 +363,8 @@ serve(async (req) => {
       // ==================== تعديل النماذج ====================
       if (d === "edit_menu") {
         const kb = catsKB("edit");
+        kb.push([{ text: "➕ إضافة نموذج جديد", callback_data: "add_model" }]);
+        kb.push([{ text: "👁 النماذج المخفية", callback_data: "hidden_models" }]);
         kb.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
         await send(BOT_TOKEN, chatId, msgId, "✏️ *تعديل النماذج*\n\nاختر القسم:", kb);
         return new Response("OK");
@@ -405,7 +415,7 @@ serve(async (req) => {
           }
           fieldRows.push(row);
         }
-        fieldRows.push([{ text: "🗑 إعادة ضبط", callback_data: `reset_${modelId}` }]);
+        fieldRows.push([{ text: "🗑 إعادة ضبط", callback_data: `reset_${modelId}` }, { text: "🚫 إخفاء النموذج", callback_data: `hide_${modelId}` }]);
         fieldRows.push([{ text: "🔙 رجوع", callback_data: "edit_menu" }]);
 
         await send(BOT_TOKEN, chatId, msgId,
@@ -427,9 +437,58 @@ serve(async (req) => {
         if (field === "credits") {
           await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
           await send(BOT_TOKEN, chatId, msgId, `💰 *تحديد تكلفة MC* لـ \`${session.adminModelId}\`\n\nاختر قيمة أو أدخل يدوياً:`, [
-            [{ text: "5 MC", callback_data: "sv_credits_5" }, { text: "10 MC", callback_data: "sv_credits_10" }, { text: "25 MC", callback_data: "sv_credits_25" }],
-            [{ text: "50 MC", callback_data: "sv_credits_50" }, { text: "100 MC", callback_data: "sv_credits_100" }, { text: "500 MC", callback_data: "sv_credits_500" }],
+            [{ text: "1", callback_data: "sv_credits_1" }, { text: "2", callback_data: "sv_credits_2" }, { text: "3", callback_data: "sv_credits_3" }],
+            [{ text: "4", callback_data: "sv_credits_4" }, { text: "5", callback_data: "sv_credits_5" }, { text: "6", callback_data: "sv_credits_6" }],
+            [{ text: "8", callback_data: "sv_credits_8" }, { text: "10", callback_data: "sv_credits_10" }, { text: "15", callback_data: "sv_credits_15" }],
+            [{ text: "20", callback_data: "sv_credits_20" }, { text: "30", callback_data: "sv_credits_30" }, { text: "50", callback_data: "sv_credits_50" }],
             [{ text: "✏️ قيمة مخصصة", callback_data: "sv_credits_custom" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
+          return new Response("OK");
+        }
+
+        if (field === "type") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          await send(BOT_TOKEN, chatId, msgId, `📦 *نوع النموذج* لـ \`${session.adminModelId}\`:`, [
+            [{ text: "🖼 image", callback_data: "sv_type_image" }, { text: "🔧 image-tool", callback_data: "sv_type_image-tool" }],
+            [{ text: "🎬 video", callback_data: "sv_type_video" }, { text: "🎬 video-i2v", callback_data: "sv_type_video-i2v" }],
+            [{ text: "💬 chat", callback_data: "sv_type_chat" }, { text: "👤 video-avatar", callback_data: "sv_type_video-avatar" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
+          return new Response("OK");
+        }
+
+        if (field === "speed") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          await send(BOT_TOKEN, chatId, msgId, `⚡ *سرعة النموذج* لـ \`${session.adminModelId}\`:`, [
+            [{ text: "⚡ fast", callback_data: "sv_speed_fast" }, { text: "🔄 standard", callback_data: "sv_speed_standard" }, { text: "🐢 slow", callback_data: "sv_speed_slow" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
+          return new Response("OK");
+        }
+
+        if (field === "quality") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          await send(BOT_TOKEN, chatId, msgId, `🎯 *جودة النموذج* لـ \`${session.adminModelId}\`:`, [
+            [{ text: "📊 standard", callback_data: "sv_quality_standard" }, { text: "✨ high", callback_data: "sv_quality_high" }, { text: "👑 ultra", callback_data: "sv_quality_ultra" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
+          return new Response("OK");
+        }
+
+        if (field === "requiresImage") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          await send(BOT_TOKEN, chatId, msgId, `📸 *يتطلب صورة؟* لـ \`${session.adminModelId}\`:`, [
+            [{ text: "✅ نعم", callback_data: "sv_requiresImage_true" }, { text: "❌ لا", callback_data: "sv_requiresImage_false" }],
+            [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
+          ]);
+          return new Response("OK");
+        }
+
+        if (field === "maxImages") {
+          await saveSession(sb, chatId, { ...session, adminAction: "awaiting_value", adminField: field });
+          await send(BOT_TOKEN, chatId, msgId, `🔢 *أقصى عدد صور* لـ \`${session.adminModelId}\`:`, [
+            [{ text: "0", callback_data: "sv_maxImages_0" }, { text: "1", callback_data: "sv_maxImages_1" }, { text: "2", callback_data: "sv_maxImages_2" }, { text: "4", callback_data: "sv_maxImages_4" }],
             [{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }],
           ]);
           return new Response("OK");
@@ -481,6 +540,160 @@ serve(async (req) => {
         await sb.from("memories").delete().eq("key", `model_config_${modelId}`);
         await send(BOT_TOKEN, chatId, msgId, `🗑 تم إعادة ضبط \`${modelId}\``, [
           [{ text: "✏️ تعديل", callback_data: `emod_${modelId}` }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // ==================== إخفاء نموذج ====================
+      if (d.startsWith("hide_")) {
+        const modelId = d.replace("hide_", "");
+        const { data: hiddenData } = await sb.from("memories").select("value").eq("key", "models_hidden").maybeSingle();
+        const hidden: string[] = hiddenData?.value ? JSON.parse(hiddenData.value) : [];
+        if (!hidden.includes(modelId)) hidden.push(modelId);
+        await sb.from("memories").delete().eq("key", "models_hidden");
+        await sb.from("memories").insert({ key: "models_hidden", value: JSON.stringify(hidden) });
+        await send(BOT_TOKEN, chatId, msgId, `🚫 تم إخفاء النموذج \`${modelId}\`\n\nلن يظهر للمستخدمين.`, [
+          [{ text: "👁 النماذج المخفية", callback_data: "hidden_models" }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // عرض النماذج المخفية
+      if (d === "hidden_models") {
+        const { data: hiddenData } = await sb.from("memories").select("value").eq("key", "models_hidden").maybeSingle();
+        const hidden: string[] = hiddenData?.value ? JSON.parse(hiddenData.value) : [];
+        if (hidden.length === 0) {
+          await send(BOT_TOKEN, chatId, msgId, "👁 لا توجد نماذج مخفية.", [
+            [{ text: "🔙 رجوع", callback_data: "edit_menu" }],
+          ]);
+          return new Response("OK");
+        }
+        const rows = hidden.map(id => [{
+          text: `${MODEL_NAMES[id] || id}`,
+          callback_data: `unhide_${id}`,
+        }]);
+        rows.push([{ text: "🗑 إظهار الكل", callback_data: "unhide_all" }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: "edit_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `👁 *النماذج المخفية (${hidden.length})*\n\nاضغط على النموذج لإظهاره:`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("unhide_")) {
+        const val = d.replace("unhide_", "");
+        const { data: hiddenData } = await sb.from("memories").select("value").eq("key", "models_hidden").maybeSingle();
+        let hidden: string[] = hiddenData?.value ? JSON.parse(hiddenData.value) : [];
+        if (val === "all") {
+          hidden = [];
+        } else {
+          hidden = hidden.filter(id => id !== val);
+        }
+        await sb.from("memories").delete().eq("key", "models_hidden");
+        if (hidden.length > 0) {
+          await sb.from("memories").insert({ key: "models_hidden", value: JSON.stringify(hidden) });
+        }
+        await send(BOT_TOKEN, chatId, msgId, val === "all" ? "✅ تم إظهار كل النماذج." : `✅ تم إظهار النموذج \`${val}\`.`, [
+          [{ text: "👁 النماذج المخفية", callback_data: "hidden_models" }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // ==================== إضافة نموذج جديد ====================
+      if (d === "add_model") {
+        await saveSession(sb, chatId, { addModelStep: "awaiting_id", addModelData: {} });
+        await send(BOT_TOKEN, chatId, msgId, "➕ *إضافة نموذج جديد*\n\n📌 الخطوة 1/5: أدخل معرف النموذج (ID):\n\nمثال: `my-new-model`", [
+          [{ text: "🔙 إلغاء", callback_data: "edit_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // Select type for new model
+      if (d.startsWith("am_type_")) {
+        const type = d.replace("am_type_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.addModelData) return new Response("OK");
+        session.addModelData.type = type;
+        session.addModelStep = "awaiting_credits";
+        await saveSession(sb, chatId, session);
+        await send(BOT_TOKEN, chatId, msgId, `✅ النوع: *${type}*\n\n💰 الخطوة 4/5: أدخل تكلفة MC:`, [
+          [{ text: "1", callback_data: "am_cr_1" }, { text: "2", callback_data: "am_cr_2" }, { text: "3", callback_data: "am_cr_3" }],
+          [{ text: "4", callback_data: "am_cr_4" }, { text: "5", callback_data: "am_cr_5" }, { text: "8", callback_data: "am_cr_8" }],
+          [{ text: "10", callback_data: "am_cr_10" }, { text: "15", callback_data: "am_cr_15" }, { text: "20", callback_data: "am_cr_20" }],
+          [{ text: "✏️ مخصص", callback_data: "am_cr_custom" }],
+          [{ text: "🔙 إلغاء", callback_data: "edit_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // Set credits for new model
+      if (d.startsWith("am_cr_")) {
+        const val = d.replace("am_cr_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.addModelData) return new Response("OK");
+        if (val === "custom") {
+          session.addModelStep = "awaiting_credits_text";
+          await saveSession(sb, chatId, session);
+          await send(BOT_TOKEN, chatId, msgId, "💰 أدخل تكلفة MC يدوياً:", [[{ text: "🔙 إلغاء", callback_data: "edit_menu" }]]);
+          return new Response("OK");
+        }
+        session.addModelData.credits = val;
+        session.addModelStep = "awaiting_description";
+        await saveSession(sb, chatId, session);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ التكلفة: *${val} MC*\n\n📝 الخطوة 5/5: أدخل وصف النموذج:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "am_save" }], [{ text: "🔙 إلغاء", callback_data: "edit_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      // Save new model
+      if (d === "am_save") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.addModelData?.id) return new Response("OK");
+        const md = session.addModelData;
+
+        // Load existing added models
+        const { data: addedData } = await sb.from("memories").select("value").eq("key", "models_added").maybeSingle();
+        const added: Record<string, unknown>[] = addedData?.value ? JSON.parse(addedData.value) : [];
+
+        added.push({
+          id: md.id, name: md.name || md.id, type: md.type || "image",
+          credits: Number(md.credits) || 0, description: md.description || "",
+          longDescription: md.description || "", icon: "Image",
+          modes: ["text-to-image"], acceptsImages: false, requiresImage: false,
+          maxImages: 0, acceptedMimeTypes: [], provider: "Megsy",
+          speed: "standard", quality: "high",
+        });
+
+        await sb.from("memories").delete().eq("key", "models_added");
+        await sb.from("memories").insert({ key: "models_added", value: JSON.stringify(added) });
+        await clearSession(sb, chatId);
+
+        await send(BOT_TOKEN, chatId, msgId,
+          `✅ *تم إضافة النموذج بنجاح!*\n\n📌 ID: \`${md.id}\`\n📛 الاسم: *${md.name || md.id}*\n📦 النوع: ${md.type || "image"}\n💰 التكلفة: ${md.credits || 0} MC`,
+          [
+            [{ text: "✏️ تعديل الإعدادات", callback_data: `emod_${md.id}` }],
+            [{ text: "➕ إضافة نموذج آخر", callback_data: "add_model" }],
+            [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      // حذف نموذج مضاف (من models_added)
+      if (d.startsWith("del_added_")) {
+        const modelId = d.replace("del_added_", "");
+        const { data: addedData } = await sb.from("memories").select("value").eq("key", "models_added").maybeSingle();
+        let added: Record<string, unknown>[] = addedData?.value ? JSON.parse(addedData.value) : [];
+        added = added.filter((m: any) => m.id !== modelId);
+        await sb.from("memories").delete().eq("key", "models_added");
+        if (added.length > 0) {
+          await sb.from("memories").insert({ key: "models_added", value: JSON.stringify(added) });
+        }
+        await sb.from("memories").delete().eq("key", `model_config_${modelId}`);
+        await send(BOT_TOKEN, chatId, msgId, `🗑 تم حذف النموذج \`${modelId}\` نهائياً.`, [
           [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
         ]);
         return new Response("OK");
@@ -1243,6 +1456,81 @@ serve(async (req) => {
           });
           return new Response("OK");
         }
+      }
+
+      // ---- Add model text inputs ----
+      if (session?.addModelStep === "awaiting_id" && text) {
+        const id = text.trim().replace(/\s+/g, "-").toLowerCase();
+        session.addModelData = { ...(session.addModelData || {}), id };
+        session.addModelStep = "awaiting_name";
+        await saveSession(sb, chatId, session);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ ID: \`${id}\`\n\n📛 الخطوة 2/5: أدخل اسم النموذج:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 إلغاء", callback_data: "edit_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.addModelStep === "awaiting_name" && text) {
+        session.addModelData = { ...(session.addModelData || {}), name: text.trim() };
+        session.addModelStep = "awaiting_type";
+        await saveSession(sb, chatId, session);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ الاسم: *${text.trim()}*\n\n📦 الخطوة 3/5: اختر النوع:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "🖼 image", callback_data: "am_type_image" }, { text: "🔧 image-tool", callback_data: "am_type_image-tool" }],
+            [{ text: "🎬 video", callback_data: "am_type_video" }, { text: "🎬 video-i2v", callback_data: "am_type_video-i2v" }],
+            [{ text: "💬 chat", callback_data: "am_type_chat" }, { text: "👤 video-avatar", callback_data: "am_type_video-avatar" }],
+            [{ text: "🔙 إلغاء", callback_data: "edit_menu" }],
+          ]}),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.addModelStep === "awaiting_credits_text" && text) {
+        const credits = parseInt(text.trim());
+        if (isNaN(credits) || credits < 0) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ أدخل رقم صحيح:" });
+          return new Response("OK");
+        }
+        session.addModelData = { ...(session.addModelData || {}), credits: String(credits) };
+        session.addModelStep = "awaiting_description";
+        await saveSession(sb, chatId, session);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ التكلفة: *${credits} MC*\n\n📝 الخطوة 5/5: أدخل وصف النموذج:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "am_save" }], [{ text: "🔙 إلغاء", callback_data: "edit_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if (session?.addModelStep === "awaiting_description" && text) {
+        session.addModelData = { ...(session.addModelData || {}), description: text.trim() };
+        await saveSession(sb, chatId, session);
+        // Auto-save
+        const md = session.addModelData;
+        const { data: addedData } = await sb.from("memories").select("value").eq("key", "models_added").maybeSingle();
+        const added: Record<string, unknown>[] = addedData?.value ? JSON.parse(addedData.value) : [];
+        added.push({
+          id: md.id, name: md.name || md.id, type: md.type || "image",
+          credits: Number(md.credits) || 0, description: md.description || "",
+          longDescription: md.description || "", icon: "Image",
+          modes: ["text-to-image"], acceptsImages: false, requiresImage: false,
+          maxImages: 0, acceptedMimeTypes: [], provider: "Megsy", speed: "standard", quality: "high",
+        });
+        await sb.from("memories").delete().eq("key", "models_added");
+        await sb.from("memories").insert({ key: "models_added", value: JSON.stringify(added) });
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `✅ *تم إضافة النموذج بنجاح!*\n\n📌 ID: \`${md.id}\`\n📛 الاسم: *${md.name || md.id}*\n📦 النوع: ${md.type || "image"}\n💰 التكلفة: ${md.credits || 0} MC\n📝 الوصف: ${(md.description || "").slice(0, 50)}`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "✏️ تعديل الإعدادات", callback_data: `emod_${md.id}` }],
+            [{ text: "➕ إضافة نموذج آخر", callback_data: "add_model" }],
+            [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+          ]}),
+        });
+        return new Response("OK");
       }
 
       // ---- Showcase text inputs ----
