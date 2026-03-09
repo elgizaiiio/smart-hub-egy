@@ -737,22 +737,21 @@ const ChatPage = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Rename Dialog */}
         <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
-          <DialogContent className="sm:max-w-sm">
+          <DialogContent className="sm:max-w-sm gap-3">
             <DialogHeader>
-              <DialogTitle>Rename chat</DialogTitle>
+              <DialogTitle className="text-lg">Rename chat</DialogTitle>
             </DialogHeader>
             <input
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-secondary/50 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary transition-colors"
               onKeyDown={(e) => e.key === "Enter" && handleRename()}
               autoFocus
             />
-            <div className="flex justify-end gap-2 mt-2">
-              <button onClick={() => setIsRenaming(false)} className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
-              <button onClick={handleRename} className="px-4 py-1.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">Save</button>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setIsRenaming(false)} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">Cancel</button>
+              <button onClick={handleRename} className="px-4 py-2 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity">Save</button>
             </div>
           </DialogContent>
         </Dialog>
