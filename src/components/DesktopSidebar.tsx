@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, ChevronDown, Coins } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 
 interface DesktopSidebarProps {
@@ -115,53 +115,15 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
     ],
   };
 
-  const imagesNav: DropdownNav = {
-    label: "Images",
-    columns: [
-      {
-        title: "AI Images",
-        items: [
-          { label: "Image Generator", desc: "Create stunning AI visuals", action: "/images" },
-          { label: "Image Studio", desc: "Advanced generation workspace", action: "/images/studio" },
-          { label: "Image Agent", desc: "AI assistant for prompts & models", action: "/images/agent" },
-        ],
-      },
-    ],
-  };
-
-  const videosNav: DropdownNav = {
-    label: "Videos",
-    columns: [
-      {
-        title: "AI Videos",
-        items: [
-          { label: "Video Generator", desc: "Generate cinematic AI videos", action: "/videos" },
-          { label: "Video Studio", desc: "Advanced video workspace", action: "/videos/studio" },
-          { label: "Video Agent", desc: "AI assistant for video creation", action: "/videos/agent" },
-        ],
-      },
-    ],
-  };
-
-  const filesNav: DropdownNav = {
-    label: "Files",
-    columns: [
-      {
-        title: "Files",
-        items: [
-          { label: "All Files", desc: "Browse your uploaded files", action: "/files" },
-        ],
-      },
-    ],
-  };
-
   const navItems: NavItem[] = [
     chatNav,
-    imagesNav,
-    videosNav,
-    filesNav,
+    { label: "Images", href: "/images" },
+    { label: "Videos", href: "/videos" },
+    { label: "Files", href: "/files" },
     { label: "Code", href: "/code" },
   ];
+
+  // navItems already defined above
 
   const handleAction = (action: string) => {
     closeMenu();
@@ -287,10 +249,9 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           {/* Credits */}
           <button
             onClick={() => navigate("/pricing")}
-            className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors tabular-nums"
           >
-            <Coins className="w-3.5 h-3.5" />
-            <span className="tabular-nums">{credits.toFixed(0)} MC</span>
+            {credits.toFixed(0)} MC
           </button>
 
           {/* Subscribe */}
