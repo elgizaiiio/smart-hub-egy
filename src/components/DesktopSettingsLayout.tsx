@@ -22,6 +22,11 @@ const NAV_ITEMS: NavItem[] = [
   { id: "referrals", label: "Referrals", icon: Gift, path: "/settings/referrals" },
 ];
 
+const EXTRA_NAV: NavItem[] = [
+  { id: "apis", label: "APIs", icon: Code2, path: "/apis" },
+  { id: "egypt", label: "Egypt 🇪🇬", icon: Flag, path: "/egypt" },
+];
+
 const EXTERNAL_LINKS: NavItem[] = [
   { id: "status", label: "Status Page", icon: Activity, path: "https://status.megsyai.com", external: true },
   { id: "about", label: "About", icon: Info, path: "https://about.megsyai.com", external: true },
