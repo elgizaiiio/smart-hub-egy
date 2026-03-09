@@ -691,18 +691,18 @@ const ChatPage = () => {
 
         {/* Share Dialog */}
         <Dialog open={shareDialogOpen} onOpenChange={(open) => { setShareDialogOpen(open); if (!open) setGeneratedShareUrl(null); }}>
-          <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden">
-            <div className="px-5 pt-5 pb-4">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[380px] p-0 gap-0 overflow-hidden rounded-2xl">
+            <div className="px-4 pt-4 pb-3">
               <DialogHeader className="mb-0">
-                <DialogTitle className="text-base font-semibold">Share chat</DialogTitle>
-                <DialogDescription className="text-xs">Future messages aren't included</DialogDescription>
+                <DialogTitle className="text-base font-semibold text-left">Share chat</DialogTitle>
+                <DialogDescription className="text-xs text-left">Future messages aren't included</DialogDescription>
               </DialogHeader>
             </div>
 
             <div className="border-t border-border">
               <button
                 onClick={() => { setShareMode("private"); setGeneratedShareUrl(null); }}
-                className={`w-full flex items-center gap-3 px-5 py-3 transition-colors ${shareMode === "private" ? "bg-accent/40" : "hover:bg-accent/20"}`}
+                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${shareMode === "private" ? "bg-accent/40" : "hover:bg-accent/20"}`}
               >
                 <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div className="text-left flex-1 min-w-0">
@@ -711,10 +711,10 @@ const ChatPage = () => {
                 </div>
                 {shareMode === "private" && <span className="text-primary shrink-0">✓</span>}
               </button>
-              <div className="h-px bg-border mx-5" />
+              <div className="h-px bg-border mx-4" />
               <button
                 onClick={() => setShareMode("public")}
-                className={`w-full flex items-center gap-3 px-5 py-3 transition-colors ${shareMode === "public" ? "bg-accent/40" : "hover:bg-accent/20"}`}
+                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${shareMode === "public" ? "bg-accent/40" : "hover:bg-accent/20"}`}
               >
                 <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div className="text-left flex-1 min-w-0">
@@ -725,15 +725,15 @@ const ChatPage = () => {
               </button>
             </div>
 
-            <div className="px-5 py-4 border-t border-border">
+            <div className="px-4 py-3 border-t border-border">
               {shareMode === "public" && generatedShareUrl ? (
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2">
-                  <span className="flex-1 text-xs text-muted-foreground truncate select-all">{generatedShareUrl}</span>
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2 overflow-hidden">
+                  <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{generatedShareUrl}</span>
                   <button
                     onClick={handleCopyShareLink}
-                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-accent/50 transition-colors"
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-accent/50 transition-colors whitespace-nowrap"
                   >
-                    Copy link
+                    Copy
                   </button>
                 </div>
               ) : (
