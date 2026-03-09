@@ -51,15 +51,18 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
             onClick={() => onItemClick(item)}
           >
             {item.media_type === "video" ? (
-              <video
-                src={item.media_url}
-                muted
-                loop
-                playsInline
-                autoPlay
-                className="w-full rounded-2xl object-cover pointer-events-auto"
-                onMouseEnter={(e) => e.currentTarget.play()}
-              />
+              <>
+                <video
+                  src={item.media_url}
+                  muted
+                  loop
+                  playsInline
+                  autoPlay
+                  className="w-full rounded-2xl object-cover pointer-events-auto"
+                  onMouseEnter={(e) => e.currentTarget.play()}
+                />
+                <span className="absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white/80">Video</span>
+              </>
             ) : (
               <img
                 src={item.media_url}
@@ -68,6 +71,8 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
                 loading="lazy"
               />
             )}
+            {/* Model badge */}
+            <span className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white/80">{item.model_name}</span>
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-between p-3">
               <div className="flex justify-end">
                 <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center">
