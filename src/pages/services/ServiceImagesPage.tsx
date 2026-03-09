@@ -4,7 +4,39 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Sparkles, Zap, Wand2, Loader2 } from "lucide-react";
+import { Sparkles, Zap, Wand2, Loader2, Send, User, Bot } from "lucide-react";
+
+// Scenarios for the demo - using unique images not on the page
+const demoScenarios = [
+  {
+    userPrompt: "Create a majestic phoenix rising from flames with vibrant orange and gold colors",
+    aiResponse: "I'll create a stunning phoenix image with fiery colors and dynamic composition for you...",
+    image: "/api-showcase/showcase-1.png",
+    model: "Flux Pro",
+    size: "1024 x 1024"
+  },
+  {
+    userPrompt: "Generate a futuristic cyberpunk cityscape at night with neon lights",
+    aiResponse: "Creating a detailed cyberpunk city scene with atmospheric neon lighting...",
+    image: "/api-showcase/showcase-2.jpg",
+    model: "SDXL Ultra",
+    size: "1920 x 1080"
+  },
+  {
+    userPrompt: "Design an elegant portrait of a woman in golden hour lighting",
+    aiResponse: "Generating a beautiful portrait with warm, cinematic golden hour aesthetics...",
+    image: "/api-showcase/showcase-3.jpg",
+    model: "Midjourney v6",
+    size: "1024 x 1536"
+  },
+  {
+    userPrompt: "Create an abstract art piece with flowing geometric shapes",
+    aiResponse: "I'm crafting an abstract composition with dynamic geometric elements...",
+    image: "/api-showcase/showcase-4.jpg",
+    model: "DALL-E 3",
+    size: "1024 x 1024"
+  },
+];
 
 const generatedImages = [
   { src: "/showcase/model-1.jpg", prompt: "Portrait of a fashion model in golden hour light", model: "Flux Pro", size: "1024 x 1024" },
@@ -60,61 +92,108 @@ const rightImages = [
   { src: "/showcase/model-6.jpg", top: "58%", right: "3%", width: 240, height: 320, speedX: 18, speedY: 25, zIndex: 3 },
 ];
 
+type DemoPhase = 'idle' | 'typing-user' | 'typing-ai' | 'generating' | 'complete';
+
 const ServiceImagesPage = () => {
   const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
   
-  // Interactive mockup state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [typedPrompt, setTypedPrompt] = useState("");
-  const [showImage, setShowImage] = useState(true);
-  const [history, setHistory] = useState<number[]>([0]);
-  const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Demo chat state
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [phase, setPhase] = useState<DemoPhase>('idle');
+  const [typedUserText, setTypedUserText] = useState("");
+  const [typedAiText, setTypedAiText] = useState("");
+  const [showUserMessage, setShowUserMessage] = useState(false);
+  const [showAiMessage, setShowAiMessage] = useState(false);
+  const [showImage, setShowImage] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const currentGen = generatedImages[currentImageIndex];
+  const currentScenario = demoScenarios[scenarioIndex];
 
-  const startGeneration = useCallback((nextIndex: number) => {
-    setShowImage(false);
-    setIsGenerating(true);
-    setTypedPrompt("");
-    
-    const prompt = generatedImages[nextIndex].prompt;
-    let charIndex = 0;
-    
-    const typeChar = () => {
-      if (charIndex <= prompt.length) {
-        setTypedPrompt(prompt.slice(0, charIndex));
-        charIndex++;
-        typingRef.current = setTimeout(typeChar, 30 + Math.random() * 40);
+  // Type text character by character
+  const typeText = useCallback((
+    text: string, 
+    setter: (val: string) => void, 
+    onComplete: () => void,
+    speed = 35
+  ) => {
+    let index = 0;
+    const type = () => {
+      if (index <= text.length) {
+        setter(text.slice(0, index));
+        index++;
+        timeoutRef.current = setTimeout(type, speed + Math.random() * 25);
       } else {
-        // Typing done, simulate generation delay
-        setTimeout(() => {
-          setCurrentImageIndex(nextIndex);
-          setShowImage(true);
-          setIsGenerating(false);
-          setHistory(prev => [nextIndex, ...prev].slice(0, 6));
-        }, 1200);
+        onComplete();
       }
     };
-    
-    typingRef.current = setTimeout(typeChar, 300);
+    type();
   }, []);
 
-  // Auto-cycle every 6 seconds
+  // Start demo cycle
+  const startDemo = useCallback(() => {
+    // Reset state
+    setTypedUserText("");
+    setTypedAiText("");
+    setShowUserMessage(false);
+    setShowAiMessage(false);
+    setShowImage(false);
+    setPhase('typing-user');
+
+    // Phase 1: Type user message in input
+    typeText(currentScenario.userPrompt, setTypedUserText, () => {
+      // Show user message bubble
+      setShowUserMessage(true);
+      
+      timeoutRef.current = setTimeout(() => {
+        // Phase 2: Type AI response
+        setPhase('typing-ai');
+        typeText(currentScenario.aiResponse, setTypedAiText, () => {
+          setShowAiMessage(true);
+          
+          timeoutRef.current = setTimeout(() => {
+            // Phase 3: Show loading
+            setPhase('generating');
+            
+            timeoutRef.current = setTimeout(() => {
+              // Phase 4: Show image
+              setPhase('complete');
+              setShowImage(true);
+              
+              // Wait and start next cycle
+              timeoutRef.current = setTimeout(() => {
+                setScenarioIndex(prev => (prev + 1) % demoScenarios.length);
+              }, 4000);
+            }, 2500);
+          }, 800);
+        }, 25);
+      }, 600);
+    }, 40);
+  }, [currentScenario, typeText]);
+
+  // Auto-start demo
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isGenerating) {
-        const next = (currentImageIndex + 1) % generatedImages.length;
-        startGeneration(next);
-      }
-    }, 6000);
+    const timer = setTimeout(startDemo, 1000);
     return () => {
-      clearInterval(interval);
-      if (typingRef.current) clearTimeout(typingRef.current);
+      clearTimeout(timer);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [currentImageIndex, isGenerating, startGeneration]);
+  }, [scenarioIndex]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left - rect.width / 2) / rect.width;
+        const y = (e.clientY - rect.top - rect.height / 2) / rect.height;
+        setMousePosition({ x, y });
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -365,7 +444,7 @@ const ServiceImagesPage = () => {
             ))}
           </div>
 
-          {/* Right - Interface Mockup */}
+          {/* Right - Chat Interface Mockup */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -373,179 +452,187 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.3 }}
             className="relative"
           >
-            <div className="rounded-2xl border border-white/10 bg-black/50 overflow-hidden backdrop-blur-sm">
+            <div className="rounded-2xl border border-border/30 bg-card/50 overflow-hidden backdrop-blur-sm">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
                 <div className="flex items-center gap-2">
                   <motion.div 
-                    animate={isGenerating ? { rotate: 360 } : { rotate: 0 }}
-                    transition={{ duration: 1, repeat: isGenerating ? Infinity : 0, ease: "linear" }}
+                    animate={phase === 'generating' ? { rotate: 360 } : { rotate: 0 }}
+                    transition={{ duration: 1, repeat: phase === 'generating' ? Infinity : 0, ease: "linear" }}
                   >
                     <Sparkles className="w-4 h-4 text-primary" />
                   </motion.div>
-                  <span className="text-sm font-medium">AI Image Generator</span>
+                  <span className="text-sm font-medium">Megsy Image AI</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className={isGenerating ? "text-amber-400" : "text-primary"}>●</span>
-                  {isGenerating ? "Generating..." : "Ready"}
+                  <span className={phase === 'generating' ? "text-amber-400" : "text-primary"}>●</span>
+                  {phase === 'generating' ? "Creating..." : phase === 'complete' ? "Done" : "Active"}
                 </div>
               </div>
 
-              {/* Prompt input area */}
-              <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <Wand2 className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-h-[40px]">
-                    <p className="text-sm text-foreground leading-relaxed">
-                      {typedPrompt || currentGen.prompt}
-                      {isGenerating && (
-                        <motion.span
-                          className="inline-block w-0.5 h-4 bg-primary ml-0.5"
-                          animate={{ opacity: [1, 0] }}
-                          transition={{ duration: 0.5, repeat: Infinity }}
-                        />
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Content */}
-              <div className="grid grid-cols-[auto_1fr_auto] gap-3 p-3">
-                {/* Left - History thumbnails */}
-                <div className="flex flex-col gap-2">
-                  {history.slice(0, 5).map((imgIndex, i) => (
-                    <motion.button
-                      key={`${imgIndex}-${i}`}
-                      onClick={() => !isGenerating && startGeneration(imgIndex)}
-                      className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                        imgIndex === currentImageIndex && !isGenerating 
-                          ? "border-primary" 
-                          : "border-white/10 hover:border-white/30"
-                      }`}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <img 
-                        src={generatedImages[imgIndex].src} 
-                        alt="" 
-                        className="w-full h-full object-cover"
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-                
-                {/* Main image area */}
-                <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black/50">
-                  <AnimatePresence mode="wait">
-                    {isGenerating ? (
+              {/* Chat Messages Area */}
+              <div className="h-[400px] flex flex-col">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {/* User Message */}
+                  <AnimatePresence>
+                    {showUserMessage && (
                       <motion.div
-                        key="loading"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex justify-end"
+                      >
+                        <div className="flex items-start gap-2 max-w-[85%]">
+                          <div className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5">
+                            <p className="text-sm text-primary-foreground">{currentScenario.userPrompt}</p>
+                          </div>
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* AI Response */}
+                  <AnimatePresence>
+                    {(phase === 'typing-ai' || showAiMessage) && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                        className="flex justify-start"
                       >
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                        >
-                          <Loader2 className="w-12 h-12 text-primary" />
-                        </motion.div>
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-foreground">Creating your image...</p>
-                          <p className="text-xs text-muted-foreground mt-1">Using {generatedImages[(currentImageIndex + 1) % generatedImages.length].model}</p>
+                        <div className="flex items-start gap-2 max-w-[85%]">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                            <Bot className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="text-sm text-foreground/90">
+                            {typedAiText}
+                            {phase === 'typing-ai' && (
+                              <motion.span
+                                className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle"
+                                animate={{ opacity: [1, 0] }}
+                                transition={{ duration: 0.5, repeat: Infinity }}
+                              />
+                            )}
+                          </div>
                         </div>
-                        {/* Progress shimmer */}
-                        <motion.div
-                          className="w-32 h-1 bg-white/10 rounded-full overflow-hidden"
-                        >
-                          <motion.div
-                            className="h-full bg-primary rounded-full"
-                            initial={{ width: "0%" }}
-                            animate={{ width: "100%" }}
-                            transition={{ duration: 1.8, ease: "easeInOut" }}
-                          />
-                        </motion.div>
                       </motion.div>
-                    ) : showImage ? (
+                    )}
+                  </AnimatePresence>
+
+                  {/* Loading State */}
+                  <AnimatePresence>
+                    {phase === 'generating' && (
                       <motion.div
-                        key={currentImageIndex}
-                        initial={{ opacity: 0, scale: 1.1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.5 }}
-                        className="absolute inset-0"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="flex justify-start"
                       >
-                        <img 
-                          src={currentGen.src} 
-                          alt={currentGen.prompt}
-                          className="w-full h-full object-cover"
-                        />
-                        {/* Overlay badge */}
-                        <motion.div 
-                          className="absolute top-3 left-3 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs flex items-center gap-1.5"
-                          initial={{ y: -20, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.3 }}
-                        >
-                          <Sparkles className="w-3 h-3 text-primary" />
-                          <span className="text-white/90">{currentGen.model}</span>
-                        </motion.div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                            <Bot className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="rounded-2xl border border-border/30 bg-muted/30 p-4">
+                            <div className="flex items-center gap-3">
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                              >
+                                <Loader2 className="w-6 h-6 text-primary" />
+                              </motion.div>
+                              <div>
+                                <p className="text-sm font-medium">Creating your image...</p>
+                                <p className="text-xs text-muted-foreground">Using {currentScenario.model}</p>
+                              </div>
+                            </div>
+                            {/* Progress bar */}
+                            <motion.div className="mt-3 w-48 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <motion.div
+                                className="h-full bg-primary rounded-full"
+                                initial={{ width: "0%" }}
+                                animate={{ width: "100%" }}
+                                transition={{ duration: 2.3, ease: "easeInOut" }}
+                              />
+                            </motion.div>
+                          </div>
+                        </div>
                       </motion.div>
-                    ) : null}
+                    )}
+                  </AnimatePresence>
+
+                  {/* Generated Image */}
+                  <AnimatePresence>
+                    {showImage && phase === 'complete' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="flex justify-start"
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                            <Bot className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="relative rounded-xl overflow-hidden border border-border/30 max-w-[280px]">
+                              <img 
+                                src={currentScenario.image} 
+                                alt="Generated" 
+                                className="w-full aspect-square object-cover"
+                              />
+                              <motion.div 
+                                className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs flex items-center gap-1.5"
+                                initial={{ y: -10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                              >
+                                <Sparkles className="w-3 h-3 text-primary" />
+                                <span className="text-white/90">{currentScenario.model}</span>
+                              </motion.div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              ✨ Generated • {currentScenario.size}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
                   </AnimatePresence>
                 </div>
-                
-                {/* Right panel - Details */}
-                <div className="w-44 space-y-3">
-                  <AnimatePresence mode="wait">
-                    <motion.div 
-                      key={currentImageIndex}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="rounded-lg bg-white/5 p-3"
+
+                {/* Input Area */}
+                <div className="border-t border-border/30 p-3 bg-muted/20">
+                  <div className="flex items-center gap-2 rounded-xl border border-border/30 bg-background/50 px-3 py-2">
+                    <motion.div
+                      animate={phase === 'typing-user' ? { 
+                        scale: [1, 1.2, 1],
+                        rotate: [0, 15, -15, 0]
+                      } : {}}
+                      transition={{ duration: 0.6, repeat: phase === 'typing-user' ? Infinity : 0 }}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">
-                          AI
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground">Just now</p>
-                          <p className="text-xs font-medium">Generated</p>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-2 line-clamp-3">
-                        {currentGen.prompt}
-                      </p>
-                      <div className="flex items-center gap-1 mt-2 text-[10px] text-primary">
-                        <Sparkles className="w-3 h-3" /> {currentGen.model} · {currentGen.size}
-                      </div>
+                      <Sparkles className="w-4 h-4 text-primary" />
                     </motion.div>
-                  </AnimatePresence>
-                  
-                  {/* Action buttons */}
-                  <div className="space-y-1.5">
-                    {["Remix", "Upscale", "Create Video", "Use as Guide"].map((action, i) => (
-                      <motion.button 
-                        key={action} 
-                        className="w-full text-xs py-2 px-3 rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary transition-all text-left flex items-center gap-2 disabled:opacity-50"
-                        disabled={isGenerating}
-                        whileHover={{ x: isGenerating ? 0 : 4 }}
-                        whileTap={{ scale: 0.97 }}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + i * 0.05 }}
-                      >
-                        <Zap className="w-3 h-3 text-primary" /> {action}
-                      </motion.button>
-                    ))}
+                    <div className="flex-1 text-sm text-foreground min-h-[24px]">
+                      {phase === 'typing-user' ? (
+                        <>
+                          {typedUserText}
+                          <motion.span
+                            className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle"
+                            animate={{ opacity: [1, 0] }}
+                            transition={{ duration: 0.5, repeat: Infinity }}
+                          />
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground/50">Describe your image...</span>
+                      )}
+                    </div>
+                    <button className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Send className="w-4 h-4 text-primary" />
+                    </button>
                   </div>
                 </div>
               </div>
