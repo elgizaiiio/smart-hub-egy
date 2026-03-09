@@ -528,7 +528,7 @@ const ImagesPage = () => {
 
           {/* Showcase grid when no images */}
           {generatedImages.length === 0 && !isGenerating && (
-            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
+            <AppShowcaseGallery mode="images" onItemClick={setSelectedShowcaseItem} />
           )}
 
           {isGenerating && generatedImages.length === 0 && (

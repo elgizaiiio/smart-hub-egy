@@ -468,7 +468,7 @@ const VideosPage = () => {
 
           {/* Showcase grid when no videos */}
           {generatedVideos.length === 0 && !isGenerating && (
-            <ShowcaseGrid onItemClick={setSelectedShowcaseItem} />
+            <AppShowcaseGallery mode="videos" onItemClick={setSelectedShowcaseItem} />
           )}
 
           {isGenerating && generatedVideos.length === 0 && (
