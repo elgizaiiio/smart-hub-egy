@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, CreditCard, Crown, PanelLeftClose, PanelLeft, MessageCircle, Settings, LogOut, User, Sparkles, Layers, Bot } from "lucide-react";
+import { MessageSquare, ImageIcon, Video, Code2, FolderOpen, Crown, Layers, Bot, Sparkles } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,24 +31,12 @@ const mainNav = [
   { path: "/files", label: "Files", icon: FolderOpen },
 ];
 
-interface Conversation {
-  id: string;
-  title: string;
-  updated_at: string;
-}
-
 const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId }: DesktopSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [userName, setUserName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
-  const [recentChats, setRecentChats] = useState<Conversation[]>([]);
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar-collapsed") === "true");
-
-  useEffect(() => {
-    localStorage.setItem("sidebar-collapsed", String(collapsed));
-  }, [collapsed]);
 
   useEffect(() => {
     loadUserInfo();
@@ -69,14 +57,6 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
         setAvatarUrl(profile.avatar_url || user.user_metadata?.avatar_url || null);
         if (profile.display_name) setUserName(profile.display_name);
       }
-
-      const { data: convos } = await supabase
-        .from("conversations")
-        .select("id, title, updated_at")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
-        .limit(8);
-      if (convos) setRecentChats(convos);
     }
   };
 
@@ -87,278 +67,118 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
 
   const initial = userName.charAt(0).toUpperCase() || "U";
 
-  const isActive = (path: string) =>
-    location.pathname === path;
+  const isActive = (path: string) => location.pathname === path;
+  const isInSection = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
-  const isInSection = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + "/");
+  // Find active section with sub-items
+  const activeSection = mainNav.find(item => item.subItems && isInSection(item.path));
 
   return (
-    <aside className={`hidden md:flex flex-col ${collapsed ? "w-[56px]" : "w-[180px]"} h-[100dvh] bg-sidebar/60 backdrop-blur-xl border-r border-sidebar-border/30 shrink-0 transition-all duration-200`}>
-      {/* Brand + Toggle */}
-      <div className={`flex items-center ${collapsed ? "justify-center px-2 pt-4 pb-3" : "justify-between px-4 pt-5 pb-4"}`}>
-        {!collapsed && (
-          <button
-            onClick={() => { onNewChat?.(); navigate("/chat"); }}
-            className="text-left hover:opacity-70 transition-opacity"
-          >
-            <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
-              Megsy
-            </span>
-          </button>
-        )}
+    <header className="hidden md:flex flex-col w-full shrink-0 bg-background border-b border-border z-40">
+      {/* Main navbar */}
+      <div className="flex items-center justify-between h-12 px-4">
+        {/* Left: Brand */}
         <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30 transition-colors"
+          onClick={() => { onNewChat?.(); navigate("/chat"); }}
+          className="flex items-center gap-1.5 hover:opacity-70 transition-opacity shrink-0"
         >
-          {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span className="text-base font-bold tracking-tight text-foreground">
+            Megsy
+          </span>
         </button>
-      </div>
 
-      {/* Navigation */}
-      <nav className={`flex flex-col ${collapsed ? "px-1.5 items-center" : "px-2.5"} gap-0.5`}>
-        {mainNav.map((item) => {
-          const active = isActive(item.path);
-          const inSection = isInSection(item.path);
-          const Icon = item.icon;
-          const showSubs = !collapsed && inSection && item.subItems;
+        {/* Center: Nav items */}
+        <nav className="flex items-center gap-1">
+          {mainNav.map((item) => {
+            const inSection = isInSection(item.path);
+            const Icon = item.icon;
 
-          if (collapsed) {
             return (
-              <div key={item.path} className="flex flex-col items-center gap-0.5">
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => navigate(item.path)}
-                      className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-                        inSection
-                          ? "text-sidebar-foreground bg-sidebar-accent/60"
-                          : "text-sidebar-foreground/45 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="text-xs">
-                    {item.label}
-                  </TooltipContent>
-                </Tooltip>
-                {inSection && item.subItems && item.subItems.map(sub => (
-                  <Tooltip key={sub.path} delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => navigate(sub.path)}
-                        className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-                          isActive(sub.path)
-                            ? "text-sidebar-foreground bg-sidebar-accent/50"
-                            : "text-sidebar-foreground/35 hover:text-sidebar-foreground/65 hover:bg-sidebar-accent/25"
-                        }`}
-                      >
-                        <sub.icon className="w-3.5 h-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="text-xs">{sub.label}</TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
-            );
-          }
-
-          return (
-            <div key={item.path}>
               <button
+                key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`w-full text-left px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
-                  active
-                    ? "text-sidebar-foreground bg-sidebar-accent/60 backdrop-blur-sm"
-                    : inSection
-                    ? "text-sidebar-foreground bg-sidebar-accent/40"
-                    : "text-sidebar-foreground/45 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/30"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
+                  inSection
+                    ? "text-foreground bg-accent"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 }`}
               >
+                <Icon className="w-3.5 h-3.5" />
                 {item.label}
               </button>
-              {showSubs && (
-                <div className="ml-3 mt-0.5 space-y-0.5 border-l border-sidebar-border/30 pl-2">
-                  {item.subItems!.map(sub => (
-                    <button
-                      key={sub.path}
-                      onClick={() => navigate(sub.path)}
-                      className={`w-full text-left px-3 py-1 rounded-lg text-[12px] font-medium transition-all flex items-center gap-2 ${
-                        isActive(sub.path)
-                          ? "text-sidebar-foreground bg-sidebar-accent/50"
-                          : "text-sidebar-foreground/40 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent/25"
-                      }`}
-                    >
-                      <sub.icon className="w-3.5 h-3.5" />
-                      {sub.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
+            );
+          })}
+        </nav>
 
-      {/* Recent Chats */}
-      {recentChats.length > 0 && !collapsed && (
-        <div className="mt-5 flex flex-col flex-1 min-h-0">
-          <span className="px-5 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30 mb-1.5">
-            Recent
-          </span>
-          <div className="flex-1 overflow-y-auto px-2.5 space-y-0.5 scrollbar-none">
-            {recentChats.map((chat) => (
-              <button
-                key={chat.id}
-                onClick={() => {
-                  onSelectConversation?.(chat.id);
-                  navigate("/chat");
-                }}
-                className={`w-full text-left px-3 py-1.5 rounded-lg text-[12px] transition-all truncate ${
-                  activeConversationId === chat.id
-                    ? "text-sidebar-foreground bg-sidebar-accent/50"
-                    : "text-sidebar-foreground/35 hover:text-sidebar-foreground/65 hover:bg-sidebar-accent/25"
-                }`}
-              >
-                {chat.title || "Untitled"}
+        {/* Right: Credits + Upgrade + User */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Credits */}
+          <button
+            onClick={() => navigate("/pricing")}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+          >
+            <span className="text-[11px] font-semibold tabular-nums">{credits.toFixed(0)} MC</span>
+          </button>
+
+          {/* Upgrade */}
+          <button
+            onClick={() => navigate("/pricing")}
+            className="px-3 py-1 rounded-lg text-[11px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+          >
+            <Crown className="w-3 h-3" />
+            Pro
+          </button>
+
+          {/* User avatar */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-border hover:ring-primary/50 transition-all">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-primary/15 flex items-center justify-center text-[10px] font-semibold text-primary">
+                    {initial}
+                  </div>
+                )}
               </button>
-            ))}
-          </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={() => navigate("/settings/profile")}>
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      )}
+      </div>
 
-      {/* Collapsed: recent chats as icons */}
-      {recentChats.length > 0 && collapsed && (
-        <div className="mt-4 flex flex-col items-center gap-0.5 px-1.5 flex-1 min-h-0 overflow-y-auto scrollbar-none">
-          {recentChats.slice(0, 5).map((chat) => (
-            <Tooltip key={chat.id} delayDuration={0}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => {
-                    onSelectConversation?.(chat.id);
-                    navigate("/chat");
-                  }}
-                  className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
-                    activeConversationId === chat.id
-                      ? "text-sidebar-foreground bg-sidebar-accent/50"
-                      : "text-sidebar-foreground/35 hover:text-sidebar-foreground/65 hover:bg-sidebar-accent/25"
-                  }`}
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                {chat.title || "Untitled"}
-              </TooltipContent>
-            </Tooltip>
+      {/* Sub-navigation bar (Studio/Agent) */}
+      {activeSection && activeSection.subItems && (
+        <div className="flex items-center gap-1 px-4 h-9 border-t border-border/50 bg-muted/30">
+          {activeSection.subItems.map(sub => (
+            <button
+              key={sub.path}
+              onClick={() => navigate(sub.path)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-all ${
+                isActive(sub.path)
+                  ? "text-foreground bg-accent"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+              }`}
+            >
+              <sub.icon className="w-3 h-3" />
+              {sub.label}
+            </button>
           ))}
         </div>
       )}
-
-      {/* Spacer */}
-      {recentChats.length === 0 && <div className="flex-1" />}
-
-      {/* Bottom */}
-      <div className={`flex flex-col ${collapsed ? "px-1.5 items-center" : "px-2.5"} pb-4 gap-1.5 mt-auto`}>
-        {/* Credits */}
-        {collapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => navigate("/pricing")}
-                className="w-9 h-9 flex items-center justify-center rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors"
-              >
-                <span className="text-[11px] font-bold tabular-nums">{credits.toFixed(0)}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
-              Credits: {credits.toFixed(0)}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <button
-            onClick={() => navigate("/pricing")}
-            className="flex items-center justify-between px-3 py-1.5 rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors"
-          >
-            <span className="text-[11px] font-medium">Credits</span>
-            <span className="text-[12px] font-semibold tabular-nums text-sidebar-foreground/70">
-              {credits.toFixed(0)}
-            </span>
-          </button>
-        )}
-
-        {/* Upgrade */}
-        {collapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => navigate("/pricing")}
-                className="w-9 h-9 flex items-center justify-center rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors"
-              >
-                <Crown className="w-4 h-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
-              Upgrade to Pro
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <button
-            onClick={() => navigate("/pricing")}
-            className="w-full px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-center"
-          >
-            Upgrade to Pro
-          </button>
-        )}
-
-        {/* User */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            {collapsed ? (
-              <button className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-sidebar-accent/30 transition-colors">
-                <div className="w-6 h-6 rounded-full overflow-hidden ring-1 ring-sidebar-border/50">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-primary/15 flex items-center justify-center text-[10px] font-semibold text-primary">
-                      {initial}
-                    </div>
-                  )}
-                </div>
-              </button>
-            ) : (
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-sidebar-accent/30 transition-colors w-full">
-                <div className="w-6 h-6 rounded-full overflow-hidden ring-1 ring-sidebar-border/50 shrink-0">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-primary/15 flex items-center justify-center text-[10px] font-semibold text-primary">
-                      {initial}
-                    </div>
-                  )}
-                </div>
-                <span className="text-[11px] font-medium text-sidebar-foreground/70 truncate">
-                  {userName}
-                </span>
-              </button>
-            )}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="end" className="w-44">
-            <DropdownMenuItem onClick={() => navigate("/settings/profile")}>
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/settings")}>
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </aside>
+    </header>
   );
 };
 
