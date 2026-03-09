@@ -165,20 +165,28 @@ const BottomInputBar = ({
                     {currentAspect}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-44 p-2 bg-[#252525] border-white/10" align="start">
-                  {ASPECT_RATIOS.map((ar) => (
-                    <button
-                      key={ar.label}
-                      onClick={() => updateSetting("dimensions", ar)}
-                      className={`w-full text-left text-xs px-3 py-2 rounded-lg transition-colors ${
-                        settings.dimensions.label === ar.label
-                          ? "bg-white/10 text-white font-semibold"
-                          : "text-white/70 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      {ar.label} ({ar.width}×{ar.height})
-                    </button>
-                  ))}
+                <PopoverContent className="w-36 p-3 bg-[#1a1a1a] border-white/10" align="start">
+                  <p className="text-xs text-white/50 mb-2 font-medium">Aspect Ratio</p>
+                  <div className="space-y-1">
+                    {ASPECT_RATIOS.map((ar) => (
+                      <button
+                        key={ar.label}
+                        onClick={() => updateSetting("dimensions", ar)}
+                        className="w-full flex items-center gap-2.5 text-xs px-2 py-1.5 rounded-md transition-colors text-white/80 hover:bg-white/5"
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                          settings.dimensions.label === ar.label
+                            ? "border-white/40 bg-white/10"
+                            : "border-white/20"
+                        }`}>
+                          {settings.dimensions.label === ar.label && (
+                            <div className="w-2 h-2 rounded-sm bg-white" />
+                          )}
+                        </div>
+                        {ar.label}
+                      </button>
+                    ))}
+                  </div>
                 </PopoverContent>
               </Popover>
 
