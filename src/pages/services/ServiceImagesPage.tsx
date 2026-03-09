@@ -51,34 +51,34 @@ const ServiceImagesPage = () => {
       </section>
 
       {/* Megsy Pro Promo */}
-      <section className="mx-auto max-w-6xl px-6 py-24">
+      <section className="mx-auto max-w-7xl px-6 py-28">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-10 md:p-16"
+          className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-12 md:p-20"
         >
-          <div className="flex flex-col items-center gap-8 md:flex-row">
+          <div className="flex flex-col items-center gap-12 md:flex-row">
             <div className="flex-1">
-              <h2 className="font-display text-3xl font-black uppercase md:text-4xl">
+              <h2 className="font-display text-4xl font-black uppercase md:text-5xl">
                 Why <span className="text-primary">Megsy Pro</span>?
               </h2>
-              <p className="mt-4 text-muted-foreground leading-relaxed">
+              <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
                 Our flagship model delivers unmatched image quality with faster generation times.
                 Trained on diverse, high-quality datasets, Megsy Pro understands context, composition,
                 and artistic style better than any competitor.
               </p>
-              <ul className="mt-6 space-y-3">
+              <ul className="mt-8 space-y-4">
                 {["4x faster than DALL-E 3", "Photorealistic quality at any resolution", "Built-in style consistency", "No content restrictions on art"].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-foreground/80">
-                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  <li key={item} className="flex items-center gap-3 text-base text-foreground/80">
+                    <div className="h-2 w-2 rounded-full bg-primary" />
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="flex h-64 w-full items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] md:w-80">
-              <Sparkles className="h-16 w-16 text-primary/40" />
+            <div className="flex h-80 w-full items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] md:w-96">
+              <Sparkles className="h-20 w-20 text-primary/40" />
             </div>
           </div>
         </motion.div>
