@@ -77,6 +77,7 @@ const ChatPage = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [connectorsOpen, setConnectorsOpen] = useState(false);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
