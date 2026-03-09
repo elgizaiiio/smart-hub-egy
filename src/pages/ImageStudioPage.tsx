@@ -92,8 +92,7 @@ const ImageStudioPage = () => {
     if (!prompt) return;
     const cost = (Number(model.credits) || 1) * s.numImages;
     if (userId && !hasEnoughCredits(cost)) { toast.error("Insufficient MC credits."); return; }
-    const styleSuffix = STYLE_SUFFIX[s.style] || "";
-    const finalPrompt = prompt + styleSuffix;
+    const finalPrompt = prompt;
     setInput("");
     setIsGenerating(true);
     setProgress(0);
