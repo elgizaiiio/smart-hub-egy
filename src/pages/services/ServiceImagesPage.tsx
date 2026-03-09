@@ -618,7 +618,6 @@ const ServiceImagesPage = () => {
                             <p className="text-xs text-muted-foreground">
                               Generated | {currentScenario.size}
                             </p>
-                          </div>
                         </div>
                       </motion.div>
                     )}
