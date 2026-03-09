@@ -163,9 +163,7 @@ const BottomInputBar = ({
                   "hover:bg-accent hover:border-border transition-all duration-300 ease-out"
                 }
               >
-                <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${iconInfo.gradient} flex items-center justify-center`}>
-                  <span className="text-[8px] font-bold text-black">{iconInfo.letter}</span>
-                </div>
+                <span className="text-sm">{emoji}</span>
                 {selectedModel.name}
                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${modelPickerOpen ? "rotate-180" : ""}`} />
               </button>
