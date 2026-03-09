@@ -334,6 +334,12 @@ const ChatPage = () => {
             )}
           </div>
 
+          {/* Center: Unlock Pro on mobile */}
+          {!hasConversation && (
+            <div className="absolute left-1/2 -translate-x-1/2 md:hidden">
+              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
+            </div>
+          )}
 
           {/* Right: Share button */}
           <div className="flex items-center gap-2">
@@ -344,13 +350,6 @@ const ChatPage = () => {
               >
                 Share
               </button>
-            )}
-            {!hasConversation && (
-              <AnimatePresence>
-                <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="md:hidden">
-                  <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
-                </motion.div>
-              </AnimatePresence>
             )}
           </div>
         </div>
