@@ -1279,17 +1279,13 @@ serve(async (req) => {
         const s = await getPageSettings(sb, "images") as typeof DEFAULT_PAGE_IMAGES;
         await send(BOT_TOKEN, chatId, msgId,
           `🖼 *إعدادات صفحة الصور*\n\n` +
-          `🎨 الأنماط: \`${s.styles.join(", ")}\`\n` +
           `📐 النسب: \`${s.aspectRatios.join(", ")}\`\n` +
           `🔢 أقصى عدد صور: \`${s.maxImages}\`\n` +
-          `✨ النمط الافتراضي: \`${s.defaultStyle}\`\n` +
           `📐 النسبة الافتراضية: \`${s.defaultAspect}\`\n` +
           `🔢 العدد الافتراضي: \`${s.defaultNumImages}\``,
           [
-            [{ text: "🎨 تعديل الأنماط", callback_data: "ps_img_styles" }],
             [{ text: "📐 تعديل النسب", callback_data: "ps_img_aspects" }],
             [{ text: "🔢 أقصى عدد صور", callback_data: "ps_img_max" }],
-            [{ text: "✨ النمط الافتراضي", callback_data: "ps_img_defstyle" }],
             [{ text: "📐 النسبة الافتراضية", callback_data: "ps_img_defaspect" }],
             [{ text: "🔢 العدد الافتراضي", callback_data: "ps_img_defnum" }],
             [{ text: "🗑 إعادة ضبط", callback_data: "ps_img_reset" }],
