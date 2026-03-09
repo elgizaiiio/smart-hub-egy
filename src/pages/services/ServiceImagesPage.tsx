@@ -20,29 +20,29 @@ const ServiceImagesPage = () => {
       <LandingNavbar />
 
       {/* Hero */}
-      <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-6 pt-24">
+      <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 pt-28">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent" />
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="relative z-10 mx-auto max-w-4xl text-center"
+          className="relative z-10 mx-auto max-w-6xl text-center"
         >
-          <h1 className="font-display mt-4 text-5xl font-black uppercase leading-tight tracking-tight md:text-7xl">
+          <h1 className="font-display mt-4 text-6xl font-black uppercase leading-tight tracking-tight md:text-8xl lg:text-9xl">
             AI Image<br />
             <span className="text-primary">Generator</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto mt-8 max-w-3xl text-xl text-muted-foreground md:text-2xl">
             Create stunning, photorealistic images from text prompts using our proprietary Megsy Pro model.
             From concept art to product photography — generate anything you imagine.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <FancyButton onClick={() => navigate("/auth")} className="text-base px-8 py-3">
-              Start Creating Free <ArrowRight className="ml-2 h-4 w-4" />
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-5">
+            <FancyButton onClick={() => navigate("/auth")} className="text-lg px-10 py-4">
+              Start Creating Free <ArrowRight className="ml-2 h-5 w-5" />
             </FancyButton>
             <button
               onClick={() => navigate("/#pricing")}
-              className="rounded-full border border-border px-6 py-3 text-sm font-medium text-foreground transition-all hover:border-foreground/40"
+              className="rounded-full border border-border px-8 py-4 text-base font-medium text-foreground transition-all hover:border-foreground/40"
             >
               View Pricing
             </button>
