@@ -1,10 +1,19 @@
-import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import FancyButton from "@/components/FancyButton";
-import { Image, Sparkles, Zap, Wand2 } from "lucide-react";
+import { Sparkles, Zap, Wand2, Loader2 } from "lucide-react";
+
+const generatedImages = [
+  { src: "/showcase/model-1.jpg", prompt: "Portrait of a fashion model in golden hour light", model: "Flux Pro", size: "1024 x 1024" },
+  { src: "/showcase/img-1.jpg", prompt: "Cyberpunk city street with neon reflections at night", model: "Nano Banana", size: "1344 x 768" },
+  { src: "/showcase/model-2.jpg", prompt: "Elegant woman in minimalist studio photography", model: "SDXL Ultra", size: "1024 x 1536" },
+  { src: "/showcase/img-4.jpg", prompt: "Surreal dreamscape with floating islands and waterfalls", model: "Flux Pro", size: "1920 x 1080" },
+  { src: "/showcase/model-3.jpg", prompt: "Dramatic portrait with cinematic color grading", model: "Midjourney v6", size: "1024 x 1024" },
+  { src: "/showcase/img-5.jpg", prompt: "Abstract geometric art with vibrant gradients", model: "DALL-E 3", size: "1024 x 1024" },
+];
 
 const howItWorksSteps = [
   { 
@@ -55,6 +64,57 @@ const ServiceImagesPage = () => {
   const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
+  
+  // Interactive mockup state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [typedPrompt, setTypedPrompt] = useState("");
+  const [showImage, setShowImage] = useState(true);
+  const [history, setHistory] = useState<number[]>([0]);
+  const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const currentGen = generatedImages[currentImageIndex];
+
+  const startGeneration = useCallback((nextIndex: number) => {
+    setShowImage(false);
+    setIsGenerating(true);
+    setTypedPrompt("");
+    
+    const prompt = generatedImages[nextIndex].prompt;
+    let charIndex = 0;
+    
+    const typeChar = () => {
+      if (charIndex <= prompt.length) {
+        setTypedPrompt(prompt.slice(0, charIndex));
+        charIndex++;
+        typingRef.current = setTimeout(typeChar, 30 + Math.random() * 40);
+      } else {
+        // Typing done, simulate generation delay
+        setTimeout(() => {
+          setCurrentImageIndex(nextIndex);
+          setShowImage(true);
+          setIsGenerating(false);
+          setHistory(prev => [nextIndex, ...prev].slice(0, 6));
+        }, 1200);
+      }
+    };
+    
+    typingRef.current = setTimeout(typeChar, 300);
+  }, []);
+
+  // Auto-cycle every 6 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isGenerating) {
+        const next = (currentImageIndex + 1) % generatedImages.length;
+        startGeneration(next);
+      }
+    }, 6000);
+    return () => {
+      clearInterval(interval);
+      if (typingRef.current) clearTimeout(typingRef.current);
+    };
+  }, [currentImageIndex, isGenerating, startGeneration]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -313,119 +373,175 @@ const ServiceImagesPage = () => {
             transition={{ delay: 0.3 }}
             className="relative"
           >
-            <div className="rounded-2xl border border-white/10 bg-black/50 overflow-hidden backdrop-blur-sm group/mockup">
+            <div className="rounded-2xl border border-white/10 bg-black/50 overflow-hidden backdrop-blur-sm">
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}>
+                  <motion.div 
+                    animate={isGenerating ? { rotate: 360 } : { rotate: 0 }}
+                    transition={{ duration: 1, repeat: isGenerating ? Infinity : 0, ease: "linear" }}
+                  >
                     <Sparkles className="w-4 h-4 text-primary" />
                   </motion.div>
-                  <span className="text-sm font-medium">AI Creation</span>
+                  <span className="text-sm font-medium">AI Image Generator</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <motion.span 
-                    className="text-primary"
-                    animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >●</motion.span> 999,996,047 credits
+                  <span className={isGenerating ? "text-amber-400" : "text-primary"}>●</span>
+                  {isGenerating ? "Generating..." : "Ready"}
+                </div>
+              </div>
+
+              {/* Prompt input area */}
+              <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Wand2 className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-h-[40px]">
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {typedPrompt || currentGen.prompt}
+                      {isGenerating && (
+                        <motion.span
+                          className="inline-block w-0.5 h-4 bg-primary ml-0.5"
+                          animate={{ opacity: [1, 0] }}
+                          transition={{ duration: 0.5, repeat: Infinity }}
+                        />
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
               
               {/* Content */}
-              <div className="grid grid-cols-[auto_1fr_auto] gap-2 p-3">
-                {/* Left thumbnails */}
+              <div className="grid grid-cols-[auto_1fr_auto] gap-3 p-3">
+                {/* Left - History thumbnails */}
                 <div className="flex flex-col gap-2">
-                  {[0, 1, 2, 3, 4].map((_, i) => (
-                    <motion.div 
-                      key={i} 
-                      className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-900 border border-white/10 cursor-pointer"
-                      whileHover={{ scale: 1.2, borderColor: "rgba(255,255,255,0.4)" }}
+                  {history.slice(0, 5).map((imgIndex, i) => (
+                    <motion.button
+                      key={`${imgIndex}-${i}`}
+                      onClick={() => !isGenerating && startGeneration(imgIndex)}
+                      className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                        imgIndex === currentImageIndex && !isGenerating 
+                          ? "border-primary" 
+                          : "border-white/10 hover:border-white/30"
+                      }`}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.05 }}
+                      whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.5 + i * 0.1 }}
-                    />
+                    >
+                      <img 
+                        src={generatedImages[imgIndex].src} 
+                        alt="" 
+                        className="w-full h-full object-cover"
+                      />
+                    </motion.button>
                   ))}
                 </div>
                 
                 {/* Main image area */}
-                <motion.div 
-                  className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-red-900 via-red-800 to-black cursor-pointer"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <motion.div 
-                    className="absolute top-3 left-3 px-2 py-1 rounded bg-black/50 text-xs flex items-center gap-1"
-                    initial={{ opacity: 0, y: -10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.8 }}
-                  >
-                    <motion.div animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}>
-                      <Wand2 className="w-3 h-3" />
-                    </motion.div>
-                    Ultra Upscale
-                  </motion.div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <motion.div 
-                      className="w-32 h-40 bg-gradient-to-t from-black/50 to-transparent rounded-lg"
-                      animate={{ y: [0, -8, 0] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  </div>
-                  {/* Shimmer effect */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
-                    animate={{ x: ["-100%", "200%"] }}
-                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: "easeInOut" }}
-                  />
-                </motion.div>
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black/50">
+                  <AnimatePresence mode="wait">
+                    {isGenerating ? (
+                      <motion.div
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Loader2 className="w-12 h-12 text-primary" />
+                        </motion.div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-foreground">Creating your image...</p>
+                          <p className="text-xs text-muted-foreground mt-1">Using {generatedImages[(currentImageIndex + 1) % generatedImages.length].model}</p>
+                        </div>
+                        {/* Progress shimmer */}
+                        <motion.div
+                          className="w-32 h-1 bg-white/10 rounded-full overflow-hidden"
+                        >
+                          <motion.div
+                            className="h-full bg-primary rounded-full"
+                            initial={{ width: "0%" }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 1.8, ease: "easeInOut" }}
+                          />
+                        </motion.div>
+                      </motion.div>
+                    ) : showImage ? (
+                      <motion.div
+                        key={currentImageIndex}
+                        initial={{ opacity: 0, scale: 1.1 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.5 }}
+                        className="absolute inset-0"
+                      >
+                        <img 
+                          src={currentGen.src} 
+                          alt={currentGen.prompt}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Overlay badge */}
+                        <motion.div 
+                          className="absolute top-3 left-3 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm text-xs flex items-center gap-1.5"
+                          initial={{ y: -20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.3 }}
+                        >
+                          <Sparkles className="w-3 h-3 text-primary" />
+                          <span className="text-white/90">{currentGen.model}</span>
+                        </motion.div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
                 
-                {/* Right panel */}
+                {/* Right panel - Details */}
                 <div className="w-44 space-y-3">
-                  <motion.div 
-                    className="rounded-lg bg-white/5 p-3 hover:bg-white/10 transition-colors cursor-pointer"
-                    whileHover={{ scale: 1.03 }}
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.6 }}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <motion.div 
-                        className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold"
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
-                      >P</motion.div>
-                      <div>
-                        <p className="text-[10px] text-muted-foreground">Today</p>
-                        <p className="text-xs font-medium">MegsyUser</p>
+                  <AnimatePresence mode="wait">
+                    <motion.div 
+                      key={currentImageIndex}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="rounded-lg bg-white/5 p-3"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">
+                          AI
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Just now</p>
+                          <p className="text-xs font-medium">Generated</p>
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      <span className="text-white font-medium">Prompt</span> · Iterate
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
-                      Same character playing piano against a red background
-                    </p>
-                    <div className="flex items-center gap-1 mt-2 text-[10px] text-primary">
-                      <Sparkles className="w-3 h-3" /> Nano Banana · 1344 x 768
-                    </div>
-                  </motion.div>
+                      <p className="text-[10px] text-muted-foreground mt-2 line-clamp-3">
+                        {currentGen.prompt}
+                      </p>
+                      <div className="flex items-center gap-1 mt-2 text-[10px] text-primary">
+                        <Sparkles className="w-3 h-3" /> {currentGen.model} · {currentGen.size}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
                   
                   {/* Action buttons */}
                   <div className="space-y-1.5">
                     {["Remix", "Upscale", "Create Video", "Use as Guide"].map((action, i) => (
                       <motion.button 
                         key={action} 
-                        className="w-full text-xs py-2 px-3 rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary transition-all text-left flex items-center gap-2"
-                        whileHover={{ x: 4, scale: 1.02 }}
+                        className="w-full text-xs py-2 px-3 rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary transition-all text-left flex items-center gap-2 disabled:opacity-50"
+                        disabled={isGenerating}
+                        whileHover={{ x: isGenerating ? 0 : 4 }}
                         whileTap={{ scale: 0.97 }}
                         initial={{ opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.7 + i * 0.1 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 + i * 0.05 }}
                       >
                         <Zap className="w-3 h-3 text-primary" /> {action}
                       </motion.button>
