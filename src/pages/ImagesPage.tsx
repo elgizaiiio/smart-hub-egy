@@ -170,7 +170,7 @@ const ImagesPage = () => {
           modelId: selectedModel.id,
           dimensions: `${settings.dimensions.width}×${settings.dimensions.height}`,
           createdAt: new Date(),
-          style: settings.style !== "none" ? settings.style : undefined,
+          
           speed: "Fast",
         }));
         setGeneratedImages((prev) => [...newImages, ...prev]);
