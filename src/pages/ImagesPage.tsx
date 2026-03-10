@@ -12,7 +12,7 @@ import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import ThinkingLoader from "@/components/ThinkingLoader";
-import ImageSettingsPanel, { DEFAULT_SETTINGS, type ImageSettings, type ImageStyle } from "@/components/ImageSettingsPanel";
+import ImageSettingsPanel, { DEFAULT_SETTINGS, type ImageSettings } from "@/components/ImageSettingsPanel";
 import ImageSettingsDrawer from "@/components/ImageSettingsDrawer";
 import AppShowcaseGallery from "@/components/AppShowcaseGallery";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
