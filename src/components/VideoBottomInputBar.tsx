@@ -100,6 +100,30 @@ const VideoBottomInputBar = ({
   const [openDropdown, setOpenDropdown] = useState<DropdownId>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Read customization from model
+  const cust = selectedModel.customization;
+  const showAspect = !cust || cust.ar?.on !== false;
+  const showDuration = !cust || cust.dur?.on !== false;
+  const showResolution = !cust || cust.res?.on !== false;
+
+  // Build dynamic options from customization
+  const aspectOptions = useMemo(() => {
+    if (cust?.ar?.opts?.length > 0) {
+      return cust.ar.opts.map((label: string) => ASPECT_DIM_MAP[label] || { width: 1024, height: 1024, label });
+    }
+    return DEFAULT_ASPECT_RATIOS;
+  }, [cust]);
+
+  const durationOptions = useMemo(() => {
+    if (cust?.dur?.opts?.length > 0) return cust.dur.opts.map((s: string) => parseInt(s));
+    return DEFAULT_DURATIONS;
+  }, [cust]);
+
+  const resolutionOptions = useMemo(() => {
+    if (cust?.res?.opts?.length > 0) return cust.res.opts as string[];
+    return DEFAULT_RESOLUTIONS;
+  }, [cust]);
+
   // Animated placeholder
   useEffect(() => {
     if (input) return;
