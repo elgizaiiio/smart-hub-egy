@@ -6,25 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const IMAGE_MODELS = [
-  "megsy-v1-img", "gpt-image", "nano-banana-2", "flux-kontext", "ideogram-3",
-  "seedream-5-lite", "recraft-v4", "flux-2-pro", "seedream-4", "grok-imagine",
-  "imagineart-1.5", "fal-hidream-i1", "fal-aura-v2", "fal-stable-cascade",
-  "fal-omnigen2", "fal-flux-realism", "logo-creator", "sticker-maker", "qr-art",
-  "nano-banana-edit", "object-remover", "watermark-remover", "image-extender",
-  "flux-pro-editor", "image-variations", "photo-colorizer", "bg-remover",
-  "4k-upscaler", "face-enhancer", "creative-upscaler", "old-photo-restorer",
-  "bg-replacer", "style-transfer", "ai-relighting", "photo-to-cartoon",
-  "product-photo", "ai-headshot",
-];
-
-const VIDEO_MODELS = [
-  "megsy-video", "veo-3.1", "veo-3.1-fast", "kling-3-pro", "kling-o1",
-  "openai-sora", "pika-2.2", "luma-dream", "seedance-pro", "wan-2.6",
-  "pixverse-5.5", "megsy-video-i2v", "kling-3-pro-i2v", "kling-o1-i2v",
-  "veo-3.1-fast-i2v", "openai-sora-i2v", "pixverse-5.5-i2v", "wan-2.6-i2v",
-  "wan-flf", "kling-avatar-pro", "kling-avatar-std", "sadtalker", "sync-lipsync",
-];
+// All models are now dynamic via models_added in memories table
+// Only chat & code models remain hardcoded
+const IMAGE_MODELS: string[] = [];
+const VIDEO_MODELS: string[] = [];
 
 const CHAT_MODELS = [
   "google/gemini-3-flash-preview", "google/gemini-2.5-pro",
@@ -34,33 +19,25 @@ const CHAT_MODELS = [
 const CODE_MODELS = ["x-ai/grok-3", "openai/gpt-5", "deepseek/deepseek-r1"];
 
 const MODEL_NAMES: Record<string, string> = {
-  "megsy-v1-img": "Megsy v1", "gpt-image": "GPT Image 1.5", "nano-banana-2": "Nano Banana 2",
-  "flux-kontext": "FLUX Kontext Max", "ideogram-3": "Ideogram 3", "seedream-5-lite": "Seedream 5 Lite",
-  "recraft-v4": "Recraft V4", "flux-2-pro": "FLUX 2 Pro", "seedream-4": "Seedream 4.5",
-  "grok-imagine": "Grok Imagine", "imagineart-1.5": "ImagineArt 1.5", "fal-hidream-i1": "HiDream I1",
-  "fal-aura-v2": "Aura Flow v2", "fal-stable-cascade": "Stable Cascade", "fal-omnigen2": "OmniGen2",
-  "fal-flux-realism": "FLUX Realism", "logo-creator": "صانع الشعارات", "sticker-maker": "صانع الملصقات",
-  "qr-art": "QR فني", "nano-banana-edit": "Nano Banana Edit", "object-remover": "حذف العناصر",
-  "watermark-remover": "حذف العلامة المائية", "image-extender": "توسيع الصورة",
-  "flux-pro-editor": "FLUX Pro Editor", "image-variations": "تنويعات الصورة",
-  "photo-colorizer": "تلوين الصور", "bg-remover": "حذف الخلفية", "4k-upscaler": "تكبير 4K",
-  "face-enhancer": "تحسين الوجه", "creative-upscaler": "تكبير إبداعي",
-  "old-photo-restorer": "ترميم الصور القديمة", "bg-replacer": "تغيير الخلفية",
-  "style-transfer": "نقل الأسلوب", "ai-relighting": "إضاءة ذكية",
-  "photo-to-cartoon": "صورة لكرتون", "product-photo": "صور المنتجات", "ai-headshot": "صور شخصية AI",
-  "megsy-video": "Megsy Video", "veo-3.1": "Google Veo 3.1", "veo-3.1-fast": "Veo 3.1 سريع",
-  "kling-3-pro": "Kling 3.0 Pro", "kling-o1": "Kling O1", "openai-sora": "OpenAI Sora",
-  "pika-2.2": "Pika 2.2", "luma-dream": "Luma Dream", "seedance-pro": "Seedance Pro",
-  "wan-2.6": "WAN 2.6", "pixverse-5.5": "PixVerse v5.5", "megsy-video-i2v": "Megsy Video I2V",
-  "kling-3-pro-i2v": "Kling 3.0 Pro I2V", "kling-o1-i2v": "Kling O1 I2V",
-  "veo-3.1-fast-i2v": "Veo 3.1 سريع I2V", "openai-sora-i2v": "Sora I2V",
-  "pixverse-5.5-i2v": "PixVerse I2V", "wan-2.6-i2v": "WAN 2.6 I2V",
-  "wan-flf": "WAN أول-آخر إطار", "kling-avatar-pro": "Kling Avatar Pro",
-  "kling-avatar-std": "Kling Avatar Std", "sadtalker": "SadTalker", "sync-lipsync": "Sync Lipsync V2",
   "google/gemini-3-flash-preview": "Megsy V1 (محادثة)", "google/gemini-2.5-pro": "Gemini 2.5 Pro",
   "openai/gpt-5": "GPT-5", "x-ai/grok-3": "Grok 3", "deepseek/deepseek-r1": "DeepSeek R1",
 };
 
+// Dynamic categories - images & videos pull from models_added
+function buildCategories(addedModels: Record<string, unknown>[]) {
+  const imgModels = addedModels.filter((m: any) => m.type === "image" || m.type === "image-tool").map((m: any) => m.id);
+  const vidModels = addedModels.filter((m: any) => ["video", "video-i2v", "video-avatar", "video-effect", "video-motion"].includes(m.type)).map((m: any) => m.id);
+  // Update MODEL_NAMES from added models
+  addedModels.forEach((m: any) => { if (m.name) MODEL_NAMES[m.id] = m.name; });
+  return [
+    { key: "images", label: "نماذج الصور", emoji: "🖼", models: imgModels },
+    { key: "videos", label: "نماذج الفيديو", emoji: "🎬", models: vidModels },
+    { key: "chat", label: "نماذج المحادثة", emoji: "💬", models: CHAT_MODELS },
+    { key: "code", label: "نماذج البرمجة", emoji: "💻", models: CODE_MODELS },
+  ];
+}
+
+// Fallback static categories (used when no DB call needed)
 const CATEGORIES = [
   { key: "images", label: "نماذج الصور", emoji: "🖼", models: IMAGE_MODELS },
   { key: "videos", label: "نماذج الفيديو", emoji: "🎬", models: VIDEO_MODELS },
@@ -232,10 +209,21 @@ async function setModelConfig(sb: ReturnType<typeof createClient>, modelId: stri
   await sb.from("memories").insert({ key: `model_config_${modelId}`, value: JSON.stringify(config) });
 }
 
+async function loadAddedModels(sb: ReturnType<typeof createClient>): Promise<Record<string, unknown>[]> {
+  const { data } = await sb.from("memories").select("value").eq("key", "models_added").maybeSingle();
+  if (!data) return [];
+  try { return JSON.parse(data.value); } catch { return []; }
+}
+
+async function getDynamicCategories(sb: ReturnType<typeof createClient>) {
+  const added = await loadAddedModels(sb);
+  return buildCategories(added);
+}
+
 function modelListKB(models: string[], page: number, catKey: string, prefix: string) {
   const start = page * PER_PAGE;
   const slice = models.slice(start, start + PER_PAGE);
-  const total = Math.ceil(models.length / PER_PAGE);
+  const total = Math.ceil(models.length / PER_PAGE) || 1;
   const rows: { text: string; callback_data: string }[][] = [];
 
   for (let i = 0; i < slice.length; i += 2) {
@@ -249,9 +237,16 @@ function modelListKB(models: string[], page: number, catKey: string, prefix: str
   if (page > 0) nav.push({ text: "◀️ السابق", callback_data: `nav_${prefix}_${catKey}_${page - 1}` });
   nav.push({ text: `${page + 1}/${total}`, callback_data: "noop" });
   if (page < total - 1) nav.push({ text: "التالي ▶️", callback_data: `nav_${prefix}_${catKey}_${page + 1}` });
-  rows.push(nav);
+  if (nav.length > 0) rows.push(nav);
   rows.push([{ text: "🔙 رجوع", callback_data: `back_${prefix}_cats` }]);
   return rows;
+}
+
+function dynamicCatsKB(cats: ReturnType<typeof buildCategories>, prefix: string) {
+  return cats.map(c => [{
+    text: `${c.emoji} ${c.label} (${c.models.length})`,
+    callback_data: `cat_${prefix}_${c.key}`,
+  }]);
 }
 
 function catsKB(prefix: string) {
@@ -361,10 +356,13 @@ serve(async (req) => {
       }
 
       if (d === "upload_status") {
-        const imgEx = await getExistingMedia(sb, IMAGE_MODELS);
-        const vidEx = await getExistingMedia(sb, VIDEO_MODELS);
+        const added = await loadAddedModels(sb);
+        const imgIds = added.filter((m: any) => m.type === "image" || m.type === "image-tool").map((m: any) => m.id);
+        const vidIds = added.filter((m: any) => ["video", "video-i2v", "video-avatar"].includes(m.type)).map((m: any) => m.id);
+        const imgEx = await getExistingMedia(sb, imgIds);
+        const vidEx = await getExistingMedia(sb, vidIds);
         await send(BOT_TOKEN, chatId, msgId,
-          `📊 *حالة الرفع*\n\n🖼 الصور: ${imgEx.size}/${IMAGE_MODELS.length} ✅\n🎬 الفيديو: ${vidEx.size}/${VIDEO_MODELS.length} ✅`,
+          `📊 *حالة الرفع*\n\n🖼 الصور: ${imgEx.size}/${imgIds.length} ✅\n🎬 الفيديو: ${vidEx.size}/${vidIds.length} ✅`,
           [[{ text: "🔙 رجوع", callback_data: "upload_menu" }]]
         );
         return new Response("OK");
@@ -372,9 +370,14 @@ serve(async (req) => {
 
       if (d === "page_images" || d === "page_videos") {
         const pg = d === "page_images" ? "images" : "videos";
-        const all = pg === "images" ? IMAGE_MODELS : VIDEO_MODELS;
+        const added = await loadAddedModels(sb);
+        const all = pg === "images"
+          ? added.filter((m: any) => m.type === "image" || m.type === "image-tool").map((m: any) => m.id)
+          : added.filter((m: any) => ["video", "video-i2v", "video-avatar"].includes(m.type)).map((m: any) => m.id);
+        // Update MODEL_NAMES
+        added.forEach((m: any) => { if (m.name) MODEL_NAMES[m.id] = m.name; });
         const existing = await getExistingMedia(sb, all);
-        const remaining = all.filter(m => !existing.has(m));
+        const remaining = all.filter((m: string) => !existing.has(m));
 
         if (remaining.length === 0) {
           await send(BOT_TOKEN, chatId, msgId, `✅ كل نماذج ${pg === "images" ? "الصور" : "الفيديو"} لديها وسائط بالفعل!`, [[{ text: "🔙 رجوع", callback_data: "upload_menu" }]]);
@@ -418,7 +421,8 @@ serve(async (req) => {
 
       // ==================== تعديل النماذج ====================
       if (d === "edit_menu") {
-        const kb = catsKB("edit");
+        const cats = await getDynamicCategories(sb);
+        const kb = dynamicCatsKB(cats, "edit");
         kb.push([{ text: "➕ إضافة نموذج جديد", callback_data: "add_model" }]);
         kb.push([{ text: "👁 النماذج المخفية", callback_data: "hidden_models" }]);
         kb.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
@@ -428,7 +432,8 @@ serve(async (req) => {
 
       if (d.startsWith("cat_edit_")) {
         const catKey = d.replace("cat_edit_", "");
-        const cat = CATEGORIES.find(c => c.key === catKey);
+        const cats = await getDynamicCategories(sb);
+        const cat = cats.find(c => c.key === catKey);
         if (!cat) return new Response("OK");
         await send(BOT_TOKEN, chatId, msgId, `✏️ *${cat.emoji} ${cat.label}*\n\nاختر نموذج للتعديل:`, modelListKB(cat.models, 0, catKey, "emod"));
         return new Response("OK");
@@ -438,14 +443,18 @@ serve(async (req) => {
         const parts = d.replace("nav_emod_", "").split("_");
         const catKey = parts[0];
         const page = parseInt(parts[1]) || 0;
-        const cat = CATEGORIES.find(c => c.key === catKey);
+        const cats = await getDynamicCategories(sb);
+        const cat = cats.find(c => c.key === catKey);
         if (!cat) return new Response("OK");
         await send(BOT_TOKEN, chatId, msgId, `✏️ *${cat.emoji} ${cat.label}* — صفحة ${page + 1}`, modelListKB(cat.models, page, catKey, "emod"));
         return new Response("OK");
       }
 
       if (d === "back_emod_cats") {
-        const kb = catsKB("edit");
+        const cats = await getDynamicCategories(sb);
+        const kb = dynamicCatsKB(cats, "edit");
+        kb.push([{ text: "➕ إضافة نموذج جديد", callback_data: "add_model" }]);
+        kb.push([{ text: "👁 النماذج المخفية", callback_data: "hidden_models" }]);
         kb.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
         await send(BOT_TOKEN, chatId, msgId, "✏️ *تعديل النماذج*\n\nاختر القسم:", kb);
         return new Response("OK");
