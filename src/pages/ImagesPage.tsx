@@ -127,8 +127,7 @@ const ImagesPage = () => {
       return;
     }
 
-    const styleSuffix = STYLE_SUFFIX[settings.style] || "";
-    const finalPrompt = (trimmed || `Generate with ${selectedModel.name}`) + styleSuffix;
+    const finalPrompt = trimmed || `Generate with ${selectedModel.name}`;
 
     setInput("");
     setIsGenerating(true);
