@@ -147,7 +147,7 @@ const VideoBottomInputBar = ({
   };
 
   const currentAspect = settings.dimensions.label;
-  const logo = MODEL_LOGOS[selectedModel.id];
+  const logo = selectedModel.iconUrl;
 
   const chipClass =
     "shrink-0 px-3 py-2 rounded-xl text-xs font-medium " +
