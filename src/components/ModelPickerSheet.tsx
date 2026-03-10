@@ -314,9 +314,9 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
                 <p className="text-sm text-muted-foreground leading-relaxed">{detailModel.longDescription}</p>
 
-                {MODEL_BADGES[detailModel.id]?.length > 0 &&
+                {(detailModel.badges || []).length > 0 &&
             <div className="flex gap-2 flex-wrap">
-                    {MODEL_BADGES[detailModel.id].map((badge) =>
+                    {(detailModel.badges || []).map((badge) =>
               <span key={badge} className="text-xs px-3 py-1 rounded-lg bg-primary/10 text-primary font-medium">
                         {badge}
                       </span>
