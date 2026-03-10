@@ -443,7 +443,10 @@ serve(async (req) => {
       }
 
       if (d === "back_emod_cats") {
-        const kb = catsKB("edit");
+        const cats = await getDynamicCategories(sb);
+        const kb = dynamicCatsKB(cats, "edit");
+        kb.push([{ text: "➕ إضافة نموذج جديد", callback_data: "add_model" }]);
+        kb.push([{ text: "👁 النماذج المخفية", callback_data: "hidden_models" }]);
         kb.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
         await send(BOT_TOKEN, chatId, msgId, "✏️ *تعديل النماذج*\n\nاختر القسم:", kb);
         return new Response("OK");
