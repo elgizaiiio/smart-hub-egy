@@ -28,16 +28,9 @@ const MODE_TYPES: Record<PickerMode, {models: ModelType[];tools: ModelType[];mod
 const MODEL_LOGOS: Record<string, string> = {};
 const MODEL_BADGES: Record<string, string[]> = {};
 
-const NEW_MODELS = ["nano-banana-2", "seedream-5-lite", "ideogram-3", "veo-3.1", "kling-3-pro"];
-
-// Featured model IDs (shown at top)
-const FEATURED_IMAGE_IDS = [
-"nano-banana-2",
-"seedream-4",
-"lucid-origin",
-"flux-2-pro",
-"gpt-image",
-"nano-banana-pro"];
+// NEW_MODELS and FEATURED_IMAGE_IDS are now dynamic via model.badges
+const NEW_MODELS: string[] = [];
+const FEATURED_IMAGE_IDS: string[] = [];
 
 
 interface ModelMediaRecord {
