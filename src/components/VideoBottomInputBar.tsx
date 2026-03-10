@@ -253,7 +253,8 @@ const VideoBottomInputBar = ({
                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${modelPickerOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Duration */}
+              {/* Duration - conditional */}
+              {showDuration && (
               <Popover open={openDropdown === "duration"} onOpenChange={(o) => setOpenDropdown(o ? "duration" : null)}>
                 <PopoverTrigger asChild>
                   <button className={chipClass}>{settings.duration}s</button>
@@ -261,7 +262,7 @@ const VideoBottomInputBar = ({
                 <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
                   <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Duration</p>
                   <div className="space-y-0.5">
-                    {DURATIONS.map((d) => (
+                    {durationOptions.map((d: number) => (
                       <button
                         key={d}
                         onClick={() => {
@@ -280,8 +281,10 @@ const VideoBottomInputBar = ({
                   </div>
                 </PopoverContent>
               </Popover>
+              )}
 
-              {/* Resolution */}
+              {/* Resolution - conditional */}
+              {showResolution && (
               <Popover open={openDropdown === "resolution"} onOpenChange={(o) => setOpenDropdown(o ? "resolution" : null)}>
                 <PopoverTrigger asChild>
                   <button className={chipClass}>{settings.resolution}</button>
@@ -289,7 +292,7 @@ const VideoBottomInputBar = ({
                 <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
                   <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Resolution</p>
                   <div className="space-y-0.5">
-                    {RESOLUTIONS.map((r) => (
+                    {resolutionOptions.map((r: string) => (
                       <button
                         key={r}
                         onClick={() => {
@@ -308,8 +311,10 @@ const VideoBottomInputBar = ({
                   </div>
                 </PopoverContent>
               </Popover>
+              )}
 
-              {/* Aspect Ratio */}
+              {/* Aspect Ratio - conditional */}
+              {showAspect && (
               <Popover open={openDropdown === "aspect"} onOpenChange={(o) => setOpenDropdown(o ? "aspect" : null)}>
                 <PopoverTrigger asChild>
                   <button className={chipClass}>{currentAspect}</button>
@@ -317,7 +322,7 @@ const VideoBottomInputBar = ({
                 <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
                   <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Aspect</p>
                   <div className="space-y-0.5">
-                    {ASPECT_RATIOS.map((ar) => (
+                    {aspectOptions.map((ar: VideoDimensions) => (
                       <button
                         key={ar.label}
                         onClick={() => {
@@ -333,6 +338,10 @@ const VideoBottomInputBar = ({
                         {ar.label}
                       </button>
                     ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              )}
                   </div>
                 </PopoverContent>
               </Popover>
