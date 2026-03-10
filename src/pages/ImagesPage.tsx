@@ -55,18 +55,6 @@ const readFileAsDataUrl = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
-const STYLE_SUFFIX: Record<ImageStyle, string> = {
-  none: "",
-  cinematic: ", cinematic lighting, dramatic shadows, film grain, movie still",
-  creative: ", creative art style, imaginative composition, artistic",
-  dynamic: ", dynamic composition, energetic, motion blur, dramatic angles",
-  fashion: ", fashion photography, editorial style, studio lighting, vogue",
-  portrait: ", portrait photography, shallow depth of field, bokeh, studio lighting",
-  "stock-photo": ", professional stock photography, clean composition, commercial",
-  vibrant: ", vibrant colors, saturated, colorful, high contrast",
-  anime: ", anime style, manga art, Japanese animation, cel shading",
-  "3d-render": ", 3D render, Octane render, Blender, CGI, volumetric lighting",
-};
 
 const ImagesPage = () => {
   const navigate = useNavigate();
