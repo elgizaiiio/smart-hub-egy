@@ -141,6 +141,7 @@ const CUST_PRICES = [-3, -2, -1, 0, 1, 2, 3, 4, 5, 8, 10, 15, 20];
 const BADGE_OPTIONS = ["4K", "NEW", "PRO", "FREE", "FAST", "HD", "10s", "β", "🔥"];
 
 
+const FAL_PREFIXES = [
   { label: "fal-ai/", value: "fal-ai/" },
   { label: "fal-ai/flux/", value: "fal-ai/flux/" },
   { label: "fal-ai/stable-diffusion/", value: "fal-ai/stable-diffusion/" },
