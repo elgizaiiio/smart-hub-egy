@@ -1012,11 +1012,6 @@ serve(async (req) => {
         config.customization = JSON.stringify(cust);
         await setModelConfig(sb, session.adminModelId, config);
 
-        // Return to options view - toggle ON to show options
-        cust[feat].on = false; // will be toggled back to true
-        config.customization = JSON.stringify(cust);
-        await setModelConfig(sb, session.adminModelId, config);
-
         // Show options again
         const opts = CUST_OPTIONS[feat] || [];
         const prices = cust[feat].options || {};
