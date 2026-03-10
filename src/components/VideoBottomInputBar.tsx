@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Loader2, ChevronDown, X, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,7 +21,7 @@ export interface VideoDimensions {
 
 export interface VideoSettings {
   dimensions: VideoDimensions;
-  duration: number; // seconds
+  duration: number;
   resolution: string;
   negativePrompt: string;
 }
@@ -33,41 +33,25 @@ export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
   negativePrompt: "",
 };
 
-const ASPECT_RATIOS: VideoDimensions[] = [
+const DEFAULT_ASPECT_RATIOS: VideoDimensions[] = [
   { width: 1080, height: 1920, label: "9:16" },
   { width: 1280, height: 720, label: "16:9" },
   { width: 1024, height: 1024, label: "1:1" },
   { width: 1200, height: 900, label: "4:3" },
 ];
 
-const DURATIONS = [4, 5, 6, 8, 10];
+const DEFAULT_DURATIONS = [4, 5, 6, 8, 10];
+const DEFAULT_RESOLUTIONS = ["720p", "1080p", "2K", "4K"];
 
-const RESOLUTIONS = ["720p", "1080p", "2K", "4K"];
-
-const MODEL_LOGOS: Record<string, string> = {
-  "megsy-video": "/model-logos/megsy.png",
-  "veo-3.1": "/model-logos/google.ico",
-  "veo-3.1-fast": "/model-logos/google.ico",
-  "veo-3.1-fast-i2v": "/model-logos/google.ico",
-  "kling-3-pro": "/model-logos/kling.png",
-  "kling-3-pro-i2v": "/model-logos/kling.png",
-  "kling-o1": "/model-logos/kling.png",
-  "kling-o1-i2v": "/model-logos/kling.png",
-  "kling-avatar-pro": "/model-logos/kling.png",
-  "kling-avatar-std": "/model-logos/kling.png",
-  "openai-sora": "/model-logos/openai.svg",
-  "openai-sora-i2v": "/model-logos/openai.svg",
-  "pika-2.2": "/model-logos/pika.png",
-  "luma-dream": "/model-logos/luma.png",
-  "seedance-pro": "/model-logos/bytedance.ico",
-  "wan-2.6": "/model-logos/fal.ico",
-  "wan-2.6-i2v": "/model-logos/fal.ico",
-  "wan-flf": "/model-logos/fal.ico",
-  "pixverse-5.5": "/model-logos/fal.ico",
-  "pixverse-5.5-i2v": "/model-logos/fal.ico",
-  "megsy-video-i2v": "/model-logos/megsy.png",
-  "sadtalker": "/model-logos/fal.ico",
-  "sync-lipsync": "/model-logos/fal.ico",
+const ASPECT_DIM_MAP: Record<string, VideoDimensions> = {
+  "1:1": { width: 1024, height: 1024, label: "1:1" },
+  "2:3": { width: 768, height: 1024, label: "2:3" },
+  "3:2": { width: 1024, height: 768, label: "3:2" },
+  "4:3": { width: 1200, height: 900, label: "4:3" },
+  "3:4": { width: 900, height: 1200, label: "3:4" },
+  "16:9": { width: 1280, height: 720, label: "16:9" },
+  "9:16": { width: 1080, height: 1920, label: "9:16" },
+  "21:9": { width: 1920, height: 820, label: "21:9" },
 };
 
 type DropdownId = "aspect" | "duration" | "resolution" | "negative" | null;
@@ -116,6 +100,30 @@ const VideoBottomInputBar = ({
   const [openDropdown, setOpenDropdown] = useState<DropdownId>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Read customization from model
+  const cust = selectedModel.customization;
+  const showAspect = !cust || cust.ar?.on !== false;
+  const showDuration = !cust || cust.dur?.on !== false;
+  const showResolution = !cust || cust.res?.on !== false;
+
+  // Build dynamic options from customization
+  const aspectOptions = useMemo(() => {
+    if (cust?.ar?.opts?.length > 0) {
+      return cust.ar.opts.map((label: string) => ASPECT_DIM_MAP[label] || { width: 1024, height: 1024, label });
+    }
+    return DEFAULT_ASPECT_RATIOS;
+  }, [cust]);
+
+  const durationOptions = useMemo(() => {
+    if (cust?.dur?.opts?.length > 0) return cust.dur.opts.map((s: string) => parseInt(s));
+    return DEFAULT_DURATIONS;
+  }, [cust]);
+
+  const resolutionOptions = useMemo(() => {
+    if (cust?.res?.opts?.length > 0) return cust.res.opts as string[];
+    return DEFAULT_RESOLUTIONS;
+  }, [cust]);
+
   // Animated placeholder
   useEffect(() => {
     if (input) return;
@@ -139,7 +147,7 @@ const VideoBottomInputBar = ({
   };
 
   const currentAspect = settings.dimensions.label;
-  const logo = MODEL_LOGOS[selectedModel.id];
+  const logo = selectedModel.iconUrl;
 
   const chipClass =
     "shrink-0 px-3 py-2 rounded-xl text-xs font-medium " +
@@ -245,7 +253,8 @@ const VideoBottomInputBar = ({
                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${modelPickerOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Duration */}
+              {/* Duration - conditional */}
+              {showDuration && (
               <Popover open={openDropdown === "duration"} onOpenChange={(o) => setOpenDropdown(o ? "duration" : null)}>
                 <PopoverTrigger asChild>
                   <button className={chipClass}>{settings.duration}s</button>
@@ -253,7 +262,7 @@ const VideoBottomInputBar = ({
                 <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
                   <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Duration</p>
                   <div className="space-y-0.5">
-                    {DURATIONS.map((d) => (
+                    {durationOptions.map((d: number) => (
                       <button
                         key={d}
                         onClick={() => {
@@ -272,8 +281,10 @@ const VideoBottomInputBar = ({
                   </div>
                 </PopoverContent>
               </Popover>
+              )}
 
-              {/* Resolution */}
+              {/* Resolution - conditional */}
+              {showResolution && (
               <Popover open={openDropdown === "resolution"} onOpenChange={(o) => setOpenDropdown(o ? "resolution" : null)}>
                 <PopoverTrigger asChild>
                   <button className={chipClass}>{settings.resolution}</button>
@@ -281,7 +292,7 @@ const VideoBottomInputBar = ({
                 <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
                   <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Resolution</p>
                   <div className="space-y-0.5">
-                    {RESOLUTIONS.map((r) => (
+                    {resolutionOptions.map((r: string) => (
                       <button
                         key={r}
                         onClick={() => {
@@ -300,8 +311,10 @@ const VideoBottomInputBar = ({
                   </div>
                 </PopoverContent>
               </Popover>
+              )}
 
-              {/* Aspect Ratio */}
+              {/* Aspect Ratio - conditional */}
+              {showAspect && (
               <Popover open={openDropdown === "aspect"} onOpenChange={(o) => setOpenDropdown(o ? "aspect" : null)}>
                 <PopoverTrigger asChild>
                   <button className={chipClass}>{currentAspect}</button>
@@ -309,7 +322,7 @@ const VideoBottomInputBar = ({
                 <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
                   <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Aspect</p>
                   <div className="space-y-0.5">
-                    {ASPECT_RATIOS.map((ar) => (
+                    {aspectOptions.map((ar: VideoDimensions) => (
                       <button
                         key={ar.label}
                         onClick={() => {
@@ -328,6 +341,8 @@ const VideoBottomInputBar = ({
                   </div>
                 </PopoverContent>
               </Popover>
+              )}
+
             </div>
 
             {/* Generate button */}

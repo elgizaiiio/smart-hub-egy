@@ -373,22 +373,7 @@ const VideosPage = () => {
 
   // ── Mobile Layout (Artlist-style) ──
 
-  const MODEL_LOGOS: Record<string, string> = {
-    "megsy-video": "/model-logos/megsy.png",
-    "veo-3.1": "/model-logos/google.ico",
-    "veo-3.1-fast": "/model-logos/google.ico",
-    "kling-3-pro": "/model-logos/kling.png",
-    "kling-o1": "/model-logos/kling.png",
-    "openai-sora": "/model-logos/openai.svg",
-    "pika-2.2": "/model-logos/pika.png",
-    "luma-dream": "/model-logos/luma.png",
-    "seedance-pro": "/model-logos/bytedance.ico",
-    "wan-2.6": "/model-logos/fal.ico",
-    "pixverse-5.5": "/model-logos/fal.ico",
-    "megsy-video-i2v": "/model-logos/megsy.png",
-  };
-
-  const currentLogo = MODEL_LOGOS[selectedModel.id];
+  const currentLogo = selectedModel.iconUrl;
 
   return (
     <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
