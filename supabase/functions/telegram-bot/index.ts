@@ -356,10 +356,13 @@ serve(async (req) => {
       }
 
       if (d === "upload_status") {
-        const imgEx = await getExistingMedia(sb, IMAGE_MODELS);
-        const vidEx = await getExistingMedia(sb, VIDEO_MODELS);
+        const added = await loadAddedModels(sb);
+        const imgIds = added.filter((m: any) => m.type === "image" || m.type === "image-tool").map((m: any) => m.id);
+        const vidIds = added.filter((m: any) => ["video", "video-i2v", "video-avatar"].includes(m.type)).map((m: any) => m.id);
+        const imgEx = await getExistingMedia(sb, imgIds);
+        const vidEx = await getExistingMedia(sb, vidIds);
         await send(BOT_TOKEN, chatId, msgId,
-          `📊 *حالة الرفع*\n\n🖼 الصور: ${imgEx.size}/${IMAGE_MODELS.length} ✅\n🎬 الفيديو: ${vidEx.size}/${VIDEO_MODELS.length} ✅`,
+          `📊 *حالة الرفع*\n\n🖼 الصور: ${imgEx.size}/${imgIds.length} ✅\n🎬 الفيديو: ${vidEx.size}/${vidIds.length} ✅`,
           [[{ text: "🔙 رجوع", callback_data: "upload_menu" }]]
         );
         return new Response("OK");
@@ -367,9 +370,14 @@ serve(async (req) => {
 
       if (d === "page_images" || d === "page_videos") {
         const pg = d === "page_images" ? "images" : "videos";
-        const all = pg === "images" ? IMAGE_MODELS : VIDEO_MODELS;
+        const added = await loadAddedModels(sb);
+        const all = pg === "images"
+          ? added.filter((m: any) => m.type === "image" || m.type === "image-tool").map((m: any) => m.id)
+          : added.filter((m: any) => ["video", "video-i2v", "video-avatar"].includes(m.type)).map((m: any) => m.id);
+        // Update MODEL_NAMES
+        added.forEach((m: any) => { if (m.name) MODEL_NAMES[m.id] = m.name; });
         const existing = await getExistingMedia(sb, all);
-        const remaining = all.filter(m => !existing.has(m));
+        const remaining = all.filter((m: string) => !existing.has(m));
 
         if (remaining.length === 0) {
           await send(BOT_TOKEN, chatId, msgId, `✅ كل نماذج ${pg === "images" ? "الصور" : "الفيديو"} لديها وسائط بالفعل!`, [[{ text: "🔙 رجوع", callback_data: "upload_menu" }]]);
