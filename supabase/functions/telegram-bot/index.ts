@@ -209,10 +209,21 @@ async function setModelConfig(sb: ReturnType<typeof createClient>, modelId: stri
   await sb.from("memories").insert({ key: `model_config_${modelId}`, value: JSON.stringify(config) });
 }
 
+async function loadAddedModels(sb: ReturnType<typeof createClient>): Promise<Record<string, unknown>[]> {
+  const { data } = await sb.from("memories").select("value").eq("key", "models_added").maybeSingle();
+  if (!data) return [];
+  try { return JSON.parse(data.value); } catch { return []; }
+}
+
+async function getDynamicCategories(sb: ReturnType<typeof createClient>) {
+  const added = await loadAddedModels(sb);
+  return buildCategories(added);
+}
+
 function modelListKB(models: string[], page: number, catKey: string, prefix: string) {
   const start = page * PER_PAGE;
   const slice = models.slice(start, start + PER_PAGE);
-  const total = Math.ceil(models.length / PER_PAGE);
+  const total = Math.ceil(models.length / PER_PAGE) || 1;
   const rows: { text: string; callback_data: string }[][] = [];
 
   for (let i = 0; i < slice.length; i += 2) {
@@ -226,9 +237,16 @@ function modelListKB(models: string[], page: number, catKey: string, prefix: str
   if (page > 0) nav.push({ text: "◀️ السابق", callback_data: `nav_${prefix}_${catKey}_${page - 1}` });
   nav.push({ text: `${page + 1}/${total}`, callback_data: "noop" });
   if (page < total - 1) nav.push({ text: "التالي ▶️", callback_data: `nav_${prefix}_${catKey}_${page + 1}` });
-  rows.push(nav);
+  if (nav.length > 0) rows.push(nav);
   rows.push([{ text: "🔙 رجوع", callback_data: `back_${prefix}_cats` }]);
   return rows;
+}
+
+function dynamicCatsKB(cats: ReturnType<typeof buildCategories>, prefix: string) {
+  return cats.map(c => [{
+    text: `${c.emoji} ${c.label} (${c.models.length})`,
+    callback_data: `cat_${prefix}_${c.key}`,
+  }]);
 }
 
 function catsKB(prefix: string) {
