@@ -115,6 +115,32 @@ const CAPABILITY_OPTIONS = [
   { key: "product-photo", label: "صور منتجات" },
 ];
 
+// Customization features for per-model settings
+const CUST_FEATURES = [
+  { key: "ar", label: "نسبة العرض", emoji: "📐" },
+  { key: "q", label: "الجودة", emoji: "🎯" },
+  { key: "ni", label: "عدد الصور/الفيديوهات", emoji: "🔢" },
+  { key: "neg", label: "Negative Prompt", emoji: "🚫" },
+  { key: "dur", label: "المدة (فيديو)", emoji: "⏱" },
+  { key: "res", label: "الدقة (فيديو)", emoji: "📺" },
+];
+
+// Available options for each customization feature
+const CUST_OPTIONS: Record<string, string[]> = {
+  ar: ["1:1", "2:3", "3:2", "4:3", "3:4", "16:9", "9:16", "4:5", "5:4"],
+  q: ["512px", "1K", "2K", "4K"],
+  ni: ["1", "2", "3", "4", "6", "8"],
+  dur: ["3s", "4s", "5s", "6s", "8s", "10s"],
+  res: ["480p", "720p", "1080p", "2K", "4K"],
+};
+
+// Price modifiers (MC)
+const CUST_PRICES = [-3, -2, -1, 0, 1, 2, 3, 4, 5, 8, 10, 15, 20];
+
+// Badge options for model cards
+const BADGE_OPTIONS = ["4K", "NEW", "PRO", "FREE", "FAST", "HD", "10s", "β", "🔥"];
+
+
 const FAL_PREFIXES = [
   { label: "fal-ai/", value: "fal-ai/" },
   { label: "fal-ai/flux/", value: "fal-ai/flux/" },

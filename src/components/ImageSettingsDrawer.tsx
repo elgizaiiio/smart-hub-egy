@@ -2,20 +2,8 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, ChevronRight, Check } from "lucide-react";
 import type { ModelOption } from "@/components/ModelSelector";
-import type { ImageSettings, ImageStyle, ImageDimensions } from "@/components/ImageSettingsPanel";
+import type { ImageSettings, ImageDimensions } from "@/components/ImageSettingsPanel";
 import { usePageSettings, type PageSettingsImages } from "@/hooks/usePageSettings";
-
-const ALL_STYLES: {value: ImageStyle;label: string;icon: string;}[] = [
-{ value: "none", label: "None", icon: "🚫" },
-{ value: "dynamic", label: "Dynamic", icon: "⚡" },
-{ value: "cinematic", label: "Cinematic", icon: "🎬" },
-{ value: "creative", label: "Creative", icon: "🎨" },
-{ value: "fashion", label: "Fashion", icon: "👗" },
-{ value: "portrait", label: "Portrait", icon: "📸" },
-{ value: "stock-photo", label: "Stock Photo", icon: "🖼️" },
-{ value: "vibrant", label: "Vibrant", icon: "🌈" },
-{ value: "anime", label: "Anime", icon: "✨" },
-{ value: "3d-render", label: "3D Render", icon: "🧊" }];
 
 const ALL_ASPECT_RATIOS: {dims: ImageDimensions;label: string;}[] = [
 { dims: { width: 1024, height: 1024, label: "1:1" }, label: "1:1" },
@@ -27,7 +15,7 @@ const ALL_ASPECT_RATIOS: {dims: ImageDimensions;label: string;}[] = [
 { dims: { width: 1080, height: 1350, label: "4:5" }, label: "4:5" },
 { dims: { width: 1080, height: 1920, label: "TikTok 9:16" }, label: "TikTok 9:16" }];
 
-type ExpandedSection = "style" | "aspect" | "numImages" | "negative" | null;
+type ExpandedSection = "aspect" | "numImages" | "negative" | null;
 
 interface ImageSettingsDrawerProps {
   open: boolean;
@@ -50,7 +38,6 @@ const ImageSettingsDrawer = ({
   const { settings: pageSettings } = usePageSettings("images");
   const ps = pageSettings as PageSettingsImages;
 
-  const STYLES = useMemo(() => ALL_STYLES.filter(s => ps.styles.includes(s.value)), [ps.styles]);
   const ASPECT_RATIOS = useMemo(() => ALL_ASPECT_RATIOS.filter(ar => ps.aspectRatios.includes(ar.label)), [ps.aspectRatios]);
   const NUM_IMAGES = useMemo(() => Array.from({ length: ps.maxImages }, (_, i) => i + 1), [ps.maxImages]);
 
@@ -62,8 +49,6 @@ const ImageSettingsDrawer = ({
     onSettingsChange({ ...settings, [key]: value });
   };
 
-  const currentStyle = STYLES.find((s) => s.value === settings.style);
-
   return (
     <AnimatePresence>
       {open &&
@@ -74,7 +59,6 @@ const ImageSettingsDrawer = ({
           exit={{ opacity: 0 }}
           onClick={onClose}
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" />
-        
 
           <motion.div
           initial={{ y: "100%" }}
@@ -85,13 +69,10 @@ const ImageSettingsDrawer = ({
           
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4">
-              
-              
-
-
-
-
-            
+              <span className="text-sm font-bold text-foreground">Settings</span>
+              <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-accent">
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Sections */}
@@ -103,7 +84,6 @@ const ImageSettingsDrawer = ({
                 onOpenModelPicker();
               }}
               className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-muted/60 text-sm font-medium text-foreground transition-colors hover:bg-muted/80">
-              
                 <span>Model</span>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <span className="text-xs">{selectedModel.name}</span>
@@ -111,72 +91,16 @@ const ImageSettingsDrawer = ({
                 </div>
               </button>
 
-              {/* Style */}
-              <div className={`rounded-2xl transition-colors ${expanded === "style" ? "bg-muted/60" : ""}`}>
-                <button
-                onClick={() => toggle("style")}
-                className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
-                expanded === "style" ? "" : "bg-muted/60 hover:bg-muted/80"}`
-                }>
-                
-                  <span>Style</span>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-xs">{currentStyle?.label}</span>
-                    <ChevronDown
-                    className={`w-4 h-4 transition-transform ${expanded === "style" ? "rotate-180" : ""}`} />
-                  
-                  </div>
-                </button>
-                <AnimatePresence>
-                  {expanded === "style" &&
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden">
-                  
-                      <div className="px-2 pb-3 space-y-0.5">
-                        {STYLES.map((s) => {
-                      const isActive = settings.style === s.value;
-                      return (
-                        <button
-                          key={s.value}
-                          onClick={() => {
-                            updateSetting("style", s.value);
-                            setExpanded(null);
-                          }}
-                          className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm transition-colors ${
-                          isActive ?
-                          "bg-primary/10 text-primary" :
-                          "text-foreground/70 hover:bg-muted/40"}`
-                          }>
-                          
-                              
-                              <span>{s.label}</span>
-                              {isActive && <Check className="w-4 h-4 ml-auto text-primary" />}
-                            </button>);
-
-                    })}
-                      </div>
-                    </motion.div>
-                }
-                </AnimatePresence>
-              </div>
-
               {/* Aspect Ratio */}
               <div className={`rounded-2xl transition-colors ${expanded === "aspect" ? "bg-muted/60" : ""}`}>
                 <button
                 onClick={() => toggle("aspect")}
                 className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
-                expanded === "aspect" ? "" : "bg-muted/60 hover:bg-muted/80"}`
-                }>
-                
+                expanded === "aspect" ? "" : "bg-muted/60 hover:bg-muted/80"}`}>
                   <span>Aspect Ratio</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <span className="text-xs">{settings.dimensions.label}</span>
-                    <ChevronDown
-                    className={`w-4 h-4 transition-transform ${expanded === "aspect" ? "rotate-180" : ""}`} />
-                  
+                    <ChevronDown className={`w-4 h-4 transition-transform ${expanded === "aspect" ? "rotate-180" : ""}`} />
                   </div>
                 </button>
                 <AnimatePresence>
@@ -186,7 +110,6 @@ const ImageSettingsDrawer = ({
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden">
-                  
                       <div className="px-2 pb-3 space-y-0.5">
                         {ASPECT_RATIOS.map((ar) => {
                       const isActive = settings.dimensions.label === ar.dims.label;
@@ -198,15 +121,10 @@ const ImageSettingsDrawer = ({
                             setExpanded(null);
                           }}
                           className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm transition-colors ${
-                          isActive ?
-                          "bg-primary/10 text-primary" :
-                          "text-foreground/70 hover:bg-muted/40"}`
-                          }>
-                          
+                          isActive ? "bg-primary/10 text-primary" : "text-foreground/70 hover:bg-muted/40"}`}>
                               <span>{ar.label}</span>
                               {isActive && <Check className="w-4 h-4 ml-auto text-primary" />}
                             </button>);
-
                     })}
                       </div>
                     </motion.div>
@@ -219,15 +137,11 @@ const ImageSettingsDrawer = ({
                 <button
                 onClick={() => toggle("numImages")}
                 className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
-                expanded === "numImages" ? "" : "bg-muted/60 hover:bg-muted/80"}`
-                }>
-                
+                expanded === "numImages" ? "" : "bg-muted/60 hover:bg-muted/80"}`}>
                   <span>Number of Images</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <span className="text-xs">{settings.numImages}</span>
-                    <ChevronDown
-                    className={`w-4 h-4 transition-transform ${expanded === "numImages" ? "rotate-180" : ""}`} />
-                  
+                    <ChevronDown className={`w-4 h-4 transition-transform ${expanded === "numImages" ? "rotate-180" : ""}`} />
                   </div>
                 </button>
                 <AnimatePresence>
@@ -237,7 +151,6 @@ const ImageSettingsDrawer = ({
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden">
-                  
                       <div className="px-2 pb-3 space-y-0.5">
                         {NUM_IMAGES.map((n) => {
                       const isActive = settings.numImages === n;
@@ -249,15 +162,10 @@ const ImageSettingsDrawer = ({
                             setExpanded(null);
                           }}
                           className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm transition-colors ${
-                          isActive ?
-                          "bg-primary/10 text-primary" :
-                          "text-foreground/70 hover:bg-muted/40"}`
-                          }>
-                          
+                          isActive ? "bg-primary/10 text-primary" : "text-foreground/70 hover:bg-muted/40"}`}>
                               <span>{n} {n === 1 ? "image" : "images"}</span>
                               {isActive && <Check className="w-4 h-4 ml-auto text-primary" />}
                             </button>);
-
                     })}
                       </div>
                     </motion.div>
@@ -270,13 +178,9 @@ const ImageSettingsDrawer = ({
                 <button
                 onClick={() => toggle("negative")}
                 className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
-                expanded === "negative" ? "" : "bg-muted/60 hover:bg-muted/80"}`
-                }>
-                
+                expanded === "negative" ? "" : "bg-muted/60 hover:bg-muted/80"}`}>
                   <span>Negative Prompt</span>
-                  <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform ${expanded === "negative" ? "rotate-180" : ""}`} />
-                
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expanded === "negative" ? "rotate-180" : ""}`} />
                 </button>
                 <AnimatePresence>
                   {expanded === "negative" &&
@@ -285,7 +189,6 @@ const ImageSettingsDrawer = ({
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden">
-                  
                       <div className="px-4 pb-4 space-y-2">
                         <p className="text-xs text-muted-foreground">
                           Describe what to exclude from your image
@@ -294,7 +197,6 @@ const ImageSettingsDrawer = ({
                       placeholder="Blurry, low quality, distorted..."
                       rows={3}
                       className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none resize-none focus:border-primary/30 transition-colors" />
-                    
                       </div>
                     </motion.div>
                 }
@@ -305,7 +207,6 @@ const ImageSettingsDrawer = ({
         </>
       }
     </AnimatePresence>);
-
 };
 
 export default ImageSettingsDrawer;
