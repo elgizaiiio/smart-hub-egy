@@ -413,7 +413,8 @@ serve(async (req) => {
 
       // ==================== تعديل النماذج ====================
       if (d === "edit_menu") {
-        const kb = catsKB("edit");
+        const cats = await getDynamicCategories(sb);
+        const kb = dynamicCatsKB(cats, "edit");
         kb.push([{ text: "➕ إضافة نموذج جديد", callback_data: "add_model" }]);
         kb.push([{ text: "👁 النماذج المخفية", callback_data: "hidden_models" }]);
         kb.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
@@ -423,7 +424,8 @@ serve(async (req) => {
 
       if (d.startsWith("cat_edit_")) {
         const catKey = d.replace("cat_edit_", "");
-        const cat = CATEGORIES.find(c => c.key === catKey);
+        const cats = await getDynamicCategories(sb);
+        const cat = cats.find(c => c.key === catKey);
         if (!cat) return new Response("OK");
         await send(BOT_TOKEN, chatId, msgId, `✏️ *${cat.emoji} ${cat.label}*\n\nاختر نموذج للتعديل:`, modelListKB(cat.models, 0, catKey, "emod"));
         return new Response("OK");
@@ -433,7 +435,8 @@ serve(async (req) => {
         const parts = d.replace("nav_emod_", "").split("_");
         const catKey = parts[0];
         const page = parseInt(parts[1]) || 0;
-        const cat = CATEGORIES.find(c => c.key === catKey);
+        const cats = await getDynamicCategories(sb);
+        const cat = cats.find(c => c.key === catKey);
         if (!cat) return new Response("OK");
         await send(BOT_TOKEN, chatId, msgId, `✏️ *${cat.emoji} ${cat.label}* — صفحة ${page + 1}`, modelListKB(cat.models, page, catKey, "emod"));
         return new Response("OK");
