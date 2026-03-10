@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Loader2, ChevronDown, X, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,7 +21,7 @@ export interface VideoDimensions {
 
 export interface VideoSettings {
   dimensions: VideoDimensions;
-  duration: number; // seconds
+  duration: number;
   resolution: string;
   negativePrompt: string;
 }
@@ -33,41 +33,25 @@ export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
   negativePrompt: "",
 };
 
-const ASPECT_RATIOS: VideoDimensions[] = [
+const DEFAULT_ASPECT_RATIOS: VideoDimensions[] = [
   { width: 1080, height: 1920, label: "9:16" },
   { width: 1280, height: 720, label: "16:9" },
   { width: 1024, height: 1024, label: "1:1" },
   { width: 1200, height: 900, label: "4:3" },
 ];
 
-const DURATIONS = [4, 5, 6, 8, 10];
+const DEFAULT_DURATIONS = [4, 5, 6, 8, 10];
+const DEFAULT_RESOLUTIONS = ["720p", "1080p", "2K", "4K"];
 
-const RESOLUTIONS = ["720p", "1080p", "2K", "4K"];
-
-const MODEL_LOGOS: Record<string, string> = {
-  "megsy-video": "/model-logos/megsy.png",
-  "veo-3.1": "/model-logos/google.ico",
-  "veo-3.1-fast": "/model-logos/google.ico",
-  "veo-3.1-fast-i2v": "/model-logos/google.ico",
-  "kling-3-pro": "/model-logos/kling.png",
-  "kling-3-pro-i2v": "/model-logos/kling.png",
-  "kling-o1": "/model-logos/kling.png",
-  "kling-o1-i2v": "/model-logos/kling.png",
-  "kling-avatar-pro": "/model-logos/kling.png",
-  "kling-avatar-std": "/model-logos/kling.png",
-  "openai-sora": "/model-logos/openai.svg",
-  "openai-sora-i2v": "/model-logos/openai.svg",
-  "pika-2.2": "/model-logos/pika.png",
-  "luma-dream": "/model-logos/luma.png",
-  "seedance-pro": "/model-logos/bytedance.ico",
-  "wan-2.6": "/model-logos/fal.ico",
-  "wan-2.6-i2v": "/model-logos/fal.ico",
-  "wan-flf": "/model-logos/fal.ico",
-  "pixverse-5.5": "/model-logos/fal.ico",
-  "pixverse-5.5-i2v": "/model-logos/fal.ico",
-  "megsy-video-i2v": "/model-logos/megsy.png",
-  "sadtalker": "/model-logos/fal.ico",
-  "sync-lipsync": "/model-logos/fal.ico",
+const ASPECT_DIM_MAP: Record<string, VideoDimensions> = {
+  "1:1": { width: 1024, height: 1024, label: "1:1" },
+  "2:3": { width: 768, height: 1024, label: "2:3" },
+  "3:2": { width: 1024, height: 768, label: "3:2" },
+  "4:3": { width: 1200, height: 900, label: "4:3" },
+  "3:4": { width: 900, height: 1200, label: "3:4" },
+  "16:9": { width: 1280, height: 720, label: "16:9" },
+  "9:16": { width: 1080, height: 1920, label: "9:16" },
+  "21:9": { width: 1920, height: 820, label: "21:9" },
 };
 
 type DropdownId = "aspect" | "duration" | "resolution" | "negative" | null;
