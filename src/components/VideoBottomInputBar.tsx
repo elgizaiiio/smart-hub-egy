@@ -341,10 +341,7 @@ const VideoBottomInputBar = ({
                   </div>
                 </PopoverContent>
               </Popover>
-              )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              )
             </div>
 
             {/* Generate button */}
