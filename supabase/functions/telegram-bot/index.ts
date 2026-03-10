@@ -891,6 +891,230 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ==================== التخصيص (Customization) ====================
+      if (d === "cust") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        if (config.customization) { try { cust = JSON.parse(config.customization); } catch {} }
+
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < CUST_FEATURES.length; i += 2) {
+          const row: { text: string; callback_data: string }[] = [];
+          const f1 = CUST_FEATURES[i];
+          const on1 = cust[f1.key]?.on !== false;
+          row.push({ text: `${on1 ? "✅" : "⬜"} ${f1.emoji} ${f1.label}`, callback_data: `ct_${f1.key}` });
+          if (CUST_FEATURES[i + 1]) {
+            const f2 = CUST_FEATURES[i + 1];
+            const on2 = cust[f2.key]?.on !== false;
+            row.push({ text: `${on2 ? "✅" : "⬜"} ${f2.emoji} ${f2.label}`, callback_data: `ct_${f2.key}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "💾 حفظ التخصيص", callback_data: "cust_save" }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🎛 *تخصيص النموذج* \`${session.adminModelId}\`\n\nاضغط على الميزة لتفعيلها/تعطيلها.\nبعد التفعيل اضغط عليها لتعديل الخيارات والأسعار:`, rows);
+        return new Response("OK");
+      }
+
+      // Toggle a customization feature on/off or enter its options
+      if (d.startsWith("ct_")) {
+        const feat = d.replace("ct_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        if (config.customization) { try { cust = JSON.parse(config.customization); } catch {} }
+
+        if (!cust[feat]) cust[feat] = { on: true, options: {} };
+        else cust[feat].on = !cust[feat].on;
+
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+
+        // If just toggled ON and has options, show options editor
+        if (cust[feat].on && CUST_OPTIONS[feat]) {
+          const opts = CUST_OPTIONS[feat];
+          const prices = cust[feat].options || {};
+          const rows: { text: string; callback_data: string }[][] = [];
+          for (let i = 0; i < opts.length; i += 3) {
+            const row: { text: string; callback_data: string }[] = [];
+            for (let j = i; j < Math.min(i + 3, opts.length); j++) {
+              const p = prices[opts[j]] ?? 0;
+              row.push({ text: `${opts[j]} (${p >= 0 ? "+" : ""}${p} MC)`, callback_data: `co_${feat}_${opts[j]}` });
+            }
+            rows.push(row);
+          }
+          rows.push([{ text: "✅ تم", callback_data: "cust" }]);
+          await send(BOT_TOKEN, chatId, msgId, `📐 *خيارات ${CUST_FEATURES.find(f => f.key === feat)?.label || feat}*\n\nاضغط على الخيار لتعديل سعره:`, rows);
+          return new Response("OK");
+        }
+
+        // Re-render main customization menu
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < CUST_FEATURES.length; i += 2) {
+          const row: { text: string; callback_data: string }[] = [];
+          const f1 = CUST_FEATURES[i];
+          const on1 = cust[f1.key]?.on !== false && cust[f1.key];
+          row.push({ text: `${on1 ? "✅" : "⬜"} ${f1.emoji} ${f1.label}`, callback_data: `ct_${f1.key}` });
+          if (CUST_FEATURES[i + 1]) {
+            const f2 = CUST_FEATURES[i + 1];
+            const on2 = cust[f2.key]?.on !== false && cust[f2.key];
+            row.push({ text: `${on2 ? "✅" : "⬜"} ${f2.emoji} ${f2.label}`, callback_data: `ct_${f2.key}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "💾 حفظ التخصيص", callback_data: "cust_save" }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🎛 *تخصيص النموذج* \`${session.adminModelId}\`\n\nاضغط لتفعيل/تعطيل:`, rows);
+        return new Response("OK");
+      }
+
+      // Select price for a customization option
+      if (d.startsWith("co_")) {
+        const parts = d.replace("co_", "").split("_");
+        const feat = parts[0];
+        const opt = parts.slice(1).join("_");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+
+        // Show price picker
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < CUST_PRICES.length; i += 4) {
+          const row: { text: string; callback_data: string }[] = [];
+          for (let j = i; j < Math.min(i + 4, CUST_PRICES.length); j++) {
+            const p = CUST_PRICES[j];
+            row.push({ text: `${p >= 0 ? "+" : ""}${p} MC`, callback_data: `cpr_${feat}_${opt}_${p}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "🔙 رجوع للخيارات", callback_data: `ct_${feat}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `💰 *سعر الخيار* \`${opt}\` في ${CUST_FEATURES.find(f => f.key === feat)?.label || feat}:\n\nاختر تعديل السعر (MC):`, rows);
+        return new Response("OK");
+      }
+
+      // Set price for customization option
+      if (d.startsWith("cpr_")) {
+        const parts = d.replace("cpr_", "").split("_");
+        const price = parseInt(parts.pop()!);
+        const opt = parts.pop()!;
+        const feat = parts.join("_");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+
+        const config = await getModelConfig(sb, session.adminModelId);
+        let cust: Record<string, any> = {};
+        if (config.customization) { try { cust = JSON.parse(config.customization); } catch {} }
+        if (!cust[feat]) cust[feat] = { on: true, options: {} };
+        if (!cust[feat].options) cust[feat].options = {};
+        cust[feat].options[opt] = price;
+        config.customization = JSON.stringify(cust);
+        await setModelConfig(sb, session.adminModelId, config);
+
+        // Show options again
+        const opts = CUST_OPTIONS[feat] || [];
+        const prices = cust[feat].options || {};
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < opts.length; i += 3) {
+          const row: { text: string; callback_data: string }[] = [];
+          for (let j = i; j < Math.min(i + 3, opts.length); j++) {
+            const p = prices[opts[j]] ?? 0;
+            row.push({ text: `${opts[j]} (${p >= 0 ? "+" : ""}${p} MC)`, callback_data: `co_${feat}_${opts[j]}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "✅ تم", callback_data: "cust" }]);
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم تحديث سعر \`${opt}\` → ${price >= 0 ? "+" : ""}${price} MC\n\n📐 *خيارات ${CUST_FEATURES.find(f => f.key === feat)?.label || feat}*:`, rows);
+        return new Response("OK");
+      }
+
+      if (d === "cust_save") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم حفظ تخصيص النموذج \`${session.adminModelId}\``, [
+          [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // ==================== الشارات (Badges) ====================
+      if (d === "bdg") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        const current = (config.badges || "").split(",").filter(Boolean);
+
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < BADGE_OPTIONS.length; i += 3) {
+          const row: { text: string; callback_data: string }[] = [];
+          for (let j = i; j < Math.min(i + 3, BADGE_OPTIONS.length); j++) {
+            const b = BADGE_OPTIONS[j];
+            const on = current.includes(b);
+            row.push({ text: `${on ? "✅" : "⬜"} ${b}`, callback_data: `bdg_${b}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "💾 حفظ الشارات", callback_data: "bdg_save" }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🏷 *شارات النموذج* \`${session.adminModelId}\`\n\nالمحدد: ${current.length > 0 ? current.join(", ") : "لا شيء"}\n\nاضغط لتفعيل/تعطيل:`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("bdg_") && d !== "bdg_save") {
+        const badge = d.replace("bdg_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        const current = (config.badges || "").split(",").filter(Boolean);
+        const idx = current.indexOf(badge);
+        if (idx >= 0) current.splice(idx, 1); else current.push(badge);
+        config.badges = current.join(",");
+        await setModelConfig(sb, session.adminModelId, config);
+
+        // Re-render
+        const rows: { text: string; callback_data: string }[][] = [];
+        for (let i = 0; i < BADGE_OPTIONS.length; i += 3) {
+          const row: { text: string; callback_data: string }[] = [];
+          for (let j = i; j < Math.min(i + 3, BADGE_OPTIONS.length); j++) {
+            const b = BADGE_OPTIONS[j];
+            const on = current.includes(b);
+            row.push({ text: `${on ? "✅" : "⬜"} ${b}`, callback_data: `bdg_${b}` });
+          }
+          rows.push(row);
+        }
+        rows.push([{ text: "💾 حفظ الشارات", callback_data: "bdg_save" }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: `emod_${session.adminModelId}` }]);
+        await send(BOT_TOKEN, chatId, msgId, `🏷 *شارات النموذج* \`${session.adminModelId}\`\n\nالمحدد: ${current.length > 0 ? current.join(", ") : "لا شيء"}`, rows);
+        return new Response("OK");
+      }
+
+      if (d === "bdg_save") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        const config = await getModelConfig(sb, session.adminModelId);
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم حفظ الشارات: ${config.badges || "لا شيء"}`, [
+          [{ text: "✏️ تعديل المزيد", callback_data: `emod_${session.adminModelId}` }],
+          [{ text: "🔙 القائمة", callback_data: "edit_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      // ==================== رفع أيقونة ====================
+      if (d === "icn_up") {
+        const session = await loadSession(sb, chatId);
+        if (!session?.adminModelId) return new Response("OK");
+        await saveSession(sb, chatId, { ...session, adminAction: "awaiting_icon" });
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: `📷 *رفع أيقونة* لـ \`${session.adminModelId}\`\n\nأرسل صورة (PNG/SVG) للأيقونة:`,
+          parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 إلغاء", callback_data: `emod_${session.adminModelId}` }]] }),
+        });
+        return new Response("OK");
+      }
+
       // ==================== إدارة المستخدمين ====================
       if (d === "users_menu") {
         await showUsersPage(sb, BOT_TOKEN, chatId, msgId, 0);
