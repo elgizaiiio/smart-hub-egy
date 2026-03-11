@@ -190,10 +190,12 @@ const ChatPage = () => {
     if (chatMode !== "normal" && MODE_PROMPTS[chatMode]) {
       allMessages.unshift({ role: "user" as const, content: `[System instruction]: ${MODE_PROMPTS[chatMode]}` });
     }
-    if (searchEnabled) setSearchStatus("Agent is thinking...");
+    const isDeepResearch = chatMode === "deep-research";
+    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Deep Research in progress..." : "Agent is thinking...");
 
     await streamChat({
-      messages: allMessages, model: selectedModel.id, searchEnabled,
+      messages: allMessages, model: selectedModel.id, searchEnabled: searchEnabled || isDeepResearch,
+      deepResearch: isDeepResearch,
       onDelta: updateAssistant,
       onImages: (imgs) => { searchImages = imgs; },
       onDone: async () => {
