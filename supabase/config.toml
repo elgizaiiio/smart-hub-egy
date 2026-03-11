@@ -50,3 +50,9 @@ verify_jwt = false
 
 [functions.oauth-userinfo]
 verify_jwt = false
+
+[functions.signup]
+verify_jwt = false
+
+[functions.update-password]
+verify_jwt = false
