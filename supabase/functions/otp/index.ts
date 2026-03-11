@@ -4,7 +4,7 @@ import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 function generateOTP(): string {
@@ -59,6 +59,24 @@ async function sendEmail(email: string, otp: string) {
   await client.close();
 }
 
+async function verifyOtp(supabase: any, email: string, code: string) {
+  const { data: otpRecord } = await supabase
+    .from("otp_codes")
+    .select("*")
+    .eq("email", email.toLowerCase())
+    .eq("code", code)
+    .eq("used", false)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!otpRecord) return null;
+
+  await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
+  return otpRecord;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -74,102 +92,40 @@ serve(async (req) => {
       const otp = generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Invalidate old codes
       await supabase.from("otp_codes").update({ used: true }).eq("email", email.toLowerCase()).eq("used", false);
-
-      // Store new code
-      await supabase.from("otp_codes").insert({
-        email: email.toLowerCase(),
-        code: otp,
-        expires_at: expiresAt,
-      });
-
+      await supabase.from("otp_codes").insert({ email: email.toLowerCase(), code: otp, expires_at: expiresAt });
       await sendEmail(email, otp);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
 
-    } else if (action === "verify-only") {
-      // Just verify the OTP without creating/signing in user (for signup flow)
+    if (action === "verify-only" || action === "verify-2fa" || action === "verify-reset") {
       if (!code) throw new Error("Code is required");
-
-      const { data: otpRecord } = await supabase
-        .from("otp_codes")
-        .select("*")
-        .eq("email", email.toLowerCase())
-        .eq("code", code)
-        .eq("used", false)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (!otpRecord) {
+      const record = await verifyOtp(supabase, email, code);
+      if (!record) {
         return new Response(JSON.stringify({ success: false, error: "Invalid or expired code" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
-
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
 
-    } else if (action === "verify-2fa") {
-      // Verify OTP for 2FA (user already authenticated with password)
+    if (action === "verify") {
       if (!code) throw new Error("Code is required");
-
-      const { data: otpRecord } = await supabase
-        .from("otp_codes")
-        .select("*")
-        .eq("email", email.toLowerCase())
-        .eq("code", code)
-        .eq("used", false)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (!otpRecord) {
+      const record = await verifyOtp(supabase, email, code);
+      if (!record) {
         return new Response(JSON.stringify({ success: false, error: "Invalid or expired code" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-
-    } else if (action === "verify") {
-      // Legacy: verify and sign in (kept for backward compatibility)
-      if (!code) throw new Error("Code is required");
-
-      const { data: otpRecord } = await supabase
-        .from("otp_codes")
-        .select("*")
-        .eq("email", email.toLowerCase())
-        .eq("code", code)
-        .eq("used", false)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (!otpRecord) {
-        return new Response(JSON.stringify({ success: false, error: "Invalid or expired code" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
 
       const normalizedEmail = email.trim().toLowerCase();
       const { data: usersData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-      const existingUser = usersData?.users?.find(u => u.email?.toLowerCase() === normalizedEmail);
+      const existingUser = usersData?.users?.find((u: any) => u.email?.toLowerCase() === normalizedEmail);
 
       if (existingUser) {
         const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
@@ -192,11 +148,9 @@ serve(async (req) => {
           success: true, is_new: true, token_hash: linkData.properties.hashed_token,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-
-    } else {
-      throw new Error("Invalid action");
     }
 
+    throw new Error("Invalid action");
   } catch (e) {
     console.error("otp error:", e);
     return new Response(
