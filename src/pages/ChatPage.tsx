@@ -137,7 +137,11 @@ const ChatPage = () => {
 
   const handleModeChange = (mode: ChatMode) => {
     setChatMode((prev) => prev === mode ? "normal" : mode);
-    if (mode !== "normal") setSearchEnabled(false);
+    if (mode === "deep-research") {
+      setSearchEnabled(true); // Deep research always uses search
+    } else if (mode !== "normal") {
+      setSearchEnabled(false);
+    }
     setPlusMenuOpen(false);
   };
 
