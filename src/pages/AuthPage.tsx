@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 
-type Step = "email" | "password" | "otp-signup" | "set-password" | "otp-2fa" | "forgot-password";
+type Step = "email" | "password" | "otp-signup" | "set-password" | "otp-2fa" | "forgot-password" | "otp-reset" | "reset-password";
 
 const AuthPage = () => {
   const [email, setEmail] = useState("");
@@ -37,20 +37,17 @@ const AuthPage = () => {
   const handleCheckEmail = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return;
-
     setIsSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("check-email", {
         body: { email: normalizedEmail },
       });
       if (error) throw new Error(error.message);
-
       if (data.exists) {
         setUserExists(true);
         setHas2FA(data.two_factor_enabled);
         setStep("password");
       } else {
-        // New user → send OTP
         setUserExists(false);
         await sendOTP(normalizedEmail);
         setStep("otp-signup");
@@ -90,13 +87,11 @@ const AuthPage = () => {
         password,
       });
       if (error) throw error;
-
       if (has2FA) {
-        // Need 2FA verification
         await sendOTP();
         setStep("otp-2fa");
       } else {
-      toast.success("Welcome back!");
+        toast.success("Welcome back!");
         if (redirectUrl) window.location.href = redirectUrl;
         else navigate("/chat");
       }
@@ -112,11 +107,9 @@ const AuthPage = () => {
     const newValues = [...otpValues];
     newValues[index] = value.slice(-1);
     setOtpValues(newValues);
-
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
-
     if (newValues.every(v => v !== "") && newValues.join("").length === 6) {
       handleVerifyOTP(newValues.join(""));
     }
@@ -132,7 +125,8 @@ const AuthPage = () => {
     e.preventDefault();
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     if (pasted.length === 6) {
-      setOtpValues(pasted.split(""));
+      const newValues = pasted.split("");
+      setOtpValues(newValues);
       handleVerifyOTP(pasted);
     }
   };
@@ -141,24 +135,27 @@ const AuthPage = () => {
     setIsSubmitting(true);
     try {
       if (step === "otp-2fa") {
-        // Just verify the OTP code, user is already logged in
         const { data, error } = await supabase.functions.invoke("otp", {
           body: { action: "verify-2fa", email: email.trim().toLowerCase(), code },
         });
         if (error) throw new Error(error.message);
         if (!data?.success) throw new Error(data?.error || "Invalid code");
-
         toast.success("Welcome back!");
         if (redirectUrl) window.location.href = redirectUrl;
         else navigate("/chat");
+      } else if (step === "otp-reset") {
+        const { data, error } = await supabase.functions.invoke("otp", {
+          body: { action: "verify-reset", email: email.trim().toLowerCase(), code },
+        });
+        if (error) throw new Error(error.message);
+        if (!data?.success) throw new Error(data?.error || "Invalid code");
+        setStep("reset-password");
       } else {
-        // Signup: verify OTP then go to set password
         const { data, error } = await supabase.functions.invoke("otp", {
           body: { action: "verify-only", email: email.trim().toLowerCase(), code },
         });
         if (error) throw new Error(error.message);
         if (!data?.success) throw new Error(data?.error || "Invalid code");
-
         setStep("set-password");
       }
     } catch (e: any) {
@@ -177,12 +174,19 @@ const AuthPage = () => {
     }
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password: newPassword,
-        options: { emailRedirectTo: window.location.origin },
+      // Use signup edge function to avoid duplicate confirmation emails
+      const { data, error } = await supabase.functions.invoke("signup", {
+        body: { email: email.trim().toLowerCase(), password: newPassword },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || "Could not create account");
+
+      // Auto-login via magic link token
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: data.token_hash,
+        type: "magiclink",
+      });
+      if (verifyError) throw verifyError;
 
       toast.success("Account created!");
       if (redirectUrl) window.location.href = redirectUrl;
@@ -194,26 +198,53 @@ const AuthPage = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: redirectUrl || window.location.origin },
-    });
-  };
-
-  const handleForgotPassword = async () => {
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { data, error } = await supabase.functions.invoke("update-password", {
+        body: { email: email.trim().toLowerCase(), password: newPassword },
       });
-      if (error) throw error;
-      toast.success("Reset link sent! Check your email.");
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || "Failed to update password");
+
+      // Auto-login
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: data.token_hash,
+        type: "magiclink",
+      });
+      if (verifyError) throw verifyError;
+
+      toast.success("Password updated!");
+      navigate("/chat");
     } catch (e: any) {
-      toast.error(e.message || "Failed to send reset link");
+      toast.error(e.message || "Failed to update password");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    // Send OTP via SMTP for password reset
+    await sendOTP();
+    setStep("otp-reset");
+  };
+
+  const handleGoogleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: redirectUrl || window.location.origin + "/chat" },
+    });
+  };
+
+  const handleGitHubLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: { redirectTo: redirectUrl || window.location.origin + "/chat" },
+    });
   };
 
   const resetFlow = () => {
@@ -223,32 +254,18 @@ const AuthPage = () => {
     setOtpValues(["", "", "", "", "", ""]);
   };
 
-  const stepTitle = {
+  const stepTitle: Record<Step, string> = {
     email: "Enter your email to continue",
     password: "Enter your password",
     "otp-signup": "Enter the 6-digit code sent to your email",
     "set-password": "Create a password for your account",
     "otp-2fa": "Enter the 2FA code sent to your email",
-    "forgot-password": "We'll send a reset link to your email",
+    "forgot-password": "We'll send a reset code to your email",
+    "otp-reset": "Enter the 6-digit code to reset your password",
+    "reset-password": "Set your new password",
   };
 
-  const OtpInputs = () => (
-    <div className="flex justify-center gap-2.5" onPaste={handleOtpPaste}>
-      {otpValues.map((val, i) => (
-        <input
-          key={i}
-          ref={el => { inputRefs.current[i] = el; }}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={val}
-          onChange={(e) => handleOtpChange(i, e.target.value)}
-          onKeyDown={(e) => handleOtpKeyDown(i, e)}
-          className="w-12 h-14 text-center text-xl font-bold text-white bg-white/10 backdrop-blur-md border border-white/15 rounded-xl outline-none focus:border-primary/60 transition-colors"
-        />
-      ))}
-    </div>
-  );
+  const isOtpStep = step === "otp-signup" || step === "otp-2fa" || step === "otp-reset";
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -281,6 +298,16 @@ const AuthPage = () => {
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
                 Continue with Google
+              </button>
+
+              <button
+                onClick={handleGitHubLogin}
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 text-white text-sm font-medium hover:bg-white/15 transition-colors mb-3"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                Continue with GitHub
               </button>
 
               <div className="flex items-center gap-3 mb-6">
@@ -323,19 +350,11 @@ const AuthPage = () => {
                   autoFocus
                   className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-4 py-3.5 pr-12 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/30 transition-colors"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <button
-                onClick={handlePasswordLogin}
-                disabled={isSubmitting || !password}
-                className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
+              <button onClick={handlePasswordLogin} disabled={isSubmitting || !password} className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
                 {isSubmitting ? "Signing in..." : "Sign In"}
               </button>
               <div className="flex items-center justify-between">
@@ -345,11 +364,29 @@ const AuthPage = () => {
             </motion.div>
           )}
 
-          {/* Step: OTP for signup */}
-          {(step === "otp-signup" || step === "otp-2fa") && (
+          {/* OTP Steps */}
+          {isOtpStep && (
             <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5">
               <p className="text-xs text-white/50">{email}</p>
-              <OtpInputs />
+              {/* OTP Inputs - inlined to avoid remount issues */}
+              <div className="flex justify-center gap-2.5" onPaste={handleOtpPaste}>
+                {otpValues.map((val, i) => (
+                  <input
+                    key={`otp-${step}-${i}`}
+                    ref={el => { inputRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
+                    maxLength={1}
+                    value={val}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                    onFocus={(e) => e.target.select()}
+                    className="w-12 h-14 text-center text-xl font-bold text-white bg-white/10 backdrop-blur-md border border-white/15 rounded-xl outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors"
+                  />
+                ))}
+              </div>
               {isSubmitting && <p className="text-xs text-white/50 animate-pulse">Verifying...</p>}
               <div className="pt-2">
                 {countdown > 0 ? (
@@ -378,20 +415,37 @@ const AuthPage = () => {
                   autoFocus
                   className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-4 py-3.5 pr-12 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/30 transition-colors"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
-                >
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
                   {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <button
-                onClick={handleCreateAccount}
-                disabled={isSubmitting || newPassword.length < 8}
-                className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
+              <button onClick={handleCreateAccount} disabled={isSubmitting || newPassword.length < 8} className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
                 {isSubmitting ? "Creating account..." : "Create Account"}
+              </button>
+              <button onClick={resetFlow} className="text-xs text-white/40 hover:text-white/60">Back</button>
+            </motion.div>
+          )}
+
+          {/* Step: Reset Password */}
+          {step === "reset-password" && (
+            <motion.div key="reset-password" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
+              <p className="text-xs text-white/50">{email}</p>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="New password (min 8 chars)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleResetPassword()}
+                  autoFocus
+                  className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-xl px-4 py-3.5 pr-12 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/30 transition-colors"
+                />
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <button onClick={handleResetPassword} disabled={isSubmitting || newPassword.length < 8} className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+                {isSubmitting ? "Updating..." : "Update Password"}
               </button>
               <button onClick={resetFlow} className="text-xs text-white/40 hover:text-white/60">Back</button>
             </motion.div>
@@ -401,12 +455,8 @@ const AuthPage = () => {
           {step === "forgot-password" && (
             <motion.div key="forgot" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
               <p className="text-xs text-white/50">{email}</p>
-              <button
-                onClick={handleForgotPassword}
-                disabled={isSubmitting}
-                className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
-                {isSubmitting ? "Sending..." : "Send Reset Link"}
+              <button onClick={handleForgotPassword} disabled={isSubmitting} className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+                {isSubmitting ? "Sending..." : "Send Reset Code"}
               </button>
               <button onClick={() => setStep("password")} className="text-xs text-white/40 hover:text-white/60">Back to login</button>
             </motion.div>
