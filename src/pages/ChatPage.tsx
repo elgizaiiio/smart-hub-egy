@@ -36,12 +36,13 @@ interface Message {
   id?: string;
 }
 
-type ChatMode = "normal" | "learning" | "shopping";
+type ChatMode = "normal" | "learning" | "shopping" | "deep-research";
 
 const MODE_PROMPTS: Record<ChatMode, string> = {
   normal: "",
   learning: "You are in Learning Mode. Explain everything step by step with examples, analogies, and clear breakdowns. Make complex topics easy to understand. Use bullet points, numbered steps, and structured format.",
-  shopping: "You are in Shopping Mode. Help the user find the best products, compare prices, suggest alternatives, and provide purchase recommendations. Include pros/cons when comparing items."
+  shopping: "You are in Shopping Mode. Help the user find the best products, compare prices, suggest alternatives, and provide purchase recommendations. Include pros/cons when comparing items.",
+  "deep-research": "",
 };
 
 const PegtopIcon = ({ className }: { className?: string }) => (
