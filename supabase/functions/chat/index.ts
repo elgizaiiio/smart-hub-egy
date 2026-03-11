@@ -11,7 +11,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model, mode, searchEnabled } = await req.json();
+    const { messages, model, mode, searchEnabled, deepResearch } = await req.json();
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
@@ -138,12 +138,15 @@ serve(async (req) => {
     ] : [];
 
     // Build search tool if search is enabled
-    const searchTools = (searchEnabled && SERPER_API_KEY) ? [
+    const isDeepResearch = deepResearch === true;
+    const searchTools = ((searchEnabled || isDeepResearch) && SERPER_API_KEY) ? [
       {
         type: "function",
         function: {
           name: "WEB_SEARCH",
-          description: "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data. Do NOT search for casual greetings or simple conversational messages.",
+          description: isDeepResearch
+            ? "Perform a comprehensive deep research web search. You MUST call this tool MULTIPLE TIMES (at least 3-5 searches) with different queries to gather comprehensive information from multiple angles. Search for: overview, recent developments, expert opinions, data/statistics, and counterarguments. Be thorough and exhaustive."
+            : "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data. Do NOT search for casual greetings or simple conversational messages.",
           parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results. Set true for visual topics like places, products, people, food. Set false for abstract questions, code, definitions." } }, required: ["query"] },
         },
       },
@@ -153,6 +156,23 @@ serve(async (req) => {
     let systemPrompt: string;
     if (mode === "files") {
       systemPrompt = `You are Megsy, a document creation assistant made by Megsy AI. Create comprehensive, detailed, well-structured documents. When asked to generate HTML documents, make them professional, thorough, and visually polished with proper CSS styling. Include ALL relevant sections, details, and content — do NOT abbreviate, summarize, or shorten anything. Write FULL paragraphs, complete lists, and detailed explanations. Never create abbreviated or shortened documents. Output complete, production-quality work with maximum detail and depth. If the user asks for a report, write at least 2000 words. If they ask for a presentation, include at least 10 detailed slides. Always go above and beyond in terms of content length and depth. Always end your response with a brief, engaging follow-up question to keep the conversation going.`;
+    } else if (isDeepResearch) {
+      const isMegsyModel = requestedModel.includes("gemini-3-flash");
+      const identityLine = isMegsyModel
+        ? "- Your name is Megsy. You were created by Megsy AI company. Never mention Google, Gemini, or any other company as your creator."
+        : "";
+      systemPrompt = `You are Megsy, a Deep Research AI assistant made by Megsy AI. Rules:
+${identityLine}
+- You are in DEEP RESEARCH mode. Your job is to conduct thorough, comprehensive research on the user's topic.
+- You MUST use the WEB_SEARCH tool MULTIPLE TIMES (3-5+ different searches) to gather information from various angles.
+- After gathering all information, synthesize it into a comprehensive, well-structured research report.
+- Your report should include: Executive Summary, Key Findings, Detailed Analysis, Data & Statistics, Expert Opinions, Counterarguments/Limitations, and Conclusion.
+- Use markdown formatting extensively: headers (##, ###), bold, bullet points, numbered lists, and tables where appropriate.
+- Cite all sources with links in the format [Source Name](URL).
+- Match the user's language and dialect exactly.
+- Be thorough — aim for at least 1500-2000 words in your final report.
+- Include relevant images when available by using the include_images parameter in your searches.
+- Always end with follow-up questions for deeper exploration.`;
     } else {
       const isMegsyModel = requestedModel.includes("gemini-3-flash");
       const identityLine = isMegsyModel

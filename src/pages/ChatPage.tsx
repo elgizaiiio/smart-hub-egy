@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,12 +36,13 @@ interface Message {
   id?: string;
 }
 
-type ChatMode = "normal" | "learning" | "shopping";
+type ChatMode = "normal" | "learning" | "shopping" | "deep-research";
 
 const MODE_PROMPTS: Record<ChatMode, string> = {
   normal: "",
   learning: "You are in Learning Mode. Explain everything step by step with examples, analogies, and clear breakdowns. Make complex topics easy to understand. Use bullet points, numbered steps, and structured format.",
-  shopping: "You are in Shopping Mode. Help the user find the best products, compare prices, suggest alternatives, and provide purchase recommendations. Include pros/cons when comparing items."
+  shopping: "You are in Shopping Mode. Help the user find the best products, compare prices, suggest alternatives, and provide purchase recommendations. Include pros/cons when comparing items.",
+  "deep-research": "",
 };
 
 const PegtopIcon = ({ className }: { className?: string }) => (
@@ -136,7 +137,11 @@ const ChatPage = () => {
 
   const handleModeChange = (mode: ChatMode) => {
     setChatMode((prev) => prev === mode ? "normal" : mode);
-    if (mode !== "normal") setSearchEnabled(false);
+    if (mode === "deep-research") {
+      setSearchEnabled(true); // Deep research always uses search
+    } else if (mode !== "normal") {
+      setSearchEnabled(false);
+    }
     setPlusMenuOpen(false);
   };
 
@@ -185,10 +190,12 @@ const ChatPage = () => {
     if (chatMode !== "normal" && MODE_PROMPTS[chatMode]) {
       allMessages.unshift({ role: "user" as const, content: `[System instruction]: ${MODE_PROMPTS[chatMode]}` });
     }
-    if (searchEnabled) setSearchStatus("Agent is thinking...");
+    const isDeepResearch = chatMode === "deep-research";
+    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Deep Research in progress..." : "Agent is thinking...");
 
     await streamChat({
-      messages: allMessages, model: selectedModel.id, searchEnabled,
+      messages: allMessages, model: selectedModel.id, searchEnabled: searchEnabled || isDeepResearch,
+      deepResearch: isDeepResearch,
       onDelta: updateAssistant,
       onImages: (imgs) => { searchImages = imgs; },
       onDone: async () => {
@@ -424,6 +431,11 @@ const ChatPage = () => {
                                     <span className="text-sm text-foreground">Shopping Mode</span>
                                     {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                                   </button>
+                                  <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                                    <BookOpen className="w-4 h-4" />
+                                    <span className="text-sm text-foreground">Deep Research</span>
+                                    {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
+                                  </button>
                                 </div>
                                 <div className="border-t border-border mt-1 pt-1">
                                   <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
@@ -516,6 +528,11 @@ const ChatPage = () => {
                                 <span className="text-sm text-foreground">Shopping Mode</span>
                                 {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                               </button>
+                              <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                                <BookOpen className="w-4 h-4" />
+                                <span className="text-sm text-foreground">Deep Research</span>
+                                {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
+                              </button>
                             </div>
                             <div className="border-t border-border mt-1 pt-1">
                               <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
@@ -577,13 +594,15 @@ const ChatPage = () => {
                   >
                     {chatMode === "learning" ? (
                       <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                    ) : chatMode === "deep-research" ? (
+                      <BookOpen className="w-3.5 h-3.5 text-primary" />
                     ) : (
                       <ShoppingCart className="w-3.5 h-3.5 text-primary" />
                     )}
                     <span className="text-xs text-primary font-medium">
-                      {chatMode === "learning" ? "Learning" : "Shopping"} Mode
+                      {chatMode === "learning" ? "Learning" : chatMode === "deep-research" ? "Deep Research" : "Shopping"} Mode
                     </span>
-                    <button onClick={() => setChatMode("normal")} className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors">
+                    <button onClick={() => { setChatMode("normal"); if (chatMode === "deep-research") setSearchEnabled(false); }} className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors">
                       <X className="w-3 h-3 text-primary" />
                     </button>
                   </motion.div>
@@ -642,6 +661,11 @@ const ChatPage = () => {
                           <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
                             <span className="text-sm text-foreground">Shopping Mode</span>
                             {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
+                          </button>
+                          <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+                            <BookOpen className="w-4 h-4" />
+                            <span className="text-sm text-foreground">Deep Research</span>
+                            {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
                           </button>
                         </div>
                         <div className="border-t border-border mt-1 pt-1">

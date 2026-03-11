@@ -7,6 +7,7 @@ export async function streamChat({
   messages,
   model,
   searchEnabled,
+  deepResearch,
   onDelta,
   onDone,
   onError,
@@ -16,6 +17,7 @@ export async function streamChat({
   messages: Msg[];
   model?: string;
   searchEnabled?: boolean;
+  deepResearch?: boolean;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError?: (error: string) => void;
@@ -29,7 +31,7 @@ export async function streamChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, model, searchEnabled }),
+      body: JSON.stringify({ messages, model, searchEnabled, deepResearch }),
       signal,
     });
 

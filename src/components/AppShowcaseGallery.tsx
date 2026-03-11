@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Eye } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import LazyVideo from "@/components/landing/LazyVideo";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 
 interface AppShowcaseGalleryProps {
@@ -38,6 +38,17 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
     );
   }
 
+  const handleCopyPrompt = (e: React.MouseEvent, prompt: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(prompt);
+    toast.success("Prompt copied!");
+  };
+
+  const handleReuse = (e: React.MouseEvent, item: ShowcaseItem) => {
+    e.stopPropagation();
+    onItemClick(item);
+  };
+
   return (
     <div className="p-3 md:p-4">
       <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3">
@@ -51,18 +62,15 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
             onClick={() => onItemClick(item)}
           >
             {item.media_type === "video" ? (
-              <>
-                <video
-                  src={item.media_url}
-                  muted
-                  loop
-                  playsInline
-                  autoPlay
-                  className="w-full rounded-2xl object-cover pointer-events-auto"
-                  onMouseEnter={(e) => e.currentTarget.play()}
-                />
-                <span className="absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white/80">Video</span>
-              </>
+              <video
+                src={item.media_url}
+                muted
+                loop
+                playsInline
+                autoPlay
+                className="w-full rounded-2xl object-cover pointer-events-auto"
+                onMouseEnter={(e) => e.currentTarget.play()}
+              />
             ) : (
               <img
                 src={item.media_url}
@@ -71,20 +79,24 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
                 loading="lazy"
               />
             )}
-            {/* Model badge */}
-            <span className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white/80">{item.model_name}</span>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-between p-3">
-              <div className="flex justify-end">
-                <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-white/80" />
-                </div>
-              </div>
-              <div>
-                <p className="text-xs line-clamp-2 font-medium text-white/90 mb-1.5">{item.prompt}</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-xl text-white/80">{item.model_name}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-xl text-white/80">{item.aspect_ratio}</span>
-                </div>
+            {/* Hover overlay - clean, no text outside */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-3">
+              {/* Quick action buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => handleCopyPrompt(e, item.prompt)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
+                >
+                  <Copy className="w-3 h-3" />
+                  Copy
+                </button>
+                <button
+                  onClick={(e) => handleReuse(e, item)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Reuse
+                </button>
               </div>
             </div>
           </motion.div>
