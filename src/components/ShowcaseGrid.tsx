@@ -68,21 +68,23 @@ const ShowcaseGrid = ({ onItemClick }: ShowcaseGridProps) => {
               loading="lazy"
             />
           )}
-          {/* Hover overlay with glassmorphism */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-between p-3">
-            {/* Eye icon top-right */}
-            <div className="flex justify-end">
-              <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center">
-                <Eye className="w-4 h-4 text-white/80" />
-              </div>
-            </div>
-            {/* Bottom info */}
-            <div>
-              <p className="text-xs line-clamp-2 font-medium text-white/90 mb-1.5">{item.prompt}</p>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-xl text-white/80">{item.model_name}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-xl text-white/80">{item.aspect_ratio}</span>
-              </div>
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(item.prompt); toast.success("Prompt copied!"); }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
+              >
+                <Copy className="w-3 h-3" />
+                Copy
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onItemClick(item); }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Reuse
+              </button>
             </div>
           </div>
         </motion.div>
