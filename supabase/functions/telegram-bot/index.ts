@@ -1440,7 +1440,8 @@ serve(async (req) => {
       // Showcase: model category
       if (d.startsWith("sc_cat_")) {
         const catKey = d.replace("sc_cat_", "");
-        const cat = CATEGORIES.find(c => c.key === catKey);
+        const dynCats2 = await getDynamicCategories(sb);
+        const cat = dynCats2.find(c => c.key === catKey);
         if (!cat) return new Response("OK");
         const rows: { text: string; callback_data: string }[][] = [];
         for (let i = 0; i < cat.models.length; i += 2) {
