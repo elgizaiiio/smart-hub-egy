@@ -567,7 +567,7 @@ const ImagesPage = () => {
                   {currentLogo ? (
                     <img src={currentLogo} alt={selectedModel.name} className="w-4 h-4 rounded-full object-cover" />
                   ) : (
-                    <Settings2 className="w-3.5 h-3.5" />
+                    <div className="w-4 h-4 rounded-full bg-primary/20" />
                   )}
                   <span>{selectedModel.name}</span>
                 </button>
