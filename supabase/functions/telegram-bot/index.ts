@@ -2329,9 +2329,10 @@ serve(async (req) => {
         session.showcasePrompt = text.trim();
         session.showcaseStep = "awaiting_model";
         await saveSession(sb, chatId, session);
-        // Show model categories
-        const rows = CATEGORIES.map(c => [{
-          text: `${c.emoji} ${c.label}`,
+        // Show model categories (dynamic)
+        const dynCats = await getDynamicCategories(sb);
+        const rows = dynCats.map(c => [{
+          text: `${c.emoji} ${c.label} (${c.models.length})`,
           callback_data: `sc_cat_${c.key}`,
         }]);
         rows.push([{ text: "❌ إلغاء", callback_data: "showcase_menu" }]);
