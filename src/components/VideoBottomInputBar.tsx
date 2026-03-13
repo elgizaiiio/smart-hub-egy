@@ -104,7 +104,6 @@ const VideoBottomInputBar = ({
   const cust = selectedModel.customization;
   const showAspect = !cust || cust.ar?.on !== false;
   const showDuration = !cust || cust.dur?.on !== false;
-  const showResolution = !cust || cust.res?.on !== false;
 
   // Build dynamic options from customization
   const aspectOptions = useMemo(() => {
@@ -119,10 +118,6 @@ const VideoBottomInputBar = ({
     return DEFAULT_DURATIONS;
   }, [cust]);
 
-  const resolutionOptions = useMemo(() => {
-    if (cust?.res?.opts?.length > 0) return cust.res.opts as string[];
-    return DEFAULT_RESOLUTIONS;
-  }, [cust]);
 
   // Animated placeholder
   useEffect(() => {
@@ -283,35 +278,6 @@ const VideoBottomInputBar = ({
               </Popover>
               )}
 
-              {/* Resolution - conditional */}
-              {showResolution && (
-              <Popover open={openDropdown === "resolution"} onOpenChange={(o) => setOpenDropdown(o ? "resolution" : null)}>
-                <PopoverTrigger asChild>
-                  <button className={chipClass}>{settings.resolution}</button>
-                </PopoverTrigger>
-                <PopoverContent className={menuClass} side="top" align="start" sideOffset={10}>
-                  <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider px-2 py-1">Resolution</p>
-                  <div className="space-y-0.5">
-                    {resolutionOptions.map((r: string) => (
-                      <button
-                        key={r}
-                        onClick={() => {
-                          updateSetting("resolution", r);
-                          setOpenDropdown(null);
-                        }}
-                        className={`${itemBase} ${
-                          settings.resolution === r
-                            ? "bg-accent text-accent-foreground font-semibold"
-                            : "hover:bg-accent hover:text-accent-foreground"
-                        }`}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              )}
 
               {/* Aspect Ratio - conditional */}
               {showAspect && (

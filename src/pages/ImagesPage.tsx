@@ -417,7 +417,28 @@ const ImagesPage = () => {
 
   // ── Mobile Layout (Artlist-style matching Videos) ──
 
-  const currentLogo = selectedModel.iconUrl;
+  const FALLBACK_LOGOS: Record<string, string> = {
+    "megsy-imagine": "/model-logos/megsy.png",
+    "nano-banana-pro": "/model-logos/google.ico",
+    "nano-banana-2": "/model-logos/google.ico",
+    "nano-banana": "/model-logos/google.ico",
+    "gpt-image-1.5": "/model-logos/openai.svg",
+    "gpt-image-1-mini": "/model-logos/openai.svg",
+    "kling-o3": "/model-logos/kling.png",
+    "kling-3.0": "/model-logos/kling.png",
+    "ideogram-3": "/model-logos/ideogram.png",
+    "flux-2-pro": "/model-logos/bfl.png",
+    "flux-pro-ultra": "/model-logos/bfl.png",
+    "imagen-4": "/model-logos/google.ico",
+    "seedream-5": "/model-logos/bytedance.ico",
+    "seedream-4.5": "/model-logos/bytedance.ico",
+    "wan-2.6-img": "/model-logos/google.ico",
+    "grok-imagine": "/model-logos/xai.ico",
+    "imagine-art": "/model-logos/fal.ico",
+    "z-image-turbo": "/model-logos/fal.ico",
+    "hunyuan-v3": "/model-logos/google.ico",
+  };
+  const currentLogo = selectedModel.iconUrl || FALLBACK_LOGOS[selectedModel.id];
 
   return (
     <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
@@ -546,7 +567,7 @@ const ImagesPage = () => {
                   {currentLogo ? (
                     <img src={currentLogo} alt={selectedModel.name} className="w-4 h-4 rounded-full object-cover" />
                   ) : (
-                    <Settings2 className="w-3.5 h-3.5" />
+                    <div className="w-4 h-4 rounded-full bg-primary/20" />
                   )}
                   <span>{selectedModel.name}</span>
                 </button>

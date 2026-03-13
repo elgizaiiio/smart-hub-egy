@@ -79,22 +79,19 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
                 loading="lazy"
               />
             )}
-            {/* Hover overlay - clean, no text outside */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-3">
-              {/* Quick action buttons */}
+            {/* Clean hover overlay - no icons, just text buttons */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-3">
               <div className="flex items-center gap-2">
                 <button
                   onClick={(e) => handleCopyPrompt(e, item.prompt)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
                 >
-                  <Copy className="w-3 h-3" />
                   Copy
                 </button>
                 <button
                   onClick={(e) => handleReuse(e, item)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
                 >
-                  <RefreshCw className="w-3 h-3" />
                   Reuse
                 </button>
               </div>

@@ -229,56 +229,6 @@ const VideoSettingsDrawer = ({
                 </AnimatePresence>
               </div>
 
-              {/* Resolution */}
-              <div className={`rounded-2xl transition-colors ${expanded === "resolution" ? "bg-muted/60" : ""}`}>
-                <button
-                onClick={() => toggle("resolution")}
-                className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium text-foreground transition-colors ${
-                expanded === "resolution" ? "" : "bg-muted/60 hover:bg-muted/80"}`
-                }>
-                
-                  <span>Resolution</span>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-xs">{settings.resolution}</span>
-                    <ChevronDown
-                    className={`w-4 h-4 transition-transform ${expanded === "resolution" ? "rotate-180" : ""}`} />
-                  
-                  </div>
-                </button>
-                <AnimatePresence>
-                  {expanded === "resolution" &&
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden">
-                  
-                      <div className="px-2 pb-3 space-y-0.5">
-                        {RESOLUTIONS.map((r) => {
-                      const isActive = settings.resolution === r;
-                      return (
-                        <button
-                          key={r}
-                          onClick={() => {
-                            updateSetting("resolution", r);
-                            setExpanded(null);
-                          }}
-                          className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm transition-colors ${
-                          isActive ?
-                          "bg-primary/10 text-primary" :
-                          "text-foreground/70 hover:bg-muted/40"}`
-                          }>
-                          
-                              <span>{r}</span>
-                              {isActive && <Check className="w-4 h-4 ml-auto text-primary" />}
-                            </button>);
-
-                    })}
-                      </div>
-                    </motion.div>
-                }
-                </AnimatePresence>
-              </div>
 
               {/* Negative Prompt */}
               <div className={`rounded-2xl transition-colors ${expanded === "negative" ? "bg-muted/60" : ""}`}>

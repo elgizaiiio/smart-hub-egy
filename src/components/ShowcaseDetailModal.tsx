@@ -28,7 +28,6 @@ const ShowcaseDetailModal = ({ item, onClose, onRecreate }: ShowcaseDetailModalP
   const specs = [
     { label: "Model", value: item.model_name, icon: Sparkles },
     { label: "Aspect ratio", value: item.aspect_ratio, icon: Ratio },
-    { label: "Quality", value: item.quality, icon: FileType },
     ...(item.duration ? [{ label: "Duration", value: item.duration, icon: Clock }] : []),
   ];
 
