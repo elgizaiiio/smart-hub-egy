@@ -77,11 +77,7 @@ const ShowcaseDetailModal = ({ item, onClose, onRecreate }: ShowcaseDetailModalP
               </button>
             </div>
 
-            {/* Prompt */}
-            <div className="mb-5">
-              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-2">Prompt</p>
-              <p className="text-sm text-white/80 leading-relaxed">{item.prompt}</p>
-            </div>
+            {/* Prompt hidden - only copyable */}
 
             {/* Specs */}
             <div className="space-y-3 mb-5">
