@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -68,21 +67,19 @@ const ShowcaseGrid = ({ onItemClick }: ShowcaseGridProps) => {
               loading="lazy"
             />
           )}
-          {/* Hover overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-3">
+          {/* Clean hover overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-3">
             <div className="flex items-center gap-2">
               <button
                 onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(item.prompt); toast.success("Prompt copied!"); }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
               >
-                <Copy className="w-3 h-3" />
                 Copy
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onItemClick(item); }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-white/15 backdrop-blur-xl text-white/90 text-[11px] font-medium hover:bg-white/25 transition-colors"
               >
-                <RefreshCw className="w-3 h-3" />
                 Reuse
               </button>
             </div>
