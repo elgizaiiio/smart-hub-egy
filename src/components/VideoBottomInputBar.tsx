@@ -118,10 +118,6 @@ const VideoBottomInputBar = ({
     return DEFAULT_DURATIONS;
   }, [cust]);
 
-  const resolutionOptions = useMemo(() => {
-    if (cust?.res?.opts?.length > 0) return cust.res.opts as string[];
-    return DEFAULT_RESOLUTIONS;
-  }, [cust]);
 
   // Animated placeholder
   useEffect(() => {
