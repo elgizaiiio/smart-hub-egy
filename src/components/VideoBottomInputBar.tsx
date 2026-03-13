@@ -104,7 +104,6 @@ const VideoBottomInputBar = ({
   const cust = selectedModel.customization;
   const showAspect = !cust || cust.ar?.on !== false;
   const showDuration = !cust || cust.dur?.on !== false;
-  const showResolution = !cust || cust.res?.on !== false;
 
   // Build dynamic options from customization
   const aspectOptions = useMemo(() => {
