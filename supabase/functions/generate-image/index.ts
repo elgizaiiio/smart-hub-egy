@@ -8,6 +8,7 @@ const corsHeaders = {
 
 type ModelConfig = {
   endpoint: string;
+  editEndpoint?: string;
   inputKey?: string;
   multiInputKey?: string;
   maxImages?: number;
@@ -17,59 +18,29 @@ type ModelConfig = {
 };
 
 const MODEL_MAP: Record<string, ModelConfig> = {
-  // ── Text-to-Image ──
-  "megsy-v1-img": { endpoint: "fal-ai/nano-banana-pro", supportsNumImages: true, supportsImageSize: true },
-  "gpt-image": { endpoint: "fal-ai/gpt-image-1.5", supportsImageSize: true },
-  "gpt-image-1": { endpoint: "fal-ai/gpt-image-1", supportsImageSize: true },
-  "nano-banana-2": { endpoint: "fal-ai/nano-banana-pro", supportsNumImages: true, supportsImageSize: true },
-  "nano-banana-pro": { endpoint: "fal-ai/nano-banana-pro", supportsNumImages: true, supportsImageSize: true },
-  "flux-kontext": { endpoint: "fal-ai/flux-pro/kontext/max/text-to-image", supportsImageSize: true },
-  "flux-kontext-std": { endpoint: "fal-ai/flux-pro/kontext/text-to-image", supportsImageSize: true },
-  "ideogram-3": { endpoint: "fal-ai/ideogram/v3", supportsImageSize: true },
-  "seedream-5-lite": { endpoint: "fal-ai/bytedance/seedream/v5/lite/text-to-image", supportsImageSize: true },
-  "recraft-v4": { endpoint: "fal-ai/recraft/v4/pro/text-to-image", supportsImageSize: true },
-  "flux-2-pro": { endpoint: "fal-ai/flux-2-pro", supportsNumImages: true, supportsImageSize: true },
-  "seedream-4": { endpoint: "fal-ai/bytedance/seedream/v4.5/text-to-image", supportsImageSize: true },
-  "seedream-4-0": { endpoint: "fal-ai/bytedance/seedream/v4/text-to-image", supportsImageSize: true },
-  "imagineart-1.5": { endpoint: "imagineart/imagineart-1.5-pro-preview/text-to-image", supportsImageSize: true },
-  "grok-imagine": { endpoint: "fal-ai/grok-imagine", supportsImageSize: true },
-  "fal-hidream-i1": { endpoint: "fal-ai/hidream-i1-full", supportsImageSize: true },
-  "fal-aura-v2": { endpoint: "fal-ai/aura-flow", supportsImageSize: true },
-  "fal-stable-cascade": { endpoint: "fal-ai/stable-cascade", supportsImageSize: true },
-  "fal-omnigen2": { endpoint: "fal-ai/omnigen-v1", supportsImageSize: true },
-  "fal-flux-realism": { endpoint: "fal-ai/flux-realism", supportsNumImages: true, supportsImageSize: true },
-  // New models
-  "lucid-origin": { endpoint: "fal-ai/flux-pro/v1.1", supportsNumImages: true, supportsImageSize: true },
-  "lucid-realism": { endpoint: "fal-ai/flux/dev", supportsNumImages: true, supportsImageSize: true },
-  "flux-dev": { endpoint: "fal-ai/flux/dev", supportsNumImages: true, supportsImageSize: true },
-  "flux-schnell": { endpoint: "fal-ai/flux/schnell", supportsNumImages: true, supportsImageSize: true },
-  "phoenix-1": { endpoint: "fal-ai/flux-pro/v1", supportsNumImages: true, supportsImageSize: true },
-  "phoenix-0.9": { endpoint: "fal-ai/flux-pro", supportsNumImages: true, supportsImageSize: true },
-  // Business
-  "logo-creator": { endpoint: "fal-ai/recraft/v3/text-to-image", supportsImageSize: true },
-  "sticker-maker": { endpoint: "fal-ai/nano-banana-pro", supportsImageSize: true },
-  "qr-art": { endpoint: "fal-ai/nano-banana-pro", supportsImageSize: true },
-  "product-photo": { endpoint: "fal-ai/image-apps-v2/product-photography", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "ai-headshot": { endpoint: "fal-ai/image-apps-v2/headshot-photo", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "passport-photo": { endpoint: "fal-ai/birefnet", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  // ── Image Editing (require image) ──
-  "nano-banana-edit": { endpoint: "fal-ai/nano-banana-pro/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, requiresImage: true },
-  "object-remover": { endpoint: "fal-ai/image-editing/object-removal", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "watermark-remover": { endpoint: "fal-ai/image-apps-v2/object-removal", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "image-extender": { endpoint: "fal-ai/image-apps-v2/outpaint", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "flux-pro-editor": { endpoint: "fal-ai/flux-2-pro/edit", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "image-variations": { endpoint: "fal-ai/flux-pro/v1.1/redux", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, requiresImage: true },
-  // ── Enhancement (require image) ──
-  "photo-colorizer": { endpoint: "fal-ai/flux/dev/image-to-image", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "bg-remover": { endpoint: "fal-ai/birefnet", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "bg-replacer": { endpoint: "fal-ai/birefnet", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 2, requiresImage: true },
-  "4k-upscaler": { endpoint: "fal-ai/clarity-upscaler", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "face-enhancer": { endpoint: "fal-ai/codeformer", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "creative-upscaler": { endpoint: "fal-ai/bria/upscale/creative", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "old-photo-restorer": { endpoint: "fal-ai/codeformer", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "photo-to-cartoon": { endpoint: "fal-ai/cartoonify", inputKey: "image_url", maxImages: 1, requiresImage: true },
-  "style-transfer": { endpoint: "fal-ai/flux/dev/image-to-image", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 2, requiresImage: true },
-  "ai-relighting": { endpoint: "fal-ai/ic-light", inputKey: "image_url", maxImages: 1, requiresImage: true },
+  // ── Megsy Imagine (flagship) ──
+  "megsy-imagine": { endpoint: "fal-ai/nano-banana-pro", editEndpoint: "fal-ai/nano-banana-pro/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 10, supportsNumImages: true, supportsImageSize: true },
+  // ── Premium Models ──
+  "nano-banana-pro": { endpoint: "fal-ai/nano-banana-pro", editEndpoint: "fal-ai/nano-banana-pro/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 10, supportsNumImages: true, supportsImageSize: true },
+  "nano-banana-2": { endpoint: "fal-ai/nano-banana-2", editEndpoint: "fal-ai/nano-banana-2/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, supportsNumImages: true, supportsImageSize: true },
+  "gpt-image-1.5": { endpoint: "fal-ai/gpt-image-1.5", editEndpoint: "fal-ai/gpt-image-1.5/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 10, supportsNumImages: true, supportsImageSize: true },
+  "gpt-image-1-mini": { endpoint: "fal-ai/gpt-image-1-mini/edit", editEndpoint: "fal-ai/gpt-image-1-mini/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, supportsNumImages: true, supportsImageSize: true },
+  // ── High-End ──
+  "kling-o3": { endpoint: "fal-ai/kling-image/o3/text-to-image", editEndpoint: "fal-ai/kling-image/o3/image-to-image", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, supportsImageSize: true },
+  "ideogram-3": { endpoint: "fal-ai/ideogram/v3", editEndpoint: "fal-ai/ideogram/v3/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 2, supportsNumImages: true, supportsImageSize: true },
+  "flux-2-pro": { endpoint: "fal-ai/flux-2-pro", editEndpoint: "fal-ai/flux-2-pro/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, supportsNumImages: true, supportsImageSize: true },
+  "imagen-4": { endpoint: "fal-ai/imagen4/preview/ultra", supportsNumImages: true, supportsImageSize: true },
+  // ── Standard ──
+  "seedream-5": { endpoint: "fal-ai/bytedance/seedream/v5/lite/text-to-image", editEndpoint: "fal-ai/bytedance/seedream/v5/lite/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, supportsNumImages: true, supportsImageSize: true },
+  "seedream-4.5": { endpoint: "fal-ai/bytedance/seedream/v4.5/text-to-image", editEndpoint: "fal-ai/bytedance/seedream/v4.5/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, supportsNumImages: true, supportsImageSize: true },
+  "kling-3.0": { endpoint: "fal-ai/kling-image/v3/text-to-image", editEndpoint: "fal-ai/kling-image/v3/image-to-image", inputKey: "image_url", maxImages: 1, supportsImageSize: true },
+  "flux-pro-ultra": { endpoint: "fal-ai/flux-pro/v1.1-ultra", supportsNumImages: true, supportsImageSize: true },
+  "nano-banana": { endpoint: "fal-ai/nano-banana", editEndpoint: "fal-ai/nano-banana/edit", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, supportsNumImages: true, supportsImageSize: true },
+  "wan-2.6-img": { endpoint: "wan/v2.6/text-to-image", editEndpoint: "wan/v2.6/image-to-image", inputKey: "image_url", multiInputKey: "image_urls", maxImages: 4, supportsNumImages: true, supportsImageSize: true },
+  "grok-imagine": { endpoint: "xai/grok-imagine-image", editEndpoint: "xai/grok-imagine-image/edit", inputKey: "image_url", maxImages: 1, supportsNumImages: true, supportsImageSize: true },
+  "imagine-art": { endpoint: "imagineart/imagineart-1.5-preview/text-to-image", supportsImageSize: true },
+  "z-image-turbo": { endpoint: "fal-ai/z-image/turbo", supportsNumImages: true, supportsImageSize: true },
+  "hunyuan-v3": { endpoint: "fal-ai/hunyuan-image/v3/text-to-image", supportsImageSize: true },
 };
 
 const DATA_URI_REGEX = /^data:([^;]+);base64,(.+)$/;
@@ -118,9 +89,23 @@ serve(async (req) => {
       }
     }
 
-    const modelConfig = MODEL_MAP[model] || MODEL_MAP["megsy-v1-img"];
-    const endpoint = modelConfig.endpoint;
+    const modelConfig = MODEL_MAP[model] || MODEL_MAP["megsy-imagine"];
     const requestedCount = Math.min(Math.max(num_images || 1, 1), 4);
+
+    // Collect image inputs
+    const rawImages = [
+      ...(Array.isArray(image_urls) ? image_urls : []),
+      ...(image_url ? [image_url] : []),
+    ]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map((value) => value.trim());
+
+    const uniqueImages = [...new Set(rawImages)].slice(0, modelConfig.maxImages || 1);
+    const processedImages = uniqueImages.map((img) => normalizeImageInput(img));
+
+    // Choose endpoint: if images provided and editEndpoint exists, use edit
+    const hasImages = processedImages.length > 0;
+    const endpoint = hasImages && modelConfig.editEndpoint ? modelConfig.editEndpoint : modelConfig.endpoint;
 
     const input: Record<string, unknown> = { prompt: prompt || "A beautiful image" };
 
@@ -133,17 +118,6 @@ serve(async (req) => {
     if (modelConfig.supportsNumImages && requestedCount > 1) {
       input.num_images = requestedCount;
     }
-
-    // Handle image inputs
-    const rawImages = [
-      ...(Array.isArray(image_urls) ? image_urls : []),
-      ...(image_url ? [image_url] : []),
-    ]
-      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-      .map((value) => value.trim());
-
-    const uniqueImages = [...new Set(rawImages)].slice(0, modelConfig.maxImages || 1);
-    const processedImages = uniqueImages.map((img) => normalizeImageInput(img));
 
     if (modelConfig.requiresImage && processedImages.length === 0) {
       throw new Error(`${model || "Selected model"} requires at least one image input`);
