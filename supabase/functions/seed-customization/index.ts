@@ -270,9 +270,9 @@ serve(async () => {
       } catch {}
     }
 
-    const { error } = await sb
-      .from("memories")
-      .upsert({ key, value: JSON.stringify(merged) }, { onConflict: "key" });
+    // Delete then insert
+    await sb.from("memories").delete().eq("key", key);
+    const { error } = await sb.from("memories").insert({ key, value: JSON.stringify(merged) });
 
     results.push(`${modelId}: ${error ? error.message : "OK"}`);
   }
