@@ -18,12 +18,13 @@ const footerLinks = {
   Company: [
     { label: "Careers", href: "/careers" },
     { label: "Security", href: "/security" },
+    { label: "Support", href: "/support" },
     { label: "Contact", href: "/contact" },
     { label: "Egypt 🇪🇬", href: "/egypt" },
   ],
   Legal: [
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "https://terms.megsyai.com", external: true },
+    { label: "Privacy Policy", href: "https://privacy.megsyai.com", external: true },
     { label: "Cookie Policy", href: "/cookies" },
   ],
 };
@@ -124,18 +125,29 @@ const LandingFooter = () => {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      onClick={(e) => {
-                        if (link.href.startsWith("/")) {
-                          e.preventDefault();
-                          navigate(link.href);
-                        }
-                      }}
-                      className="text-sm text-white/30 transition-colors hover:text-white/60"
-                    >
-                      {link.label}
-                    </a>
+                    {"external" in link && link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-white/30 transition-colors hover:text-white/60"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <a
+                        href={link.href}
+                        onClick={(e) => {
+                          if (link.href.startsWith("/")) {
+                            e.preventDefault();
+                            navigate(link.href);
+                          }
+                        }}
+                        className="text-sm text-white/30 transition-colors hover:text-white/60"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -165,9 +177,9 @@ const LandingFooter = () => {
           className="flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-6 md:flex-row"
         >
           <div className="flex flex-wrap items-center gap-4 text-xs text-white/20">
-            <a href="/terms" onClick={(e) => { e.preventDefault(); navigate("/terms"); }} className="hover:text-white/40 transition-colors">Terms of Service</a>
+            <a href="https://terms.megsyai.com" target="_blank" rel="noopener noreferrer" className="hover:text-white/40 transition-colors">Terms of Service</a>
             <span>|</span>
-            <a href="/privacy" onClick={(e) => { e.preventDefault(); navigate("/privacy"); }} className="hover:text-white/40 transition-colors">Privacy Policy</a>
+            <a href="https://privacy.megsyai.com" target="_blank" rel="noopener noreferrer" className="hover:text-white/40 transition-colors">Privacy Policy</a>
             <span>|</span>
             <a href="/cookies" onClick={(e) => { e.preventDefault(); navigate("/cookies"); }} className="hover:text-white/40 transition-colors">Cookie Policy</a>
           </div>
