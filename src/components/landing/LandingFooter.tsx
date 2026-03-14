@@ -165,9 +165,11 @@ const LandingFooter = () => {
           className="flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-6 md:flex-row"
         >
           <div className="flex flex-wrap items-center gap-4 text-xs text-white/20">
-            <a href="https://terms.megsyai.com" target="_blank" rel="noopener noreferrer" className="hover:text-white/40 transition-colors">Terms of Service</a>
+            <a href="/terms" onClick={(e) => { e.preventDefault(); navigate("/terms"); }} className="hover:text-white/40 transition-colors">Terms of Service</a>
             <span>|</span>
-            <a href="https://privacy.megsyai.com" target="_blank" rel="noopener noreferrer" className="hover:text-white/40 transition-colors">Privacy Policy</a>
+            <a href="/privacy" onClick={(e) => { e.preventDefault(); navigate("/privacy"); }} className="hover:text-white/40 transition-colors">Privacy Policy</a>
+            <span>|</span>
+            <a href="/cookies" onClick={(e) => { e.preventDefault(); navigate("/cookies"); }} className="hover:text-white/40 transition-colors">Cookie Policy</a>
           </div>
           <p className="text-xs text-white/20">© 2026 Megsy AI. All Rights Reserved.</p>
         </motion.div>

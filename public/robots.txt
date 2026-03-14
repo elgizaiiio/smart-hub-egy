@@ -12,3 +12,13 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /chat
+Disallow: /images
+Disallow: /videos
+Disallow: /files
+Disallow: /code
+Disallow: /settings
+Disallow: /profile
+Disallow: /notifications
+
+Sitemap: https://megsyai.com/sitemap.xml
