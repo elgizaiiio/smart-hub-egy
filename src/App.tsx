@@ -49,8 +49,6 @@ import CookieConsent from "./components/CookieConsent";
 import TranslationWrapper from "./components/TranslationWrapper";
 import EgyptPage from "./pages/EgyptPage";
 import ModelsPage from "./pages/ModelsPage";
-import TermsPage from "./pages/TermsPage";
-import PrivacyPage from "./pages/PrivacyPage";
 import CookiePolicyPage from "./pages/CookiePolicyPage";
 import CareersPage from "./pages/CareersPage";
 import SecurityPage from "./pages/SecurityPage";
