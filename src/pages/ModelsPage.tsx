@@ -184,9 +184,9 @@ const ModelsPage = () => {
               {/* Info */}
               <div className="flex-1 space-y-8">
                 <div>
-                  <div className={`inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r ${model.color} p-3`}>
-                    <model.icon className="h-7 w-7 text-white" />
-                  </div>
+                  
+
+                
                   <h2 className="mt-5 font-display text-4xl font-black uppercase tracking-tight md:text-5xl">
                     {model.name}
                   </h2>
