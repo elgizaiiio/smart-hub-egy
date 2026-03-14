@@ -18,12 +18,13 @@ const footerLinks = {
   Company: [
     { label: "Careers", href: "/careers" },
     { label: "Security", href: "/security" },
+    { label: "Support", href: "/support" },
     { label: "Contact", href: "/contact" },
     { label: "Egypt 🇪🇬", href: "/egypt" },
   ],
   Legal: [
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "https://terms.megsyai.com", external: true },
+    { label: "Privacy Policy", href: "https://privacy.megsyai.com", external: true },
     { label: "Cookie Policy", href: "/cookies" },
   ],
 };
