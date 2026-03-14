@@ -234,9 +234,9 @@ const ModelsPage = () => {
 
                   <div className="relative mt-8 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
                     <div className="flex items-center gap-3">
-                      <div className={`rounded-lg bg-gradient-to-r ${model.color} p-2`}>
-                        <Cpu className="h-4 w-4 text-white" />
-                      </div>
+                      
+
+                    
                       <div>
                         <div className="text-sm font-semibold text-foreground">Powered by Megsy AI</div>
                         <div className="text-xs text-muted-foreground">Enterprise-grade infrastructure</div>
