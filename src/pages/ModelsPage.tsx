@@ -7,92 +7,92 @@ import SEOHead from "@/components/SEOHead";
 import { MessageSquare, Image, Video, Zap, Globe, Shield, Sparkles, Cpu, Layers } from "lucide-react";
 
 const models = [
-  {
-    name: "Megsy V1",
-    tagline: "Advanced AI Chat & Reasoning",
-    description: "Our flagship conversational AI model. Megsy V1 delivers intelligent, context-aware responses with deep reasoning capabilities, multilingual support, and creative problem-solving — all with a unique personality that sets it apart from generic chatbots.",
-    icon: MessageSquare,
-    color: "from-violet-500 to-purple-600",
-    bgGlow: "bg-violet-500/10",
-    capabilities: [
-      "Advanced reasoning & analysis",
-      "Creative writing & brainstorming",
-      "Code generation & debugging",
-      "Multilingual support (30+ languages)",
-      "Document & file analysis",
-      "Mathematical problem solving",
-      "Context-aware conversations",
-      "Web search integration",
-    ],
-    specs: [
-      { label: "Context Window", value: "128K tokens" },
-      { label: "Languages", value: "30+" },
-      { label: "Response Speed", value: "< 1s" },
-      { label: "Credit Cost", value: "1 MC / message" },
-    ],
-    cta: "Start Chatting",
-    href: "/services/chat",
-  },
-  {
-    name: "Megsy Imagine",
-    tagline: "Professional AI Image Generation",
-    description: "Create stunning, publication-ready images from text descriptions. Megsy Imagine produces photorealistic renders, digital art, illustrations, and brand assets with exceptional detail, accurate text rendering, and precise style control.",
-    icon: Image,
-    color: "from-emerald-500 to-teal-600",
-    bgGlow: "bg-emerald-500/10",
-    capabilities: [
-      "Text-to-image generation",
-      "Image-to-image transformation",
-      "Accurate text rendering in images",
-      "Multiple aspect ratios (1:1 to 21:9)",
-      "Quality tiers up to 4K resolution",
-      "Batch generation (up to 4 images)",
-      "Style-consistent outputs",
-      "Commercial usage rights",
-    ],
-    specs: [
-      { label: "Max Resolution", value: "4K" },
-      { label: "Aspect Ratios", value: "10+" },
-      { label: "Generation Speed", value: "~5s" },
-      { label: "Credit Cost", value: "From 2 MC" },
-    ],
-    cta: "Generate Images",
-    href: "/services/images",
-  },
-  {
-    name: "Megsy Video",
-    tagline: "Cinematic AI Video Generation",
-    description: "Transform ideas into cinematic video content. Megsy Video creates high-quality videos from text prompts or still images, with support for multiple durations, aspect ratios, and built-in audio generation for complete, ready-to-publish content.",
-    icon: Video,
-    color: "from-rose-500 to-pink-600",
-    bgGlow: "bg-rose-500/10",
-    capabilities: [
-      "Text-to-video generation",
-      "Image-to-video animation",
-      "Built-in audio generation",
-      "Multiple durations (5s to 10s)",
-      "Cinematic aspect ratios",
-      "Smooth motion & transitions",
-      "Consistent character rendering",
-      "Commercial usage rights",
-    ],
-    specs: [
-      { label: "Max Duration", value: "10s" },
-      { label: "Resolution", value: "1080p" },
-      { label: "Audio", value: "Built-in" },
-      { label: "Credit Cost", value: "From 8 MC" },
-    ],
-    cta: "Create Videos",
-    href: "/services/videos",
-  },
-];
+{
+  name: "Megsy V1",
+  tagline: "Advanced AI Chat & Reasoning",
+  description: "Our flagship conversational AI model. Megsy V1 delivers intelligent, context-aware responses with deep reasoning capabilities, multilingual support, and creative problem-solving — all with a unique personality that sets it apart from generic chatbots.",
+  icon: MessageSquare,
+  color: "from-violet-500 to-purple-600",
+  bgGlow: "bg-violet-500/10",
+  capabilities: [
+  "Advanced reasoning & analysis",
+  "Creative writing & brainstorming",
+  "Code generation & debugging",
+  "Multilingual support (30+ languages)",
+  "Document & file analysis",
+  "Mathematical problem solving",
+  "Context-aware conversations",
+  "Web search integration"],
+
+  specs: [
+  { label: "Context Window", value: "128K tokens" },
+  { label: "Languages", value: "30+" },
+  { label: "Response Speed", value: "< 1s" },
+  { label: "Credit Cost", value: "1 MC / message" }],
+
+  cta: "Start Chatting",
+  href: "/services/chat"
+},
+{
+  name: "Megsy Imagine",
+  tagline: "Professional AI Image Generation",
+  description: "Create stunning, publication-ready images from text descriptions. Megsy Imagine produces photorealistic renders, digital art, illustrations, and brand assets with exceptional detail, accurate text rendering, and precise style control.",
+  icon: Image,
+  color: "from-emerald-500 to-teal-600",
+  bgGlow: "bg-emerald-500/10",
+  capabilities: [
+  "Text-to-image generation",
+  "Image-to-image transformation",
+  "Accurate text rendering in images",
+  "Multiple aspect ratios (1:1 to 21:9)",
+  "Quality tiers up to 4K resolution",
+  "Batch generation (up to 4 images)",
+  "Style-consistent outputs",
+  "Commercial usage rights"],
+
+  specs: [
+  { label: "Max Resolution", value: "4K" },
+  { label: "Aspect Ratios", value: "10+" },
+  { label: "Generation Speed", value: "~5s" },
+  { label: "Credit Cost", value: "From 2 MC" }],
+
+  cta: "Generate Images",
+  href: "/services/images"
+},
+{
+  name: "Megsy Video",
+  tagline: "Cinematic AI Video Generation",
+  description: "Transform ideas into cinematic video content. Megsy Video creates high-quality videos from text prompts or still images, with support for multiple durations, aspect ratios, and built-in audio generation for complete, ready-to-publish content.",
+  icon: Video,
+  color: "from-rose-500 to-pink-600",
+  bgGlow: "bg-rose-500/10",
+  capabilities: [
+  "Text-to-video generation",
+  "Image-to-video animation",
+  "Built-in audio generation",
+  "Multiple durations (5s to 10s)",
+  "Cinematic aspect ratios",
+  "Smooth motion & transitions",
+  "Consistent character rendering",
+  "Commercial usage rights"],
+
+  specs: [
+  { label: "Max Duration", value: "10s" },
+  { label: "Resolution", value: "1080p" },
+  { label: "Audio", value: "Built-in" },
+  { label: "Credit Cost", value: "From 8 MC" }],
+
+  cta: "Create Videos",
+  href: "/services/videos"
+}];
+
 
 const stats = [
-  { value: "3", label: "Megsy Models" },
-  { value: "36+", label: "AI Engines" },
-  { value: "80+", label: "Total Models" },
-  { value: "1M+", label: "Generations" },
-];
+{ value: "3", label: "Megsy Models" },
+{ value: "36+", label: "AI Engines" },
+{ value: "80+", label: "Total Models" },
+{ value: "1M+", label: "Generations" }];
+
 
 const ModelsPage = () => {
   const navigate = useNavigate();
@@ -102,8 +102,8 @@ const ModelsPage = () => {
       <SEOHead
         title="AI Models"
         description="Explore Megsy's AI models — Megsy V1 for chat, Megsy Imagine for image generation, and Megsy Video for cinematic video creation. Powered by 36+ AI engines."
-        path="/models"
-      />
+        path="/models" />
+      
       <LandingNavbar />
 
       {/* Hero */}
@@ -117,17 +117,17 @@ const ModelsPage = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="relative z-10 mx-auto max-w-4xl text-center"
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-5 py-2 text-sm font-medium text-primary"
-          >
-            <Sparkles className="h-4 w-4" />
-            Built for creators, by creators
-          </motion.div>
+          className="relative z-10 mx-auto max-w-4xl text-center">
+          
+          
+
+
+
+
+
+
+
+          
 
           <h1 className="font-display text-5xl font-black uppercase leading-[1.05] tracking-tight sm:text-6xl md:text-7xl lg:text-8xl">
             <span className="block">Meet The</span>
@@ -151,36 +151,36 @@ const ModelsPage = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="grid grid-cols-2 gap-6 md:grid-cols-4"
-        >
-          {stats.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="rounded-2xl border border-white/[0.06] bg-card p-6 text-center"
-            >
+          className="grid grid-cols-2 gap-6 md:grid-cols-4">
+          
+          {stats.map((s, i) =>
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.1 }}
+            className="rounded-2xl border border-white/[0.06] bg-card p-6 text-center">
+            
               <div className="font-display text-4xl font-black text-foreground">{s.value}</div>
               <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
             </motion.div>
-          ))}
+          )}
         </motion.div>
       </section>
 
       {/* Models */}
       <section className="mx-auto max-w-7xl px-6 py-20">
         <div className="space-y-32">
-          {models.map((model, idx) => (
-            <motion.div
-              key={model.name}
-              initial={{ opacity: 0, y: 60 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.8 }}
-              className={`flex flex-col gap-12 lg:flex-row lg:items-start ${idx % 2 === 1 ? "lg:flex-row-reverse" : ""}`}
-            >
+          {models.map((model, idx) =>
+          <motion.div
+            key={model.name}
+            initial={{ opacity: 0, y: 60 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8 }}
+            className={`flex flex-col gap-12 lg:flex-row lg:items-start ${idx % 2 === 1 ? "lg:flex-row-reverse" : ""}`}>
+            
               {/* Info */}
               <div className="flex-1 space-y-8">
                 <div>
@@ -202,12 +202,12 @@ const ModelsPage = () => {
                     Capabilities
                   </h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {model.capabilities.map((cap) => (
-                      <div key={cap} className="flex items-center gap-3 text-sm text-foreground/80">
+                    {model.capabilities.map((cap) =>
+                  <div key={cap} className="flex items-center gap-3 text-sm text-foreground/80">
                         <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
                         {cap}
                       </div>
-                    ))}
+                  )}
                   </div>
                 </div>
 
@@ -224,12 +224,12 @@ const ModelsPage = () => {
                     Technical Specs
                   </h3>
                   <div className="relative space-y-6">
-                    {model.specs.map((spec) => (
-                      <div key={spec.label} className="flex items-center justify-between">
+                    {model.specs.map((spec) =>
+                  <div key={spec.label} className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">{spec.label}</span>
                         <span className="font-display text-lg font-bold text-foreground">{spec.value}</span>
                       </div>
-                    ))}
+                  )}
                   </div>
 
                   <div className="relative mt-8 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
@@ -246,7 +246,7 @@ const ModelsPage = () => {
                 </div>
               </div>
             </motion.div>
-          ))}
+          )}
         </div>
       </section>
 
@@ -257,8 +257,8 @@ const ModelsPage = () => {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16 text-center"
-          >
+            className="mb-16 text-center">
+            
             <h2 className="font-display text-4xl font-black uppercase md:text-5xl">
               Why <span className="text-primary">Megsy</span>
             </h2>
@@ -266,25 +266,25 @@ const ModelsPage = () => {
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {[
-              { icon: Layers, title: "Unified Platform", desc: "Chat, images, and videos in one place. No switching between tools or subscriptions." },
-              { icon: Globe, title: "Global Infrastructure", desc: "Low-latency servers worldwide ensure fast generation times regardless of your location." },
-              { icon: Shield, title: "Enterprise Security", desc: "End-to-end encryption, GDPR compliance, and SOC 2 aligned security practices." },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="rounded-2xl border border-white/[0.06] bg-card p-8"
-              >
+            { icon: Layers, title: "Unified Platform", desc: "Chat, images, and videos in one place. No switching between tools or subscriptions." },
+            { icon: Globe, title: "Global Infrastructure", desc: "Low-latency servers worldwide ensure fast generation times regardless of your location." },
+            { icon: Shield, title: "Enterprise Security", desc: "End-to-end encryption, GDPR compliance, and SOC 2 aligned security practices." }].
+            map((item, i) =>
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="rounded-2xl border border-white/[0.06] bg-card p-8">
+              
                 <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3">
                   <item.icon className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="mb-2 text-xl font-bold text-foreground">{item.title}</h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
               </motion.div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -295,8 +295,8 @@ const ModelsPage = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mx-auto max-w-3xl px-6 text-center"
-        >
+          className="mx-auto max-w-3xl px-6 text-center">
+          
           <h2 className="font-display text-4xl font-black uppercase md:text-5xl">
             Ready to <span className="text-primary">Create</span>?
           </h2>
@@ -312,8 +312,8 @@ const ModelsPage = () => {
       </section>
 
       <LandingFooter />
-    </div>
-  );
+    </div>);
+
 };
 
 export default ModelsPage;
