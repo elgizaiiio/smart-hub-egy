@@ -13,7 +13,7 @@ import LandingFooter from "@/components/landing/LandingFooter";
 const supportSchema = z.object({
   username: z.string().trim().min(1, "Username is required").max(100),
   email: z.string().trim().email("Invalid email").max(255),
-  message: z.string().trim().min(1, "Please describe your issue").max(2000),
+  message: z.string().trim().min(1, "Please describe your issue").max(2000)
 });
 
 const enterpriseSchema = z.object({
@@ -23,21 +23,21 @@ const enterpriseSchema = z.object({
   company: z.string().trim().min(1, "Company name is required").max(200),
   country: z.string().trim().min(1, "Country is required"),
   companySize: z.string().trim().min(1, "Company size is required"),
-  needs: z.string().trim().min(1, "Please tell us about your needs").max(2000),
+  needs: z.string().trim().min(1, "Please tell us about your needs").max(2000)
 });
 
 type SupportData = z.infer<typeof supportSchema>;
 type EnterpriseData = z.infer<typeof enterpriseSchema>;
 
 const countries = [
-  "Egypt", "United States", "United Kingdom", "Germany", "France",
-  "Saudi Arabia", "UAE", "Canada", "Australia", "Japan", "India",
-  "Brazil", "South Korea", "Other",
-];
+"Egypt", "United States", "United Kingdom", "Germany", "France",
+"Saudi Arabia", "UAE", "Canada", "Australia", "Japan", "India",
+"Brazil", "South Korea", "Other"];
+
 
 const companySizes = [
-  "1-10", "11-50", "51-200", "201-1000", "1000+",
-];
+"1-10", "11-50", "51-200", "201-1000", "1000+"];
+
 
 const ContactPage = () => {
   const [tab, setTab] = useState<"support" | "enterprise">("support");
@@ -48,7 +48,7 @@ const ContactPage = () => {
     const lenis = new Lenis({
       duration: 1.8,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
+      smoothWheel: true
     });
     function raf(time: number) {
       lenis.raf(time);
@@ -74,7 +74,7 @@ const ContactPage = () => {
         name: data.username,
         email: data.email,
         message: data.message,
-        form_type: "support",
+        form_type: "support"
       });
       if (error) throw error;
       toast.success("Request submitted successfully!");
@@ -94,7 +94,7 @@ const ContactPage = () => {
         email: data.workEmail,
         message: data.needs,
         subject: `Enterprise - ${data.company}`,
-        form_type: "enterprise",
+        form_type: "enterprise"
       });
       if (error) throw error;
       toast.success("Inquiry submitted successfully!");
@@ -107,7 +107,7 @@ const ContactPage = () => {
   };
 
   const inputClass =
-    "w-full rounded-xl border border-white/10 bg-transparent px-5 py-4 text-sm text-white placeholder:text-white/30 outline-none transition-colors focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 selectable";
+  "w-full rounded-xl border border-white/10 bg-transparent px-5 py-4 text-sm text-white placeholder:text-white/30 outline-none transition-colors focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 selectable";
 
   return (
     <div data-theme="dark" className="min-h-screen bg-background text-foreground">
@@ -122,41 +122,41 @@ const ContactPage = () => {
               initial={{ opacity: 0, x: -60 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="sticky top-32"
-            >
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg border-[3px] border-purple-500 bg-purple-600">
-                {/* Dense overlapping text */}
-                <div className="absolute inset-0 flex flex-col justify-between p-3 md:p-5">
-                  <div className="flex-1 flex flex-col justify-center leading-[0.85]">
-                    <span className="block font-black text-[22vw] md:text-[8.5vw] uppercase tracking-[-0.06em] text-black/90" style={{ lineHeight: 0.82 }}>
-                      NEED TO
-                    </span>
-                    <span className="block font-black text-[22vw] md:text-[8.5vw] uppercase tracking-[-0.06em] text-black/90" style={{ lineHeight: 0.82 }}>
-                      CONTACT
-                    </span>
-                    <span className="block font-black text-[22vw] md:text-[8.5vw] uppercase tracking-[-0.06em] text-black/90" style={{ lineHeight: 0.82 }}>
-                      US?
-                    </span>
-                  </div>
-                  {/* Envelope icon */}
-                  <div className="flex justify-end">
-                    <svg viewBox="0 0 120 90" fill="none" className="w-[40%] text-black/90">
-                      <rect x="2" y="2" width="116" height="86" rx="4" stroke="currentColor" strokeWidth="5" />
-                      <path d="M2 2 L60 50 L118 2" stroke="currentColor" strokeWidth="5" fill="none" />
-                      <path d="M2 88 L45 50" stroke="currentColor" strokeWidth="5" />
-                      <path d="M118 88 L75 50" stroke="currentColor" strokeWidth="5" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              className="sticky top-32">
+              
+              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              
             </motion.div>
 
             {/* Right: Form */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.15 }}
-            >
+              transition={{ duration: 0.7, delay: 0.15 }}>
+              
               <h1 className="font-display mb-8 text-4xl font-black uppercase tracking-tight text-white md:text-5xl">
                 REACH OUT TO OUR TEAM
               </h1>
@@ -166,73 +166,73 @@ const ContactPage = () => {
                 <button
                   onClick={() => setTab("support")}
                   className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-all ${
-                    tab === "support"
-                      ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/25"
-                      : "text-white/50 hover:text-white/80"
-                  }`}
-                >
+                  tab === "support" ?
+                  "bg-emerald-500 text-black shadow-lg shadow-emerald-500/25" :
+                  "text-white/50 hover:text-white/80"}`
+                  }>
+                  
                   Support and billing
                 </button>
                 <button
                   onClick={() => setTab("enterprise")}
                   className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-all ${
-                    tab === "enterprise"
-                      ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/25"
-                      : "text-white/50 hover:text-white/80"
-                  }`}
-                >
+                  tab === "enterprise" ?
+                  "bg-emerald-500 text-black shadow-lg shadow-emerald-500/25" :
+                  "text-white/50 hover:text-white/80"}`
+                  }>
+                  
                   Enterprise sales
                 </button>
               </div>
 
               {/* Support form */}
-              {tab === "support" && (
-                <motion.form
-                  key="support"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35 }}
-                  onSubmit={supportForm.handleSubmit(onSupportSubmit)}
-                  className="space-y-5"
-                >
+              {tab === "support" &&
+              <motion.form
+                key="support"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                onSubmit={supportForm.handleSubmit(onSupportSubmit)}
+                className="space-y-5">
+                
                   <div className="grid gap-5 md:grid-cols-2">
                     <div>
                       <input
-                        {...supportForm.register("username")}
-                        placeholder="Your Megsy username *"
-                        className={inputClass}
-                      />
-                      {supportForm.formState.errors.username && (
-                        <p className="mt-1.5 text-xs text-red-400">{supportForm.formState.errors.username.message}</p>
-                      )}
+                      {...supportForm.register("username")}
+                      placeholder="Your Megsy username *"
+                      className={inputClass} />
+                    
+                      {supportForm.formState.errors.username &&
+                    <p className="mt-1.5 text-xs text-red-400">{supportForm.formState.errors.username.message}</p>
+                    }
                     </div>
                     <div>
                       <input
-                        {...supportForm.register("email")}
-                        placeholder="Email address *"
-                        className={inputClass}
-                      />
-                      {supportForm.formState.errors.email && (
-                        <p className="mt-1.5 text-xs text-red-400">{supportForm.formState.errors.email.message}</p>
-                      )}
+                      {...supportForm.register("email")}
+                      placeholder="Email address *"
+                      className={inputClass} />
+                    
+                      {supportForm.formState.errors.email &&
+                    <p className="mt-1.5 text-xs text-red-400">{supportForm.formState.errors.email.message}</p>
+                    }
                     </div>
                   </div>
                   <div>
                     <textarea
-                      {...supportForm.register("message")}
-                      placeholder="Describe your issue *"
-                      rows={6}
-                      className={`${inputClass} resize-none`}
-                    />
-                    {supportForm.formState.errors.message && (
-                      <p className="mt-1.5 text-xs text-red-400">{supportForm.formState.errors.message.message}</p>
-                    )}
+                    {...supportForm.register("message")}
+                    placeholder="Describe your issue *"
+                    rows={6}
+                    className={`${inputClass} resize-none`} />
+                  
+                    {supportForm.formState.errors.message &&
+                  <p className="mt-1.5 text-xs text-red-400">{supportForm.formState.errors.message.message}</p>
+                  }
                   </div>
                   <button
-                    type="submit"
-                    disabled={submitting}
-                    className="rounded-full border border-white/20 bg-white px-8 py-3 text-sm font-bold text-black transition-all hover:bg-white/90 disabled:opacity-50"
-                  >
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-full border border-white/20 bg-white px-8 py-3 text-sm font-bold text-black transition-all hover:bg-white/90 disabled:opacity-50">
+                  
                     {submitting ? "Submitting..." : "Submit Request"}
                   </button>
                   <p className="text-xs leading-relaxed text-white/25">
@@ -242,86 +242,86 @@ const ContactPage = () => {
                     </a>.
                   </p>
                 </motion.form>
-              )}
+              }
 
               {/* Enterprise form */}
-              {tab === "enterprise" && (
-                <motion.form
-                  key="enterprise"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35 }}
-                  onSubmit={enterpriseForm.handleSubmit(onEnterpriseSubmit)}
-                  className="space-y-5"
-                >
+              {tab === "enterprise" &&
+              <motion.form
+                key="enterprise"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                onSubmit={enterpriseForm.handleSubmit(onEnterpriseSubmit)}
+                className="space-y-5">
+                
                   <div className="grid gap-5 md:grid-cols-2">
                     <div>
                       <input {...enterpriseForm.register("firstName")} placeholder="First Name *" className={inputClass} />
-                      {enterpriseForm.formState.errors.firstName && (
-                        <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.firstName.message}</p>
-                      )}
+                      {enterpriseForm.formState.errors.firstName &&
+                    <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.firstName.message}</p>
+                    }
                     </div>
                     <div>
                       <input {...enterpriseForm.register("lastName")} placeholder="Last Name *" className={inputClass} />
-                      {enterpriseForm.formState.errors.lastName && (
-                        <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.lastName.message}</p>
-                      )}
+                      {enterpriseForm.formState.errors.lastName &&
+                    <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.lastName.message}</p>
+                    }
                     </div>
                   </div>
                   <div className="grid gap-5 md:grid-cols-2">
                     <div>
                       <input {...enterpriseForm.register("workEmail")} placeholder="Work Email *" className={inputClass} />
-                      {enterpriseForm.formState.errors.workEmail && (
-                        <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.workEmail.message}</p>
-                      )}
+                      {enterpriseForm.formState.errors.workEmail &&
+                    <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.workEmail.message}</p>
+                    }
                     </div>
                     <div>
                       <input {...enterpriseForm.register("company")} placeholder="Company Name *" className={inputClass} />
-                      {enterpriseForm.formState.errors.company && (
-                        <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.company.message}</p>
-                      )}
+                      {enterpriseForm.formState.errors.company &&
+                    <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.company.message}</p>
+                    }
                     </div>
                   </div>
                   <div className="grid gap-5 md:grid-cols-2">
                     <div>
                       <select {...enterpriseForm.register("country")} className={`${inputClass} appearance-none`} defaultValue="">
                         <option value="" disabled className="bg-black text-white/30">Country *</option>
-                        {countries.map((c) => (
-                          <option key={c} value={c} className="bg-black text-white">{c}</option>
-                        ))}
-                      </select>
-                      {enterpriseForm.formState.errors.country && (
-                        <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.country.message}</p>
+                        {countries.map((c) =>
+                      <option key={c} value={c} className="bg-black text-white">{c}</option>
                       )}
+                      </select>
+                      {enterpriseForm.formState.errors.country &&
+                    <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.country.message}</p>
+                    }
                     </div>
                     <div>
                       <select {...enterpriseForm.register("companySize")} className={`${inputClass} appearance-none`} defaultValue="">
                         <option value="" disabled className="bg-black text-white/30">Company size *</option>
-                        {companySizes.map((s) => (
-                          <option key={s} value={s} className="bg-black text-white">{s}</option>
-                        ))}
-                      </select>
-                      {enterpriseForm.formState.errors.companySize && (
-                        <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.companySize.message}</p>
+                        {companySizes.map((s) =>
+                      <option key={s} value={s} className="bg-black text-white">{s}</option>
                       )}
+                      </select>
+                      {enterpriseForm.formState.errors.companySize &&
+                    <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.companySize.message}</p>
+                    }
                     </div>
                   </div>
                   <div>
                     <textarea
-                      {...enterpriseForm.register("needs")}
-                      placeholder="Tell us about your needs *"
-                      rows={5}
-                      className={`${inputClass} resize-none`}
-                    />
-                    {enterpriseForm.formState.errors.needs && (
-                      <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.needs.message}</p>
-                    )}
+                    {...enterpriseForm.register("needs")}
+                    placeholder="Tell us about your needs *"
+                    rows={5}
+                    className={`${inputClass} resize-none`} />
+                  
+                    {enterpriseForm.formState.errors.needs &&
+                  <p className="mt-1.5 text-xs text-red-400">{enterpriseForm.formState.errors.needs.message}</p>
+                  }
                   </div>
                   <button
-                    type="submit"
-                    disabled={submitting}
-                    className="rounded-full border border-white/20 bg-white px-8 py-3 text-sm font-bold text-black transition-all hover:bg-white/90 disabled:opacity-50"
-                  >
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-full border border-white/20 bg-white px-8 py-3 text-sm font-bold text-black transition-all hover:bg-white/90 disabled:opacity-50">
+                  
                     {submitting ? "Submitting..." : "Submit Inquiry"}
                   </button>
                   <p className="text-xs leading-relaxed text-white/25">
@@ -331,15 +331,15 @@ const ContactPage = () => {
                     </a>.
                   </p>
                 </motion.form>
-              )}
+              }
             </motion.div>
           </div>
         </div>
       </section>
 
       <LandingFooter />
-    </div>
-  );
+    </div>);
+
 };
 
 export default ContactPage;
