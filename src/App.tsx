@@ -48,6 +48,14 @@ import VideoAgentPage from "./pages/VideoAgentPage";
 import CookieConsent from "./components/CookieConsent";
 import TranslationWrapper from "./components/TranslationWrapper";
 import EgyptPage from "./pages/EgyptPage";
+import ModelsPage from "./pages/ModelsPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import CookiePolicyPage from "./pages/CookiePolicyPage";
+import CareersPage from "./pages/CareersPage";
+import SecurityPage from "./pages/SecurityPage";
+import BlogPage from "./pages/BlogPage";
+import ChangelogPage from "./pages/ChangelogPage";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +133,14 @@ const App = () => {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/egypt" element={<EgyptPage />} />
                 <Route path="/apis" element={<PricingPage />} />
+                <Route path="/models" element={<ModelsPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/cookies" element={<CookiePolicyPage />} />
+                <Route path="/careers" element={<CareersPage />} />
+                <Route path="/security" element={<SecurityPage />} />
+                <Route path="/blog" element={<BlogPage />} />
+                <Route path="/changelog" element={<ChangelogPage />} />
                 <Route path="/services/images" element={<ServiceImagesPage />} />
                 <Route path="/services/videos" element={<ServiceVideosPage />} />
                 <Route path="/services/chat" element={<ServiceChatPage />} />
