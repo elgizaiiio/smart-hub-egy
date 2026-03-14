@@ -84,7 +84,7 @@ const navItems: NavItem[] = [
         title: "Resources",
         items: [
           { label: "Blog", desc: "Tips, tutorials and updates", href: "/blog" },
-          { label: "Support", desc: "Get help from our team", href: "/contact" },
+          { label: "Support", desc: "Get help from our AI assistant", href: "/support" },
           { label: "Changelog", desc: "What's new in Megsy", href: "/changelog" },
           { label: "Models", desc: "Explore Megsy AI models", href: "/models" },
         ],
