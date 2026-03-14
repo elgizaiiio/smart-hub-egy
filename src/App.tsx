@@ -54,6 +54,7 @@ import CareersPage from "./pages/CareersPage";
 import SecurityPage from "./pages/SecurityPage";
 import BlogPage from "./pages/BlogPage";
 import ChangelogPage from "./pages/ChangelogPage";
+import SupportPage from "./pages/SupportPage";
 
 const queryClient = new QueryClient();
 
