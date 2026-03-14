@@ -3,27 +3,28 @@ import { useNavigate } from "react-router-dom";
 
 const footerLinks = {
   Create: [
-    { label: "AI Chat", href: "#features" },
-    { label: "Image Generation", href: "#features" },
-    { label: "Video Generation", href: "#features" },
-    { label: "Code Builder", href: "#features" },
-    { label: "Image Tools", href: "#features" },
+    { label: "AI Chat", href: "/services/chat" },
+    { label: "Image Generation", href: "/services/images" },
+    { label: "Video Generation", href: "/services/videos" },
+    { label: "Code Builder", href: "/services/code" },
+    { label: "File Analysis", href: "/services/files" },
   ],
   Product: [
+    { label: "Models", href: "/models" },
     { label: "Pricing", href: "/pricing" },
-    { label: "API", href: "/apis" },
-    { label: "Referral Program", href: "#" },
-    { label: "Integrations", href: "#" },
+    { label: "Changelog", href: "/changelog" },
+    { label: "Blog", href: "/blog" },
   ],
-  About: [
-    { label: "About Us", href: "https://about.megsyai.com" },
+  Company: [
+    { label: "Careers", href: "/careers" },
+    { label: "Security", href: "/security" },
     { label: "Contact", href: "/contact" },
-    { label: "Support", href: "/contact" },
     { label: "Egypt 🇪🇬", href: "/egypt" },
   ],
   Legal: [
-    { label: "Terms of Service", href: "https://terms.megsyai.com" },
-    { label: "Privacy Policy", href: "https://privacy.megsyai.com" },
+    { label: "Terms of Service", href: "/terms" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Cookie Policy", href: "/cookies" },
   ],
 };
 
