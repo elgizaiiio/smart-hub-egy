@@ -125,18 +125,29 @@ const LandingFooter = () => {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      onClick={(e) => {
-                        if (link.href.startsWith("/")) {
-                          e.preventDefault();
-                          navigate(link.href);
-                        }
-                      }}
-                      className="text-sm text-white/30 transition-colors hover:text-white/60"
-                    >
-                      {link.label}
-                    </a>
+                    {"external" in link && link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-white/30 transition-colors hover:text-white/60"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <a
+                        href={link.href}
+                        onClick={(e) => {
+                          if (link.href.startsWith("/")) {
+                            e.preventDefault();
+                            navigate(link.href);
+                          }
+                        }}
+                        className="text-sm text-white/30 transition-colors hover:text-white/60"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
