@@ -278,9 +278,9 @@ const ModelsPage = () => {
               transition={{ delay: i * 0.1 }}
               className="rounded-2xl border border-white/[0.06] bg-card p-8">
               
-                <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3">
-                  <item.icon className="h-6 w-6 text-primary" />
-                </div>
+                
+
+              
                 <h3 className="mb-2 text-xl font-bold text-foreground">{item.title}</h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
               </motion.div>
