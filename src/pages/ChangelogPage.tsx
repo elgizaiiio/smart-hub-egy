@@ -110,7 +110,7 @@ const ChangelogPage = () =>
               return (
                 <div key={ei} className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-card px-5 py-4">
                       <span className={`mt-0.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${cfg.color}`}>
-                        <cfg.icon className="h-3 w-3" />
+                        
                         {cfg.label}
                       </span>
                       <span className="text-sm text-foreground/80">{entry.text}</span>
