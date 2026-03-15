@@ -432,7 +432,6 @@ const ChatPage = () => {
                                     {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                                   </button>
                                   <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                    <BookOpen className="w-4 h-4" />
                                     <span className="text-sm text-foreground">Deep Research</span>
                                     {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
                                   </button>
