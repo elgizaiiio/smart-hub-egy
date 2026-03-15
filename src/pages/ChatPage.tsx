@@ -370,7 +370,7 @@ const ChatPage = () => {
                   {/* Greeting */}
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <PegtopIcon className="text-primary" />
-                    <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Megsy chat?</h2>
+                    <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
                   </div>
 
                   {/* Mobile shortcut buttons under title - no icons */}
