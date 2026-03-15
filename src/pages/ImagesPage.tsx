@@ -492,7 +492,7 @@ const ImagesPage = () => {
                     key={img.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="break-inside-avoid mb-2 group relative rounded-2xl overflow-hidden"
+                    className="break-inside-avoid mb-2 group relative rounded-2xl overflow-hidden max-h-64">
                   >
                     <img
                       src={img.url}
