@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
-import { Copy, ThumbsUp, ThumbsDown, MessageSquare, RotateCcw, Check, ExternalLink, Share2 } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import ThinkingLoader from "./ThinkingLoader";
 
@@ -25,7 +26,7 @@ const getFavicon = (url: string) => {
 
 const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, onLike, liked, onShare }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
-  const [showActions, setShowActions] = useState(false);
+  const [showCopyPopup, setShowCopyPopup] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const handleCopy = () => {
@@ -35,8 +36,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
   };
 
   const handleLongPressStart = () => {
-    if (role !== "assistant") return;
-    longPressTimer.current = setTimeout(() => setShowActions(true), 500);
+    longPressTimer.current = setTimeout(() => setShowCopyPopup(true), 500);
   };
 
   const handleLongPressEnd = () => {
@@ -59,7 +59,11 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               ))}
             </div>
           )}
-          <div className="bg-secondary text-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
+          <div
+            className="bg-secondary text-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed"
+            onTouchStart={handleLongPressStart}
+            onTouchEnd={handleLongPressEnd}
+          >
             {content}
           </div>
         </div>
@@ -78,9 +82,6 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
   return (
     <div
       className="mb-6 relative"
-      onMouseDown={handleLongPressStart}
-      onMouseUp={handleLongPressEnd}
-      onMouseLeave={handleLongPressEnd}
       onTouchStart={handleLongPressStart}
       onTouchEnd={handleLongPressEnd}
     >
@@ -129,38 +130,55 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
 
-          {/* Action buttons - Claude style */}
+          {/* Action buttons */}
           {!isStreaming && content && (
             <div className="flex items-center gap-0.5 mt-2">
               <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all active:scale-90 duration-150" title="Copy">
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
-              <button
+              <motion.button
                 onClick={() => onLike?.(liked === true ? null : true)}
-                className={`p-1.5 rounded-lg transition-all active:scale-90 duration-150 ${liked === true ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
+                className={`p-1.5 rounded-lg transition-all duration-150 ${liked === true ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
                 title="Like"
+                whileTap={{ scale: 1.4 }}
+                transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
-                <ThumbsUp className={`w-4 h-4 transition-transform duration-200 ${liked === true ? "scale-110" : ""}`} />
-              </button>
-              <button
+                <ThumbsUp className="w-4 h-4" />
+              </motion.button>
+              <motion.button
                 onClick={() => onLike?.(liked === false ? null : false)}
-                className={`p-1.5 rounded-lg transition-all active:scale-90 duration-150 ${liked === false ? "text-destructive bg-destructive/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
+                className={`p-1.5 rounded-lg transition-all duration-150 ${liked === false ? "text-destructive bg-destructive/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
                 title="Dislike"
+                whileTap={{ scale: 1.4 }}
+                transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
-                <ThumbsDown className={`w-4 h-4 transition-transform duration-200 ${liked === false ? "scale-110" : ""}`} />
-              </button>
+                <ThumbsDown className="w-4 h-4" />
+              </motion.button>
             </div>
           )}
 
-          {showActions && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowActions(false)} />
-              <div className="absolute left-0 top-0 z-50 glass-panel p-1 flex gap-1">
-                <button onClick={() => { handleCopy(); setShowActions(false); }} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"><Copy className="w-4 h-4" /></button>
-                <button onClick={() => { onLike?.(true); setShowActions(false); }} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"><ThumbsUp className="w-4 h-4" /></button>
-              </div>
-            </>
-          )}
+          {/* Mobile long-press copy popup */}
+          <AnimatePresence>
+            {showCopyPopup && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowCopyPopup(false)} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="absolute left-0 top-0 z-50 glass-panel px-3 py-2 flex items-center gap-2"
+                >
+                  <button
+                    onClick={() => { handleCopy(); setShowCopyPopup(false); }}
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </>
       )}
     </div>

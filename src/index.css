@@ -4,26 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent content copying (long press, right click, text selection) */
-* {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
+/* Mobile: Prevent content copying. Desktop: allow normal selection */
+@media (max-width: 767px) {
+  * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input, textarea, [contenteditable="true"], pre, code, .selectable {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+  img, video {
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
 }
 
-input, textarea, [contenteditable="true"], pre, code, .selectable {
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
-  -webkit-touch-callout: default;
-}
-
-img, video {
-  pointer-events: none;
-  -webkit-user-drag: none;
+@media (min-width: 768px) {
+  img, video {
+    -webkit-user-drag: none;
+  }
 }
 
 @layer base {
