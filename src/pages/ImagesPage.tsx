@@ -472,7 +472,7 @@ const ImagesPage = () => {
         {/* Showcase / content area */}
         <div className="flex-1 overflow-y-auto pb-48">
           {/* Top bar */}
-          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-transparent">
             <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground">
               <Menu className="w-5 h-5" />
             </button>
