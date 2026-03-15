@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ThinkingLoader from "@/components/ThinkingLoader";
-import FancyButton from "@/components/FancyButton";
 import ReactMarkdown from "react-markdown";
 
 interface ChatMsg {
@@ -35,16 +34,6 @@ const GoogleDriveIcon = () => (
     <path d="M1.15 15l3.44 5.96h14.82l3.44-5.96H1.15z" fill="#EA4335"/>
   </svg>
 );
-const NotionIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-    <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L18.29 2.16c-.42-.326-.98-.7-2.055-.607L3.572 2.573c-.467.047-.56.28-.374.466l1.261 1.17zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.84-.046.933-.56.933-1.167V6.354c0-.606-.233-.933-.746-.886l-15.177.887c-.56.046-.747.326-.747.933z"/>
-  </svg>
-);
-
-const FILE_INTEGRATIONS = [
-  { name: "Google Drive", icon: GoogleDriveIcon, desc: "Upload & access files" },
-  { name: "Notion", icon: NotionIcon, desc: "Create & import pages" },
-];
 
 const FILE_PLACEHOLDERS = [
   "Write a professional business proposal...",
@@ -70,6 +59,7 @@ const FilesPage = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,7 +77,14 @@ const FilesPage = () => {
     return () => clearInterval(t);
   }, [placeholderIdx, input]);
 
-  // Close menu on outside click
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "32px";
+    el.style.height = Math.min(el.scrollHeight, 128) + "px";
+  }, [input]);
+
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -107,12 +104,23 @@ const FilesPage = () => {
         toast.error(`${file.name} is too large (max 10MB)`);
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setAttachedFiles(prev => [...prev, { name: file.name, type: file.type, data: reader.result as string }]);
-        toast.success(`${file.name} attached`);
-      };
-      reader.readAsDataURL(file);
+      if (type === "image") {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
+          toast.success(`${file.name} attached`);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Read text content for documents
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = reader.result as string;
+          setAttachedFiles(prev => [...prev, { name: file.name, type: file.type, data: text.slice(0, 10000) }]);
+          toast.success(`${file.name} attached`);
+        };
+        reader.readAsText(file);
+      }
     });
     e.target.value = "";
   };
@@ -135,12 +143,28 @@ const FilesPage = () => {
     setConversationId(id);
     const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true });
     if (msgs) {
-      setMessages(msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })));
+      const loaded: ChatMsg[] = [];
+      for (const m of msgs) {
+        const msg: ChatMsg = { role: m.role as "user" | "assistant", content: m.content };
+        // Restore htmlContent from images field (we store it there as JSON)
+        if (m.role === "assistant" && m.images && m.images.length > 0) {
+          try {
+            const meta = JSON.parse(m.images[0]);
+            if (meta.htmlContent) msg.htmlContent = meta.htmlContent;
+          } catch {
+            // Not JSON, ignore
+          }
+        }
+        loaded.push(msg);
+      }
+      setMessages(loaded);
     }
   };
 
-  const saveMessage = async (convId: string, role: string, content: string) => {
-    await supabase.from("messages").insert({ conversation_id: convId, role, content });
+  const saveMessage = async (convId: string, role: string, content: string, htmlContent?: string) => {
+    // Store htmlContent in the images field as JSON for persistence
+    const images = htmlContent ? [JSON.stringify({ htmlContent })] : null;
+    await supabase.from("messages").insert({ conversation_id: convId, role, content, images });
   };
 
   const handleGenerate = async () => {
@@ -158,13 +182,44 @@ const FilesPage = () => {
     if (convId) await saveMessage(convId, "user", userContent);
 
     try {
+      // Build the prompt with actual file/image content
       let prompt = `Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished. Output ONLY the HTML code, no explanations:\n\n${userInput}`;
-      if (files.length > 0) prompt += `\n\n[User attached ${files.length} file(s): ${files.map(f => f.name).join(", ")}]`;
+      
+      // Include actual file content
+      const fileAttachments = files.filter(f => f.type !== "image");
+      if (fileAttachments.length > 0) {
+        prompt += "\n\n--- Attached Documents ---\n";
+        fileAttachments.forEach(f => {
+          prompt += `\n--- ${f.name} ---\n${f.data}\n`;
+        });
+      }
+
+      // Build messages with history for memory
+      const historyMessages = messages.map(m => ({
+        role: m.role,
+        content: m.role === "assistant" ? m.content : m.content,
+      }));
+
+      // For images, send as multimodal
+      const imageAttachments = files.filter(f => f.type === "image");
+      let userMessage: any;
+      if (imageAttachments.length > 0) {
+        const content: any[] = imageAttachments.map(img => ({
+          type: "image_url",
+          image_url: { url: img.data },
+        }));
+        content.push({ type: "text", text: prompt });
+        userMessage = { role: "user", content };
+      } else {
+        userMessage = { role: "user", content: prompt };
+      }
+
+      const allMessages = [...historyMessages, userMessage];
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ messages: [{ role: "user", content: prompt }], model: "google/gemini-3-flash-preview", mode: "files" }),
+        body: JSON.stringify({ messages: allMessages, model: "google/gemini-3-flash-preview", mode: "files", searchEnabled }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -198,11 +253,12 @@ const FilesPage = () => {
       const htmlMatch = content.match(/```html\n([\s\S]*?)```/);
       if (htmlMatch) html = htmlMatch[1];
 
+      // Generate a contextual description
       const descResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
-          messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML document for them. Write a brief, friendly description of what was created and suggest 2-3 improvements. Keep it conversational, 2-3 sentences max. Do not use emoji. Respond in the same language as the user's request.` }],
+          messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML document for them. Write a unique, contextual description of what was created. Be specific about the content. Suggest 2-3 specific improvements based on what was actually generated. Keep it conversational, 2-4 sentences. Do not use emoji. Respond in the same language as the user's request. IMPORTANT: Do not repeat the same description every time - be creative and specific.` }],
           model: "google/gemini-3-flash-preview",
         }),
       });
@@ -231,13 +287,26 @@ const FilesPage = () => {
       }
 
       setMessages(prev => [...prev, { role: "assistant", content: description, htmlContent: html }]);
-      if (convId) await saveMessage(convId, "assistant", description);
+      if (convId) await saveMessage(convId, "assistant", description, html);
     } catch {
       const failMsg = "Generation failed. Please try again.";
       setMessages(prev => [...prev, { role: "assistant", content: failMsg }]);
       if (convId) await saveMessage(convId, "assistant", failMsg);
     }
     setIsGenerating(false);
+  };
+
+  const handleDownloadHtml = (html: string) => {
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "document.html";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("File downloaded");
   };
 
   const handleDownloadPdf = (html: string) => {
@@ -262,6 +331,7 @@ const FilesPage = () => {
             <div className="flex items-center justify-between px-4 py-2 border-b border-border">
               <p className="text-sm font-medium text-foreground">Preview</p>
               <div className="flex gap-2">
+                <button onClick={() => handleDownloadHtml(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-secondary text-foreground hover:bg-accent">HTML</button>
                 <button onClick={() => handleDownloadPdf(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">PDF</button>
                 <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground">
                   <X className="w-4 h-4" />
@@ -322,6 +392,9 @@ const FilesPage = () => {
                         <button onClick={() => setPreviewHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-foreground text-sm hover:bg-accent transition-colors">
                           <Eye className="w-4 h-4" /> Preview
                         </button>
+                        <button onClick={() => handleDownloadHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-foreground text-sm hover:bg-accent transition-colors">
+                          <Download className="w-4 h-4" /> HTML
+                        </button>
                         <button onClick={() => handleDownloadPdf(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors">
                           <Download className="w-4 h-4" /> PDF
                         </button>
@@ -344,7 +417,11 @@ const FilesPage = () => {
             <div className="flex flex-wrap gap-2 mb-2 px-1">
               {attachedFiles.map((f, i) => (
                 <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm text-foreground">
-                  <Paperclip className="w-3 h-3 text-muted-foreground" />
+                  {f.type === "image" ? (
+                    <img src={f.data} alt="" className="w-6 h-6 rounded object-cover" />
+                  ) : (
+                    <Paperclip className="w-3 h-3 text-muted-foreground" />
+                  )}
                   <span className="truncate max-w-[120px]">{f.name}</span>
                   <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground">
                     <X className="w-3 h-3" />
@@ -392,22 +469,16 @@ const FilesPage = () => {
                     <div className="border-t border-border my-1.5" />
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 py-1">Integrations</p>
 
-                    {FILE_INTEGRATIONS.map((app) => {
-                      const IconComp = app.icon;
-                      return (
-                        <button
-                          key={app.name}
-                          onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
-                        >
-                          <IconComp />
-                          <div className="min-w-0">
-                            <span className="text-sm text-foreground block">{app.name}</span>
-                            <span className="text-[10px] text-muted-foreground">{app.desc}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
+                    <button
+                      onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+                    >
+                      <GoogleDriveIcon />
+                      <div className="min-w-0">
+                        <span className="text-sm text-foreground block">Google Drive</span>
+                        <span className="text-[10px] text-muted-foreground">Upload & access files</span>
+                      </div>
+                    </button>
                     <button
                       onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
                       className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-xs text-muted-foreground"
@@ -420,9 +491,15 @@ const FilesPage = () => {
             </div>
 
             <textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={() => { /* Enter creates new line naturally */ }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleGenerate();
+                }
+              }}
               placeholder={displayedPlaceholder + "│"}
               rows={1}
               className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
@@ -432,7 +509,7 @@ const FilesPage = () => {
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
             </button>
           </div>
-          <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.txt,.md,.csv,.json,.docx,.xlsx" multiple onChange={(e) => handleFileAttach(e, "file")} />
+          <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.txt,.md,.csv,.json,.docx,.xlsx,.xml,.html,.css" multiple onChange={(e) => handleFileAttach(e, "file")} />
           <input ref={imageInputRef} type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileAttach(e, "image")} />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, BookOpen } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,8 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   images?: string[];
+  attachedImages?: string[];
+  attachedFiles?: { name: string; type: string }[];
   liked?: boolean | null;
   id?: string;
 }
@@ -64,7 +66,7 @@ const ChatPage = () => {
   const [conversationTitle, setConversationTitle] = useState("");
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
-  const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{name: string; type: string; data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareMode, setShareMode] = useState<"private" | "public">("public");
@@ -74,6 +76,7 @@ const ChatPage = () => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -138,7 +141,7 @@ const ChatPage = () => {
   const handleModeChange = (mode: ChatMode) => {
     setChatMode((prev) => prev === mode ? "normal" : mode);
     if (mode === "deep-research") {
-      setSearchEnabled(true); // Deep research always uses search
+      setSearchEnabled(true);
     } else if (mode !== "normal") {
       setSearchEnabled(false);
     }
@@ -152,16 +155,32 @@ const ChatPage = () => {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMsg: Message = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput(""); setAttachedFiles([]); setIsLoading(true); setIsThinking(true);
+    if (!input.trim() && attachedFiles.length === 0) return;
+    if (isLoading) return;
 
-    const convId = await createOrUpdateConversation(input);
-    if (convId) await saveMessage(convId, "user", input);
+    // Build user message with attachments metadata
+    const imageAttachments = attachedFiles.filter((f) => f.type === "image");
+    const fileAttachments = attachedFiles.filter((f) => f.type === "file");
+
+    const userMsg: Message = {
+      role: "user",
+      content: input || (attachedFiles.length > 0 ? `[${attachedFiles.length} file(s) attached]` : ""),
+      attachedImages: imageAttachments.map(f => f.data),
+      attachedFiles: fileAttachments.map(f => ({ name: f.name, type: f.type })),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    const userInput = input;
+    setInput(""); 
+    const currentFiles = [...attachedFiles];
+    setAttachedFiles([]); 
+    setIsLoading(true); setIsThinking(true);
+
+    const convId = await createOrUpdateConversation(userInput || "File analysis");
+    if (convId) await saveMessage(convId, "user", userInput || `[${currentFiles.length} file(s) attached]`);
     if (convId && messages.length === 0) {
-      await supabase.from("conversations").update({ title: input.slice(0, 50), updated_at: new Date().toISOString() }).eq("id", convId);
-      setConversationTitle(input.slice(0, 50));
+      const title = (userInput || "File analysis").slice(0, 50);
+      await supabase.from("conversations").update({ title, updated_at: new Date().toISOString() }).eq("id", convId);
+      setConversationTitle(title);
     }
 
     let assistantContent = "";
@@ -179,13 +198,38 @@ const ChatPage = () => {
       });
     };
 
-    const imageAttachments = attachedFiles.filter((f) => f.type === "image");
+    // Build multimodal messages for the AI
     const allMessages = [...messages, userMsg].map((m) => {
-      if (m === userMsg && imageAttachments.length > 0) {
-        return { role: m.role, content: [...imageAttachments.map((f) => ({ type: "image_url" as const, image_url: { url: f.data } })), { type: "text" as const, text: m.content }] };
+      const imgs = m.attachedImages || [];
+      const files = m.attachedFiles || [];
+      
+      // If this message has image attachments, send as multimodal
+      if (imgs.length > 0) {
+        const content: any[] = imgs.map((imgData) => ({
+          type: "image_url" as const,
+          image_url: { url: imgData },
+        }));
+        if (m.content) {
+          content.push({ type: "text" as const, text: m.content });
+        }
+        return { role: m.role, content };
       }
+      
       return { role: m.role, content: m.content };
     });
+
+    // Add file content to the last user message
+    if (currentFiles.some(f => f.type === "file")) {
+      const fileTexts = currentFiles
+        .filter(f => f.type === "file")
+        .map(f => `--- File: ${f.name} ---\n${f.data}`)
+        .join("\n\n");
+      
+      const lastMsg = allMessages[allMessages.length - 1];
+      if (typeof lastMsg.content === "string") {
+        lastMsg.content = `${lastMsg.content}\n\n${fileTexts}`;
+      }
+    }
 
     if (chatMode !== "normal" && MODE_PROMPTS[chatMode]) {
       allMessages.unshift({ role: "user" as const, content: `[System instruction]: ${MODE_PROMPTS[chatMode]}` });
@@ -222,24 +266,39 @@ const ChatPage = () => {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
-      reader.readAsDataURL(file);
-    } else {
-      const text = await file.text();
-      setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: text.slice(0, 5000) }]);
-      setInput((prev) => prev + `\n\nFile (${file.name}):\n${text.slice(0, 5000)}`);
-    }
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach(async (file) => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
+        reader.readAsDataURL(file);
+      } else {
+        const text = await file.text();
+        setAttachedFiles((prev) => [...prev, { name: file.name, type: "file", data: text.slice(0, 8000) }]);
+      }
+    });
     e.target.value = "";
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const handleCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
-    reader.readAsDataURL(file); e.target.value = "";
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const handleShare = async () => {
@@ -296,6 +355,108 @@ const ChatPage = () => {
 
   const hasConversation = messages.length > 0;
 
+  // Render the plus menu content (shared between all 3 locations)
+  const renderPlusMenu = (isMobile: boolean) => (
+    <>
+      <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72">
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <button onClick={() => { cameraInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+            <Camera className="w-5 h-5 text-muted-foreground" />
+            <span className="text-[11px] text-foreground">Camera</span>
+          </button>
+          <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+            <Image className="w-5 h-5 text-muted-foreground" />
+            <span className="text-[11px] text-foreground">Photos</span>
+          </button>
+          <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
+            <FileUp className="w-5 h-5 text-muted-foreground" />
+            <span className="text-[11px] text-foreground">Files</span>
+          </button>
+        </div>
+        <div className="border-t border-border pt-2 space-y-1">
+          <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
+            <span className="text-sm text-foreground">Web search</span>
+            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+              <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+            </div>
+          </button>
+          {isMobile && (
+            <div className="border-t border-border mt-1 pt-1">
+              <button
+                onClick={() => setModelsExpanded(!modelsExpanded)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
+              >
+                <span className="text-sm text-foreground">{selectedModel.name}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${modelsExpanded ? "rotate-180" : ""}`} />
+              </button>
+              {modelsExpanded && (
+                <div className="space-y-0.5 mt-1">
+                  {getModelsForMode("chat").map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setSelectedModel(m); setModelsExpanded(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
+                        selectedModel.id === m.id ? "bg-primary/10 text-primary" : "hover:bg-accent/50"
+                      }`}
+                    >
+                      <span className="text-sm">{m.name}</span>
+                      {selectedModel.id === m.id && <span className="text-xs text-primary">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {!isMobile && (
+            <div className="px-3 py-2">
+              <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
+            </div>
+          )}
+          <div className="border-t border-border mt-1 pt-1">
+            <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
+            <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+              <span className="text-sm text-foreground">Learning Mode</span>
+              {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
+            </button>
+            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+              <span className="text-sm text-foreground">Shopping Mode</span>
+              {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
+            </button>
+            <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
+              <span className="text-sm text-foreground">Deep Research</span>
+              {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
+            </button>
+          </div>
+          <div className="border-t border-border mt-1 pt-1">
+            <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
+              <span className="text-sm text-foreground">Integrations</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+
+  // Render attached files preview
+  const renderAttachments = () => {
+    if (attachedFiles.length === 0) return null;
+    return (
+      <div className="flex gap-2 px-2 overflow-x-auto pb-1 mb-1">
+        {attachedFiles.map((f, i) => (
+          <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border shrink-0">
+            {f.type === "image" ? <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" /> : <FileUp className="w-3 h-3" />}
+            <span className="truncate max-w-[100px]">{f.name}</span>
+            <button onClick={() => setAttachedFiles((prev) => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <AppLayout
       onSelectConversation={loadConversation}
@@ -303,7 +464,6 @@ const ChatPage = () => {
       activeConversationId={conversationId}
     >
       <div className="h-full flex flex-col bg-background overflow-x-hidden">
-        {/* Mobile sidebar */}
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -315,23 +475,19 @@ const ChatPage = () => {
 
         {/* Top header bar */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-transparent">
-          {/* Left: mobile menu or conversation title */}
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
               <Menu className="w-5 h-5" />
             </button>
-
             <div className="hidden md:block" />
           </div>
 
-          {/* Center: Unlock Pro on mobile */}
           {!hasConversation && (
             <div className="absolute left-1/2 -translate-x-1/2 md:hidden">
               <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
             </div>
           )}
 
-          {/* Right: More menu */}
           <div className="flex items-center gap-2">
             {hasConversation && conversationId && (
               <DropdownMenu>
@@ -364,16 +520,13 @@ const ChatPage = () => {
         <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ? (
             <div className="flex flex-col h-full px-4">
-              {/* Title centered in available space */}
               <div className="flex-1 flex flex-col items-center justify-center">
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
-                  {/* Greeting */}
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <PegtopIcon className="text-primary" />
                     <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
                   </div>
 
-                  {/* Mobile shortcut buttons under title - no icons */}
                   <div className="flex md:hidden items-center justify-center gap-2 mb-6 flex-wrap">
                     <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
                       Photos
@@ -389,69 +542,14 @@ const ChatPage = () => {
                     </button>
                   </div>
 
-                  {/* Desktop: Input centered with greeting */}
+                  {/* Desktop: Input centered */}
                   <div className="hidden md:block w-full max-w-2xl mx-auto space-y-2 mt-4">
                     <div className="relative">
                       <AnimatePresence>
-                        {plusMenuOpen && (
-                          <>
-                            <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
-                            <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72">
-                              <div className="grid grid-cols-3 gap-2 mb-3">
-                                <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                                  <Camera className="w-5 h-5 text-muted-foreground" />
-                                  <span className="text-[11px] text-foreground">Camera</span>
-                                </button>
-                                <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                                  <Image className="w-5 h-5 text-muted-foreground" />
-                                  <span className="text-[11px] text-foreground">Photos</span>
-                                </button>
-                                <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                                  <FileUp className="w-5 h-5 text-muted-foreground" />
-                                  <span className="text-[11px] text-foreground">Files</span>
-                                </button>
-                              </div>
-                              <div className="border-t border-border pt-2 space-y-1">
-                                <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
-                                  <span className="text-sm text-foreground">Web search</span>
-                                  <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                                    <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
-                                  </div>
-                                </button>
-                                <div className="px-3 py-2 md:hidden">
-                                  <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
-                                </div>
-                                <div className="border-t border-border mt-1 pt-1">
-                                  <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
-                                  <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                    <span className="text-sm text-foreground">Learning Mode</span>
-                                    {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
-                                  </button>
-                                  <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                    <span className="text-sm text-foreground">Shopping Mode</span>
-                                    {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
-                                  </button>
-                                  <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                    <span className="text-sm text-foreground">Deep Research</span>
-                                    {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
-                                  </button>
-                                </div>
-                                <div className="border-t border-border mt-1 pt-1">
-                                  <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                                    <span className="text-sm text-foreground">Integrations</span>
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
-                                  </button>
-                                </div>
-                              </div>
-                            </motion.div>
-                          </>
-                        )}
+                        {plusMenuOpen && renderPlusMenu(false)}
                       </AnimatePresence>
-
                       <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
                     </div>
-
-                    {/* Connect your tools bar */}
                     <button
                       onClick={() => setConnectorsOpen(true)}
                       className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-secondary/40 border border-border/30 hover:bg-secondary/60 transition-colors"
@@ -465,85 +563,11 @@ const ChatPage = () => {
 
               {/* Mobile: Input pinned to bottom */}
               <div className="shrink-0 pb-3 md:hidden w-full max-w-2xl mx-auto space-y-2">
+                {renderAttachments()}
                 <div className="relative">
                   <AnimatePresence>
-                    {plusMenuOpen && (
-                      <>
-                        <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
-                        <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72">
-                          <div className="grid grid-cols-3 gap-2 mb-3">
-                            <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                              <Camera className="w-5 h-5 text-muted-foreground" />
-                              <span className="text-[11px] text-foreground">Camera</span>
-                            </button>
-                            <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                              <Image className="w-5 h-5 text-muted-foreground" />
-                              <span className="text-[11px] text-foreground">Photos</span>
-                            </button>
-                            <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                              <FileUp className="w-5 h-5 text-muted-foreground" />
-                              <span className="text-[11px] text-foreground">Files</span>
-                            </button>
-                          </div>
-                          <div className="border-t border-border pt-2 space-y-1">
-                            <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
-                              <span className="text-sm text-foreground">Web search</span>
-                              <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                                <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
-                              </div>
-                            </button>
-                            <div className="border-t border-border mt-1 pt-1">
-                              <button
-                                onClick={() => setModelsExpanded(!modelsExpanded)}
-                                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
-                              >
-                                <span className="text-sm text-foreground">{selectedModel.name}</span>
-                                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${modelsExpanded ? "rotate-180" : ""}`} />
-                              </button>
-                              {modelsExpanded && (
-                                <div className="space-y-0.5 mt-1">
-                                  {getModelsForMode("chat").map((m) => (
-                                    <button
-                                      key={m.id}
-                                      onClick={() => { setSelectedModel(m); setModelsExpanded(false); }}
-                                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
-                                        selectedModel.id === m.id ? "bg-primary/10 text-primary" : "hover:bg-accent/50"
-                                      }`}
-                                    >
-                                      <span className="text-sm">{m.name}</span>
-                                      {selectedModel.id === m.id && <span className="text-xs text-primary">✓</span>}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <div className="border-t border-border mt-1 pt-1">
-                              <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
-                              <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                <span className="text-sm text-foreground">Learning Mode</span>
-                                {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
-                              </button>
-                              <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                <span className="text-sm text-foreground">Shopping Mode</span>
-                                {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
-                              </button>
-                              <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                <span className="text-sm text-foreground">Deep Research</span>
-                                {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
-                              </button>
-                            </div>
-                            <div className="border-t border-border mt-1 pt-1">
-                              <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                                <span className="text-sm text-foreground">Integrations</span>
-                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      </>
-                    )}
+                    {plusMenuOpen && renderPlusMenu(true)}
                   </AnimatePresence>
-
                   <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
                 </div>
               </div>
@@ -551,7 +575,19 @@ const ChatPage = () => {
           ) : (
             <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
               {messages.map((msg, i) => (
-                <ChatMessage key={i} role={msg.role} content={msg.content} images={msg.images} isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"} isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content} liked={msg.liked} onLike={(liked) => handleLike(i, liked)} onShare={msg.role === "assistant" && conversationId ? handleShare : undefined} />
+                <ChatMessage
+                  key={i}
+                  role={msg.role}
+                  content={msg.content}
+                  images={msg.images}
+                  attachedImages={msg.attachedImages}
+                  attachedFiles={msg.attachedFiles}
+                  isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
+                  isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
+                  liked={msg.liked}
+                  onLike={(liked) => handleLike(i, liked)}
+                  onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
+                />
               ))}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
                 <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
@@ -561,7 +597,6 @@ const ChatPage = () => {
             </div>
           )}
 
-          {/* Scroll to bottom */}
           <AnimatePresence>
             {showScrollBtn && messages.length > 0 && (
               <motion.button
@@ -581,7 +616,6 @@ const ChatPage = () => {
         {hasConversation && (
           <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-1">
             <div className="max-w-3xl mx-auto space-y-1.5">
-              {/* Active mode badge */}
               <AnimatePresence>
                 {chatMode !== "normal" && (
                   <motion.div
@@ -593,7 +627,7 @@ const ChatPage = () => {
                     {chatMode === "learning" ? (
                       <GraduationCap className="w-3.5 h-3.5 text-primary" />
                     ) : chatMode === "deep-research" ? (
-                      <BookOpen className="w-3.5 h-3.5 text-primary" />
+                      <Star className="w-3.5 h-3.5 text-primary" />
                     ) : (
                       <ShoppingCart className="w-3.5 h-3.5 text-primary" />
                     )}
@@ -607,73 +641,11 @@ const ChatPage = () => {
                 )}
               </AnimatePresence>
 
-              {attachedFiles.length > 0 && (
-                <div className="flex gap-2 px-2 overflow-x-auto pb-1">
-                  {attachedFiles.map((f, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border">
-                      {f.type === "image" ? <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" /> : <FileUp className="w-3 h-3" />}
-                      <span className="truncate max-w-[100px]">{f.name}</span>
-                      <button onClick={() => setAttachedFiles((prev) => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">x</button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {renderAttachments()}
 
               <div className="relative">
                 <AnimatePresence>
-                  {plusMenuOpen && (
-                    <>
-                      <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
-                      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72">
-                        <div className="grid grid-cols-3 gap-2 mb-3">
-                          <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                            <Camera className="w-5 h-5 text-muted-foreground" />
-                            <span className="text-[11px] text-foreground">Camera</span>
-                          </button>
-                          <button onClick={() => { imageInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                            <Image className="w-5 h-5 text-muted-foreground" />
-                            <span className="text-[11px] text-foreground">Photos</span>
-                          </button>
-                          <button onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false); }} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-                            <FileUp className="w-5 h-5 text-muted-foreground" />
-                            <span className="text-[11px] text-foreground">Files</span>
-                          </button>
-                        </div>
-                        <div className="border-t border-border pt-2 space-y-1">
-                          <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
-                            <span className="text-sm text-foreground">Web search</span>
-                            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
-                              <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
-                            </div>
-                          </button>
-                          <div className="px-3 py-2">
-                            <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
-                          </div>
-                        </div>
-                        <div className="border-t border-border mt-1 pt-1">
-                          <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
-                          <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                            <span className="text-sm text-foreground">Learning Mode</span>
-                            {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
-                          </button>
-                          <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                            <span className="text-sm text-foreground">Shopping Mode</span>
-                            {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
-                          </button>
-                          <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                            <span className="text-sm text-foreground">Deep Research</span>
-                            {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
-                          </button>
-                        </div>
-                        <div className="border-t border-border mt-1 pt-1">
-                          <button onClick={() => { navigate("/settings/integrations"); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-                            <span className="text-sm text-foreground">Integrations</span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
-                          </button>
-                        </div>
-                      </motion.div>
-                    </>
-                  )}
+                  {plusMenuOpen && renderPlusMenu(window.innerWidth < 768)}
                 </AnimatePresence>
 
                 {!hasConversation && (
@@ -688,20 +660,14 @@ const ChatPage = () => {
                 )}
                 <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
               </div>
-              
-              <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
-              <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
             </div>
           </div>
         )}
 
-        {/* Hidden file inputs for empty state */}
-        {!hasConversation && (
-          <>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" />
-            <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" capture="environment" />
-          </>
-        )}
+        {/* Hidden file inputs */}
+        <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.doc,.docx" multiple />
+        <input ref={cameraInputRef} type="file" className="hidden" onChange={handleCameraCapture} accept="image/*" capture="environment" />
+        <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" multiple />
 
         {/* Connectors Dialog */}
         <ConnectorsDialog
@@ -719,7 +685,6 @@ const ChatPage = () => {
                 <DialogDescription className="text-xs text-left">Future messages aren't included</DialogDescription>
               </DialogHeader>
             </div>
-
             <div className="border-t border-border">
               <button
                 onClick={() => { setShareMode("private"); setGeneratedShareUrl(null); }}
@@ -745,7 +710,6 @@ const ChatPage = () => {
                 {shareMode === "public" && <span className="text-primary shrink-0">✓</span>}
               </button>
             </div>
-
             <div className="px-4 py-3 border-t border-border">
               {shareMode === "public" && generatedShareUrl ? (
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2 overflow-hidden">

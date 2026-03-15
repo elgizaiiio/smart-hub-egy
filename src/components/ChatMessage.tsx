@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink, FileUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import ThinkingLoader from "./ThinkingLoader";
@@ -11,6 +11,7 @@ interface ChatMessageProps {
   isThinking?: boolean;
   images?: string[];
   attachedImages?: string[];
+  attachedFiles?: { name: string; type: string }[];
   onLike?: (liked: boolean | null) => void;
   liked?: boolean | null;
   onShare?: () => void;
@@ -24,7 +25,7 @@ const getFavicon = (url: string) => {
   try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`; } catch { return null; }
 };
 
-const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, onLike, liked, onShare }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onShare }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [showCopyPopup, setShowCopyPopup] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -52,10 +53,22 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
     return (
       <div className="flex justify-end mb-4">
         <div className="max-w-[80%]">
+          {/* Attached images above user bubble */}
           {attachedImages && attachedImages.length > 0 && (
-            <div className="flex gap-2 mb-2 justify-end">
+            <div className="flex gap-2 mb-2 justify-end flex-wrap">
               {attachedImages.map((img, i) => (
-                <img key={i} src={img} alt="" className="rounded-xl max-h-32 object-cover" />
+                <img key={i} src={img} alt="" className="rounded-xl max-h-32 max-w-[120px] object-cover" />
+              ))}
+            </div>
+          )}
+          {/* Attached files above user bubble */}
+          {attachedFiles && attachedFiles.length > 0 && (
+            <div className="flex gap-2 mb-2 justify-end flex-wrap">
+              {attachedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted text-xs text-foreground border border-border">
+                  <FileUp className="w-3 h-3 text-muted-foreground" />
+                  <span className="truncate max-w-[100px]">{f.name}</span>
+                </div>
               ))}
             </div>
           )}
