@@ -396,7 +396,7 @@ const VideosPage = () => {
 
   return (
     <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
-      <div className="h-full flex flex-col bg-background relative">
+      <div className="h-full flex flex-col bg-background relative overflow-x-hidden">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -426,7 +426,7 @@ const VideosPage = () => {
         {/* Showcase / content area */}
         <div className="flex-1 overflow-y-auto pb-48">
           {/* Top bar - minimal */}
-          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-transparent">
             <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground">
               <Menu className="w-5 h-5" />
             </button>
@@ -446,12 +446,12 @@ const VideosPage = () => {
                     key={vid.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="break-inside-avoid mb-2 group relative rounded-2xl overflow-hidden"
+                    className="break-inside-avoid mb-2 group relative rounded-2xl overflow-hidden max-h-64"
                   >
                     <video
                       src={vid.url}
                       controls
-                      className="w-full rounded-2xl object-cover"
+                      className="w-full rounded-2xl object-cover max-h-64"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end p-2 pointer-events-none group-hover:pointer-events-auto">
                       <div className="flex gap-1.5">

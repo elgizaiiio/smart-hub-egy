@@ -61,13 +61,6 @@ export const ALL_MODEL_DETAILS: ModelDetail[] = [
     icon: "Zap", modes: ["text-to-text"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
     provider: "Megsy", speed: "fast", quality: "high",
   },
-  {
-    id: "deepseek/deepseek-r1", name: "DeepSeek R1", type: "chat", credits: 0,
-    description: "Deep reasoning and chain-of-thought specialist.",
-    longDescription: "DeepSeek R1 uses advanced chain-of-thought reasoning to solve complex mathematical, logical, and scientific problems with step-by-step transparency.",
-    icon: "Search", modes: ["text-to-text"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
-    provider: "Megsy", speed: "slow", quality: "ultra",
-  },
   // ═══════════════════════════════════════════
   // IMAGE & VIDEO MODELS — Added dynamically via admin bot
   // Use "➕ إضافة نموذج جديد" in the Telegram bot to add models

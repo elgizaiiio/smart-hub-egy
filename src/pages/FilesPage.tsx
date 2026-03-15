@@ -26,9 +26,6 @@ const SUGGESTIONS = [
   "Write a professional report",
   "Create a presentation",
   "Summarize this document",
-  "Convert image to PDF",
-  "Create a spreadsheet",
-  "Generate a PDF",
 ];
 
 const GoogleDriveIcon = () => (
@@ -255,7 +252,7 @@ const FilesPage = () => {
 
   return (
     <AppLayout onSelectConversation={loadOldConversation} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} activeConversationId={conversationId}>
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background overflow-x-hidden">
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} onSelectConversation={loadOldConversation} activeConversationId={conversationId} currentMode="files" />
 
       {/* Preview Modal */}
@@ -276,7 +273,7 @@ const FilesPage = () => {
         )}
       </AnimatePresence>
 
-      <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-2">
+      <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-2 bg-transparent">
         <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
           <Menu className="w-5 h-5" />
         </button>

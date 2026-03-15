@@ -302,7 +302,7 @@ const ChatPage = () => {
       onNewChat={handleNewChat}
       activeConversationId={conversationId}
     >
-      <div className="h-full flex flex-col bg-background">
+      <div className="h-full flex flex-col bg-background overflow-x-hidden">
         {/* Mobile sidebar */}
         <AppSidebar
           open={sidebarOpen}
@@ -314,7 +314,7 @@ const ChatPage = () => {
         />
 
         {/* Top header bar */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px]">
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-transparent">
           {/* Left: mobile menu or conversation title */}
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
@@ -370,7 +370,7 @@ const ChatPage = () => {
                   {/* Greeting */}
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <PegtopIcon className="text-primary" />
-                    <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Megsy chat?</h2>
+                    <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
                   </div>
 
                   {/* Mobile shortcut buttons under title - no icons */}
@@ -432,7 +432,6 @@ const ChatPage = () => {
                                     {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                                   </button>
                                   <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                    <BookOpen className="w-4 h-4" />
                                     <span className="text-sm text-foreground">Deep Research</span>
                                     {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
                                   </button>
@@ -529,7 +528,6 @@ const ChatPage = () => {
                                 {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                               </button>
                               <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                                <BookOpen className="w-4 h-4" />
                                 <span className="text-sm text-foreground">Deep Research</span>
                                 {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
                               </button>
@@ -663,7 +661,6 @@ const ChatPage = () => {
                             {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
                           </button>
                           <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-                            <BookOpen className="w-4 h-4" />
                             <span className="text-sm text-foreground">Deep Research</span>
                             {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
                           </button>

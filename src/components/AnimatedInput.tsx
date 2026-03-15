@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, ArrowUp, Square, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ModelOption } from "./ModelSelector";
-import { getModelsForMode, ModelBrandIcon } from "./ModelSelector";
+import { getModelsForMode } from "./ModelSelector";
 
 interface AnimatedInputProps {
   value: string;
@@ -18,7 +18,7 @@ interface AnimatedInputProps {
 }
 
 const DEFAULT_PLACEHOLDERS = [
-  "How can I help you today?",
+  "Ask Megsy ?",
   "What's on your mind?",
   "Ask anything...",
 ];
@@ -55,7 +55,6 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     return () => clearInterval(typeInterval);
   }, [placeholderIndex, value, items]);
 
-  // Close model menu on outside click
   useEffect(() => {
     if (!modelMenuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -74,16 +73,18 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     }
   };
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  
   const autoResize = () => {
     const el = textareaRef.current;
     if (el) {
       el.style.height = "auto";
-      const maxH = isMobile ? 96 : 128;
+      const maxH = typeof window !== 'undefined' && window.innerWidth < 768 ? 120 : 160;
       el.style.height = Math.min(el.scrollHeight, maxH) + "px";
     }
   };
+
+  useEffect(() => {
+    autoResize();
+  }, [value]);
 
   const chatModels = getModelsForMode("chat");
 
@@ -103,7 +104,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           <textarea
             ref={textareaRef}
             value={value}
-            onChange={(e) => { onChange(e.target.value); autoResize(); }}
+            onChange={(e) => { onChange(e.target.value); }}
             onKeyDown={handleKeyDown}
             placeholder={displayedPlaceholder}
             rows={1}
