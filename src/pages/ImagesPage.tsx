@@ -497,7 +497,7 @@ const ImagesPage = () => {
                     <img
                       src={img.url}
                       alt={img.prompt}
-                      className="w-full rounded-2xl object-cover"
+                      className="w-full rounded-2xl object-cover max-h-64"
                       loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end p-2">

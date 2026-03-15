@@ -451,7 +451,7 @@ const VideosPage = () => {
                     <video
                       src={vid.url}
                       controls
-                      className="w-full rounded-2xl object-cover"
+                      className="w-full rounded-2xl object-cover max-h-64"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end p-2 pointer-events-none group-hover:pointer-events-auto">
                       <div className="flex gap-1.5">

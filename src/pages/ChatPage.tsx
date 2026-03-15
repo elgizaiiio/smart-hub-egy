@@ -302,7 +302,7 @@ const ChatPage = () => {
       onNewChat={handleNewChat}
       activeConversationId={conversationId}
     >
-      <div className="h-full flex flex-col bg-background">
+      <div className="h-full flex flex-col bg-background overflow-x-hidden">
         {/* Mobile sidebar */}
         <AppSidebar
           open={sidebarOpen}

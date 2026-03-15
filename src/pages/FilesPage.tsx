@@ -26,9 +26,6 @@ const SUGGESTIONS = [
   "Write a professional report",
   "Create a presentation",
   "Summarize this document",
-  "Convert image to PDF",
-  "Create a spreadsheet",
-  "Generate a PDF",
 ];
 
 const GoogleDriveIcon = () => (
