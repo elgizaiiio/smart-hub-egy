@@ -486,7 +486,7 @@ const ImagesPage = () => {
                   <ThinkingLoader />
                 </div>
               )}
-              <div className="columns-2 gap-2">
+              <div className="columns-2 gap-2" style={{ maxHeight: "none" }}>
                 {generatedImages.map((img) => (
                   <motion.div
                     key={img.id}
