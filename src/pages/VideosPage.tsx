@@ -396,7 +396,7 @@ const VideosPage = () => {
 
   return (
     <AppLayout onSelectConversation={loadConversation} onNewChat={handleNewChat} activeConversationId={conversationId}>
-      <div className="h-full flex flex-col bg-background relative">
+      <div className="h-full flex flex-col bg-background relative overflow-x-hidden">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
