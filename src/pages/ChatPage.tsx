@@ -314,7 +314,7 @@ const ChatPage = () => {
         />
 
         {/* Top header bar */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px]">
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-transparent">
           {/* Left: mobile menu or conversation title */}
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
