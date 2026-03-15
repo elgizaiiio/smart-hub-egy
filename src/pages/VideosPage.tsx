@@ -446,7 +446,7 @@ const VideosPage = () => {
                     key={vid.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="break-inside-avoid mb-2 group relative rounded-2xl overflow-hidden max-h-64">
+                    className="break-inside-avoid mb-2 group relative rounded-2xl overflow-hidden max-h-64"
                   >
                     <video
                       src={vid.url}
