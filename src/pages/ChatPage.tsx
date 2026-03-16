@@ -130,6 +130,7 @@ const ChatPage = () => {
     const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true });
     if (msgs) {
       setMessages(msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content, images: m.images || undefined, liked: m.liked, id: m.id })));
+      setTimeout(() => scrollToBottom(), 150);
     }
   };
 
