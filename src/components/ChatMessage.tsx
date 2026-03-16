@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink, FileUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import ThinkingLoader from "./ThinkingLoader";
 
 interface ChatMessageProps {
@@ -53,7 +54,6 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
     return (
       <div className="flex justify-end mb-4">
         <div className="max-w-[80%]">
-          {/* Attached images above user bubble */}
           {attachedImages && attachedImages.length > 0 && (
             <div className="flex gap-2 mb-2 justify-end flex-wrap">
               {attachedImages.map((img, i) => (
@@ -61,7 +61,6 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               ))}
             </div>
           )}
-          {/* Attached files above user bubble */}
           {attachedFiles && attachedFiles.length > 0 && (
             <div className="flex gap-2 mb-2 justify-end flex-wrap">
               {attachedFiles.map((f, i) => (
@@ -112,11 +111,26 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
 
           <div className="prose-chat text-foreground">
             <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
               components={{
                 a: ({ href, children }) => (
                   <a href={href} onClick={(e) => href && handleLinkClick(e, href)} className="text-primary underline underline-offset-2 cursor-pointer hover:opacity-80">
                     {children}
                   </a>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-3 rounded-lg border border-border">
+                    <table className="w-full text-sm">{children}</table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-muted/50 border-b border-border">{children}</thead>
+                ),
+                th: ({ children }) => (
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-foreground">{children}</th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-3 py-2 text-xs text-muted-foreground border-t border-border/50">{children}</td>
                 ),
               }}
             >

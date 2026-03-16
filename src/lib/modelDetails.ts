@@ -25,9 +25,19 @@ export interface ModelDetail {
   customization?: Record<string, any>;
   iconUrl?: string;
   badges?: string[];
+  isFree?: boolean;
 }
 
 const MIME_IMG = ["image/jpeg", "image/png", "image/webp"];
+
+export const FREE_MODEL_IDS = [
+  "qwen-image-edit-plus",
+  "flux2-klein-4b",
+  "z-image-turbo-int8",
+  "flux1-schnell",
+  "ltx-2.3-22b",
+  "ltx-2-19b",
+];
 
 export const ALL_MODEL_DETAILS: ModelDetail[] = [
   // ═══════════════════════════════════════════
@@ -60,6 +70,60 @@ export const ALL_MODEL_DETAILS: ModelDetail[] = [
     longDescription: "Grok 3 from xAI excels at real-time information access, coding, and conversational AI with a distinctive personality and up-to-date knowledge.",
     icon: "Zap", modes: ["text-to-text"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
     provider: "Megsy", speed: "fast", quality: "high",
+  },
+  // ═══════════════════════════════════════════
+  // FREE IMAGE MODELS (deapi.ai — 1 MC each)
+  // ═══════════════════════════════════════════
+  {
+    id: "flux2-klein-4b", name: "FLUX.2 Klein 4B BF16", type: "image", credits: 1,
+    description: "Fast, lightweight image generation model. Free for all users.",
+    longDescription: "FLUX.2 Klein 4B BF16 is a compact yet powerful text-to-image model from deapi.ai, optimized for speed and quality at a fraction of the cost.",
+    icon: "Image", modes: ["text-to-image"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "deapi", speed: "fast", quality: "standard", isFree: true,
+    badges: ["FREE", "FAST"],
+  },
+  {
+    id: "z-image-turbo-int8", name: "Z-Image-Turbo INT8", type: "image", credits: 1,
+    description: "Ultra-fast turbo image generation. Free for all users.",
+    longDescription: "Z-Image-Turbo INT8 delivers rapid image generation with optimized INT8 quantization for maximum speed.",
+    icon: "Zap", modes: ["text-to-image"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "deapi", speed: "fast", quality: "standard", isFree: true,
+    badges: ["FREE", "FAST"],
+  },
+  {
+    id: "flux1-schnell", name: "FLUX.1 schnell", type: "image", credits: 1,
+    description: "Lightning-fast image generation. Free for all users.",
+    longDescription: "FLUX.1 schnell is the fastest model in the FLUX family, delivering images in seconds with decent quality.",
+    icon: "Zap", modes: ["text-to-image"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "deapi", speed: "fast", quality: "standard", isFree: true,
+    badges: ["FREE", "FAST"],
+  },
+  {
+    id: "qwen-image-edit-plus", name: "Qwen Image Edit Plus", type: "image", credits: 1,
+    description: "AI-powered image editing and transformation. Free for all users.",
+    longDescription: "Qwen Image Edit Plus transforms your images using AI. Upload an image and describe how you want it changed.",
+    icon: "Image", modes: ["image-to-image"], acceptsImages: true, requiresImage: true, maxImages: 1, acceptedMimeTypes: MIME_IMG,
+    provider: "deapi", speed: "standard", quality: "high", isFree: true,
+    badges: ["FREE", "IMG2IMG"],
+  },
+  // ═══════════════════════════════════════════
+  // FREE VIDEO MODELS (deapi.ai — 1 MC each)
+  // ═══════════════════════════════════════════
+  {
+    id: "ltx-2-19b", name: "LTX-2 19B Distilled FP8", type: "video", credits: 1,
+    description: "Text-to-video generation. Free for all users.",
+    longDescription: "LTX-2 19B Distilled FP8 generates videos from text prompts using a powerful 19B parameter model with FP8 optimization.",
+    icon: "Video", modes: ["text-to-video"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],
+    provider: "deapi", speed: "standard", quality: "standard", isFree: true,
+    badges: ["FREE"],
+  },
+  {
+    id: "ltx-2.3-22b", name: "LTX-2.3 22B Distilled INT8", type: "video-i2v", credits: 1,
+    description: "Image-to-video generation. Free for all users.",
+    longDescription: "LTX-2.3 22B Distilled INT8 transforms your images into videos using a 22B parameter model with INT8 optimization.",
+    icon: "Video", modes: ["image-to-video"], acceptsImages: true, requiresImage: true, maxImages: 1, acceptedMimeTypes: MIME_IMG,
+    provider: "deapi", speed: "standard", quality: "standard", isFree: true,
+    badges: ["FREE", "IMG2VID"],
   },
   // ═══════════════════════════════════════════
   // IMAGE & VIDEO MODELS — Added dynamically via admin bot
