@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Mail } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const plans = [
@@ -219,24 +219,61 @@ const PricingPage = () => {
           })}
         </div>
 
-        {/* Enterprise Section */}
+        {/* Enterprise Card — same style as others */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-12 rounded-2xl border border-border bg-card p-8 text-center"
+          className="mt-6"
         >
-          <h3 className="font-display text-xl font-bold text-foreground mb-2">Enterprise</h3>
-          <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">
-            Custom plans for large teams with dedicated infrastructure, SLA guarantees, and priority support.
-          </p>
-          <a
-            href="mailto:support@megsyai.com"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Mail className="w-4 h-4" />
-            Contact Sales
-          </a>
+          {(() => {
+            const enterpriseFeatures = [
+              "Custom MC allocation",
+              "All models with priority speed",
+              "Unlimited generation",
+              "Dedicated infrastructure",
+              "SLA guarantees",
+              "Custom integrations",
+              "White-label options",
+              "Dedicated account manager",
+              "Data privacy & compliance",
+              "Volume discounts",
+            ];
+            return (
+              <div className="pricing-card-elite rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden">
+                <div className="pricing-points-wrapper">
+                  {Array.from({ length: 10 }).map((_, j) => (
+                    <span key={j} className="pricing-point" />
+                  ))}
+                </div>
+                <span className="text-xs font-bold px-3 py-1 rounded-full self-start uppercase tracking-wider bg-white/20 text-white backdrop-blur-sm">
+                  ENTERPRISE
+                </span>
+                <div>
+                  <h3 className="font-display font-semibold text-white text-lg">Enterprise</h3>
+                  <p className="text-sm text-white/60 mt-1">Custom plans for large teams</p>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-display text-3xl font-bold text-white">Custom</span>
+                  <span className="text-sm text-white/60">/pricing</span>
+                </div>
+                <button
+                  onClick={() => navigate("/enterprise")}
+                  className="w-full py-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium text-sm transition-all border border-white/10"
+                >
+                  Contact Sales
+                </button>
+                <ul className="space-y-2.5 mt-2">
+                  {enterpriseFeatures.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm text-white/80">
+                      <Check className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-300" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
         </motion.div>
       </div>
     </div>

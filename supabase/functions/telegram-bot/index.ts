@@ -13,14 +13,14 @@ const VIDEO_MODELS: string[] = [];
 
 const CHAT_MODELS = [
   "google/gemini-3-flash-preview", "google/gemini-2.5-pro",
-  "openai/gpt-5", "x-ai/grok-3", "deepseek/deepseek-r1",
+  "openai/gpt-5", "x-ai/grok-3",
 ];
 
-const CODE_MODELS = ["x-ai/grok-3", "openai/gpt-5", "deepseek/deepseek-r1"];
+const CODE_MODELS = ["x-ai/grok-3", "openai/gpt-5"];
 
 const MODEL_NAMES: Record<string, string> = {
-  "google/gemini-3-flash-preview": "Megsy V1 (محادثة)", "google/gemini-2.5-pro": "Gemini 2.5 Pro",
-  "openai/gpt-5": "GPT-5", "x-ai/grok-3": "Grok 3", "deepseek/deepseek-r1": "DeepSeek R1",
+  "google/gemini-3-flash-preview": "Megsy V1", "google/gemini-2.5-pro": "Gemini 2.5 Pro",
+  "openai/gpt-5": "GPT-5", "x-ai/grok-3": "Grok 3",
 };
 
 // Dynamic categories - images & videos pull from models_added

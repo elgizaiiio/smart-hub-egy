@@ -11,7 +11,7 @@ import AppSidebar from "@/components/AppSidebar";
 import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
-import ThinkingLoader from "@/components/ThinkingLoader";
+import GenerationLoader from "@/components/GenerationLoader";
 import ImageSettingsPanel, { DEFAULT_SETTINGS, type ImageSettings } from "@/components/ImageSettingsPanel";
 import ImageSettingsDrawer from "@/components/ImageSettingsDrawer";
 import AppShowcaseGallery from "@/components/AppShowcaseGallery";
@@ -130,63 +130,16 @@ const ImagesPage = () => {
     const finalPrompt = trimmed || `Generate with ${selectedModel.name}`;
 
     setInput("");
-    setIsGenerating(true);
-    setShowResults(true);
-
-    const convId = await createOrGetConversation(trimmed || "Image Generation");
-    if (convId) await saveMessage(convId, "user", trimmed);
-
-    try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          prompt: finalPrompt,
-          model: selectedModel.id,
-          image_url: attachedImages[0]?.dataUrl,
-          image_urls: attachedImages.map((img) => img.dataUrl),
-          user_id: userId,
-          credits_cost: creditCost,
-          num_images: settings.numImages,
-          image_size: { width: settings.dimensions.width, height: settings.dimensions.height },
-        }),
-      });
-
-      const data = await resp.json();
-
-      if (data.error) {
-        toast.error(data.error);
-        if (convId) await saveMessage(convId, "assistant", `Error: ${data.error}`);
-      } else {
-        const urls: string[] = data.image_urls || (data.image_url ? [data.image_url] : []);
-        const newImages: GeneratedImage[] = urls.map((url) => ({
-          id: crypto.randomUUID(),
-          url,
-          prompt: trimmed || "Generated image",
-          model: selectedModel.name,
-          modelId: selectedModel.id,
-          dimensions: `${settings.dimensions.width}×${settings.dimensions.height}`,
-          createdAt: new Date(),
-          
-          speed: "Fast",
-        }));
-        setGeneratedImages((prev) => [...newImages, ...prev]);
-        if (convId) await saveMessage(convId, "assistant", trimmed, urls);
-      }
-    } catch {
-      toast.error("Generation failed. Please try again.");
-    }
-
-    setIsGenerating(false);
-    setAttachedImages([]);
-    refreshCredits();
-
-    if (convId) {
-      await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
-    }
+    
+    // Redirect to studio with generation params
+    navigate("/images/studio", {
+      state: {
+        prompt: finalPrompt,
+        model: selectedModel,
+        settings,
+        imageUrls: attachedImages.map((img) => img.dataUrl),
+      },
+    });
   };
 
   const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -321,9 +274,9 @@ const ImagesPage = () => {
                 </div>
 
                 <div className="max-w-6xl mx-auto px-6 py-6">
-                  {isGenerating && (
-                    <div className="mb-6">
-                      <ThinkingLoader />
+              {isGenerating && (
+                    <div className="mb-6 flex justify-center">
+                      <GenerationLoader type="image" />
                     </div>
                   )}
                   <div className="columns-2 lg:columns-3 xl:columns-4 gap-4">
@@ -483,7 +436,7 @@ const ImagesPage = () => {
             <div className="px-2 py-2">
               {isGenerating && (
                 <div className="mb-4 flex justify-center">
-                  <ThinkingLoader />
+                  <GenerationLoader type="image" />
                 </div>
               )}
               <div className="columns-2 gap-2" style={{ maxHeight: "none" }}>
@@ -524,7 +477,7 @@ const ImagesPage = () => {
 
           {isGenerating && generatedImages.length === 0 && (
             <div className="flex items-center justify-center py-20">
-              <ThinkingLoader />
+              <GenerationLoader type="image" />
             </div>
           )}
         </div>

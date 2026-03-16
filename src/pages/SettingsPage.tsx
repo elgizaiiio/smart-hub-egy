@@ -73,7 +73,7 @@ const SettingsPage = () => {
 
   const supportItems = [
     { icon: Radio, label: "System Status", path: "https://status.megsyai.com", external: true },
-    { icon: CircleHelp, label: "About Megsy", path: "https://about.megsyai.com", external: true },
+    { icon: CircleHelp, label: "About Megsy", path: "/about" },
   ];
 
   return (

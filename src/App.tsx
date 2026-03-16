@@ -55,7 +55,8 @@ import SecurityPage from "./pages/SecurityPage";
 import BlogPage from "./pages/BlogPage";
 import ChangelogPage from "./pages/ChangelogPage";
 import SupportPage from "./pages/SupportPage";
-
+import EnterprisePage from "./pages/EnterprisePage";
+import AboutPage from "./pages/AboutPage";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -144,6 +145,8 @@ const App = () => {
                 <Route path="/services/chat" element={<ServiceChatPage />} />
                 <Route path="/services/files" element={<ServiceFilesPage />} />
                 <Route path="/services/code" element={<ServiceCodePage />} />
+                <Route path="/enterprise" element={<EnterprisePage />} />
+                <Route path="/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

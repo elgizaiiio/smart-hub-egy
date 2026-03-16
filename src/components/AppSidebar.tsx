@@ -129,6 +129,18 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             {/* Separator */}
             <div className="mx-3 my-2 border-t border-sidebar-border" />
 
+            {/* Studio link for images/videos */}
+            {(currentMode === "images" || currentMode === "videos") && (
+              <div className="px-3 mb-2">
+                <button
+                  onClick={() => { navigate(currentMode === "images" ? "/images/studio" : "/videos/studio"); onClose(); }}
+                  className="w-full py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/15 transition-colors"
+                >
+                  Open Studio
+                </button>
+              </div>
+            )}
+
             {/* Recent */}
             {showRecent && (
               <div className="flex-1 overflow-y-auto px-3">
