@@ -390,6 +390,10 @@ const ImagesPage = () => {
     "imagine-art": "/model-logos/fal.ico",
     "z-image-turbo": "/model-logos/fal.ico",
     "hunyuan-v3": "/model-logos/google.ico",
+    "flux2-klein-4b": "/model-logos/bfl.png",
+    "z-image-turbo-int8": "/model-logos/fal.ico",
+    "flux1-schnell": "/model-logos/bfl.png",
+    "qwen-image-edit-plus": "/model-logos/google.ico",
   };
   const currentLogo = selectedModel.iconUrl || FALLBACK_LOGOS[selectedModel.id];
 

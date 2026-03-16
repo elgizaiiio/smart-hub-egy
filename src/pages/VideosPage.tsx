@@ -348,6 +348,8 @@ const VideosPage = () => {
     "seedance-1.0-fast": "/model-logos/bytedance.ico",
     "wan-2.6": "/model-logos/google.ico",
     "ltx-2": "/model-logos/fal.ico",
+    "ltx-2-19b": "/model-logos/fal.ico",
+    "ltx-2.3-22b": "/model-logos/fal.ico",
   };
   const currentLogo = selectedModel.iconUrl || FALLBACK_LOGOS[selectedModel.id];
 
