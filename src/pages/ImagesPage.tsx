@@ -477,7 +477,7 @@ const ImagesPage = () => {
 
           {isGenerating && generatedImages.length === 0 && (
             <div className="flex items-center justify-center py-20">
-              <ThinkingLoader />
+              <GenerationLoader type="image" />
             </div>
           )}
         </div>
