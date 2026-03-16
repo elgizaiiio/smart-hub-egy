@@ -145,6 +145,8 @@ const App = () => {
                 <Route path="/services/chat" element={<ServiceChatPage />} />
                 <Route path="/services/files" element={<ServiceFilesPage />} />
                 <Route path="/services/code" element={<ServiceCodePage />} />
+                <Route path="/enterprise" element={<EnterprisePage />} />
+                <Route path="/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
