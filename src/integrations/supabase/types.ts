@@ -113,6 +113,36 @@ export type Database = {
         }
         Relationships: []
       }
+      deapi_keys: {
+        Row: {
+          api_key: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          label: string | null
+          last_used_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          last_used_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          last_used_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           created_at: string

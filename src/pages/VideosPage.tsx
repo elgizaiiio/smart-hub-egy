@@ -348,6 +348,8 @@ const VideosPage = () => {
     "seedance-1.0-fast": "/model-logos/bytedance.ico",
     "wan-2.6": "/model-logos/google.ico",
     "ltx-2": "/model-logos/fal.ico",
+    "ltx-2-19b": "/model-logos/fal.ico",
+    "ltx-2.3-22b": "/model-logos/fal.ico",
   };
   const currentLogo = selectedModel.iconUrl || FALLBACK_LOGOS[selectedModel.id];
 
@@ -478,7 +480,7 @@ const VideosPage = () => {
                   {currentLogo ? (
                     <img src={currentLogo} alt={selectedModel.name} className="w-4 h-4 rounded-full object-cover" />
                   ) : (
-                    <div className="w-4 h-4 rounded-full bg-primary/20" />
+                    <span className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">{selectedModel.name.charAt(0)}</span>
                   )}
                   <span>{selectedModel.name}</span>
                 </button>

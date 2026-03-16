@@ -130,6 +130,7 @@ const ChatPage = () => {
     const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true });
     if (msgs) {
       setMessages(msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content, images: m.images || undefined, liked: m.liked, id: m.id })));
+      setTimeout(() => scrollToBottom(), 150);
     }
   };
 
@@ -622,19 +623,13 @@ const ChatPage = () => {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 6 }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/8 backdrop-blur-md border border-primary/15 w-fit"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/8 backdrop-blur-md border border-primary/15 w-fit pointer-events-auto"
+                    style={{ touchAction: "none" }}
                   >
-                    {chatMode === "learning" ? (
-                      <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                    ) : chatMode === "deep-research" ? (
-                      <Star className="w-3.5 h-3.5 text-primary" />
-                    ) : (
-                      <ShoppingCart className="w-3.5 h-3.5 text-primary" />
-                    )}
                     <span className="text-xs text-primary font-medium">
                       {chatMode === "learning" ? "Learning" : chatMode === "deep-research" ? "Deep Research" : "Shopping"} Mode
                     </span>
-                    <button onClick={() => { setChatMode("normal"); if (chatMode === "deep-research") setSearchEnabled(false); }} className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors">
+                    <button onClick={() => { setChatMode("normal"); if (chatMode === "deep-research") setSearchEnabled(false); }} className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors pointer-events-auto">
                       <X className="w-3 h-3 text-primary" />
                     </button>
                   </motion.div>

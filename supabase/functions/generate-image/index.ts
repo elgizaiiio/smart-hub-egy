@@ -15,6 +15,9 @@ type ModelConfig = {
   requiresImage?: boolean;
   supportsNumImages?: boolean;
   supportsImageSize?: boolean;
+  provider?: "fal" | "deapi";
+  deapiEndpoint?: string;
+  deapiModel?: string;
 };
 
 const MODEL_MAP: Record<string, ModelConfig> = {
@@ -41,6 +44,13 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   "imagine-art": { endpoint: "imagineart/imagineart-1.5-preview/text-to-image", supportsImageSize: true },
   "z-image-turbo": { endpoint: "fal-ai/z-image/turbo", supportsNumImages: true, supportsImageSize: true },
   "hunyuan-v3": { endpoint: "fal-ai/hunyuan-image/v3/text-to-image", supportsImageSize: true },
+  // ═══════════════════════════════════════════
+  // FREE DEAPI MODELS
+  // ═══════════════════════════════════════════
+  "flux2-klein-4b": { endpoint: "", provider: "deapi", deapiEndpoint: "txt2img", deapiModel: "FLUX.2-Klein-4B-BF16" },
+  "z-image-turbo-int8": { endpoint: "", provider: "deapi", deapiEndpoint: "txt2img", deapiModel: "Z-Image-Turbo-INT8" },
+  "flux1-schnell": { endpoint: "", provider: "deapi", deapiEndpoint: "txt2img", deapiModel: "FLUX.1-schnell" },
+  "qwen-image-edit-plus": { endpoint: "", provider: "deapi", deapiEndpoint: "img2img", deapiModel: "Qwen-Image-Edit-Plus", requiresImage: true, maxImages: 1, inputKey: "image" },
 };
 
 const DATA_URI_REGEX = /^data:([^;]+);base64,(.+)$/;
@@ -62,19 +72,99 @@ function normalizeImageInput(imageValue: string): string {
   return `data:${mimeType};base64,${cleanedBase64}`;
 }
 
+// ── deAPI key rotation ──
+async function getDeapiKey(sb: ReturnType<typeof createClient>): Promise<{ key: string; id: string } | null> {
+  const { data } = await sb
+    .from("deapi_keys")
+    .select("id, api_key")
+    .eq("is_active", true)
+    .order("usage_count", { ascending: true })
+    .limit(5);
+  if (!data || data.length === 0) return null;
+  const pick = data[Math.floor(Math.random() * data.length)];
+  // Increment usage
+  await sb.from("deapi_keys").update({ usage_count: (pick as any).usage_count + 1 || 1, last_used_at: new Date().toISOString() }).eq("id", pick.id);
+  return { key: pick.api_key, id: pick.id };
+}
+
+async function markKeyInactive(sb: ReturnType<typeof createClient>, keyId: string) {
+  await sb.from("deapi_keys").update({ is_active: false }).eq("id", keyId);
+}
+
+async function callDeapi(
+  sb: ReturnType<typeof createClient>,
+  deapiEndpoint: string,
+  body: Record<string, unknown>,
+  maxRetries = 3,
+): Promise<any> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const keyData = await getDeapiKey(sb);
+    if (!keyData) throw new Error("No active deAPI keys available");
+
+    try {
+      const resp = await fetch(`https://api.deapi.ai/api/v1/client/${deapiEndpoint}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${keyData.key}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (resp.status === 401 || resp.status === 403) {
+        console.warn(`deAPI key ${keyData.id} failed (${resp.status}), marking inactive and retrying...`);
+        await markKeyInactive(sb, keyData.id);
+        continue;
+      }
+
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`deAPI error: ${resp.status} - ${errText.slice(0, 200)}`);
+      }
+
+      const result = await resp.json();
+      
+      // If async, poll for result
+      if (result.request_id) {
+        return await pollDeapiResult(keyData.key, result.request_id);
+      }
+      
+      return result;
+    } catch (e: any) {
+      if (e.message?.includes("deAPI key") || attempt === maxRetries - 1) throw e;
+    }
+  }
+  throw new Error("All deAPI key attempts failed");
+}
+
+async function pollDeapiResult(apiKey: string, requestId: string, maxAttempts = 60): Promise<any> {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const resp = await fetch(`https://api.deapi.ai/api/v1/client/request-status/${requestId}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
+    });
+    if (!resp.ok) continue;
+    const status = await resp.json();
+    if (status.status === "completed" || status.status === "success") return status;
+    if (status.status === "failed" || status.status === "error") throw new Error("deAPI generation failed");
+  }
+  throw new Error("deAPI generation timed out");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { prompt, model, image_url, image_urls, user_id, credits_cost, num_images, image_size } = await req.json();
     const FAL_API_KEY = Deno.env.get("FAL_API_KEY");
-    if (!FAL_API_KEY) throw new Error("FAL_API_KEY not configured");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, serviceRoleKey);
 
     // Deduct credits
     if (user_id && credits_cost) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const sb = createClient(supabaseUrl, serviceRoleKey);
       const { data: creditResult } = await sb.rpc("deduct_credits", {
         p_user_id: user_id,
         p_amount: Number(credits_cost),
@@ -90,9 +180,43 @@ serve(async (req) => {
     }
 
     const modelConfig = MODEL_MAP[model] || MODEL_MAP["megsy-imagine"];
+
+    // ═══ DEAPI MODELS ═══
+    if (modelConfig.provider === "deapi") {
+      const deapiBody: Record<string, unknown> = {
+        prompt: prompt || "A beautiful image",
+        model: modelConfig.deapiModel,
+      };
+      if (image_size) {
+        deapiBody.width = image_size.width || 1024;
+        deapiBody.height = image_size.height || 1024;
+      }
+      // For img2img, add image
+      if (modelConfig.deapiEndpoint === "img2img" && (image_url || (image_urls && image_urls[0]))) {
+        deapiBody.image = image_url || image_urls[0];
+      }
+
+      console.log(`Generating image via deAPI: model=${modelConfig.deapiModel}, endpoint=${modelConfig.deapiEndpoint}`);
+      const result = await callDeapi(sb, modelConfig.deapiEndpoint!, deapiBody);
+      
+      // Extract URL from deAPI response
+      let imageUrl = "";
+      if (result.image_url) imageUrl = result.image_url;
+      else if (result.output?.image_url) imageUrl = result.output.image_url;
+      else if (result.result?.image_url) imageUrl = result.result.image_url;
+      else if (result.images?.[0]?.url) imageUrl = result.images[0].url;
+      else if (typeof result.output === "string") imageUrl = result.output;
+
+      return new Response(JSON.stringify({ image_urls: imageUrl ? [imageUrl] : [], image_url: imageUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ═══ FAL.AI MODELS ═══
+    if (!FAL_API_KEY) throw new Error("FAL_API_KEY not configured");
+
     const requestedCount = Math.min(Math.max(num_images || 1, 1), 4);
 
-    // Collect image inputs
     const rawImages = [
       ...(Array.isArray(image_urls) ? image_urls : []),
       ...(image_url ? [image_url] : []),
@@ -103,26 +227,20 @@ serve(async (req) => {
     const uniqueImages = [...new Set(rawImages)].slice(0, modelConfig.maxImages || 1);
     const processedImages = uniqueImages.map((img) => normalizeImageInput(img));
 
-    // Choose endpoint: if images provided and editEndpoint exists, use edit
     const hasImages = processedImages.length > 0;
     const endpoint = hasImages && modelConfig.editEndpoint ? modelConfig.editEndpoint : modelConfig.endpoint;
 
     const input: Record<string, unknown> = { prompt: prompt || "A beautiful image" };
 
-    // Add image_size if supported
     if (modelConfig.supportsImageSize && image_size) {
       input.image_size = { width: image_size.width || 1024, height: image_size.height || 1024 };
     }
-
-    // Add num_images if supported and > 1
     if (modelConfig.supportsNumImages && requestedCount > 1) {
       input.num_images = requestedCount;
     }
-
     if (modelConfig.requiresImage && processedImages.length === 0) {
       throw new Error(`${model || "Selected model"} requires at least one image input`);
     }
-
     if (processedImages.length > 0) {
       const singleKey = modelConfig.inputKey || "image_url";
       input[singleKey] = processedImages[0];
@@ -131,9 +249,8 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Generating image with model: ${model}, endpoint: ${endpoint}, images: ${processedImages.length}, num_images: ${requestedCount}`);
+    console.log(`Generating image with model: ${model}, endpoint: ${endpoint}, images: ${processedImages.length}`);
 
-    // If model doesn't support num_images but user wants multiple, make parallel requests
     const needsParallel = requestedCount > 1 && !modelConfig.supportsNumImages;
     
     if (needsParallel) {
@@ -146,7 +263,6 @@ serve(async (req) => {
       );
       const responses = await Promise.all(promises);
       const allUrls: string[] = [];
-
       for (const resp of responses) {
         if (!resp.ok) continue;
         const result = await resp.json();
@@ -154,13 +270,11 @@ serve(async (req) => {
         else if (result.image?.url) allUrls.push(result.image.url);
         else if (result.output?.url) allUrls.push(result.output.url);
       }
-
       return new Response(JSON.stringify({ image_urls: allUrls, image_url: allUrls[0] || "" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Single request
     const resp = await fetch(`https://fal.run/${endpoint}`, {
       method: "POST",
       headers: { Authorization: `Key ${FAL_API_KEY}`, "Content-Type": "application/json" },
@@ -174,8 +288,6 @@ serve(async (req) => {
     }
 
     const result = await resp.json();
-
-    // Collect all image URLs
     const allUrls: string[] = [];
     if (result.images && Array.isArray(result.images)) {
       for (const img of result.images) {

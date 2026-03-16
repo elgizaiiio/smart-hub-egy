@@ -22,11 +22,9 @@ const CHAT_MODELS: ModelOption[] = [
   { id: "google/gemini-2.5-pro", name: "Gemini 2.5 Pro", credits: "" },
   { id: "openai/gpt-5", name: "GPT-5", credits: "" },
   { id: "x-ai/grok-3", name: "Grok 3", credits: "" },
-  { id: "deepseek/deepseek-r1", name: "DeepSeek R1", credits: "" },
 ];
 
 // Image & Video models are now fully dynamic via admin bot
-// These empty arrays are kept as fallbacks; real models come from useDynamicModels()
 export const IMAGE_MODELS: ModelOption[] = [];
 export const VIDEO_MODELS: ModelOption[] = [];
 
@@ -38,19 +36,16 @@ const MODELS: Record<ModelMode, ModelOption[]> = {
   code: [
     { id: "x-ai/grok-3", name: "Grok 3", credits: "" },
     { id: "openai/gpt-5", name: "GPT-5", credits: "" },
-    { id: "deepseek/deepseek-r1", name: "DeepSeek R1", credits: "" },
   ],
 };
 
 // Real brand icons for chat models
 export const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
-  // Megsy M logo - no background
   if (modelId.includes("gemini-3-flash")) {
     return (
       <span className="text-sm font-black leading-none" style={{ background: "linear-gradient(135deg, #C0C0C0, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
     );
   }
-  // Google Gemini - real multi-color star
   if (modelId.includes("gemini")) {
     return (
       <svg viewBox="0 0 28 28" className="w-4 h-4" fill="none">
@@ -58,7 +53,6 @@ export const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
       </svg>
     );
   }
-  // OpenAI GPT - real OpenAI logo
   if (modelId.includes("gpt")) {
     return (
       <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
@@ -66,21 +60,10 @@ export const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
       </svg>
     );
   }
-  // xAI Grok - ✗ symbol
   if (modelId.includes("grok")) {
     return (
       <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-      </svg>
-    );
-  }
-  // DeepSeek - whale/dolphin logo
-  if (modelId.includes("deepseek")) {
-    return (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-        <circle cx="12" cy="12" r="11" fill="#4D6BFE"/>
-        <path d="M7 13c1-3 4-5 7-5 2 0 3.5 1 4 2.5.5 1.5 0 3-1 4-1 1-2.5 1.5-4 1.5H11l-2 2v-3c-1-.5-2-1.2-2-2z" fill="white"/>
-        <circle cx="14.5" cy="11.5" r="1" fill="#4D6BFE"/>
       </svg>
     );
   }
@@ -103,7 +86,6 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, colorClass }: Model
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -115,7 +97,6 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, colorClass }: Model
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  // Chat mode: simple dropdown
   if (mode === "chat" || mode === "code" || mode === "files") {
     const models = MODELS[mode];
     return (
@@ -159,7 +140,6 @@ const ModelSelector = ({ mode, selectedModel, onModelChange, colorClass }: Model
     );
   }
 
-  // Images/Videos: full picker sheet
   const pickerMode = mode === "images" ? "images" : mode === "videos" ? "videos" : "chat";
 
   return (

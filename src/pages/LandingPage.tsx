@@ -15,6 +15,8 @@ import PricingPreview from "@/components/landing/PricingPreview";
 import FAQSection from "@/components/landing/FAQSection";
 import CTASection from "@/components/landing/CTASection";
 import LandingFooter from "@/components/landing/LandingFooter";
+import ReferralBanner from "@/components/landing/ReferralBanner";
+import ReferralSection from "@/components/landing/ReferralSection";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -53,6 +55,7 @@ const LandingPage = () => {
       <LandingNavbar />
       <HeroSection />
       <StatsMarquee />
+      <ReferralBanner />
       <HorizontalGallery />
       <StickyFeatureTabs />
       <ParallaxShowcase />
@@ -60,6 +63,7 @@ const LandingPage = () => {
       <ModelsMarquee />
       <HowItWorks />
       <PricingPreview />
+      <ReferralSection />
       <FAQSection />
       <CTASection />
       <LandingFooter />

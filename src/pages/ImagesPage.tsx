@@ -390,6 +390,10 @@ const ImagesPage = () => {
     "imagine-art": "/model-logos/fal.ico",
     "z-image-turbo": "/model-logos/fal.ico",
     "hunyuan-v3": "/model-logos/google.ico",
+    "flux2-klein-4b": "/model-logos/bfl.png",
+    "z-image-turbo-int8": "/model-logos/fal.ico",
+    "flux1-schnell": "/model-logos/bfl.png",
+    "qwen-image-edit-plus": "/model-logos/google.ico",
   };
   const currentLogo = selectedModel.iconUrl || FALLBACK_LOGOS[selectedModel.id];
 
@@ -520,7 +524,7 @@ const ImagesPage = () => {
                   {currentLogo ? (
                     <img src={currentLogo} alt={selectedModel.name} className="w-4 h-4 rounded-full object-cover" />
                   ) : (
-                    <div className="w-4 h-4 rounded-full bg-primary/20" />
+                    <span className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">{selectedModel.name.charAt(0)}</span>
                   )}
                   <span>{selectedModel.name}</span>
                 </button>
