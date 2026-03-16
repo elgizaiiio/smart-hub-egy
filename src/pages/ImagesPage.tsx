@@ -436,7 +436,7 @@ const ImagesPage = () => {
             <div className="px-2 py-2">
               {isGenerating && (
                 <div className="mb-4 flex justify-center">
-                  <ThinkingLoader />
+                  <GenerationLoader type="image" />
                 </div>
               )}
               <div className="columns-2 gap-2" style={{ maxHeight: "none" }}>
