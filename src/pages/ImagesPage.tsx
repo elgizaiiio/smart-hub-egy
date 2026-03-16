@@ -130,64 +130,16 @@ const ImagesPage = () => {
     const finalPrompt = trimmed || `Generate with ${selectedModel.name}`;
 
     setInput("");
-    setIsGenerating(true);
-    setShowResults(true);
-
-    const convId = await createOrGetConversation(trimmed || "Image Generation");
-    if (convId) await saveMessage(convId, "user", trimmed);
-
-    try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          prompt: finalPrompt,
-          model: selectedModel.id,
-          image_url: attachedImages[0]?.dataUrl,
-          image_urls: attachedImages.map((img) => img.dataUrl),
-          user_id: userId,
-          credits_cost: creditCost,
-          num_images: settings.numImages,
-          image_size: { width: settings.dimensions.width, height: settings.dimensions.height },
-        }),
-      });
-
-      const data = await resp.json();
-
-      if (data.error) {
-        toast.error(data.error);
-        if (convId) await saveMessage(convId, "assistant", `Error: ${data.error}`);
-      } else {
-        const urls: string[] = data.image_urls || (data.image_url ? [data.image_url] : []);
-        const newImages: GeneratedImage[] = urls.map((url) => ({
-          id: crypto.randomUUID(),
-          url,
-          prompt: trimmed || "Generated image",
-          model: selectedModel.name,
-          modelId: selectedModel.id,
-          dimensions: `${settings.dimensions.width}×${settings.dimensions.height}`,
-          createdAt: new Date(),
-          
-          speed: "Fast",
-        }));
-        setGeneratedImages((prev) => [...newImages, ...prev]);
-        if (convId) await saveMessage(convId, "assistant", trimmed, urls);
-      }
-    } catch {
-      toast.error("Generation failed. Please try again.");
-    }
-
-    setIsGenerating(false);
-    setAttachedImages([]);
-    refreshCredits();
-
-    if (convId) {
-      await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
-    }
-  };
+    
+    // Redirect to studio with generation params
+    navigate("/images/studio", {
+      state: {
+        prompt: finalPrompt,
+        model: selectedModel,
+        settings,
+        imageUrls: attachedImages.map((img) => img.dataUrl),
+      },
+    });
 
   const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
