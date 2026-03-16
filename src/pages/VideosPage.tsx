@@ -127,6 +127,7 @@ const VideosPage = () => {
         settings,
         imageUrl: attachedImages[0]?.dataUrl,
       },
+    });
   };
 
   const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
