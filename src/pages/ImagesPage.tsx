@@ -139,7 +139,7 @@ const ImagesPage = () => {
         settings,
         imageUrls: attachedImages.map((img) => img.dataUrl),
       },
-    });
+  };
 
   const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
