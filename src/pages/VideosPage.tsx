@@ -253,7 +253,7 @@ const VideosPage = () => {
                 <div className="max-w-6xl mx-auto px-6 py-6">
                   {isGenerating && (
                     <div className="mb-6">
-                      <ThinkingLoader />
+                      <GenerationLoader type="video" />
                     </div>
                   )}
                   <div className="columns-1 lg:columns-2 xl:columns-3 gap-4">
