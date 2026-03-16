@@ -273,9 +273,9 @@ const ImagesPage = () => {
                 </div>
 
                 <div className="max-w-6xl mx-auto px-6 py-6">
-                  {isGenerating && (
-                    <div className="mb-6">
-                      <ThinkingLoader />
+              {isGenerating && (
+                    <div className="mb-6 flex justify-center">
+                      <GenerationLoader type="image" />
                     </div>
                   )}
                   <div className="columns-2 lg:columns-3 xl:columns-4 gap-4">
