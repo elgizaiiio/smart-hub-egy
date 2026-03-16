@@ -118,60 +118,16 @@ const VideosPage = () => {
 
     const userContent = trimmed || `Generate with ${selectedModel.name}`;
     setInput("");
-    setIsGenerating(true);
-    setShowResults(true);
-
-    const convId = await createOrGetConversation(userContent);
-    if (convId) await saveMessage(convId, "user", userContent);
-
-    try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          prompt: userContent,
-          model: selectedModel.id,
-          image_url: attachedImages[0]?.dataUrl || undefined,
-          user_id: userId,
-          credits_cost: creditCost,
-        }),
-      });
-
-      const data = await resp.json();
-
-      if (data.error) {
-        toast.error(data.error);
-        if (convId) await saveMessage(convId, "assistant", `Error: ${data.error}`);
-      } else if (data.video_url) {
-        const newVideo: GeneratedVideo = {
-          id: crypto.randomUUID(),
-          url: data.video_url,
-          prompt: userContent,
-          model: selectedModel.name,
-          modelId: selectedModel.id,
-          duration: `${settings.duration}s`,
-          createdAt: new Date(),
-        };
-        setGeneratedVideos((prev) => [newVideo, ...prev]);
-        if (convId) await saveMessage(convId, "assistant", userContent, [data.video_url]);
-      } else {
-        toast.error("No video was returned. Please try again.");
-      }
-    } catch {
-      toast.error("Generation failed. Please try again.");
-    }
-
-    setIsGenerating(false);
-    setAttachedImages([]);
-    refreshCredits();
-
-    if (convId) {
-      await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
-    }
-  };
+    
+    // Redirect to studio with generation params
+    navigate("/videos/studio", {
+      state: {
+        prompt: userContent,
+        model: selectedModel,
+        settings,
+        imageUrl: attachedImages[0]?.dataUrl,
+      },
+    });
 
   const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
