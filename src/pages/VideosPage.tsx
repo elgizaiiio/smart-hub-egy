@@ -11,7 +11,7 @@ import AppSidebar from "@/components/AppSidebar";
 import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
-import ThinkingLoader from "@/components/ThinkingLoader";
+import GenerationLoader from "@/components/GenerationLoader";
 import AppShowcaseGallery from "@/components/AppShowcaseGallery";
 import ShowcaseDetailModal from "@/components/ShowcaseDetailModal";
 import VideoBottomInputBar, { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "@/components/VideoBottomInputBar";
