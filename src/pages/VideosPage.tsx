@@ -478,7 +478,7 @@ const VideosPage = () => {
                   {currentLogo ? (
                     <img src={currentLogo} alt={selectedModel.name} className="w-4 h-4 rounded-full object-cover" />
                   ) : (
-                    <div className="w-4 h-4 rounded-full bg-primary/20" />
+                    <span className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">{selectedModel.name.charAt(0)}</span>
                   )}
                   <span>{selectedModel.name}</span>
                 </button>
