@@ -594,6 +594,69 @@ export type Database = {
         }
         Relationships: []
       }
+      rp_portal_settings: {
+        Row: {
+          created_at: string
+          id: string
+          notify_on_earning: boolean | null
+          notify_on_signup: boolean | null
+          payment_details: string | null
+          payment_method: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notify_on_earning?: boolean | null
+          notify_on_signup?: boolean | null
+          payment_details?: string | null
+          payment_method?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notify_on_earning?: boolean | null
+          notify_on_signup?: boolean | null
+          payment_details?: string | null
+          payment_method?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rp_referral_clicks: {
+        Row: {
+          clicked_at: string
+          country: string | null
+          id: string
+          ip_hash: string | null
+          referral_code: string
+          referrer_url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          ip_hash?: string | null
+          referral_code: string
+          referrer_url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          ip_hash?: string | null
+          referral_code?: string
+          referrer_url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       service_incidents: {
         Row: {
           created_at: string
