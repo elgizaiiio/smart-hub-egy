@@ -85,6 +85,15 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
   }, [allModels, mode, tab]);
 
   const handleSelect = (model: ModelDetail) => {
+    // Gate non-free models for unpaid users (images/videos/code only)
+    const isFree = FREE_MODEL_IDS.includes(model.id) || model.credits === 0;
+    if (!isFree && !paid && (mode === "images" || mode === "videos")) {
+      toast.error("Upgrade to Starter or higher to use this model.");
+      onClose();
+      navigate("/pricing");
+      return;
+    }
+
     let cust: Record<string, any> | undefined;
     if (model.customization) {
       cust = typeof model.customization === 'string' ? JSON.parse(model.customization as string) : model.customization;
