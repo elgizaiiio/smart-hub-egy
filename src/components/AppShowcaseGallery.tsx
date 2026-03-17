@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +12,9 @@ interface AppShowcaseGalleryProps {
 
 const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
   const [dbItems, setDbItems] = useState<ShowcaseItem[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<number | null>(null);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(mode === "images");
 
   useEffect(() => {
     const load = async () => {
@@ -25,6 +28,35 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
     };
     load();
   }, [mode]);
+
+  // Auto-scroll for images page — slow continuous scroll, stops permanently on touch
+  useEffect(() => {
+    if (mode !== "images" || !autoScrollEnabled) return;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    let animId: number;
+    const scrollStep = () => {
+      if (!autoScrollEnabled) return;
+      el.scrollTop += 0.5;
+      animId = requestAnimationFrame(scrollStep);
+    };
+    animId = requestAnimationFrame(scrollStep);
+    autoScrollRef.current = animId;
+
+    return () => cancelAnimationFrame(animId);
+  }, [mode, autoScrollEnabled, dbItems]);
+
+  // Stop auto-scroll permanently on any touch/pointer interaction
+  const handleUserInteraction = useCallback(() => {
+    if (autoScrollEnabled) {
+      setAutoScrollEnabled(false);
+      if (autoScrollRef.current) {
+        cancelAnimationFrame(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+    }
+  }, [autoScrollEnabled]);
 
   if (dbItems.length === 0) {
     return (
@@ -50,7 +82,13 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
   };
 
   return (
-    <div className="p-3 md:p-4">
+    <div
+      ref={scrollRef}
+      className="p-3 md:p-4"
+      onTouchStart={handleUserInteraction}
+      onMouseDown={handleUserInteraction}
+      onWheel={handleUserInteraction}
+    >
       <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3">
         {dbItems.map((item, i) => (
           <motion.div
@@ -67,9 +105,13 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
                 muted
                 loop
                 playsInline
-                autoPlay
+                preload="metadata"
                 className="w-full rounded-2xl object-cover pointer-events-auto"
-                onMouseEnter={(e) => e.currentTarget.play()}
+                onClick={(e) => {
+                  const vid = e.currentTarget;
+                  if (vid.paused) vid.play();
+                  else vid.pause();
+                }}
               />
             ) : (
               <img
@@ -79,7 +121,7 @@ const AppShowcaseGallery = ({ mode, onItemClick }: AppShowcaseGalleryProps) => {
                 loading="lazy"
               />
             )}
-            {/* Clean hover overlay - no icons, just text buttons */}
+            {/* Clean hover overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-3">
               <div className="flex items-center gap-2">
                 <button

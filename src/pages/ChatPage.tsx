@@ -474,8 +474,8 @@ const ChatPage = () => {
           currentMode="chat"
         />
 
-        {/* Top header bar */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-transparent">
+        {/* Top header bar — transparent with blur so content scrolls behind */}
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-background/60 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
               <Menu className="w-5 h-5" />
@@ -613,9 +613,9 @@ const ChatPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Input (when conversation active) */}
+        {/* Input (when conversation active) — transparent bottom with gradient fade */}
         {hasConversation && (
-          <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-1">
+          <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-4 bg-gradient-to-t from-background via-background/80 to-transparent">
             <div className="max-w-3xl mx-auto space-y-1.5">
               <AnimatePresence>
                 {chatMode !== "normal" && (

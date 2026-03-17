@@ -87,6 +87,36 @@ const App = () => {
     else document.documentElement.setAttribute("data-theme", "light");
     const savedAccent = localStorage.getItem("accent");
     if (savedAccent) document.documentElement.style.setProperty("--primary", savedAccent);
+
+    // Clear all caches when user changes to prevent data leakage between accounts
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+        const currentUserId = session?.user?.id;
+        const lastUserId = localStorage.getItem("megsy_last_user_id");
+        if (currentUserId && lastUserId && currentUserId !== lastUserId) {
+          // Different user — clear all cached data
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith("megsy_cache_")) keysToRemove.push(key);
+          }
+          keysToRemove.forEach((k) => localStorage.removeItem(k));
+          queryClient.clear();
+        }
+        if (currentUserId) localStorage.setItem("megsy_last_user_id", currentUserId);
+        if (event === "SIGNED_OUT") {
+          localStorage.removeItem("megsy_last_user_id");
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith("megsy_cache_")) keysToRemove.push(key);
+          }
+          keysToRemove.forEach((k) => localStorage.removeItem(k));
+          queryClient.clear();
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
