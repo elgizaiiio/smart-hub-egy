@@ -474,8 +474,8 @@ const ChatPage = () => {
           currentMode="chat"
         />
 
-        {/* Top header bar */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-transparent">
+        {/* Top header bar — transparent with blur so content scrolls behind */}
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-background/60 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
               <Menu className="w-5 h-5" />
