@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const plans = [
   {
     name: "Starter",
-    monthlyPrice: 25,
-    yearlyPrice: 199,
-    monthlyCredits: 250,
-    yearlyCredits: 2500,
+    monthlyPrice: 9,
+    yearlyPrice: 89,
+    monthlyCredits: 100,
+    yearlyCredits: 1200,
     featured: false,
     badge: null,
     tier: "starter" as const,
     features: [
-      "250 MC / month",
+      "100 MC / month",
       "All chat models",
       "Image generation",
       "Video generation",
@@ -27,10 +27,10 @@ const plans = [
   },
   {
     name: "Pro",
-    monthlyPrice: 49,
-    yearlyPrice: 499,
+    monthlyPrice: 29,
+    yearlyPrice: 249,
     monthlyCredits: 500,
-    yearlyCredits: 5000,
+    yearlyCredits: 6000,
     featured: true,
     badge: "MOST POPULAR",
     tier: "pro" as const,
@@ -50,10 +50,10 @@ const plans = [
   },
   {
     name: "Elite",
-    monthlyPrice: 149,
-    yearlyPrice: 1299,
+    monthlyPrice: 49,
+    yearlyPrice: 499,
     monthlyCredits: 1500,
-    yearlyCredits: 15000,
+    yearlyCredits: 18000,
     featured: false,
     badge: "PREMIUM",
     tier: "elite" as const,
@@ -75,7 +75,7 @@ const plans = [
 
 const yearlyFeatureOverrides: Record<string, string[]> = {
   Starter: [
-    "2,500 MC / year",
+    "1,200 MC / year",
     "All chat models",
     "Image generation",
     "Video generation",
@@ -86,7 +86,7 @@ const yearlyFeatureOverrides: Record<string, string[]> = {
     "Standard support",
   ],
   Pro: [
-    "5,000 MC / year",
+    "6,000 MC / year",
     "All AI models access",
     "Image generation",
     "Video generation",
@@ -99,7 +99,7 @@ const yearlyFeatureOverrides: Record<string, string[]> = {
     "Priority support",
   ],
   Elite: [
-    "15,000 MC / year",
+    "18,000 MC / year",
     "All models (priority speed)",
     "Unlimited image generation",
     "Unlimited video generation",
@@ -134,6 +134,33 @@ const tierCardStyles = {
 const PricingPage = () => {
   const navigate = useNavigate();
   const [isYearly, setIsYearly] = useState(false);
+
+  const enterprisePrice = isYearly ? 1299 : 149;
+  const enterpriseFeatures = isYearly
+    ? [
+        "Custom MC allocation",
+        "All models with priority speed",
+        "Unlimited generation",
+        "Dedicated infrastructure",
+        "SLA guarantees",
+        "Custom integrations",
+        "White-label options",
+        "Dedicated account manager",
+        "Data privacy & compliance",
+        "Volume discounts",
+      ]
+    : [
+        "Custom MC allocation",
+        "All models with priority speed",
+        "Unlimited generation",
+        "Dedicated infrastructure",
+        "SLA guarantees",
+        "Custom integrations",
+        "White-label options",
+        "Dedicated account manager",
+        "Data privacy & compliance",
+        "Volume discounts",
+      ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -180,7 +207,6 @@ const PricingPage = () => {
                 transition={{ delay: i * 0.1 }}
                 className={`${style.card} rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden ${plan.featured ? "md:scale-105 z-10" : ""}`}
               >
-                {/* Animated particles */}
                 <div className="pricing-points-wrapper">
                   {Array.from({ length: 10 }).map((_, j) => (
                     <span key={j} className="pricing-point" />
@@ -219,61 +245,51 @@ const PricingPage = () => {
           })}
         </div>
 
-        {/* Enterprise Card — same style as others */}
+        {/* Enterprise Card — distinctive gradient */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="mt-6"
         >
-          {(() => {
-            const enterpriseFeatures = [
-              "Custom MC allocation",
-              "All models with priority speed",
-              "Unlimited generation",
-              "Dedicated infrastructure",
-              "SLA guarantees",
-              "Custom integrations",
-              "White-label options",
-              "Dedicated account manager",
-              "Data privacy & compliance",
-              "Volume discounts",
-            ];
-            return (
-              <div className="pricing-card-elite rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden">
-                <div className="pricing-points-wrapper">
-                  {Array.from({ length: 10 }).map((_, j) => (
-                    <span key={j} className="pricing-point" />
-                  ))}
-                </div>
-                <span className="text-xs font-bold px-3 py-1 rounded-full self-start uppercase tracking-wider bg-white/20 text-white backdrop-blur-sm">
-                  ENTERPRISE
-                </span>
-                <div>
-                  <h3 className="font-display font-semibold text-white text-lg">Enterprise</h3>
-                  <p className="text-sm text-white/60 mt-1">Custom plans for large teams</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-display text-3xl font-bold text-white">Custom</span>
-                  <span className="text-sm text-white/60">/pricing</span>
-                </div>
-                <button
-                  onClick={() => navigate("/enterprise")}
-                  className="w-full py-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-medium text-sm transition-all border border-white/10"
-                >
-                  Contact Sales
-                </button>
-                <ul className="space-y-2.5 mt-2">
-                  {enterpriseFeatures.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-white/80">
-                      <Check className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-300" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+          <div className="relative rounded-2xl p-6 flex flex-col gap-4 overflow-hidden border border-cyan-500/20 bg-gradient-to-br from-cyan-950/40 via-background to-blue-950/30">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(6,182,212,0.08),transparent_50%)]" />
+            <div className="pricing-points-wrapper">
+              {Array.from({ length: 10 }).map((_, j) => (
+                <span key={j} className="pricing-point" />
+              ))}
+            </div>
+            <div className="relative z-10 flex flex-col gap-4">
+              <span className="text-xs font-bold px-3 py-1 rounded-full self-start uppercase tracking-wider bg-cyan-500/20 text-cyan-300 backdrop-blur-sm border border-cyan-500/20">
+                <Sparkles className="w-3 h-3 inline mr-1" />
+                ENTERPRISE
+              </span>
+              <div>
+                <h3 className="font-display font-semibold text-white text-lg">Enterprise</h3>
+                <p className="text-sm text-white/50 mt-1">Custom plans for large teams & businesses</p>
               </div>
-            );
-          })()}
+              <div className="flex items-baseline gap-1">
+                <span className="font-display text-3xl font-bold text-white">
+                  ${enterprisePrice}
+                </span>
+                <span className="text-sm text-white/60">/{isYearly ? "year" : "month"}</span>
+              </div>
+              <button
+                onClick={() => navigate("/enterprise")}
+                className="w-full py-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 backdrop-blur-sm text-cyan-200 font-medium text-sm transition-all border border-cyan-500/20"
+              >
+                Contact Sales
+              </button>
+              <ul className="space-y-2.5 mt-2">
+                {enterpriseFeatures.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm text-white/80">
+                    <Check className="w-3.5 h-3.5 shrink-0 mt-0.5 text-cyan-400" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

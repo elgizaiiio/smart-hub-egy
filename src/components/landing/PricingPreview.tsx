@@ -1,17 +1,17 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 
 const plans = [
   {
     name: "Starter",
-    price: "25",
+    price: "9",
     period: "/mo",
-    yearlyNote: "or $199/yr (save 34%)",
+    yearlyNote: "or $89/yr (save 18%)",
     description: "Great for getting started with AI creation",
     features: [
-      "250 MC / month",
+      "100 MC / month",
       "All chat models",
       "Image generation",
       "Video generation",
@@ -29,9 +29,9 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "49",
+    price: "29",
     period: "/mo",
-    yearlyNote: "or $499/yr (save 15%)",
+    yearlyNote: "or $249/yr (save 28%)",
     description: "For creators who need serious power & speed",
     features: [
       "500 MC / month",
@@ -54,9 +54,9 @@ const plans = [
   },
   {
     name: "Elite",
-    price: "149",
+    price: "49",
     period: "/mo",
-    yearlyNote: "or $1,299/yr (save 28%)",
+    yearlyNote: "or $499/yr (save 15%)",
     description: "Unlimited power for professionals & teams",
     features: [
       "1,500 MC / month",
@@ -155,6 +155,41 @@ const PricingPreview = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Enterprise card */}
+        <motion.div
+          initial={{ opacity: 0, y: 80 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.4 }}
+          className="mt-8 relative rounded-2xl border border-cyan-500/20 p-6 md:rounded-3xl md:p-9 bg-gradient-to-br from-cyan-950/30 via-transparent to-blue-950/20"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(6,182,212,0.06),transparent_50%)] rounded-2xl md:rounded-3xl" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-lg font-bold text-cyan-400">Enterprise</h3>
+              </div>
+              <div className="flex items-baseline gap-1 mt-2">
+                <span className="text-4xl font-black text-white md:text-5xl">$149</span>
+                <span className="text-base text-white/40">/mo</span>
+              </div>
+              <p className="mt-1.5 text-xs text-white/25">or $1,299/yr — Custom plans available</p>
+              <p className="mt-3 text-sm leading-relaxed text-white/40 max-w-lg">
+                Dedicated infrastructure, SLA guarantees, white-label options, and a dedicated account manager for your team.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <button
+                onClick={() => navigate("/enterprise")}
+                className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-8 py-3 text-base font-medium text-cyan-300 transition-all hover:bg-cyan-500/20 hover:border-cyan-500/30"
+              >
+                Contact Sales
+              </button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
