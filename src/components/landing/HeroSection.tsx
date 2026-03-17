@@ -15,7 +15,7 @@ const HeroSection = () => {
 
   return (
     <section className="relative flex min-h-[85vh] flex-col items-center overflow-hidden bg-background pt-20 pb-0 md:min-h-screen md:pt-24">
-      {/* Title */}
+      {/* Title — sell the result, not the subscription */}
       <div className="relative z-30 mx-auto w-full px-4 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 50 }}
@@ -23,8 +23,8 @@ const HeroSection = () => {
           transition={{ duration: 0.8 }}
           className="font-display text-[8vw] uppercase leading-[1] tracking-tight text-foreground md:text-[5.5vw]"
         >
-          THE AI CREATIVE SUITE{" "}
-          <span className="text-primary">THAT PUTS YOU IN CONTROL</span>
+          BUILD A WEBSITE. CREATE A VIDEO.{" "}
+          <span className="text-primary">IN SECONDS.</span>
         </motion.h1>
 
         <motion.p
@@ -33,8 +33,8 @@ const HeroSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground md:mt-6 md:text-lg"
         >
-          One platform. 80+ AI models. Generate stunning images, bring them to life
-          with video, write production-ready code, and ship faster than ever before.
+          Megsy builds your website, generates stunning images, creates videos, and writes
+          production-ready code — all from a single prompt. No waiting. No learning curve.
         </motion.p>
 
         {/* Buttons */}
@@ -45,7 +45,7 @@ const HeroSection = () => {
           className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row md:mt-8 md:gap-4"
         >
           <FancyButton onClick={() => navigate("/auth")} className="px-8 py-3 text-sm md:px-10 md:py-4 md:text-base">
-            Start creating
+            Start Creating — It's Free
           </FancyButton>
           <FancyButton onClick={() => window.open("https://api.megsyai.com", "_blank")} className="px-8 py-3 text-sm md:px-10 md:py-4 md:text-base">
             API Platform
@@ -53,7 +53,7 @@ const HeroSection = () => {
         </motion.div>
       </div>
 
-      {/* Video cards — evenly spaced fan layout */}
+      {/* Video cards */}
       <div className="relative z-0 mt-8 flex w-full max-w-[1500px] items-end justify-center gap-2 px-4 pb-4 md:mt-10 md:gap-5">
         {heroVideos.map((vid, i) => {
           const isEdge = Math.abs(vid.rotate) > 3;
@@ -80,15 +80,12 @@ const HeroSection = () => {
                 loop
                 muted
                 playsInline
-                className="h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
               />
             </motion.div>
           );
         })}
       </div>
-
-      {/* Bottom fade */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
     </section>
   );
 };
