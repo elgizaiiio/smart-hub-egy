@@ -47,6 +47,9 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
   const [tab, setTab] = useState<"models" | "tools">("models");
   const [detailModel, setDetailModel] = useState<ModelDetail | null>(null);
   const [mediaMap, setMediaMap] = useState<Record<string, ModelMediaRecord>>({});
+  const { plan } = useUserPlan();
+  const navigate = useNavigate();
+  const paid = isPaidUser(plan);
 
   const types = MODE_TYPES[mode];
   const hasTools = types.tools.length > 0;
