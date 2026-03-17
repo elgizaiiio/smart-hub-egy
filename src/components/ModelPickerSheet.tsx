@@ -1,10 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, X, Check } from "lucide-react";
+import { ArrowLeft, X, Check, Lock } from "lucide-react";
 import { createPortal } from "react-dom";
-import { type ModelDetail, type ModelType } from "@/lib/modelDetails";
+import { type ModelDetail, type ModelType, FREE_MODEL_IDS } from "@/lib/modelDetails";
 import { useDynamicModels } from "@/hooks/useModels";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserPlan } from "@/hooks/useUserPlan";
+import { isPaidUser } from "@/lib/subscriptionGating";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import type { ModelOption } from "./ModelSelector";
 
 type PickerMode = "images" | "videos" | "chat";
