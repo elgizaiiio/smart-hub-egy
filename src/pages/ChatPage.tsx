@@ -613,9 +613,9 @@ const ChatPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Input (when conversation active) */}
+        {/* Input (when conversation active) — transparent bottom with gradient fade */}
         {hasConversation && (
-          <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-1">
+          <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-4 bg-gradient-to-t from-background via-background/80 to-transparent">
             <div className="max-w-3xl mx-auto space-y-1.5">
               <AnimatePresence>
                 {chatMode !== "normal" && (

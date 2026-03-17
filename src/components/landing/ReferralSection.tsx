@@ -10,9 +10,10 @@ const steps = [
 ];
 
 const commissions = [
-  { plan: "Starter", monthly: "$1.00", yearly: "$10.00" },
-  { plan: "Pro", monthly: "$3.00", yearly: "$30.00" },
-  { plan: "Elite", monthly: "$6.00", yearly: "$60.00" },
+  { plan: "Starter", monthly: "$1.80", yearly: "$17.80" },
+  { plan: "Pro", monthly: "$5.80", yearly: "$49.80" },
+  { plan: "Elite", monthly: "$9.80", yearly: "$99.80" },
+  { plan: "Enterprise", monthly: "$29.80", yearly: "$259.80" },
 ];
 
 const ReferralSection = () => {
