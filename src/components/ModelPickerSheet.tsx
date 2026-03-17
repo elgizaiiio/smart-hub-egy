@@ -1,10 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, X, Check } from "lucide-react";
+import { ArrowLeft, X, Check, Lock } from "lucide-react";
 import { createPortal } from "react-dom";
-import { type ModelDetail, type ModelType } from "@/lib/modelDetails";
+import { type ModelDetail, type ModelType, FREE_MODEL_IDS } from "@/lib/modelDetails";
 import { useDynamicModels } from "@/hooks/useModels";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserPlan } from "@/hooks/useUserPlan";
+import { isPaidUser } from "@/lib/subscriptionGating";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import type { ModelOption } from "./ModelSelector";
 
 type PickerMode = "images" | "videos" | "chat";
@@ -43,6 +47,9 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
   const [tab, setTab] = useState<"models" | "tools">("models");
   const [detailModel, setDetailModel] = useState<ModelDetail | null>(null);
   const [mediaMap, setMediaMap] = useState<Record<string, ModelMediaRecord>>({});
+  const { plan } = useUserPlan();
+  const navigate = useNavigate();
+  const paid = isPaidUser(plan);
 
   const types = MODE_TYPES[mode];
   const hasTools = types.tools.length > 0;
@@ -78,6 +85,15 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
   }, [allModels, mode, tab]);
 
   const handleSelect = (model: ModelDetail) => {
+    // Gate non-free models for unpaid users (images/videos/code only)
+    const isFree = FREE_MODEL_IDS.includes(model.id) || model.credits === 0;
+    if (!isFree && !paid && (mode === "images" || mode === "videos")) {
+      toast.error("Upgrade to Starter or higher to use this model.");
+      onClose();
+      navigate("/pricing");
+      return;
+    }
+
     let cust: Record<string, any> | undefined;
     if (model.customization) {
       cust = typeof model.customization === 'string' ? JSON.parse(model.customization as string) : model.customization;
