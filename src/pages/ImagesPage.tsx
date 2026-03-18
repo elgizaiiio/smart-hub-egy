@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
+import { useUserPlan } from "@/hooks/useUserPlan";
+import { canUseModel } from "@/lib/subscriptionGating";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AppLayout from "@/layouts/AppLayout";
 import AppSidebar from "@/components/AppSidebar";
