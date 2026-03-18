@@ -62,6 +62,7 @@ const ImagesPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userId, credits, hasEnoughCredits, refreshCredits } = useCredits();
+  const { plan } = useUserPlan();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
