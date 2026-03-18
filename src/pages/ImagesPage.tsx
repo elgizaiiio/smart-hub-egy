@@ -120,6 +120,11 @@ const ImagesPage = () => {
     const trimmed = input.trim();
     if (!trimmed && attachedImages.length === 0) return;
 
+    if (!canUseModel(selectedModel.id, plan)) {
+      toast.error("This model requires a Starter plan or higher.", { action: { label: "Upgrade", onClick: () => navigate("/pricing") } });
+      return;
+    }
+
     if (capability.requiresImage && attachedImages.length === 0) {
       toast.error(`${selectedModel.name} requires at least one image.`);
       return;
