@@ -15,7 +15,6 @@ const HeroSection = () => {
 
   return (
     <section className="relative flex min-h-[85vh] flex-col items-center overflow-hidden bg-background pt-20 pb-0 md:min-h-screen md:pt-24">
-      {/* Title — sell the result, not the subscription */}
       <div className="relative z-30 mx-auto w-full px-4 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 50 }}
@@ -23,8 +22,8 @@ const HeroSection = () => {
           transition={{ duration: 0.8 }}
           className="font-display text-[8vw] uppercase leading-[1] tracking-tight text-foreground md:text-[5.5vw]"
         >
-          BUILD A WEBSITE. CREATE A VIDEO.{" "}
-          <span className="text-primary">IN SECONDS.</span>
+          YOUR WEBSITE. YOUR VIDEO.{" "}
+          <span className="text-primary">READY NOW.</span>
         </motion.h1>
 
         <motion.p
@@ -33,11 +32,10 @@ const HeroSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground md:mt-6 md:text-lg"
         >
-          Megsy builds your website, generates stunning images, creates videos, and writes
-          production-ready code — all from a single prompt. No waiting. No learning curve.
+          Tell Megsy what you need — a website, a video, stunning images, or production-ready code.
+          Get it in seconds, not days. One prompt. Done.
         </motion.p>
 
-        {/* Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -53,7 +51,6 @@ const HeroSection = () => {
         </motion.div>
       </div>
 
-      {/* Video cards */}
       <div className="relative z-0 mt-8 flex w-full max-w-[1500px] items-end justify-center gap-2 px-4 pb-4 md:mt-10 md:gap-5">
         {heroVideos.map((vid, i) => {
           const isEdge = Math.abs(vid.rotate) > 3;
@@ -74,14 +71,7 @@ const HeroSection = () => {
               }`}
               style={{ aspectRatio: "3/4" }}
             >
-              <video
-                src={vid.src}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="absolute inset-0 h-full w-full object-cover"
-              />
+              <video src={vid.src} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
             </motion.div>
           );
         })}
