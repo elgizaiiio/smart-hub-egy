@@ -51,6 +51,7 @@ const VideosPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userId, credits, hasEnoughCredits, refreshCredits } = useCredits();
+  const { plan } = useUserPlan();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("videos"));
