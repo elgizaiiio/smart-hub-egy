@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, CreditCard, TrendingUp, TrendingDown, Clock, Coins, Crown, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, CreditCard, TrendingUp, TrendingDown, Clock, Crown, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,23 +24,23 @@ const BillingPage = () => {
           setCredits(Number(profile.credits) || 0);
           setPlan(profile.plan || "Free");
         }
-        const { data: txns } = await supabase
-          .from("credit_transactions")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(50);
+        const { data: txns } = await supabase.
+        from("credit_transactions").
+        select("*").
+        eq("user_id", user.id).
+        order("created_at", { ascending: false }).
+        limit(50);
         if (txns) setTransactions(txns);
       }
     };
     load();
   }, []);
 
-  const totalSpent = transactions.filter(t => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0);
-  const totalEarned = transactions.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
+  const totalSpent = transactions.filter((t) => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0);
+  const totalEarned = transactions.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
 
-  const content = (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-lg mx-auto">
+  const content =
+  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-lg mx-auto">
       {/* Card */}
       <div className="relative w-full aspect-[1.7/1] rounded-2xl overflow-hidden shadow-2xl group">
         <img src={visaBg} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
@@ -54,12 +54,12 @@ const BillingPage = () => {
               </p>
             </div>
             <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-              plan.toLowerCase() === 'free' ? 'bg-white/10 text-white/60' :
-              plan.toLowerCase() === 'starter' ? 'bg-emerald-500/20 text-emerald-300' :
-              plan.toLowerCase() === 'pro' ? 'bg-violet-500/20 text-violet-300' :
-              plan.toLowerCase() === 'elite' ? 'bg-purple-500/20 text-purple-300' :
-              'bg-rose-500/20 text-rose-300'
-            }`}>
+          plan.toLowerCase() === 'free' ? 'bg-white/10 text-white/60' :
+          plan.toLowerCase() === 'starter' ? 'bg-emerald-500/20 text-emerald-300' :
+          plan.toLowerCase() === 'pro' ? 'bg-violet-500/20 text-violet-300' :
+          plan.toLowerCase() === 'elite' ? 'bg-purple-500/20 text-purple-300' :
+          'bg-rose-500/20 text-rose-300'}`
+          }>
               {plan}
             </div>
           </div>
@@ -81,9 +81,9 @@ const BillingPage = () => {
           Add MC
         </FancyButton>
         <button
-          onClick={() => navigate("/settings/referrals")}
-          className="py-3 rounded-xl text-sm font-medium text-foreground border border-border hover:bg-secondary/50 transition-colors"
-        >
+        onClick={() => navigate("/settings/referrals")}
+        className="py-3 rounded-xl text-sm font-medium text-foreground border border-border hover:bg-secondary/50 transition-colors">
+        
           Earn MC
         </button>
       </div>
@@ -91,7 +91,7 @@ const BillingPage = () => {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border border-border bg-card/50 p-4 text-center">
-          <Coins className="w-4 h-4 text-primary mx-auto mb-2" />
+          
           <p className="text-xl font-bold text-foreground">{credits.toLocaleString()}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">MC Left</p>
         </div>
@@ -113,26 +113,26 @@ const BillingPage = () => {
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Recent Activity</p>
           <p className="text-[11px] text-muted-foreground">{transactions.length} transactions</p>
         </div>
-        {transactions.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl border border-dashed border-border">
+        {transactions.length === 0 ?
+      <div className="text-center py-16 rounded-2xl border border-dashed border-border">
             <Clock className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">No transactions yet</p>
             <p className="text-xs text-muted-foreground/60 mt-1">Your MC history will appear here</p>
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
+          </div> :
+
+      <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
             {transactions.map((tx) => {
-              const isDeduction = tx.amount > 0;
-              return (
-                <div key={tx.id} className="flex items-center gap-3 py-3.5 px-4 hover:bg-secondary/30 transition-colors">
+          const isDeduction = tx.amount > 0;
+          return (
+            <div key={tx.id} className="flex items-center gap-3 py-3.5 px-4 hover:bg-secondary/30 transition-colors">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    isDeduction ? "bg-red-500/10" : "bg-emerald-500/10"
-                  }`}>
-                    {isDeduction ? (
-                      <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-                    ) : (
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                    )}
+              isDeduction ? "bg-red-500/10" : "bg-emerald-500/10"}`
+              }>
+                    {isDeduction ?
+                <TrendingDown className="w-3.5 h-3.5 text-red-400" /> :
+
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                }
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground truncate">{tx.description || tx.action_type}</p>
@@ -143,21 +143,21 @@ const BillingPage = () => {
                   <span className={`text-sm font-bold tabular-nums ${isDeduction ? "text-red-400" : "text-emerald-400"}`}>
                     {isDeduction ? "-" : "+"}{Math.abs(tx.amount)} MC
                   </span>
-                </div>
-              );
-            })}
+                </div>);
+
+        })}
           </div>
-        )}
+      }
       </div>
-    </motion.div>
-  );
+    </motion.div>;
+
 
   if (!isMobile) {
     return (
       <DesktopSettingsLayout title="Billing" subtitle="Manage your MC balance and view transaction history">
         {content}
-      </DesktopSettingsLayout>
-    );
+      </DesktopSettingsLayout>);
+
   }
 
   return (
@@ -171,8 +171,8 @@ const BillingPage = () => {
         </div>
         <div className="px-4">{content}</div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default BillingPage;
