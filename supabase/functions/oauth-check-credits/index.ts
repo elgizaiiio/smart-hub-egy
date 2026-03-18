@@ -6,22 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function validateOAuthToken(sb: any, req: Request) {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-
-  const token = authHeader.replace("Bearer ", "");
-  const { data: tokenData } = await sb.from("oauth_tokens")
-    .select("*")
-    .eq("access_token", token)
-    .single();
-
-  if (!tokenData) return null;
-  if (new Date(tokenData.expires_at) < new Date()) return null;
-
-  return tokenData;
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -31,16 +15,31 @@ serve(async (req) => {
   );
 
   try {
-    const tokenData = await validateOAuthToken(sb, req);
-    if (!tokenData) {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "invalid_token" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get user profile with credits and plan
+    const token = authHeader.replace("Bearer ", "");
+    const { data: tokenData } = await sb.from("oauth_tokens")
+      .select("*")
+      .eq("access_token", token)
+      .single();
+
+    if (!tokenData || new Date(tokenData.expires_at) < new Date()) {
+      return new Response(JSON.stringify({ error: "invalid_token" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Parse query: ?amount=5
+    const url = new URL(req.url);
+    const amount = Number(url.searchParams.get("amount") || "0");
+
     const { data: profile } = await sb.from("profiles")
-      .select("id, display_name, avatar_url, plan, credits, created_at")
+      .select("credits, plan")
       .eq("id", tokenData.user_id)
       .single();
 
@@ -50,18 +49,14 @@ serve(async (req) => {
       });
     }
 
-    // Get email from auth.users
-    const { data: authUser } = await sb.auth.admin.getUserById(tokenData.user_id);
+    const credits = Number(profile.credits);
 
     return new Response(JSON.stringify({
-      id: profile.id,
-      email: authUser?.user?.email || null,
-      name: profile.display_name,
-      avatar_url: profile.avatar_url,
+      credits,
       plan: profile.plan,
-      credits: Number(profile.credits),
       is_premium: ["starter", "pro", "elite", "business", "enterprise"].includes(profile.plan?.toLowerCase()),
-      created_at: profile.created_at,
+      has_enough: amount > 0 ? credits >= amount : true,
+      requested: amount,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

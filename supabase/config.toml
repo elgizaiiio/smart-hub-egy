@@ -56,3 +56,9 @@ verify_jwt = false
 
 [functions.update-password]
 verify_jwt = false
+
+[functions.oauth-deduct-credits]
+verify_jwt = false
+
+[functions.oauth-check-credits]
+verify_jwt = false
