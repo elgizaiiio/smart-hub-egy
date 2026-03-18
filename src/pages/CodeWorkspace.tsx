@@ -340,6 +340,10 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
   };
 
   const handleApprove = async () => {
+    if (!canUseCodeWorkspace(plan)) {
+      toast.error("Code workspace requires a Starter plan or higher.", { action: { label: "Upgrade", onClick: () => navigate("/pricing") } });
+      return;
+    }
     if (!hasEnoughCredits(BUILD_CREDIT_COST)) {
       toast.error("رصيد MC غير كافي. تحتاج 5 MC للبناء.");
       return;
