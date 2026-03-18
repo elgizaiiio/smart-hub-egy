@@ -96,7 +96,7 @@ const BillingPage = () => {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">MC Left</p>
         </div>
         <div className="rounded-xl border border-border bg-card/50 p-4 text-center">
-          <TrendingDown className="w-4 h-4 text-red-400 mx-auto mb-2" />
+          
           <p className="text-xl font-bold text-foreground">{totalSpent.toLocaleString()}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Spent</p>
         </div>
