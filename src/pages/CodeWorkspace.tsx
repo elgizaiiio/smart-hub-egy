@@ -158,6 +158,7 @@ const CodeWorkspace = () => {
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
 
   const { userId, hasEnoughCredits, refreshCredits } = useCredits();
+  const { plan } = useUserPlan();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
