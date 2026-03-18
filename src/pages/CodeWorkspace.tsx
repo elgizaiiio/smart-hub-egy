@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 import { useUserPlan } from "@/hooks/useUserPlan";
 import { canUseCodeWorkspace } from "@/lib/subscriptionGating";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import BuildTimeline, { BuildStep } from "@/components/BuildTimeline";
 import ReactMarkdown from "react-markdown";
