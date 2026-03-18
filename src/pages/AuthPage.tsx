@@ -374,10 +374,10 @@ const AuthPage = () => {
                   Sign in with GitHub
                 </button>
 
-                <p className="text-center text-xs text-white/30 lg:text-muted-foreground mt-6">
-                  Don't have an account?{" "}
-                  <span className="text-primary font-medium cursor-pointer hover:underline">Sign Up</span>
-                </p>
+                
+
+
+              
               </motion.div>
             }
 
