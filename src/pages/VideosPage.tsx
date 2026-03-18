@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 import { useUserPlan } from "@/hooks/useUserPlan";
 import { canUseModel } from "@/lib/subscriptionGating";
-import { useCredits } from "@/hooks/useCredits";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AppLayout from "@/layouts/AppLayout";
 import AppSidebar from "@/components/AppSidebar";
