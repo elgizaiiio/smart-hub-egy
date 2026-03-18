@@ -29,7 +29,7 @@ const AuthPage = () => {
     setCountdown(60);
     const interval = setInterval(() => {
       setCountdown((prev) => {
-        if (prev <= 1) { clearInterval(interval); return 0; }
+        if (prev <= 1) {clearInterval(interval);return 0;}
         return prev - 1;
       });
     }, 1000);
@@ -93,7 +93,7 @@ const AuthPage = () => {
         setStep("otp-2fa");
       } else {
         toast.success("Welcome back!");
-        if (redirectUrl) window.location.href = redirectUrl; else navigate("/chat");
+        if (redirectUrl) window.location.href = redirectUrl;else navigate("/chat");
       }
     } catch (e: any) {
       toast.error(e.message || "Login failed");
@@ -139,7 +139,7 @@ const AuthPage = () => {
         if (error) throw new Error(error.message);
         if (!data?.success) throw new Error(data?.error || "Invalid code");
         toast.success("Welcome back!");
-        if (redirectUrl) window.location.href = redirectUrl; else navigate("/chat");
+        if (redirectUrl) window.location.href = redirectUrl;else navigate("/chat");
       } else if (step === "otp-reset") {
         const { data, error } = await supabase.functions.invoke("otp", {
           body: { action: "verify-reset", email: email.trim().toLowerCase(), code }
@@ -182,7 +182,7 @@ const AuthPage = () => {
       });
       if (verifyError) throw verifyError;
       toast.success("Account created!");
-      if (redirectUrl) window.location.href = redirectUrl; else navigate("/chat");
+      if (redirectUrl) window.location.href = redirectUrl;else navigate("/chat");
     } catch (e: any) {
       toast.error(e.message || "Could not create account");
     } finally {
@@ -250,7 +250,7 @@ const AuthPage = () => {
     "otp-2fa": <Shield className="w-5 h-5" />,
     "forgot-password": <Mail className="w-5 h-5" />,
     "otp-reset": <Shield className="w-5 h-5" />,
-    "reset-password": <Lock className="w-5 h-5" />,
+    "reset-password": <Lock className="w-5 h-5" />
   };
 
   const stepTitle: Record<Step, string> = {
@@ -321,18 +321,18 @@ const AuthPage = () => {
         <div className="relative z-10 w-full max-w-[380px]">
           {/* Back button */}
           <AnimatePresence>
-            {showBack && (
-              <motion.button
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                onClick={resetFlow}
-                className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 lg:text-muted-foreground lg:hover:text-foreground mb-6 transition-colors"
-              >
+            {showBack &&
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              onClick={resetFlow}
+              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 lg:text-muted-foreground lg:hover:text-foreground mb-6 transition-colors">
+              
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Back
               </motion.button>
-            )}
+            }
           </AnimatePresence>
 
           {/* Header */}
@@ -344,9 +344,9 @@ const AuthPage = () => {
             </div>
 
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                {stepIcon[step]}
-              </div>
+              
+
+              
               <div>
                 <h1 className="text-xl font-bold text-white lg:text-foreground">{stepTitle[step]}</h1>
               </div>
@@ -358,33 +358,33 @@ const AuthPage = () => {
 
           <AnimatePresence mode="wait">
             {/* Step: Email */}
-            {step === "email" && (
-              <motion.div key="email" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }}>
+            {step === "email" &&
+            <motion.div key="email" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }}>
                 <div className="space-y-3.5">
                   <div>
                     <label className="text-[11px] font-medium text-white/50 lg:text-muted-foreground mb-1.5 block uppercase tracking-wider">Email address</label>
                     <input
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleCheckEmail()}
-                      autoFocus
-                      className={`${inputClass} ${inputClassDesktop}`}
-                    />
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleCheckEmail()}
+                    autoFocus
+                    className={`${inputClass} ${inputClassDesktop}`} />
+                  
                   </div>
 
                   <button
-                    onClick={handleCheckEmail}
-                    disabled={isSubmitting || !email.trim()}
-                    className={btnPrimary}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center gap-2">
+                  onClick={handleCheckEmail}
+                  disabled={isSubmitting || !email.trim()}
+                  className={btnPrimary}>
+                  
+                    {isSubmitting ?
+                  <span className="flex items-center justify-center gap-2">
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         Checking...
-                      </span>
-                    ) : "Continue"}
+                      </span> :
+                  "Continue"}
                   </button>
                 </div>
 
@@ -413,11 +413,11 @@ const AuthPage = () => {
                   </button>
                 </div>
               </motion.div>
-            )}
+            }
 
             {/* Step: Password (existing user) */}
-            {step === "password" && (
-              <motion.div key="password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
+            {step === "password" &&
+            <motion.div key="password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.05] lg:bg-muted/30 border border-white/[0.06] lg:border-border/40">
                   <Mail className="w-3.5 h-3.5 text-white/30 lg:text-muted-foreground" />
                   <span className="text-xs text-white/50 lg:text-muted-foreground truncate">{email}</span>
@@ -426,14 +426,14 @@ const AuthPage = () => {
                   <label className="text-[11px] font-medium text-white/50 lg:text-muted-foreground mb-1.5 block uppercase tracking-wider">Password</label>
                   <div className="relative">
                     <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
-                      autoFocus
-                      className={`${inputClass} ${inputClassDesktop} pr-12`}
-                    />
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
+                    autoFocus
+                    className={`${inputClass} ${inputClassDesktop} pr-12`} />
+                  
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/50 transition-colors">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -447,57 +447,57 @@ const AuthPage = () => {
                   <button onClick={() => setStep("forgot-password")} className="text-xs text-primary/80 hover:text-primary transition-colors">Forgot?</button>
                 </div>
                 <button onClick={handlePasswordLogin} disabled={isSubmitting || !password} className={btnPrimary}>
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-2">
+                  {isSubmitting ?
+                <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Signing in...
-                    </span>
-                  ) : "Sign In"}
+                    </span> :
+                "Sign In"}
                 </button>
               </motion.div>
-            )}
+            }
 
             {/* OTP Steps */}
-            {isOtpStep && (
-              <motion.div key={step} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-5">
+            {isOtpStep &&
+            <motion.div key={step} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-5">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.05] lg:bg-muted/30 border border-white/[0.06] lg:border-border/40 mx-auto w-fit">
                   <Mail className="w-3.5 h-3.5 text-white/30 lg:text-muted-foreground" />
                   <span className="text-xs text-white/50 lg:text-muted-foreground">{email}</span>
                 </div>
                 <div className="flex justify-center gap-2.5" onPaste={handleOtpPaste}>
-                  {otpValues.map((val, i) => (
-                    <input
-                      key={`otp-${step}-${i}`}
-                      ref={(el) => { inputRefs.current[i] = el; }}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      autoComplete="one-time-code"
-                      maxLength={1}
-                      value={val}
-                      onChange={(e) => handleOtpChange(i, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                      onFocus={(e) => e.target.select()}
-                      className="w-12 h-14 text-center text-xl font-bold text-white lg:text-foreground bg-white/[0.07] lg:bg-muted/40 border border-white/[0.12] lg:border-border/60 rounded-xl outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 transition-all duration-200"
-                    />
-                  ))}
+                  {otpValues.map((val, i) =>
+                <input
+                  key={`otp-${step}-${i}`}
+                  ref={(el) => {inputRefs.current[i] = el;}}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="one-time-code"
+                  maxLength={1}
+                  value={val}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  onFocus={(e) => e.target.select()}
+                  className="w-12 h-14 text-center text-xl font-bold text-white lg:text-foreground bg-white/[0.07] lg:bg-muted/40 border border-white/[0.12] lg:border-border/60 rounded-xl outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 transition-all duration-200" />
+
+                )}
                 </div>
                 {isSubmitting && <p className="text-xs text-white/40 animate-pulse text-center">Verifying...</p>}
                 <div className="text-center">
-                  {countdown > 0 ? (
-                    <p className="text-xs text-white/30 lg:text-muted-foreground">Resend in {countdown}s</p>
-                  ) : (
-                    <button onClick={() => sendOTP()} disabled={isSubmitting} className="text-xs text-primary/80 hover:text-primary transition-colors disabled:opacity-40">
+                  {countdown > 0 ?
+                <p className="text-xs text-white/30 lg:text-muted-foreground">Resend in {countdown}s</p> :
+
+                <button onClick={() => sendOTP()} disabled={isSubmitting} className="text-xs text-primary/80 hover:text-primary transition-colors disabled:opacity-40">
                       Resend code
                     </button>
-                  )}
+                }
                 </div>
               </motion.div>
-            )}
+            }
 
             {/* Step: Set Password (new user) */}
-            {step === "set-password" && (
-              <motion.div key="set-password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
+            {step === "set-password" &&
+            <motion.div key="set-password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.05] lg:bg-muted/30 border border-white/[0.06] lg:border-border/40 mx-auto w-fit">
                   <Mail className="w-3.5 h-3.5 text-white/30 lg:text-muted-foreground" />
                   <span className="text-xs text-white/50 lg:text-muted-foreground">{email}</span>
@@ -506,33 +506,33 @@ const AuthPage = () => {
                   <label className="text-[11px] font-medium text-white/50 lg:text-muted-foreground mb-1.5 block uppercase tracking-wider">Password</label>
                   <div className="relative">
                     <input
-                      type={showNewPassword ? "text" : "password"}
-                      placeholder="Min 8 characters"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleCreateAccount()}
-                      autoFocus
-                      className={`${inputClass} ${inputClassDesktop} pr-12`}
-                    />
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Min 8 characters"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleCreateAccount()}
+                    autoFocus
+                    className={`${inputClass} ${inputClassDesktop} pr-12`} />
+                  
                     <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/50 transition-colors">
                       {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
                 <button onClick={handleCreateAccount} disabled={isSubmitting || newPassword.length < 8} className={btnPrimary}>
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-2">
+                  {isSubmitting ?
+                <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Creating...
-                    </span>
-                  ) : "Create Account"}
+                    </span> :
+                "Create Account"}
                 </button>
               </motion.div>
-            )}
+            }
 
             {/* Step: Reset Password */}
-            {step === "reset-password" && (
-              <motion.div key="reset-password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
+            {step === "reset-password" &&
+            <motion.div key="reset-password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.05] lg:bg-muted/30 border border-white/[0.06] lg:border-border/40 mx-auto w-fit">
                   <Mail className="w-3.5 h-3.5 text-white/30 lg:text-muted-foreground" />
                   <span className="text-xs text-white/50 lg:text-muted-foreground">{email}</span>
@@ -541,47 +541,47 @@ const AuthPage = () => {
                   <label className="text-[11px] font-medium text-white/50 lg:text-muted-foreground mb-1.5 block uppercase tracking-wider">New Password</label>
                   <div className="relative">
                     <input
-                      type={showNewPassword ? "text" : "password"}
-                      placeholder="Min 8 characters"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleResetPassword()}
-                      autoFocus
-                      className={`${inputClass} ${inputClassDesktop} pr-12`}
-                    />
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Min 8 characters"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleResetPassword()}
+                    autoFocus
+                    className={`${inputClass} ${inputClassDesktop} pr-12`} />
+                  
                     <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/50 transition-colors">
                       {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
                 <button onClick={handleResetPassword} disabled={isSubmitting || newPassword.length < 8} className={btnPrimary}>
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-2">
+                  {isSubmitting ?
+                <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Updating...
-                    </span>
-                  ) : "Update Password"}
+                    </span> :
+                "Update Password"}
                 </button>
               </motion.div>
-            )}
+            }
 
             {/* Step: Forgot Password */}
-            {step === "forgot-password" && (
-              <motion.div key="forgot" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
+            {step === "forgot-password" &&
+            <motion.div key="forgot" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.05] lg:bg-muted/30 border border-white/[0.06] lg:border-border/40 mx-auto w-fit">
                   <Mail className="w-3.5 h-3.5 text-white/30 lg:text-muted-foreground" />
                   <span className="text-xs text-white/50 lg:text-muted-foreground">{email}</span>
                 </div>
                 <button onClick={handleForgotPassword} disabled={isSubmitting} className={btnPrimary}>
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-2">
+                  {isSubmitting ?
+                <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Sending...
-                    </span>
-                  ) : "Send Reset Code"}
+                    </span> :
+                "Send Reset Code"}
                 </button>
               </motion.div>
-            )}
+            }
           </AnimatePresence>
 
           <p className="text-[10px] text-white/20 lg:text-muted-foreground/40 mt-8 text-center leading-relaxed">
@@ -591,8 +591,8 @@ const AuthPage = () => {
           </p>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default AuthPage;
