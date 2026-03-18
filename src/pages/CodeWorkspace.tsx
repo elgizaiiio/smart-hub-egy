@@ -5,6 +5,8 @@ import { streamChat } from "@/lib/streamChat";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
+import { useUserPlan } from "@/hooks/useUserPlan";
+import { canUseCodeWorkspace } from "@/lib/subscriptionGating";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import BuildTimeline, { BuildStep } from "@/components/BuildTimeline";
@@ -157,6 +159,7 @@ const CodeWorkspace = () => {
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
 
   const { userId, hasEnoughCredits, refreshCredits } = useCredits();
+  const { plan } = useUserPlan();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -337,6 +340,10 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
   };
 
   const handleApprove = async () => {
+    if (!canUseCodeWorkspace(plan)) {
+      toast.error("Code workspace requires a Starter plan or higher.", { action: { label: "Upgrade", onClick: () => navigate("/pricing") } });
+      return;
+    }
     if (!hasEnoughCredits(BUILD_CREDIT_COST)) {
       toast.error("رصيد MC غير كافي. تحتاج 5 MC للبناء.");
       return;

@@ -82,6 +82,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
+  // Track current user ID to force remount of protected pages on account switch
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
@@ -89,34 +92,43 @@ const App = () => {
     const savedAccent = localStorage.getItem("accent");
     if (savedAccent) document.documentElement.style.setProperty("--primary", savedAccent);
 
-    // Clear all caches when user changes to prevent data leakage between accounts
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
-        const currentUserId = session?.user?.id;
-        const lastUserId = localStorage.getItem("megsy_last_user_id");
-        if (currentUserId && lastUserId && currentUserId !== lastUserId) {
-          // Different user — clear all cached data
-          const keysToRemove: string[] = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith("megsy_cache_")) keysToRemove.push(key);
-          }
-          keysToRemove.forEach((k) => localStorage.removeItem(k));
-          queryClient.clear();
+      const userId = session?.user?.id || null;
+      const lastUserId = localStorage.getItem("megsy_last_user_id");
+
+      // Clear caches when user changes
+      if (userId && lastUserId && userId !== lastUserId) {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("megsy_cache_")) keysToRemove.push(key);
         }
-        if (currentUserId) localStorage.setItem("megsy_last_user_id", currentUserId);
-        if (event === "SIGNED_OUT") {
-          localStorage.removeItem("megsy_last_user_id");
-          const keysToRemove: string[] = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith("megsy_cache_")) keysToRemove.push(key);
-          }
-          keysToRemove.forEach((k) => localStorage.removeItem(k));
-          queryClient.clear();
-        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+        queryClient.clear();
       }
+
+      if (userId) localStorage.setItem("megsy_last_user_id", userId);
+
+      if (event === "SIGNED_OUT") {
+        localStorage.removeItem("megsy_last_user_id");
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("megsy_cache_")) keysToRemove.push(key);
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+        queryClient.clear();
+      }
+
+      // Update currentUserId to force remount of all protected components
+      setCurrentUserId(userId);
     });
+
+    // Initialize
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user?.id || null);
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -135,16 +147,17 @@ const App = () => {
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/share/:shareId" element={<SharedChatPage />} />
-                <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-                <Route path="/images" element={<ProtectedRoute><ImagesPage /></ProtectedRoute>} />
-                <Route path="/images/studio" element={<ProtectedRoute><ImageStudioPage /></ProtectedRoute>} />
-                <Route path="/images/agent" element={<ProtectedRoute><ImageAgentPage /></ProtectedRoute>} />
-                <Route path="/videos" element={<ProtectedRoute><VideosPage /></ProtectedRoute>} />
-                <Route path="/videos/studio" element={<ProtectedRoute><VideoStudioPage /></ProtectedRoute>} />
-                <Route path="/videos/agent" element={<ProtectedRoute><VideoAgentPage /></ProtectedRoute>} />
-                <Route path="/files" element={<ProtectedRoute><FilesPage /></ProtectedRoute>} />
-                <Route path="/code" element={<ProtectedRoute><ProgrammingPage /></ProtectedRoute>} />
-                <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace /></ProtectedRoute>} />
+                {/* key={currentUserId} forces complete remount when user switches accounts */}
+                <Route path="/chat" element={<ProtectedRoute><ChatPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/images" element={<ProtectedRoute><ImagesPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/images/studio" element={<ProtectedRoute><ImageStudioPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/images/agent" element={<ProtectedRoute><ImageAgentPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/videos" element={<ProtectedRoute><VideosPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/videos/studio" element={<ProtectedRoute><VideoStudioPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/videos/agent" element={<ProtectedRoute><VideoAgentPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/files" element={<ProtectedRoute><FilesPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                 <Route path="/settings/customization" element={<ProtectedRoute><CustomizationPage /></ProtectedRoute>} />

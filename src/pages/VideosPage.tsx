@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
+import { useUserPlan } from "@/hooks/useUserPlan";
+import { canUseModel } from "@/lib/subscriptionGating";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AppLayout from "@/layouts/AppLayout";
 import AppSidebar from "@/components/AppSidebar";
@@ -48,6 +50,7 @@ const VideosPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userId, credits, hasEnoughCredits, refreshCredits } = useCredits();
+  const { plan } = useUserPlan();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(getDefaultModel("videos"));
@@ -105,6 +108,11 @@ const VideosPage = () => {
   const handleGenerate = async () => {
     const trimmed = input.trim();
     if (!trimmed && attachedImages.length === 0) return;
+
+    if (!canUseModel(selectedModel.id, plan)) {
+      toast.error("This model requires a Starter plan or higher.", { action: { label: "Upgrade", onClick: () => navigate("/pricing") } });
+      return;
+    }
 
     if (capability.requiresImage && attachedImages.length === 0) {
       toast.error(`${selectedModel.name} requires at least one image.`);

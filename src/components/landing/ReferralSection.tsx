@@ -33,17 +33,12 @@ const ReferralSection = () => {
             </span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            20% commission on every subscription, forever. No caps, no expiry.
+            20% commission on every subscription, forever. No caps, no expiry. Plus, referred users get 5% off.
           </p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-12 mb-16">
-          {/* Commission Table */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
+          <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
             <h3 className="text-lg font-bold text-foreground mb-4">Commission Per Referral</h3>
             <div className="rounded-2xl border border-border overflow-hidden">
               <div className="grid grid-cols-3 bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
@@ -59,24 +54,15 @@ const ReferralSection = () => {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              * You earn 20% of each subscription payment, recurring forever.
-            </p>
+            <p className="text-xs text-muted-foreground mt-3">* You earn 20% of each subscription payment, recurring forever.</p>
           </motion.div>
 
-          {/* Steps */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
+          <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
             <h3 className="text-lg font-bold text-foreground mb-4">How It Works</h3>
             <div className="space-y-4">
               {steps.map((step) => (
                 <div key={step.num} className="flex gap-4 items-start">
-                  <span className="text-xl font-bold bg-gradient-to-r from-[#FFD700] to-[#FFA500] bg-clip-text text-transparent shrink-0 w-8">
-                    {step.num}
-                  </span>
+                  <span className="text-xl font-bold bg-gradient-to-r from-[#FFD700] to-[#FFA500] bg-clip-text text-transparent shrink-0 w-8">{step.num}</span>
                   <div>
                     <h4 className="text-sm font-semibold text-foreground">{step.title}</h4>
                     <p className="text-xs text-muted-foreground mt-0.5">{step.desc}</p>
@@ -87,12 +73,7 @@ const ReferralSection = () => {
           </motion.div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
           <a
             href="https://referral.megsyai.com"
             target="_blank"
