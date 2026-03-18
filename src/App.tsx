@@ -57,6 +57,7 @@ import ChangelogPage from "./pages/ChangelogPage";
 import SupportPage from "./pages/SupportPage";
 import EnterprisePage from "./pages/EnterprisePage";
 import AboutPage from "./pages/AboutPage";
+import AuthDocsPage from "./pages/AuthDocsPage";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
