@@ -485,7 +485,7 @@ const ChatPage = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 relative flex flex-col" ref={messagesContainerRef} onScroll={handleScroll}>
+        <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ? (
             <div className="flex flex-col h-full px-4">
               <div className="flex-1 flex flex-col items-center justify-center">
@@ -539,32 +539,29 @@ const ChatPage = () => {
               </div>
             </div>
           ) : (
-            <>
-              <div className="flex-1" />
-              <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
-                {messages.map((msg, i) => (
-                  <ChatMessage
-                    key={i}
-                    role={msg.role}
-                    content={msg.content}
-                    images={msg.images}
-                    attachedImages={msg.attachedImages}
-                    attachedFiles={msg.attachedFiles}
-                    isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
-                    isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
-                    liked={msg.liked}
-                    onLike={(liked) => handleLike(i, liked)}
-                    onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
-                    onStructuredAction={handleStructuredAction}
-                  />
-                ))}
-                {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
-                  <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
-                )}
-                {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader />}
-                <div ref={messagesEndRef} />
-              </div>
-            </>
+            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
+              {messages.map((msg, i) => (
+                <ChatMessage
+                  key={i}
+                  role={msg.role}
+                  content={msg.content}
+                  images={msg.images}
+                  attachedImages={msg.attachedImages}
+                  attachedFiles={msg.attachedFiles}
+                  isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
+                  isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
+                  liked={msg.liked}
+                  onLike={(liked) => handleLike(i, liked)}
+                  onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
+                  onStructuredAction={handleStructuredAction}
+                />
+              ))}
+              {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
+                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
+              )}
+              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader />}
+              <div ref={messagesEndRef} />
+            </div>
           )}
 
           <AnimatePresence>
