@@ -67,11 +67,14 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   };
 
   const loadConversations = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const modeFilter = currentMode === "code" ? "code" : currentMode === "images" ? "images" : currentMode === "videos" ? "videos" : currentMode === "files" ? "files" : "chat";
     const { data } = await supabase
       .from("conversations")
       .select("id, title, updated_at, mode")
       .eq("mode", modeFilter)
+      .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(30);
     if (data) setConversations(data);
