@@ -73,7 +73,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
       <div className="relative flex items-end gap-1.5 overflow-visible px-2 py-2">
         <button
           onClick={onPlusClick}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors mb-0.5"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors mb-0.5"
         >
           <Plus className="w-4.5 h-4.5" />
         </button>

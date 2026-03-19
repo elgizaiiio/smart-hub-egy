@@ -19,10 +19,50 @@ const StepIcon = ({ type }: { type: string }) => {
   return null;
 };
 
+// Animated star that changes color based on state
+const AnimatedStar = ({ status }: { status?: string }) => {
+  // Determine color based on status
+  let colorClass = "text-primary"; // default thinking
+  if (status?.toLowerCase().includes("search") || status?.toLowerCase().includes("بحث")) {
+    colorClass = "text-blue-500";
+  } else if (status?.toLowerCase().includes("writ") || status?.toLowerCase().includes("كتب") || status?.toLowerCase().includes("يكتب")) {
+    colorClass = "text-green-500";
+  } else if (status?.toLowerCase().includes("read") || status?.toLowerCase().includes("يقرأ")) {
+    colorClass = "text-amber-500";
+  }
+
+  return (
+    <motion.div
+      className="relative"
+      animate={{
+        rotate: [0, 180, 360],
+        scale: [1, 1.2, 1],
+      }}
+      transition={{
+        duration: 3,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    >
+      <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className={`${colorClass} transition-colors duration-500`}>
+        <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+      </svg>
+      <motion.div
+        className="absolute inset-0"
+        animate={{ opacity: [0.3, 0.8, 0.3] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className={`${colorClass} blur-sm`}>
+          <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+        </svg>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const ThinkingLoader = ({ searchQuery, searchStatus, steps }: ThinkingLoaderProps) => {
   const [expanded, setExpanded] = useState(false);
 
-  // Build display steps from props
   const displaySteps: ThinkingStep[] = steps || [];
   if (displaySteps.length === 0 && searchQuery) {
     displaySteps.push({ label: `Searching for "${searchQuery}"`, icon: "search" });
@@ -30,7 +70,6 @@ const ThinkingLoader = ({ searchQuery, searchStatus, steps }: ThinkingLoaderProp
 
   const statusText = searchStatus || (searchQuery ? `Searching for "${searchQuery}"` : "Still working on it");
 
-  // Collapsible style like Claude
   if (displaySteps.length > 0 || searchQuery) {
     return (
       <div className="space-y-1">
@@ -49,56 +88,18 @@ const ThinkingLoader = ({ searchQuery, searchStatus, steps }: ThinkingLoaderProp
           </motion.button>
         ))}
 
-        {/* Active status */}
         <div className="flex items-center gap-2.5 py-2">
+          <AnimatedStar status={searchStatus} />
           <span className="text-sm text-muted-foreground italic">{statusText}</span>
-          <motion.div
-            className="w-5 h-5 shrink-0"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-              {[...Array(8)].map((_, i) => (
-                <circle
-                  key={i}
-                  cx={12 + 8 * Math.cos((i * Math.PI * 2) / 8)}
-                  cy={12 + 8 * Math.sin((i * Math.PI * 2) / 8)}
-                  r={1.2}
-                  fill="currentColor"
-                  className="text-primary"
-                  opacity={0.3 + (i / 8) * 0.7}
-                />
-              ))}
-            </svg>
-          </motion.div>
         </div>
       </div>
     );
   }
 
-  // Simple thinking state
   return (
     <div className="flex items-center gap-2.5 py-2">
+      <AnimatedStar />
       <span className="text-sm text-muted-foreground italic">Still working on it</span>
-      <motion.div
-        className="w-5 h-5 shrink-0"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-          {[...Array(8)].map((_, i) => (
-            <circle
-              key={i}
-              cx={12 + 8 * Math.cos((i * Math.PI * 2) / 8)}
-              cy={12 + 8 * Math.sin((i * Math.PI * 2) / 8)}
-              r={1.2}
-              fill="currentColor"
-              className="text-primary"
-              opacity={0.3 + (i / 8) * 0.7}
-            />
-          ))}
-        </svg>
-      </motion.div>
     </div>
   );
 };
