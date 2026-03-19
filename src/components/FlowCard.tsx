@@ -8,47 +8,69 @@ interface FlowStep {
 
 interface FlowCardProps {
   steps: FlowStep[];
-  onAction: (action: string, stepTitle: string) => void;
+  onAction?: (action: string, stepTitle: string) => void;
 }
+
+const STEP_COLORS = [
+  "from-[hsl(262,60%,55%)] to-[hsl(262,60%,45%)]",
+  "from-[hsl(217,70%,50%)] to-[hsl(217,70%,40%)]",
+  "from-[hsl(142,50%,45%)] to-[hsl(142,50%,35%)]",
+  "from-[hsl(38,92%,50%)] to-[hsl(38,92%,40%)]",
+  "from-[hsl(0,62%,50%)] to-[hsl(0,62%,40%)]",
+  "from-[hsl(180,60%,45%)] to-[hsl(180,60%,35%)]",
+];
 
 const FlowCard = ({ steps, onAction }: FlowCardProps) => {
   return (
-    <div className="space-y-0">
-      {steps.map((step, i) => (
-        <div key={i} className="flex gap-3">
-          {/* Connector line + dot */}
-          <div className="flex flex-col items-center shrink-0 w-6">
-            <div className={`w-3 h-3 rounded-full border-2 border-primary bg-background shrink-0 mt-4`} />
-            {i < steps.length - 1 && (
-              <div className="w-0.5 flex-1 bg-border min-h-[24px]" />
+    <div className="relative flex flex-col items-center gap-0 py-2">
+      {steps.map((step, i) => {
+        const colorClass = STEP_COLORS[i % STEP_COLORS.length];
+        return (
+          <div key={i} className="flex flex-col items-center w-full">
+            {/* Connector line */}
+            {i > 0 && (
+              <div className="w-px h-8 bg-border" />
             )}
-          </div>
-
-          {/* Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="flex-1 rounded-xl border border-border/60 bg-secondary/20 p-3.5 mb-2"
-          >
-            <p className="text-sm font-medium text-foreground mb-1">{step.title}</p>
-            <p className="text-xs text-muted-foreground mb-2.5">{step.description}</p>
-            {step.actions && step.actions.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {step.actions.map((action, j) => (
-                  <button
-                    key={j}
-                    onClick={() => onAction(action, step.title)}
-                    className="px-3 py-1.5 rounded-lg border border-border/50 bg-background text-xs text-foreground hover:bg-accent/50 hover:border-primary/30 transition-colors"
-                  >
-                    {action}
-                  </button>
+            {/* Step number */}
+            <div className="flex items-center gap-3 w-full max-w-xs mb-1">
+              <span className="text-[10px] text-muted-foreground font-medium shrink-0 w-6 text-right">{i + 1}</span>
+              <div className="flex-1" />
+            </div>
+            {/* Card with fancy-btn animation */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="fancy-btn relative w-full max-w-xs cursor-default"
+              style={{ height: 'auto', padding: 0 }}
+            >
+              <span className="fold" />
+              <div className="points_wrapper">
+                {Array.from({ length: 8 }).map((_, pi) => (
+                  <span key={pi} className="point" />
                 ))}
               </div>
-            )}
-          </motion.div>
-        </div>
-      ))}
+              <div className={`inner !flex-col !items-start !gap-1 w-full bg-gradient-to-br ${colorClass} rounded-xl px-4 py-3`}>
+                <p className="text-sm font-semibold text-white">{step.title}</p>
+                <p className="text-xs text-white/70">{step.description}</p>
+                {step.actions && step.actions.length > 0 && onAction && (
+                  <div className="flex gap-2 mt-2">
+                    {step.actions.map((action, ai) => (
+                      <button
+                        key={ai}
+                        onClick={() => onAction(action, step.title)}
+                        className="px-3 py-1 rounded-lg bg-white/20 text-xs text-white font-medium hover:bg-white/30 transition-colors backdrop-blur-sm"
+                      >
+                        {action}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        );
+      })}
     </div>
   );
 };
