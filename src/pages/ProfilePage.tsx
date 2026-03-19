@@ -45,9 +45,9 @@ const ProfilePage = () => {
 
     // Count stats
     const [chatCount, imageCount, videoCount] = await Promise.all([
-      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "chat"),
-      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "images"),
-      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "videos"),
+      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "chat").eq("user_id", user.id),
+      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "images").eq("user_id", user.id),
+      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "videos").eq("user_id", user.id),
     ]);
 
     setStats({
