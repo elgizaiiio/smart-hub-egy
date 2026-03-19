@@ -45,9 +45,9 @@ const ProfilePage = () => {
 
     // Count stats
     const [chatCount, imageCount, videoCount] = await Promise.all([
-      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "chat"),
-      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "images"),
-      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "videos"),
+      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "chat").eq("user_id", user.id),
+      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "images").eq("user_id", user.id),
+      supabase.from("conversations").select("id", { count: "exact", head: true }).eq("mode", "videos").eq("user_id", user.id),
     ]);
 
     setStats({
@@ -59,11 +59,14 @@ const ProfilePage = () => {
   };
 
   const loadMedia = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setMediaItems([]); return; }
     const mode = activeTab === "images" ? "images" : "videos";
     const { data: convs } = await supabase
       .from("conversations")
       .select("id")
       .eq("mode", mode)
+      .eq("user_id", user.id)
       .limit(50);
 
     if (!convs || convs.length === 0) {

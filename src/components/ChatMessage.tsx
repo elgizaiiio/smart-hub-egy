@@ -1,9 +1,12 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink, FileUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ThinkingLoader from "./ThinkingLoader";
+import SmartQuestionCard from "./SmartQuestionCard";
+import FlowCard from "./FlowCard";
+import InfoCards from "./InfoCards";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -16,6 +19,7 @@ interface ChatMessageProps {
   onLike?: (liked: boolean | null) => void;
   liked?: boolean | null;
   onShare?: () => void;
+  onStructuredAction?: (text: string) => void;
 }
 
 const getDomain = (url: string) => {
@@ -26,9 +30,58 @@ const getFavicon = (url: string) => {
   try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`; } catch { return null; }
 };
 
-const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onShare }: ChatMessageProps) => {
+// Parse structured JSON blocks from content
+function parseStructuredBlocks(content: string): { type: "text" | "questions" | "flow" | "cards"; data: any; raw: string }[] {
+  const blocks: { type: "text" | "questions" | "flow" | "cards"; data: any; raw: string }[] = [];
+  // Match JSON blocks wrapped in ```json ... ``` or standalone JSON objects
+  const jsonBlockRegex = /```json\s*\n?([\s\S]*?)\n?```/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = jsonBlockRegex.exec(content)) !== null) {
+    // Add text before this block
+    if (match.index > lastIndex) {
+      const textBefore = content.slice(lastIndex, match.index).trim();
+      if (textBefore) blocks.push({ type: "text", data: textBefore, raw: textBefore });
+    }
+
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.type === "questions" && parsed.questions) {
+        blocks.push({ type: "questions", data: parsed, raw: match[0] });
+      } else if (parsed.type === "flow" && parsed.steps) {
+        blocks.push({ type: "flow", data: parsed, raw: match[0] });
+      } else if (parsed.type === "cards" && parsed.items) {
+        blocks.push({ type: "cards", data: parsed, raw: match[0] });
+      } else {
+        // Regular JSON code block - keep as text
+        blocks.push({ type: "text", data: match[0], raw: match[0] });
+      }
+    } catch {
+      blocks.push({ type: "text", data: match[0], raw: match[0] });
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    const remaining = content.slice(lastIndex).trim();
+    if (remaining) blocks.push({ type: "text", data: remaining, raw: remaining });
+  }
+
+  // If no blocks found, return entire content as text
+  if (blocks.length === 0 && content.trim()) {
+    blocks.push({ type: "text", data: content, raw: content });
+  }
+
+  return blocks;
+}
+
+const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onShare, onStructuredAction }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [showCopyPopup, setShowCopyPopup] = useState(false);
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const handleCopy = () => {
@@ -49,6 +102,11 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
     e.preventDefault();
     window.open(href, "_blank", "width=800,height=600,scrollbars=yes,resizable=yes");
   }, []);
+
+  const structuredBlocks = useMemo(() => {
+    if (role === "user" || isStreaming) return null;
+    return parseStructuredBlocks(content);
+  }, [content, role, isStreaming]);
 
   if (role === "user") {
     return (
@@ -85,11 +143,14 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
 
   const urlRegex = /\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
   const links: { text: string; url: string }[] = [];
-  let match;
-  while ((match = urlRegex.exec(content)) !== null) {
-    links.push({ text: match[1], url: match[2] });
+  let urlMatch;
+  while ((urlMatch = urlRegex.exec(content)) !== null) {
+    links.push({ text: urlMatch[1], url: urlMatch[2] });
   }
   const uniqueLinks = links.filter((link, i, arr) => arr.findIndex(l => l.url === link.url) === i);
+
+  // Check if we have structured blocks (non-streaming only)
+  const hasStructured = structuredBlocks && structuredBlocks.some(b => b.type !== "text");
 
   return (
     <div
@@ -109,37 +170,110 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
 
-          <div className="prose-chat text-foreground">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                a: ({ href, children }) => (
-                  <a href={href} onClick={(e) => href && handleLinkClick(e, href)} className="text-primary underline underline-offset-2 cursor-pointer hover:opacity-80">
-                    {children}
-                  </a>
-                ),
-                table: ({ children }) => (
-                  <div className="overflow-x-auto my-3 rounded-lg border border-border">
-                    <table className="w-full text-sm">{children}</table>
+          {hasStructured && !isStreaming ? (
+            <div className="space-y-3">
+              {structuredBlocks!.map((block, idx) => {
+                if (block.type === "questions") {
+                  return (
+                    <SmartQuestionCard
+                      key={idx}
+                      questions={block.data.questions}
+                      onAnswer={(answer) => {
+                        setAnsweredQuestions(prev => new Set(prev).add(idx));
+                        onStructuredAction?.(answer);
+                      }}
+                      answered={answeredQuestions.has(idx)}
+                    />
+                  );
+                }
+                if (block.type === "flow") {
+                  return (
+                    <FlowCard
+                      key={idx}
+                      steps={block.data.steps}
+                      onAction={(action, stepTitle) => {
+                        onStructuredAction?.(`${action}: ${stepTitle}`);
+                      }}
+                    />
+                  );
+                }
+                if (block.type === "cards") {
+                  return (
+                    <InfoCards
+                      key={idx}
+                      items={block.data.items}
+                      onAction={(action, title) => {
+                        onStructuredAction?.(`${action}: ${title}`);
+                      }}
+                    />
+                  );
+                }
+                // text block
+                return (
+                  <div key={idx} className="prose-chat text-foreground">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ href, children }) => (
+                          <a href={href} onClick={(e) => href && handleLinkClick(e, href)} className="text-primary underline underline-offset-2 cursor-pointer hover:opacity-80">
+                            {children}
+                          </a>
+                        ),
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-3 rounded-lg border border-border">
+                            <table className="w-full text-sm">{children}</table>
+                          </div>
+                        ),
+                        thead: ({ children }) => (
+                          <thead className="bg-muted/50 border-b border-border">{children}</thead>
+                        ),
+                        th: ({ children }) => (
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-foreground">{children}</th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="px-3 py-2 text-xs text-muted-foreground border-t border-border/50">{children}</td>
+                        ),
+                      }}
+                    >
+                      {block.data}
+                    </ReactMarkdown>
                   </div>
-                ),
-                thead: ({ children }) => (
-                  <thead className="bg-muted/50 border-b border-border">{children}</thead>
-                ),
-                th: ({ children }) => (
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-foreground">{children}</th>
-                ),
-                td: ({ children }) => (
-                  <td className="px-3 py-2 text-xs text-muted-foreground border-t border-border/50">{children}</td>
-                ),
-              }}
-            >
-              {content}
-            </ReactMarkdown>
-            {isStreaming && (
-              <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
-            )}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="prose-chat text-foreground">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ href, children }) => (
+                    <a href={href} onClick={(e) => href && handleLinkClick(e, href)} className="text-primary underline underline-offset-2 cursor-pointer hover:opacity-80">
+                      {children}
+                    </a>
+                  ),
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-3 rounded-lg border border-border">
+                      <table className="w-full text-sm">{children}</table>
+                    </div>
+                  ),
+                  thead: ({ children }) => (
+                    <thead className="bg-muted/50 border-b border-border">{children}</thead>
+                  ),
+                  th: ({ children }) => (
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-foreground">{children}</th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="px-3 py-2 text-xs text-muted-foreground border-t border-border/50">{children}</td>
+                  ),
+                }}
+              >
+                {content}
+              </ReactMarkdown>
+              {isStreaming && (
+                <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
+              )}
+            </div>
+          )}
 
           {/* Sources */}
           {!isStreaming && uniqueLinks.length > 0 && (

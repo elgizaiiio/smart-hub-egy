@@ -1,108 +1,48 @@
 
+# Megsy Platform - Credits + Real Programming + Integrations
 
-# Plan: Chat Agent Overhaul + Privacy Fix
+## ✅ Completed
 
-## Priority 1 -- CRITICAL: Fix Conversation Privacy Leak
+### 1. Credit System
+- Created `credit_transactions` table in Supabase
+- Created `deduct_credits` database function (SECURITY DEFINER)
+- Created `deduct-credits` edge function
+- Created `useCredits` hook for frontend credit checking
+- Updated `generate-image` edge function to deduct credits
+- Updated `generate-video` edge function to deduct credits
+- Updated ImagesPage and VideosPage to check credits before generation
+- Chat remains free
 
-**Root cause**: The `AppSidebar.loadConversations()` query (line 70-76) does NOT filter by `user_id`. Combined with the RLS policy "Public can view shared conversations" (`is_shared = true AND share_id IS NOT NULL`), any authenticated user sees shared conversations from ALL users in the sidebar.
+### 2. Real Programming System (Sprites.dev)
+- Created `sprites-sandbox` edge function for Sprites.dev API management
+- Actions: create, exec, write-file, write-files, status, destroy
+- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
+- Rebuilt `CodeWorkspace.tsx` with:
+  - Plan → Build workflow with credit deduction (5 credits per build)
+  - Hidden file tree (internal state, not visible to user)
+  - AI generates JSON file structure, parsed and deployed to Sprite
+  - Real preview via iframe pointing to Sprite URL
+  - Conversation persistence to Supabase
+  - Project saving with files_snapshot
 
-Additionally, `ProfilePage` counts conversations without user_id filter (lines 48-50), inflating stats with other users' data.
+### 3. GitHub Integration
+- Created `github-repo` edge function via Composio
+- Actions: check-connection, create-repo, push-files
+- Push to GitHub button in CodeWorkspace plus menu
+- Creates new repo and pushes all project files
 
-**Fix**:
-1. Add `.eq("user_id", user.id)` to `AppSidebar.loadConversations()` query
-2. Add `.eq("user_id", user.id)` to `ProfilePage.loadProfile()` conversation count queries
-3. Add `.eq("user_id", user.id)` to `ProfilePage.loadMedia()` query
-4. Run a database migration to set `user_id` on the 69 orphaned conversations (or delete them)
-5. Add a NOT NULL constraint on `conversations.user_id` via migration to prevent future orphans
+### 4. Database
+- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
+- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
 
-## Priority 2 -- Single Agent Experience ("Megsy" Only)
+### 5. OAuth2 "Login with Megsy"
+- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
+- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
+- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
+- Built `/oauth/authorize` consent screen page
+- Updated App.tsx routes and config.toml
 
-**Remove all model selection UI from chat**:
-- `ChatPage.tsx`: Remove `ModelSelector` import/usage, remove model picker from plus menu (both mobile and desktop), remove `modelsExpanded` state
-- `AnimatedInput.tsx`: Remove `selectedModel`/`onModelChange` props, remove the desktop model selector dropdown entirely
-- Hardcode `model: "google/gemini-3-flash-preview"` in `handleSend()` -- the user always talks to "Megsy"
-- Keep model selection only in Images/Videos/Code pages (those are separate tools)
-- Header shows "Megsy" only, no model name badge
-
-## Priority 3 -- Smart Questions System (Buttons + Text)
-
-**Backend** (`supabase/functions/chat/index.ts`):
-- Add to system prompt: instructions for Megsy to output a JSON block `{"type":"questions","questions":[...]}` when the request is ambiguous
-- Each question has `title`, `options[]`, and optional `allowText: true`
-- Include "Skip and assume the best" as a final option
-
-**Frontend** (`ChatMessage.tsx`):
-- Parse assistant messages for `{"type":"questions",...}` JSON blocks
-- Render a `SmartQuestionCard` component: title, option buttons, optional text input, "Skip" button
-- On button click, send the selected answer as the next user message automatically
-- Completed questions collapse into a summary line
-
-**New component**: `src/components/SmartQuestionCard.tsx`
-
-## Priority 4 -- Flow Cards & Visual Intelligence
-
-**Backend**: Add to system prompt instructions for outputting `{"type":"flow","steps":[...]}` when presenting plans
-
-**Frontend** (`ChatMessage.tsx`):
-- Parse `{"type":"flow",...}` JSON blocks
-- Render `FlowCard` component: vertical connected cards with connector lines between them
-- Each card: title, description, action buttons ("Execute", "Details")
-- Action buttons send a message to the chat like "Execute step: [title]"
-
-**New component**: `src/components/FlowCard.tsx`
-
-## Priority 5 -- Smart Output Routing
-
-**Backend**: Add to system prompt the output type instructions:
-- Plans/workflows -> `{"type":"flow",...}`
-- Comparisons -> markdown table (already rendered by ReactMarkdown)
-- Code -> markdown code blocks (already rendered)
-- Ideas -> `{"type":"cards","items":[...]}`
-- Simple answers -> plain text
-- Questions -> `{"type":"questions",...}`
-
-**Frontend**: Add parsers in `ChatMessage.tsx` to detect and render each type. Cards use a simple grid layout component.
-
-**New component**: `src/components/InfoCards.tsx` (for idea cards)
-
-## Priority 6 -- Context Compression & User Data Access
-
-**Backend** (`supabase/functions/chat/index.ts`):
-- When conversation exceeds 20 messages, summarize older messages into a compact context block before sending to the AI
-- Add user profile data (name, plan, credits) to system prompt context (fetched via service role from profiles table using the auth token)
-
-## Priority 7 -- User Personality Adaptation
-
-**Backend**: Enhance system prompt to explicitly instruct Megsy to:
-- Detect language from first message and maintain it
-- Detect complexity level and adapt (brief vs detailed)
-- Never use emoji (already in place)
-
-## Priority 8 -- Interactive UI Enhancements
-
-- All Flow/Question/Card outputs have clickable actions
-- Action buttons auto-send messages to the chat engine
-- Collapsible sections for long outputs
-- Operations log: store action history in component state, show as a collapsible timeline
-
-## Technical Details
-
-**Files modified**:
-- `src/components/AppSidebar.tsx` -- add user_id filter
-- `src/pages/ProfilePage.tsx` -- add user_id filter
-- `src/pages/ChatPage.tsx` -- remove model selector, simplify to single agent
-- `src/components/AnimatedInput.tsx` -- remove model picker props/UI
-- `src/components/ChatMessage.tsx` -- add JSON block detection and structured rendering
-- `supabase/functions/chat/index.ts` -- enhanced system prompt with output routing instructions, context compression, user data injection
-
-**Files created**:
-- `src/components/SmartQuestionCard.tsx` -- interactive question buttons
-- `src/components/FlowCard.tsx` -- connected vertical flow cards with actions
-- `src/components/InfoCards.tsx` -- grid cards for ideas/suggestions
-
-**Database migration**:
-- Delete or assign orphaned conversations (user_id IS NULL)
-- Add NOT NULL constraint to conversations.user_id
-
-**No emoji anywhere** in any new or modified component.
-
+### 6. Secrets Required
+- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
+- `COMPOSIO_API_KEY` ✅ Already exists
+- `FAL_API_KEY` ✅ Already exists

@@ -8,7 +8,6 @@ import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
-import ModelSelector, { getDefaultModel, getModelsForMode, type ModelOption } from "@/components/ModelSelector";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
 import { streamChat } from "@/lib/streamChat";
@@ -53,9 +52,10 @@ const PegtopIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const MEGSY_MODEL = "google/gemini-3-flash-preview";
+
 const ChatPage = () => {
   const navigate = useNavigate();
-  const [selectedModel, setSelectedModel] = useState(getDefaultModel("chat"));
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +83,6 @@ const ChatPage = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
-  const [modelsExpanded, setModelsExpanded] = useState(false);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -105,7 +104,7 @@ const ChatPage = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     const title = firstMessage.slice(0, 50) || "New Chat";
-    const { data } = await supabase.from("conversations").insert({ title, mode: "chat", model: selectedModel.id, user_id: user.id } as any).select("id").single();
+    const { data } = await supabase.from("conversations").insert({ title, mode: "chat", model: MEGSY_MODEL, user_id: user.id } as any).select("id").single();
     if (data) { setConversationId(data.id); setConversationTitle(title); return data.id; }
     return null;
   };
@@ -155,25 +154,34 @@ const ChatPage = () => {
     setPlusMenuOpen(false);
   };
 
-  const handleSend = async () => {
-    if (!input.trim() && attachedFiles.length === 0) return;
+  // Handle structured action from SmartQuestionCard, FlowCard, InfoCards
+  const handleStructuredAction = (text: string) => {
+    setInput(text);
+    setTimeout(() => {
+      setInput(text);
+      handleSendWithText(text);
+    }, 50);
+  };
+
+  const handleSendWithText = async (overrideText?: string) => {
+    const text = overrideText || input;
+    if (!text.trim() && attachedFiles.length === 0) return;
     if (isLoading) return;
 
-    // Build user message with attachments metadata
     const imageAttachments = attachedFiles.filter((f) => f.type === "image");
     const fileAttachments = attachedFiles.filter((f) => f.type === "file");
 
     const userMsg: Message = {
       role: "user",
-      content: input || (attachedFiles.length > 0 ? `[${attachedFiles.length} file(s) attached]` : ""),
+      content: text || (attachedFiles.length > 0 ? `[${attachedFiles.length} file(s) attached]` : ""),
       attachedImages: imageAttachments.map(f => f.data),
       attachedFiles: fileAttachments.map(f => ({ name: f.name, type: f.type })),
     };
     setMessages((prev) => [...prev, userMsg]);
-    const userInput = input;
-    setInput(""); 
+    const userInput = text;
+    setInput("");
     const currentFiles = [...attachedFiles];
-    setAttachedFiles([]); 
+    setAttachedFiles([]);
     setIsLoading(true); setIsThinking(true);
 
     const convId = await createOrUpdateConversation(userInput || "File analysis");
@@ -199,12 +207,8 @@ const ChatPage = () => {
       });
     };
 
-    // Build multimodal messages for the AI
     const allMessages = [...messages, userMsg].map((m) => {
       const imgs = m.attachedImages || [];
-      const files = m.attachedFiles || [];
-      
-      // If this message has image attachments, send as multimodal
       if (imgs.length > 0) {
         const content: any[] = imgs.map((imgData) => ({
           type: "image_url" as const,
@@ -215,17 +219,14 @@ const ChatPage = () => {
         }
         return { role: m.role, content };
       }
-      
       return { role: m.role, content: m.content };
     });
 
-    // Add file content to the last user message
     if (currentFiles.some(f => f.type === "file")) {
       const fileTexts = currentFiles
         .filter(f => f.type === "file")
         .map(f => `--- File: ${f.name} ---\n${f.data}`)
         .join("\n\n");
-      
       const lastMsg = allMessages[allMessages.length - 1];
       if (typeof lastMsg.content === "string") {
         lastMsg.content = `${lastMsg.content}\n\n${fileTexts}`;
@@ -239,7 +240,7 @@ const ChatPage = () => {
     if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Deep Research in progress..." : "Agent is thinking...");
 
     await streamChat({
-      messages: allMessages, model: selectedModel.id, searchEnabled: searchEnabled || isDeepResearch,
+      messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
       deepResearch: isDeepResearch,
       onDelta: updateAssistant,
       onImages: (imgs) => { searchImages = imgs; },
@@ -261,6 +262,8 @@ const ChatPage = () => {
       signal: controller.signal
     });
   };
+
+  const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
     setMessages([]); setConversationId(null); setConversationTitle(""); setIsLoading(false); setIsThinking(false); setAttachedFiles([]); setSearchStatus(""); setChatMode("normal"); setSearchEnabled(false); setIsShared(false); setShareId(null); setShareMode("private");
@@ -356,7 +359,6 @@ const ChatPage = () => {
 
   const hasConversation = messages.length > 0;
 
-  // Render the plus menu content (shared between all 3 locations)
   const renderPlusMenu = (isMobile: boolean) => (
     <>
       <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
@@ -382,38 +384,6 @@ const ChatPage = () => {
               <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
             </div>
           </button>
-          {isMobile && (
-            <div className="border-t border-border mt-1 pt-1">
-              <button
-                onClick={() => setModelsExpanded(!modelsExpanded)}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors"
-              >
-                <span className="text-sm text-foreground">{selectedModel.name}</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${modelsExpanded ? "rotate-180" : ""}`} />
-              </button>
-              {modelsExpanded && (
-                <div className="space-y-0.5 mt-1">
-                  {getModelsForMode("chat").map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => { setSelectedModel(m); setModelsExpanded(false); }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
-                        selectedModel.id === m.id ? "bg-primary/10 text-primary" : "hover:bg-accent/50"
-                      }`}
-                    >
-                      <span className="text-sm">{m.name}</span>
-                      {selectedModel.id === m.id && <span className="text-xs text-primary">✓</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {!isMobile && (
-            <div className="px-3 py-2">
-              <ModelSelector mode="chat" selectedModel={selectedModel} onModelChange={(m) => setSelectedModel(m)} />
-            </div>
-          )}
           <div className="border-t border-border mt-1 pt-1">
             <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
             <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
@@ -440,7 +410,6 @@ const ChatPage = () => {
     </>
   );
 
-  // Render attached files preview
   const renderAttachments = () => {
     if (attachedFiles.length === 0) return null;
     return (
@@ -474,7 +443,6 @@ const ChatPage = () => {
           currentMode="chat"
         />
 
-        {/* Top header bar — transparent with blur so content scrolls behind */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-background/60 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
@@ -517,7 +485,6 @@ const ChatPage = () => {
           </div>
         </div>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ? (
             <div className="flex flex-col h-full px-4">
@@ -543,33 +510,31 @@ const ChatPage = () => {
                     </button>
                   </div>
 
-                  {/* Desktop: Input centered */}
                   <div className="hidden md:block w-full max-w-2xl mx-auto space-y-2 mt-4">
                     <div className="relative">
                       <AnimatePresence>
                         {plusMenuOpen && renderPlusMenu(false)}
                       </AnimatePresence>
-                      <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
+                      <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} />
                     </div>
                     <button
                       onClick={() => setConnectorsOpen(true)}
                       className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-secondary/40 border border-border/30 hover:bg-secondary/60 transition-colors"
                     >
                       <span className="text-xs text-muted-foreground">Connect your tools to Megsy</span>
-                      <span className="text-xs text-primary font-medium">Browse →</span>
+                      <span className="text-xs text-primary font-medium">Browse</span>
                     </button>
                   </div>
                 </motion.div>
               </div>
 
-              {/* Mobile: Input pinned to bottom */}
               <div className="shrink-0 pb-3 md:hidden w-full max-w-2xl mx-auto space-y-2">
                 {renderAttachments()}
                 <div className="relative">
                   <AnimatePresence>
                     {plusMenuOpen && renderPlusMenu(true)}
                   </AnimatePresence>
-                  <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
+                  <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} />
                 </div>
               </div>
             </div>
@@ -588,6 +553,7 @@ const ChatPage = () => {
                   liked={msg.liked}
                   onLike={(liked) => handleLike(i, liked)}
                   onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
+                  onStructuredAction={handleStructuredAction}
                 />
               ))}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && (
@@ -613,7 +579,6 @@ const ChatPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Input (when conversation active) — transparent bottom with gradient fade */}
         {hasConversation && (
           <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-4 bg-gradient-to-t from-background via-background/80 to-transparent">
             <div className="max-w-3xl mx-auto space-y-1.5">
@@ -642,36 +607,22 @@ const ChatPage = () => {
                 <AnimatePresence>
                   {plusMenuOpen && renderPlusMenu(window.innerWidth < 768)}
                 </AnimatePresence>
-
-                {!hasConversation && (
-                  <div className="hidden md:flex justify-center mb-2">
-                    <button
-                      onClick={() => navigate("/pricing")}
-                      className="px-3 py-1 rounded-full text-xs text-muted-foreground hover:text-foreground bg-secondary/60 border border-border/50 transition-colors"
-                    >
-                      Free plan · <span className="text-foreground font-medium">Upgrade</span>
-                    </button>
-                  </div>
-                )}
-                <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
+                <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} />
               </div>
             </div>
           </div>
         )}
 
-        {/* Hidden file inputs */}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.doc,.docx" multiple />
         <input ref={cameraInputRef} type="file" className="hidden" onChange={handleCameraCapture} accept="image/*" capture="environment" />
         <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" multiple />
 
-        {/* Connectors Dialog */}
         <ConnectorsDialog
           open={connectorsOpen}
           onOpenChange={setConnectorsOpen}
           onNavigateIntegrations={() => navigate("/settings/integrations")}
         />
 
-        {/* Share Dialog */}
         <Dialog open={shareDialogOpen} onOpenChange={(open) => { setShareDialogOpen(open); if (!open) setGeneratedShareUrl(null); }}>
           <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[380px] p-0 gap-0 overflow-hidden rounded-2xl">
             <div className="px-4 pt-4 pb-3">
@@ -690,7 +641,6 @@ const ChatPage = () => {
                   <p className="text-sm font-medium text-foreground">Keep private</p>
                   <p className="text-[11px] text-muted-foreground">Only you have access</p>
                 </div>
-                {shareMode === "private" && <span className="text-primary shrink-0">✓</span>}
               </button>
               <div className="h-px bg-border mx-4" />
               <button
@@ -702,7 +652,6 @@ const ChatPage = () => {
                   <p className="text-sm font-medium text-foreground">Create public link</p>
                   <p className="text-[11px] text-muted-foreground">Anyone with the link can view</p>
                 </div>
-                {shareMode === "public" && <span className="text-primary shrink-0">✓</span>}
               </button>
             </div>
             <div className="px-4 py-3 border-t border-border">
