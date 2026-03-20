@@ -188,9 +188,13 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
                     />
                   );
                 }
+                if (block.type === "questions") {
+                  // Questions are handled by the input bar, skip rendering here
+                  return null;
+                }
                 return (
                   <div key={idx} className="prose-chat text-foreground">
-                    <MarkdownRenderer content={block.data} onLinkClick={handleLinkClick} />
+                    <MarkdownRenderer content={typeof block.data === "string" ? block.data : JSON.stringify(block.data)} onLinkClick={handleLinkClick} />
                   </div>
                 );
               })}
