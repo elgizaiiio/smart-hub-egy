@@ -75,6 +75,7 @@ const ChatPage = () => {
   const [generatedShareUrl, setGeneratedShareUrl] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [pendingQuestions, setPendingQuestions] = useState<{title: string; options: string[]; allowText?: boolean}[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
