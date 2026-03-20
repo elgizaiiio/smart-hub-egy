@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Check, ExternalLink, FileUp } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, Check, Play, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ThinkingLoader from "./ThinkingLoader";
 import FlowCard from "./FlowCard";
 import InfoCards from "./InfoCards";
+import CodePreviewModal from "./CodePreviewModal";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -68,7 +69,31 @@ function parseStructuredBlocks(content: string): { type: "text" | "questions" | 
   return blocks;
 }
 
-const MarkdownRenderer = ({ content, onLinkClick }: { content: string; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void }) => (
+const isPreviewableCode = (lang: string | undefined, code: string): boolean => {
+  if (!lang) return false;
+  const previewableLangs = ["html", "htm", "jsx", "tsx", "javascript", "js"];
+  return previewableLangs.includes(lang.toLowerCase());
+};
+
+const wrapCodeForPreview = (lang: string, code: string): string => {
+  if (["html", "htm"].includes(lang.toLowerCase())) {
+    return code;
+  }
+  // For JS/JSX/TSX, wrap in a basic HTML page
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111}</style>
+</head><body>
+<div id="root"></div>
+<script>${code}</script>
+</body></html>`;
+};
+
+const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: { 
+  content: string; 
+  onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
+  onPreviewCode?: (code: string, lang: string) => void;
+}) => (
   <ReactMarkdown
     remarkPlugins={[remarkGfm]}
     components={{
@@ -77,6 +102,40 @@ const MarkdownRenderer = ({ content, onLinkClick }: { content: string; onLinkCli
           {children}
         </a>
       ),
+      code: ({ className, children, ...props }) => {
+        const match = /language-(\w+)/.exec(className || "");
+        const lang = match ? match[1] : undefined;
+        const codeStr = String(children).replace(/\n$/, "");
+        const isBlock = className?.startsWith("language-");
+        
+        if (isBlock && lang) {
+          const canPreview = isPreviewableCode(lang, codeStr);
+          return (
+            <div className="relative my-3 rounded-xl overflow-hidden border border-border/40 bg-secondary/30">
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30 bg-secondary/50">
+                <span className="text-[10px] text-muted-foreground font-mono uppercase">{lang}</span>
+                <div className="flex items-center gap-1">
+                  {canPreview && onPreviewCode && (
+                    <button
+                      onClick={() => onPreviewCode(codeStr, lang)}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      <Play className="w-3 h-3" />
+                      Preview
+                    </button>
+                  )}
+                </div>
+              </div>
+              <pre className="p-3 overflow-x-auto text-xs leading-relaxed">
+                <code className={className} {...props}>{children}</code>
+              </pre>
+            </div>
+          );
+        }
+        
+        return <code className="px-1 py-0.5 rounded bg-secondary/50 text-xs font-mono" {...props}>{children}</code>;
+      },
+      pre: ({ children }) => <>{children}</>,
       table: ({ children }) => (
         <div className="overflow-x-auto my-3 rounded-lg border border-border">
           <table className="w-full text-sm">{children}</table>
@@ -93,6 +152,7 @@ const MarkdownRenderer = ({ content, onLinkClick }: { content: string; onLinkCli
 
 const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onStructuredAction, searchQuery }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
+  const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -103,6 +163,10 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
   const handleLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     window.open(href, "_blank", "width=800,height=600,scrollbars=yes,resizable=yes");
+  }, []);
+
+  const handlePreviewCode = useCallback((code: string, lang: string) => {
+    setPreviewCode({ code, lang });
   }, []);
 
   const structuredBlocks = useMemo(() => {
@@ -189,19 +253,18 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
                   );
                 }
                 if (block.type === "questions") {
-                  // Questions are handled by the input bar, skip rendering here
                   return null;
                 }
                 return (
                   <div key={idx} className="prose-chat text-foreground">
-                    <MarkdownRenderer content={typeof block.data === "string" ? block.data : JSON.stringify(block.data)} onLinkClick={handleLinkClick} />
+                    <MarkdownRenderer content={typeof block.data === "string" ? block.data : JSON.stringify(block.data)} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />
                   </div>
                 );
               })}
             </div>
           ) : (
             <div className="prose-chat text-foreground">
-              <MarkdownRenderer content={content} onLinkClick={handleLinkClick} />
+              <MarkdownRenderer content={content} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />
               {isStreaming && (
                 <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
               )}
@@ -258,6 +321,15 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
         </>
+      )}
+
+      {/* Code Preview Modal */}
+      {previewCode && (
+        <CodePreviewModal
+          code={previewCode.code}
+          lang={previewCode.lang}
+          onClose={() => setPreviewCode(null)}
+        />
       )}
     </div>
   );
