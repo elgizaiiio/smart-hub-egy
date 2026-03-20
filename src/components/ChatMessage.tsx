@@ -89,6 +89,34 @@ const wrapCodeForPreview = (lang: string, code: string): string => {
 </body></html>`;
 };
 
+const wrapEnglishInBdi = (text: string): (string | React.ReactElement)[] => {
+  const parts: (string | React.ReactElement)[] = [];
+  const regex = /[A-Za-z0-9_./:\-]+/g;
+  let lastIndex = 0;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(<bdi key={match.index}>{match[0]}</bdi>);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : [text];
+};
+
+const BidiText = ({ children }: { children: React.ReactNode }) => {
+  if (typeof children === "string") {
+    return <>{wrapEnglishInBdi(children)}</>;
+  }
+  if (Array.isArray(children)) {
+    return <>{children.map((child, i) => typeof child === "string" ? <span key={i}>{wrapEnglishInBdi(child)}</span> : child)}</>;
+  }
+  return <>{children}</>;
+};
+
 const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: { 
   content: string; 
   onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
@@ -97,6 +125,10 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
   <ReactMarkdown
     remarkPlugins={[remarkGfm]}
     components={{
+      p: ({ children }) => <p><BidiText>{children}</BidiText></p>,
+      li: ({ children }) => <li><BidiText>{children}</BidiText></li>,
+      strong: ({ children }) => <strong><BidiText>{children}</BidiText></strong>,
+      em: ({ children }) => <em><BidiText>{children}</BidiText></em>,
       a: ({ href, children }) => (
         <a href={href} onClick={(e) => href && onLinkClick(e, href)} className="text-primary underline underline-offset-2 cursor-pointer hover:opacity-80">
           {children}
