@@ -546,7 +546,7 @@ const ChatPage = () => {
                       <AnimatePresence>
                         {plusMenuOpen && renderPlusMenu(false)}
                       </AnimatePresence>
-                      <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} />
+                      <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
                     </div>
                     <button
                       onClick={() => setConnectorsOpen(true)}
