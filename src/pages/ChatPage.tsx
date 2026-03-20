@@ -155,13 +155,43 @@ const ChatPage = () => {
     setPlusMenuOpen(false);
   };
 
-  // Handle structured action from SmartQuestionCard, FlowCard, InfoCards
+  // Handle structured action from FlowCard, InfoCards
   const handleStructuredAction = (text: string) => {
     setInput(text);
     setTimeout(() => {
       setInput(text);
       handleSendWithText(text);
     }, 50);
+  };
+
+  // Extract questions from last assistant message and show in input bar
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role !== "user" || isLoading) return;
+    // Check the second-to-last (assistant) message for questions
+    const assistantMsg = messages.length >= 2 ? messages[messages.length - 2] : null;
+    if (!assistantMsg || assistantMsg.role !== "assistant") return;
+    const jsonBlockRegex = /```json\s*\n?([\s\S]*?)\n?```/g;
+    let match;
+    const questions: {title: string; options: string[]; allowText?: boolean}[] = [];
+    while ((match = jsonBlockRegex.exec(assistantMsg.content)) !== null) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        if (parsed.type === "questions" && parsed.questions) {
+          questions.push(...parsed.questions);
+        }
+      } catch {}
+    }
+    if (questions.length > 0) setPendingQuestions(questions);
+  }, [messages, isLoading]);
+
+  const handleQuestionAnswer = (answer: string) => {
+    setPendingQuestions([]);
+    handleSendWithText(answer);
+  };
+
+  const handleQuestionSkip = () => {
+    setPendingQuestions([]);
   };
 
   const handleSendWithText = async (overrideText?: string) => {
