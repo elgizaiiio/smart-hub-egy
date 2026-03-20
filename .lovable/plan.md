@@ -1,48 +1,67 @@
 
-# Megsy Platform - Credits + Real Programming + Integrations
 
-## ✅ Completed
+# Plan: Chat UI Overhaul -- Visual Upgrade
 
-### 1. Credit System
-- Created `credit_transactions` table in Supabase
-- Created `deduct_credits` database function (SECURITY DEFINER)
-- Created `deduct-credits` edge function
-- Created `useCredits` hook for frontend credit checking
-- Updated `generate-image` edge function to deduct credits
-- Updated `generate-video` edge function to deduct credits
-- Updated ImagesPage and VideosPage to check credits before generation
-- Chat remains free
+## Changes Overview
 
-### 2. Real Programming System (Sprites.dev)
-- Created `sprites-sandbox` edge function for Sprites.dev API management
-- Actions: create, exec, write-file, write-files, status, destroy
-- Each sprite gets a public URL: `https://{name}-{hash}.sprites.app/`
-- Rebuilt `CodeWorkspace.tsx` with:
-  - Plan → Build workflow with credit deduction (5 credits per build)
-  - Hidden file tree (internal state, not visible to user)
-  - AI generates JSON file structure, parsed and deployed to Sprite
-  - Real preview via iframe pointing to Sprite URL
-  - Conversation persistence to Supabase
-  - Project saving with files_snapshot
+### 1. Flow Cards with Colored Gradient + Fancy Animation
+**File**: `src/components/FlowCard.tsx`
+- Each card gets a unique gradient color (purple, blue, green, amber, teal -- cycling)
+- Apply the `fancy-btn` shimmer/particle animation to each card
+- Add typewriter effect: card content (title + description) appears character by character with a slight delay per card
+- Remove all action buttons from cards -- interaction is tap-only (tap card to expand details inline)
+- Add CSS classes for each color variant in `src/index.css`
 
-### 3. GitHub Integration
-- Created `github-repo` edge function via Composio
-- Actions: check-connection, create-repo, push-files
-- Push to GitHub button in CodeWorkspace plus menu
-- Creates new repo and pushes all project files
+### 2. InfoCards with Colored Gradients + Fancy Animation
+**File**: `src/components/InfoCards.tsx`
+- Same treatment: each card gets a different gradient color
+- Fancy-btn particle animation on each card
+- Typewriter text effect for title and description
 
-### 4. Database
-- Created `projects` table (id, user_id, name, fly_machine_id, fly_app_name, preview_url, status, files_snapshot, conversation_id)
-- Created `credit_transactions` table (id, user_id, amount, action_type, description, created_at)
+### 3. Sources Display -- Inline with Search Context
+**File**: `src/components/ChatMessage.tsx`
+- Redesign sources section: show "Searching for X" with favicon bubbles inline (like the reference image)
+- Sources appear as small circular favicon icons in a row with site name below
+- Cleaner, more compact layout
 
-### 5. OAuth2 "Login with Megsy"
-- Created `oauth_clients`, `oauth_codes`, `oauth_tokens` tables with RLS
-- Created 3 Edge Functions: `oauth-authorize`, `oauth-token`, `oauth-userinfo`
-- Added OAuth Apps management to Telegram admin bot (create, list, edit, delete, regenerate secret)
-- Built `/oauth/authorize` consent screen page
-- Updated App.tsx routes and config.toml
+### 4. ThinkingLoader -- Star with Dynamic Status Text
+**File**: `src/components/ThinkingLoader.tsx`
+- Use the existing animated star (PegtopIcon SVG)
+- Star color changes based on state: Blue (searching), Green (writing), Amber (reading)
+- Collapsible research steps shown as text lines with chevron toggle
+- Status text cycles: "Searching...", "Reading...", "Writing..." with smooth transitions
+- Add collapsible step list showing what the agent is doing (like images 3&4)
 
-### 6. Secrets Required
-- `SPRITES_TOKEN` ✅ Added (replaced FLY_API_TOKEN)
-- `COMPOSIO_API_KEY` ✅ Already exists
-- `FAL_API_KEY` ✅ Already exists
+### 5. Smart Questions -- Embedded in Input Bar
+**Files**: `src/pages/ChatPage.tsx`, `src/components/AnimatedInput.tsx`
+- When questions arrive, they appear as a bottom sheet/panel INSIDE the input area (not as a chat message)
+- Show question counter "X of Y" at top right
+- Options as numbered list items (tap to select)
+- Text input at bottom with send arrow
+- X button to dismiss/skip
+- Remove SmartQuestionCard rendering from ChatMessage -- move it to ChatPage input area
+
+### 6. Input Bar -- Borderless, No Background
+**File**: `src/components/AnimatedInput.tsx`
+- Remove border, background, and rounded container styles
+- Make it fully transparent -- content scrolls UNDERNEATH (not through) the input
+- Plus button: circular outlined style matching the reference image
+- Keep the gradient fade on the container div in ChatPage
+
+### 7. Remove Long-Press Copy Popup
+**File**: `src/components/ChatMessage.tsx`
+- Delete all `showCopyPopup` state, `longPressTimer`, `handleLongPressStart`, `handleLongPressEnd`
+- Remove the `AnimatePresence` copy popup block entirely
+- Remove `onTouchStart`/`onTouchEnd` handlers from message divs
+
+### 8. Remove Action Buttons from Flow Cards
+**File**: `src/components/FlowCard.tsx`
+- No "Execute" or "Details" buttons
+- Tap on card sends the step title as a message (gesture-based)
+
+## Technical Notes
+- New CSS classes `flow-card-purple`, `flow-card-blue`, `flow-card-green`, `flow-card-amber`, `flow-card-teal` in index.css with gradient backgrounds and particle animations
+- Typewriter effect via a small React hook that reveals text progressively using `useState` + `setInterval`
+- Questions state lifted from ChatMessage to ChatPage for input-bar integration
+- No emojis anywhere in new/modified code
+
