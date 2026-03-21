@@ -248,6 +248,7 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
     const lang = localStorage.getItem("language") || "en";
     document.documentElement.dir = RTL_LANGUAGES.includes(lang) ? "rtl" : "ltr";
     document.documentElement.lang = lang;
+    document.documentElement.setAttribute("data-ui-language", lang.startsWith("ar") ? "ar" : "en");
   }, []);
 
   // 3. Listen for EXPLICIT language changes only (no DOM mutation loops)
@@ -257,6 +258,7 @@ const TranslationWrapper = ({ children }: TranslationWrapperProps) => {
 
       document.documentElement.dir = RTL_LANGUAGES.includes(lang) ? "rtl" : "ltr";
       document.documentElement.lang = lang;
+      document.documentElement.setAttribute("data-ui-language", lang.startsWith("ar") ? "ar" : "en");
 
       if (appliedLangRef.current === lang) return;
       appliedLangRef.current = lang;

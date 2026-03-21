@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { uiText } from "@/lib/uiLanguage";
 
 interface SmartQuestion {
   title: string;
@@ -107,18 +108,18 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
   return (
     <div className="relative">
-      <div className="rounded-[1.75rem] border border-border/70 bg-background/55 backdrop-blur-2xl overflow-hidden shadow-[0_18px_60px_-30px_hsl(var(--foreground)/0.5)]">
+      <div className="theme-animated-surface rounded-[1.9rem] border border-border/70 overflow-hidden shadow-[0_18px_60px_-30px_hsl(var(--foreground)/0.5)]">
         {editingLabel && (
-          <div className="flex items-center justify-between gap-3 border-b border-border/40 bg-background/40 px-4 py-2.5">
+          <div className="theme-animated-surface flex items-center justify-between gap-3 border-b border-border/40 px-4 py-2.5">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-primary">Editing message</p>
+              <p className="text-[11px] font-semibold text-primary">{uiText({ ar: "وضع التعديل", en: "Editing mode" })}</p>
               <p className="truncate text-xs text-muted-foreground">{editingLabel}</p>
             </div>
             <button
               onClick={onCancelEditing}
               className="shrink-0 rounded-full px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
             >
-              Cancel
+              {uiText({ ar: "إلغاء", en: "Cancel" })}
             </button>
           </div>
         )}
@@ -130,7 +131,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="border-b border-border/40 bg-background/30"
+              className="theme-animated-surface border-b border-border/40"
             >
               <div className="p-3.5">
                 <div className="flex items-center justify-between mb-2">
@@ -142,31 +143,31 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                     </button>
                   </div>
                 </div>
-                <p className="mb-2.5 text-[11px] text-muted-foreground">اختر من المربعات أو اكتب إجابتك بالأسفل.</p>
-                <div className="flex flex-wrap gap-2">
+                <p className="mb-2.5 text-[11px] text-muted-foreground">{uiText({ ar: "اضغط على أي مربع أدناه لتختار ما تريد أو اكتب إجابتك بالأسفل.", en: "Tap any box below to choose what you want, or type your answer below." })}</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {currentQuestion.options.map((opt, i) => (
                     <button
                       key={i}
                       onClick={() => handleQuestionSelect(opt)}
-                      className="min-h-9 px-3.5 py-2 rounded-full border border-border/50 bg-background/75 text-xs font-medium text-foreground hover:bg-accent/50 hover:border-primary/30 active:scale-[0.98] transition-all duration-200"
+                      className="theme-animated-surface min-h-[60px] px-3.5 py-3 rounded-[1.25rem] border border-border/50 text-xs font-medium text-foreground hover:bg-accent/50 hover:border-primary/30 active:scale-[0.98] transition-all duration-200 text-start"
                     >
                       {opt}
                     </button>
                   ))}
                 </div>
                 {currentQuestion.allowText && (
-                  <div className="flex items-center gap-2 mt-3 rounded-2xl border border-border/40 bg-background/65 px-3 py-2">
+                  <div className="theme-animated-surface flex items-center gap-2 mt-3 rounded-2xl border border-border/40 px-3 py-2">
                     <input
                       value={questionInput}
                       onChange={(e) => setQuestionInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleQuestionTextSend()}
-                      placeholder="Type your answer..."
+                      placeholder={uiText({ ar: "اكتب إجابتك...", en: "Type your own answer..." })}
                       className="flex-1 bg-transparent border-none px-0.5 py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
                     />
                     <button
                       onClick={handleQuestionTextSend}
                       disabled={!questionInput.trim()}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
+                      className="unlock-pro-button w-8 h-8 flex items-center justify-center rounded-full text-primary-foreground disabled:opacity-30 transition-opacity"
                     >
                       <ArrowUp className="w-3 h-3" />
                     </button>
@@ -178,10 +179,10 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
         </AnimatePresence>
 
         {/* Input row */}
-        <div className="relative flex items-end gap-2 px-3 py-3">
+        <div className="relative flex items-end gap-2 px-3 py-3.5">
           <button
             onClick={onPlusClick}
-            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full border border-border/40 bg-background/40 text-muted-foreground hover:text-foreground hover:bg-accent/35 active:scale-95 transition-all mb-0.5"
+            className="theme-animated-surface shrink-0 w-11 h-11 flex items-center justify-center rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:bg-accent/35 active:scale-95 transition-all mb-0.5"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -194,8 +195,8 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
               onKeyDown={handleKeyDown}
               placeholder={displayedPlaceholder}
               rows={1}
-              className="w-full bg-transparent border-none outline-none resize-none text-[15px] leading-7 text-foreground placeholder:text-muted-foreground/40 py-2 px-1"
-              style={{ minHeight: "42px" }}
+                className="w-full bg-transparent border-none outline-none resize-none text-[15px] leading-7 text-foreground placeholder:text-muted-foreground/40 py-2.5 px-1"
+                style={{ minHeight: "52px" }}
             />
           </div>
 

@@ -3,6 +3,7 @@ import { Bell, CreditCard, Settings, Sparkles, Users, CheckCheck } from "lucide-
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { uiText } from "@/lib/uiLanguage";
 
 const typeConfig: Record<string, { icon: typeof Bell; className: string }> = {
   credits: { icon: CreditCard, className: "text-yellow-500" },
@@ -36,7 +37,7 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
       <button
         key={n.id}
         onClick={() => { markOneRead(n.id); }}
-        className={`w-full text-left px-3 py-2.5 flex items-start gap-2.5 rounded-lg transition-colors ${
+        className={`theme-animated-surface w-full text-left px-3 py-3 flex items-start gap-2.5 rounded-[1.2rem] transition-colors ${
           n.read ? "opacity-60" : "bg-sidebar-accent/40"
         } hover:bg-sidebar-accent/60`}
       >
@@ -57,8 +58,8 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors w-9 h-9"
-        title="Notifications"
+        className="theme-animated-surface relative flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors w-10 h-10"
+        title={uiText({ ar: "الإشعارات", en: "Notifications" })}
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -69,9 +70,9 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-2 left-0 w-[320px] bg-popover border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+        <div className="absolute bottom-full mb-2 left-0 w-[340px] max-w-[calc(100vw-1.5rem)] theme-animated-surface border border-border rounded-[1.5rem] shadow-lg z-50 overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
-            <span className="text-sm font-semibold text-foreground">Notifications</span>
+            <span className="text-sm font-semibold text-foreground">{uiText({ ar: "الإشعارات", en: "Notifications" })}</span>
             <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
@@ -79,14 +80,14 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
                   className="text-xs text-primary hover:underline flex items-center gap-1"
                 >
                   <CheckCheck className="w-3 h-3" />
-                  Mark all read
+                  {uiText({ ar: "قراءة الكل", en: "Mark all read" })}
                 </button>
               )}
             </div>
           </div>
           <div className="max-h-[340px] overflow-y-auto p-1.5 space-y-0.5">
             {notifications.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No notifications</p>
+              <p className="text-sm text-muted-foreground text-center py-8">{uiText({ ar: "لا توجد إشعارات", en: "No notifications" })}</p>
             ) : (
               notifications.slice(0, 15).map(renderItem)
             )}
@@ -94,9 +95,9 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
           <div className="border-t border-border px-3 py-2">
             <button
               onClick={() => { setOpen(false); navigate("/notifications"); }}
-              className="text-xs text-primary hover:underline w-full text-center"
+              className="unlock-pro-button text-xs text-primary-foreground w-full text-center rounded-xl py-2.5"
             >
-              View all notifications
+              {uiText({ ar: "عرض كل الإشعارات", en: "View all notifications" })}
             </button>
           </div>
         </div>
