@@ -65,24 +65,7 @@ serve(async (req) => {
           parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results." } }, required: ["query"] },
         },
       },
-      {
-        type: "function",
-        function: {
-          name: "IMAGE_SEARCH",
-          description: "Search for relevant images related to the topic.",
-          parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
-        },
-      },
     ] : [];
-
-    const shoppingTools = (mode === "shopping" && SERPER_API_KEY) ? [{
-      type: "function",
-      function: {
-        name: "SHOPPING_SEARCH",
-        description: "Search stores for products and prices with images and links.",
-        parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
-      },
-    }] : [];
 
     // System prompt
     let systemPrompt: string;
@@ -118,13 +101,6 @@ ${identityLine}
 - Include relevant images when available by using the include_images parameter in your searches.
 - Never use emoji.
 - Always end with follow-up questions for deeper exploration.`;
-    } else if (mode === "shopping") {
-      systemPrompt = `You are Megsy, a shopping agent made by Megsy AI. The current year is 2026. Rules:
-- Match the user's language and dialect exactly.
-- If the request is vague, ask smart follow-up questions and tell the user to tap any box below or type an answer.
-- Use SHOPPING_SEARCH to find real products.
-- Present product results as JSON cards whenever possible using title, description, image, price, store, and url.
-- Never use emoji.`;
     } else {
       const isMegsyModel = true; // Always Megsy now
       const identityLine = "- Your name is Megsy. You were created by Megsy AI company. If anyone asks who made you or what model you are, say you are Megsy, built by Megsy AI. Never mention Google, Gemini, or any other company as your creator.";
@@ -142,8 +118,6 @@ ${identityLine}
 - When the user sends an image, analyze it carefully: describe what you see, answer questions about it, and provide relevant insights.
 - When the user sends a file, read it thoroughly and respond based on its content.
 - IMPORTANT: Always end your response with a brief, engaging follow-up question related to the topic to keep the conversation active. Make it natural, not forced.
-- When you output question cards, first tell the user to tap any box below or type an answer.
-- If the user asks about Hamza Hassan, Hamza Hassan El Gezairy, حمزه حسن الجزايري, or حمزه حسن, say he is the CEO of the company, prefer information from https://elgiza.site, and you may use this image URL: https://smart-hub-egy.lovable.app/hamza-hassan.jpg
 
 SMART OUTPUT ROUTING - Choose the best format for your response:
 
@@ -185,7 +159,7 @@ You can mix text with structured blocks. Add explanatory text before or after JS
       stream: true,
     };
 
-    const allTools = [...composioTools, ...searchTools, ...shoppingTools];
+    const allTools = [...composioTools, ...searchTools];
     if (allTools.length > 0) {
       body.tools = allTools;
       body.tool_choice = "auto";
@@ -297,38 +271,6 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                         });
                       }
                       allSearchResults.push(context);
-                      continue;
-                    }
-
-                    if (toolName === "IMAGE_SEARCH" && SERPER_API_KEY) {
-                      lastToolCall = tc;
-                      const imageResp = await fetch("https://google.serper.dev/images", {
-                        method: "POST",
-                        headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                        body: JSON.stringify({ q: toolArgs.query || "", num: 8 }),
-                      });
-                      const imageData = await imageResp.json();
-                      const results = imageData.images || [];
-                      results.slice(0, 6).forEach((img: any) => {
-                        if (img.imageUrl) allImages.push(img.imageUrl);
-                      });
-                      allSearchResults.push(`Image search: ${toolArgs.query}\n${results.map((img: any, i: number) => `[${i + 1}] ${img.title || "Image"}\nSource: ${img.link || img.imageUrl || ""}`).join("\n\n")}`);
-                      continue;
-                    }
-
-                    if (toolName === "SHOPPING_SEARCH" && SERPER_API_KEY) {
-                      lastToolCall = tc;
-                      const shoppingResp = await fetch("https://google.serper.dev/shopping", {
-                        method: "POST",
-                        headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                        body: JSON.stringify({ q: toolArgs.query || "", num: 10 }),
-                      });
-                      const shoppingData = await shoppingResp.json();
-                      const items = shoppingData.shopping || [];
-                      items.slice(0, 6).forEach((item: any) => {
-                        if (item.imageUrl) allImages.push(item.imageUrl);
-                      });
-                      allSearchResults.push(`Shopping search: ${toolArgs.query}\n${items.map((item: any, i: number) => `[${i + 1}] ${item.title}\nPrice: ${item.price || item.priceText || "N/A"}\nStore: ${item.source || item.store || "Unknown"}\nLink: ${item.link || ""}`).join("\n\n")}`);
                       continue;
                     }
 

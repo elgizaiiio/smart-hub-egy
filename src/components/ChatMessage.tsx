@@ -7,7 +7,6 @@ import ThinkingLoader from "./ThinkingLoader";
 import FlowCard from "./FlowCard";
 import InfoCards from "./InfoCards";
 import CodePreviewModal from "./CodePreviewModal";
-import { useAppLanguage } from "@/hooks/useAppLanguage";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -23,7 +22,7 @@ interface ChatMessageProps {
   onStructuredAction?: (text: string) => void;
   searchQuery?: string;
   createdAt?: string;
-  onUserLongPress?: (rect: DOMRect) => void;
+  onUserLongPress?: () => void;
 }
 
 const getDomain = (url: string) => {
@@ -224,11 +223,9 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
 );
 
 const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onStructuredAction, searchQuery, createdAt, onUserLongPress }: ChatMessageProps) => {
-  const { isArabic } = useAppLanguage();
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
-  const bubbleRef = useRef<HTMLDivElement | null>(null);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current) {
@@ -240,23 +237,15 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
   const startLongPress = useCallback(() => {
     clearLongPress();
     longPressTimerRef.current = window.setTimeout(() => {
-      const rect = bubbleRef.current?.getBoundingClientRect();
-      if (rect) onUserLongPress?.(rect);
+      onUserLongPress?.();
       clearLongPress();
-    }, 760);
+    }, 420);
   }, [clearLongPress, onUserLongPress]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleAssistantTapCopy = (event: React.MouseEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement;
-    if (target.closest("a, button, pre, code, img, table")) return;
-    if (window.getSelection?.()?.toString()) return;
-    handleCopy();
   };
 
   const handleLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -295,12 +284,10 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
           <motion.div
-            ref={bubbleRef}
             whileTap={{ scale: 0.985 }}
             onContextMenu={(e) => {
               e.preventDefault();
-              const rect = bubbleRef.current?.getBoundingClientRect();
-              if (rect) onUserLongPress?.(rect);
+              onUserLongPress?.();
             }}
             onTouchStart={startLongPress}
             onTouchEnd={clearLongPress}
@@ -309,10 +296,15 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             onMouseUp={clearLongPress}
             onMouseLeave={clearLongPress}
             dir="auto"
-            className="unlock-message-user selectable text-foreground px-4 py-3 rounded-[1.35rem] rounded-br-md text-[0.95rem] leading-8 transition-transform duration-200"
+            className="selectable bg-secondary/90 text-foreground px-4 py-3 rounded-[1.35rem] rounded-br-md text-[0.95rem] leading-8 border border-border/40 shadow-[0_12px_24px_-18px_hsl(var(--foreground)/0.8)] transition-transform duration-200"
           >
             {content}
           </motion.div>
+          {createdAt && (
+            <div className="mt-1.5 text-right text-[10px] text-muted-foreground/80">
+              {new Date(createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -329,8 +321,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
   const hasStructured = structuredBlocks && structuredBlocks.some(b => b.type !== "text");
 
   return (
-    <div className="mb-6 relative flex justify-start">
-      <div className="max-w-[92%]">
+    <div className="mb-6 relative">
       {isThinking && !content ? (
         <ThinkingLoader searchQuery={searchQuery} />
       ) : (
@@ -372,14 +363,14 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
                   return null;
                 }
                 return (
-                  <div key={idx} className="unlock-message-assistant prose-chat text-foreground rounded-[1.6rem] px-4 py-3" dir="auto" onClick={handleAssistantTapCopy}>
+                  <div key={idx} className="prose-chat text-foreground" dir="auto">
                     <MarkdownRenderer content={typeof block.data === "string" ? block.data : JSON.stringify(block.data)} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="unlock-message-assistant prose-chat selectable text-foreground rounded-[1.6rem] px-4 py-3 cursor-copy" dir="auto" onClick={handleAssistantTapCopy}>
+            <div className="prose-chat text-foreground" dir="auto">
               <MarkdownRenderer content={content} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />
               {isStreaming && (
                 <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
@@ -413,35 +404,34 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
           {/* Action buttons */}
           {!isStreaming && content && (
             <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <button onClick={handleCopy} className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-background/30 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all active:scale-95 duration-150" title="Copy">
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                <span>{copied ? "Copied" : "Copy"}</span>
+              </button>
               <motion.button
                 onClick={() => onLike?.(liked === true ? null : true)}
-                className={`unlock-action-btn inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150 ${liked === true ? "border-primary/30 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                title={isArabic ? "أعجبني" : "Like"}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150 ${liked === true ? "border-primary/30 bg-primary/10 text-primary" : "border-border/40 bg-background/30 text-muted-foreground hover:text-foreground hover:bg-accent/60"}`}
+                title="Like"
                 whileTap={{ scale: 1.04 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
                 <Heart className="w-4 h-4" />
-                <span>{isArabic ? "أعجبني" : "Like"}</span>
+                <span>Helpful</span>
               </motion.button>
               <motion.button
                 onClick={() => onLike?.(liked === false ? null : false)}
-                className={`unlock-action-btn inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150 ${liked === false ? "border-destructive/30 text-destructive" : "text-muted-foreground hover:text-foreground"}`}
-                title={isArabic ? "لم يعجبني" : "Dislike"}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150 ${liked === false ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-border/40 bg-background/30 text-muted-foreground hover:text-foreground hover:bg-accent/60"}`}
+                title="Dislike"
                 whileTap={{ scale: 1.04 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
                 <CircleOff className="w-4 h-4" />
-                <span>{isArabic ? "لم يعجبني" : "Dislike"}</span>
+                <span>Needs work</span>
               </motion.button>
-              <button onClick={handleCopy} className="unlock-action-btn inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-all active:scale-95 duration-150" title={isArabic ? "نسخ" : "Copy"}>
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                <span>{copied ? (isArabic ? "تم النسخ" : "Copied") : (isArabic ? "نسخ" : "Copy")}</span>
-              </button>
             </div>
           )}
         </>
       )}
-      </div>
 
       {/* Code Preview Modal */}
       {previewCode && (

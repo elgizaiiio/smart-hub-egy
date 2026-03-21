@@ -6,7 +6,6 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 export async function streamChat({
   messages,
   model,
-  mode,
   searchEnabled,
   deepResearch,
   onDelta,
@@ -17,7 +16,6 @@ export async function streamChat({
 }: {
   messages: Msg[];
   model?: string;
-  mode?: string;
   searchEnabled?: boolean;
   deepResearch?: boolean;
   onDelta: (deltaText: string) => void;
@@ -33,7 +31,7 @@ export async function streamChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, model, mode, searchEnabled, deepResearch }),
+      body: JSON.stringify({ messages, model, searchEnabled, deepResearch }),
       signal,
     });
 
