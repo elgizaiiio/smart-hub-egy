@@ -4,12 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
+import { useAppLanguage } from "@/hooks/useAppLanguage";
 
 const themes = [
-  { id: "dark", label: "Pitch Black", desc: "True black", colors: ["#000000", "#0d0d0d", "#1a1a1a"] },
-  { id: "ocean", label: "Midnight Blue", desc: "Deep navy", colors: ["#0d1117", "#151d2b", "#1c2636"] },
-  { id: "light", label: "Light", desc: "Clean & bright", colors: ["#f7f7f7", "#eeeeee", "#e0e0e0"] },
-  { id: "sunset", label: "Warm Sand", desc: "Earthy tones", colors: ["#f2ede8", "#e8e0d6", "#ddd4c8"] },
+  { id: "dark", label: "Pitch Black", desc: "True black", colors: ["hsl(0 0% 0%)", "hsl(0 0% 5%)", "hsl(0 0% 12%)"] },
+  { id: "ocean", label: "Midnight Blue", desc: "Deep navy", colors: ["hsl(220 30% 6%)", "hsl(220 25% 10%)", "hsl(220 20% 17%)"] },
+  { id: "light", label: "Light", desc: "Clean & bright", colors: ["hsl(0 0% 97%)", "hsl(0 0% 93%)", "hsl(0 0% 87%)"] },
+  { id: "sunset", label: "Warm Sand", desc: "Earthy tones", colors: ["hsl(30 20% 95%)", "hsl(30 25% 98%)", "hsl(30 12% 84%)"] },
+  { id: "aurora-spectrum", label: "Aurora Spectrum", desc: "Multi-color glass", colors: ["hsl(224 46% 8%)", "hsl(206 88% 58%)", "hsl(332 94% 62%)"] },
+  { id: "nebula-glass", label: "Nebula Glass", desc: "Soft blur + neon", colors: ["hsl(232 36% 10%)", "hsl(170 82% 48%)", "hsl(36 100% 58%)"] },
+  { id: "solar-flare", label: "Solar Flare", desc: "Hot vivid blend", colors: ["hsl(16 40% 10%)", "hsl(18 100% 58%)", "hsl(330 88% 62%)"] },
 ];
 
 const accentColors = [
@@ -30,6 +34,7 @@ const accentColors = [
 const CustomizationPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { isArabic } = useAppLanguage();
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("theme") || "dark");
   const [currentAccent, setCurrentAccent] = useState(() => localStorage.getItem("accent") || "262 60% 55%");
 
@@ -49,7 +54,7 @@ const CustomizationPage = () => {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-md mx-auto">
       {/* Theme Selection */}
       <div>
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-4">Theme</p>
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-4">{isArabic ? "الثيم" : "Theme"}</p>
         <div className="grid grid-cols-2 gap-3">
           {themes.map(t => {
             const isSelected = currentTheme === t.id;
@@ -57,7 +62,7 @@ const CustomizationPage = () => {
               <button
                 key={t.id}
                 onClick={() => handleThemeChange(t.id)}
-                className={`relative rounded-2xl p-3 transition-all ${
+                className={`unlock-chip relative rounded-2xl p-3 transition-all ${
                   isSelected ? "ring-2 ring-primary" : "ring-1 ring-border hover:ring-primary/30"
                 }`}
               >
@@ -97,18 +102,18 @@ const CustomizationPage = () => {
 
       {/* Accent Color */}
       <div>
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-4">Accent Color</p>
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-4">{isArabic ? "لون الإبراز" : "Accent Color"}</p>
 
         {/* Chat Preview */}
-        <div className="rounded-2xl bg-muted/30 p-4 mb-5 space-y-2.5">
+        <div className="unlock-surface rounded-2xl p-4 mb-5 space-y-2.5">
           <div className="flex justify-end">
             <div className="rounded-2xl rounded-br-sm px-3.5 py-2 max-w-[65%]" style={{ background: `hsl(${currentAccent})` }}>
-              <p className="text-white text-[13px]">Hey! How's it going?</p>
+              <p className="text-white text-[13px]">{isArabic ? "مرحبًا، كيف الحال؟" : "Hey! How's it going?"}</p>
             </div>
           </div>
           <div className="flex justify-start">
             <div className="rounded-2xl rounded-bl-sm px-3.5 py-2 bg-muted max-w-[65%]">
-              <p className="text-[13px] text-foreground">Pretty good, thanks!</p>
+              <p className="text-[13px] text-foreground">{isArabic ? "ممتاز، شكرًا لك" : "Pretty good, thanks!"}</p>
             </div>
           </div>
         </div>
@@ -139,7 +144,7 @@ const CustomizationPage = () => {
 
   if (!isMobile) {
     return (
-      <DesktopSettingsLayout title="Customization" subtitle="Personalize your experience">
+        <DesktopSettingsLayout title={isArabic ? "التخصيص" : "Customization"} subtitle={isArabic ? "خصص تجربتك" : "Personalize your experience"}>
         {content}
       </DesktopSettingsLayout>
     );
@@ -152,7 +157,7 @@ const CustomizationPage = () => {
           <button onClick={() => navigate("/settings")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="font-display text-lg font-bold text-foreground">Customization</h1>
+          <h1 className="font-display text-lg font-bold text-foreground">{isArabic ? "التخصيص" : "Customization"}</h1>
         </div>
         <div className="px-4">{content}</div>
       </div>

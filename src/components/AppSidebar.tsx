@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CreditCard } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 import { supabase } from "@/integrations/supabase/client";
+import { useAppLanguage } from "@/hooks/useAppLanguage";
 
 interface Conversation {
   id: string;
@@ -21,15 +22,8 @@ interface AppSidebarProps {
   currentMode?: string;
 }
 
-const serviceItems = [
-  { path: "/", label: "Chat" },
-  { path: "/images", label: "Images" },
-  { path: "/videos", label: "Videos" },
-  { path: "/code", label: "Programming" },
-  { path: "/files", label: "Files" },
-];
-
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
+  const { isArabic } = useAppLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -37,6 +31,13 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const [userEmail, setUserEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
+  const serviceItems = [
+    { path: "/", label: isArabic ? "الدردشة" : "Chat" },
+    { path: "/images", label: isArabic ? "الصور" : "Images" },
+    { path: "/videos", label: isArabic ? "الفيديو" : "Videos" },
+    { path: "/code", label: isArabic ? "البرمجة" : "Programming" },
+    { path: "/files", label: isArabic ? "الملفات" : "Files" },
+  ];
 
   const showRecent = currentMode === "chat" || currentMode === "code" || currentMode === "images" || currentMode === "videos" || currentMode === "files";
 
@@ -98,28 +99,28 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-sidebar flex flex-col border-r border-sidebar-border"
+            className="fixed left-0 top-0 bottom-0 z-50 w-[292px] bg-sidebar/96 flex flex-col border-r border-sidebar-border backdrop-blur-2xl"
           >
             <div className="p-3">
               <FancyButton
                 onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
                 className="w-full"
               >
-                + New chat
+                {isArabic ? "+ محادثة جديدة" : "+ New chat"}
               </FancyButton>
             </div>
 
             {/* Services */}
             <div className="px-3">
-              <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Services</p>
-              <div className="space-y-0.5">
+              <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">{isArabic ? "الخدمات" : "Services"}</p>
+              <div className="space-y-1.5">
                 {serviceItems.map((item) => (
                   <button
                     key={item.path}
                     onClick={() => { navigate(item.path); onClose(); }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    className={`unlock-chip w-full text-left px-4 py-3 rounded-2xl text-sm transition-colors ${
                       location.pathname === item.path
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        ? "border-primary/30 text-sidebar-accent-foreground"
                         : "text-sidebar-foreground hover:bg-sidebar-accent"
                     }`}
                   >
@@ -137,9 +138,9 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               <div className="px-3 mb-2">
                 <button
                   onClick={() => { navigate(currentMode === "images" ? "/images/studio" : "/videos/studio"); onClose(); }}
-                  className="w-full py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/15 transition-colors"
+                  className="unlock-chip w-full py-3 rounded-2xl text-primary text-sm font-medium transition-colors"
                 >
-                  Open Studio
+                  {isArabic ? "فتح الاستوديو" : "Open Studio"}
                 </button>
               </div>
             )}
@@ -148,19 +149,19 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             {showRecent && (
               <div className="flex-1 overflow-y-auto px-3">
                 <div className="sticky top-0 z-10 bg-sidebar py-2">
-                  <p className="text-[11px] text-muted-foreground px-3 uppercase tracking-wider">Recent</p>
+                  <p className="text-[11px] text-muted-foreground px-3 uppercase tracking-wider">{isArabic ? "الأخيرة" : "Recent"}</p>
                 </div>
                 {conversations.length === 0 ? (
-                  <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
+                  <p className="text-xs text-muted-foreground px-3 py-4">{isArabic ? "لا توجد محادثات بعد" : "No conversations yet"}</p>
                 ) : (
-                  <div className="space-y-0.5">
+                  <div className="space-y-1.5">
                     {conversations.map((conv) => (
                       <button
                         key={conv.id}
                         onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
+                        className={`unlock-chip w-full text-left px-4 py-3 rounded-2xl text-sm truncate transition-colors ${
                           activeConversationId === conv.id
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            ? "border-primary/30 text-sidebar-accent-foreground"
                             : "text-sidebar-foreground hover:bg-sidebar-accent"
                         }`}
                       >
@@ -180,7 +181,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             <div className="p-3 space-y-2">
               <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-sidebar-foreground">MC Balance</span>
+                  <span className="text-sm font-medium text-sidebar-foreground">{isArabic ? "رصيد MC" : "MC Balance"}</span>
                   <span className="text-xs text-muted-foreground">{credits.toFixed(0)}</span>
                 </div>
                 <div className="w-full h-2 bg-sidebar-accent rounded-full overflow-hidden">
@@ -191,7 +192,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => { navigate("/settings"); onClose(); }}
-                  className="flex-1 flex items-center gap-3 px-2 py-2.5 rounded-lg text-left hover:bg-sidebar-accent transition-colors"
+                  className="unlock-chip flex-1 flex items-center gap-3 px-3 py-3 rounded-2xl text-left transition-colors"
                 >
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -202,13 +203,13 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-sidebar-foreground truncate">{userName}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">{userEmail || "Free Plan"}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{userEmail || (isArabic ? "الخطة المجانية" : "Free Plan")}</p>
                   </div>
                 </button>
                 <button
                   onClick={() => { navigate("/pricing"); onClose(); }}
-                  className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
-                  title="Upgrade"
+                  className="unlock-chip p-3 rounded-2xl text-primary transition-colors"
+                  title={isArabic ? "ترقية" : "Upgrade"}
                 >
                   <CreditCard className="w-4 h-4" />
                 </button>
