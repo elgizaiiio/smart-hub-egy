@@ -436,7 +436,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               <button onClick={handleCopy} className="unlock-action-btn inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-all active:scale-95 duration-150" title={isArabic ? "نسخ" : "Copy"}>
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 <span>{copied ? (isArabic ? "تم النسخ" : "Copied") : (isArabic ? "نسخ" : "Copy")}</span>
-              </motion.button>
+              </button>
             </div>
           )}
         </>
