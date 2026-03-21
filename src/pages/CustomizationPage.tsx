@@ -10,8 +10,6 @@ const themes = [
   { id: "ocean", label: "Midnight Blue", desc: "Deep navy", colors: ["#0d1117", "#151d2b", "#1c2636"] },
   { id: "light", label: "Light", desc: "Clean & bright", colors: ["#f7f7f7", "#eeeeee", "#e0e0e0"] },
   { id: "sunset", label: "Warm Sand", desc: "Earthy tones", colors: ["#f2ede8", "#e8e0d6", "#ddd4c8"] },
-  { id: "aurora", label: "Aurora Glass", desc: "Cinematic multi-color blur", colors: ["#12172b", "#ec4899", "#f97316"] },
-  { id: "prism", label: "Prism Flow", desc: "Rich neon spectrum", colors: ["#111327", "#06b6d4", "#f43f5e"] },
 ];
 
 const accentColors = [

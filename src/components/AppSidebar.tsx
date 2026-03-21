@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CreditCard } from "lucide-react";
 import FancyButton from "@/components/FancyButton";
 import { supabase } from "@/integrations/supabase/client";
-import { uiText } from "@/lib/uiLanguage";
 
 interface Conversation {
   id: string;
@@ -106,19 +105,19 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                 onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
                 className="w-full"
               >
-                  {uiText({ ar: "+ محادثة جديدة", en: "+ New chat" })}
+                + New chat
               </FancyButton>
             </div>
 
             {/* Services */}
             <div className="px-3">
-              <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">{uiText({ ar: "الخدمات", en: "Services" })}</p>
+              <p className="text-[11px] text-muted-foreground px-3 py-2 uppercase tracking-wider">Services</p>
               <div className="space-y-0.5">
                 {serviceItems.map((item) => (
                   <button
                     key={item.path}
                     onClick={() => { navigate(item.path); onClose(); }}
-                    className={`theme-animated-surface w-full text-left px-4 py-3 rounded-[1rem] text-sm transition-colors ${
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
                       location.pathname === item.path
                         ? "bg-sidebar-accent text-sidebar-accent-foreground"
                         : "text-sidebar-foreground hover:bg-sidebar-accent"
@@ -140,7 +139,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                   onClick={() => { navigate(currentMode === "images" ? "/images/studio" : "/videos/studio"); onClose(); }}
                   className="w-full py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/15 transition-colors"
                 >
-                  {uiText({ ar: "افتح الاستوديو", en: "Open Studio" })}
+                  Open Studio
                 </button>
               </div>
             )}
@@ -149,17 +148,17 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             {showRecent && (
               <div className="flex-1 overflow-y-auto px-3">
                 <div className="sticky top-0 z-10 bg-sidebar py-2">
-                  <p className="text-[11px] text-muted-foreground px-3 uppercase tracking-wider">{uiText({ ar: "الأخيرة", en: "Recent" })}</p>
+                  <p className="text-[11px] text-muted-foreground px-3 uppercase tracking-wider">Recent</p>
                 </div>
                 {conversations.length === 0 ? (
-                  <p className="text-xs text-muted-foreground px-3 py-4">{uiText({ ar: "لا توجد محادثات بعد", en: "No conversations yet" })}</p>
+                  <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet</p>
                 ) : (
                   <div className="space-y-0.5">
                     {conversations.map((conv) => (
                       <button
                         key={conv.id}
                         onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
-                        className={`theme-animated-surface w-full text-left px-4 py-3 rounded-[1rem] text-sm truncate transition-colors ${
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
                           activeConversationId === conv.id
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
                             : "text-sidebar-foreground hover:bg-sidebar-accent"
