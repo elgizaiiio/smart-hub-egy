@@ -73,6 +73,15 @@
     --sidebar-ring: 262 60% 55%;
     --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'Inter', sans-serif;
+    --aurora-a: 215 95% 68%;
+    --aurora-b: 320 90% 72%;
+    --aurora-c: 24 98% 58%;
+    --code-comment: 215 14% 55%;
+    --code-keyword: 282 82% 70%;
+    --code-string: 145 60% 55%;
+    --code-number: 35 95% 62%;
+    --code-tag: 352 90% 70%;
+    --code-function: 198 95% 68%;
   }
 
   /* Pitch Black - true black everywhere */
@@ -112,6 +121,15 @@
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 0 0% 14%;
     --sidebar-ring: 262 60% 60%;
+    --aurora-a: 221 92% 66%;
+    --aurora-b: 320 92% 66%;
+    --aurora-c: 24 95% 56%;
+    --code-comment: 218 14% 54%;
+    --code-keyword: 280 95% 76%;
+    --code-string: 146 70% 62%;
+    --code-number: 38 100% 67%;
+    --code-tag: 352 100% 72%;
+    --code-function: 198 100% 70%;
   }
 
   /* Midnight Blue - deep navy tones */
@@ -196,6 +214,7 @@
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
@@ -458,7 +477,7 @@
 ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
 
 /* Markdown prose */
-.prose-chat { line-height: 1.75; font-size: 0.9375rem; }
+.prose-chat { line-height: 1.75; font-size: 0.9375rem; direction: auto; text-align: start; unicode-bidi: plaintext; word-break: break-word; overflow-wrap: anywhere; }
 .prose-chat p { margin-bottom: 0.75em; }
 .prose-chat p:last-child { margin-bottom: 0; }
 .prose-chat strong { font-weight: 600; color: hsl(var(--foreground)); }
@@ -475,6 +494,84 @@
 .prose-chat a { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 2px; }
 .prose-chat blockquote { border-left: 3px solid hsl(var(--primary)); padding-left: 1em; margin: 0.75em 0; color: hsl(var(--muted-foreground)); }
 .prose-chat img { border-radius: 8px; max-width: 100%; margin: 0.5em 0; }
+
+.code-highlight .token-comment { color: hsl(var(--code-comment)); }
+.code-highlight .token-keyword { color: hsl(var(--code-keyword)); font-weight: 600; }
+.code-highlight .token-string { color: hsl(var(--code-string)); }
+.code-highlight .token-number { color: hsl(var(--code-number)); }
+.code-highlight .token-tag { color: hsl(var(--code-tag)); }
+.code-highlight .token-function { color: hsl(var(--code-function)); }
+
+.chat-aurora-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.chat-aurora-shell::before,
+.chat-aurora-shell::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.chat-aurora-shell::before {
+  top: 8%;
+  left: -10%;
+  width: 22rem;
+  height: 22rem;
+  background: radial-gradient(circle, hsl(var(--aurora-a) / 0.28), transparent 70%);
+}
+
+.chat-aurora-shell::after {
+  right: -8%;
+  bottom: 2%;
+  width: 24rem;
+  height: 24rem;
+  background: radial-gradient(circle, hsl(var(--aurora-b) / 0.22), transparent 68%), radial-gradient(circle at 70% 70%, hsl(var(--aurora-c) / 0.18), transparent 45%);
+}
+
+.chat-scroll-region {
+  scrollbar-gutter: stable;
+}
+
+.long-press-animate {
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.long-press-animate:active {
+  transform: scale(0.96);
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.2), 0 18px 42px -30px hsl(var(--primary) / 0.8);
+}
+
+.unlock-pro-button {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--aurora-b) / 0.92), hsl(var(--aurora-c) / 0.88));
+  background-size: 200% 200%;
+  animation: unlock-pro-flow 3s ease infinite;
+}
+
+.unlock-pro-button::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(120deg, transparent 30%, hsl(var(--primary-foreground) / 0.22), transparent 70%);
+  transform: translateX(-120%);
+  animation: unlock-pro-sheen 2.4s linear infinite;
+}
+
+@keyframes unlock-pro-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes unlock-pro-sheen {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(140%); }
+}
 
 /* Slow pulse animation for loading button */
 @keyframes slow-pulse {

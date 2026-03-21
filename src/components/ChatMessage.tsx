@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Check, Play, FileUp } from "lucide-react";
+import { useState, useCallback, useMemo, useRef } from "react";
+import { Copy, Heart, CircleOff, Check, Play, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -21,6 +21,8 @@ interface ChatMessageProps {
   onShare?: () => void;
   onStructuredAction?: (text: string) => void;
   searchQuery?: string;
+  createdAt?: string;
+  onUserLongPress?: () => void;
 }
 
 const getDomain = (url: string) => {
@@ -107,6 +109,43 @@ const wrapEnglishInBdi = (text: string): (string | React.ReactElement)[] => {
   return parts.length > 0 ? parts : [text];
 };
 
+const escapeHtml = (text: string) =>
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const highlightCodeHtml = (code: string, lang?: string) => {
+  const normalizedLang = lang?.toLowerCase() || "";
+  const tokens: string[] = [];
+
+  const reserveToken = (value: string, className: string) => {
+    const tokenId = tokens.length;
+    tokens.push(`<span class="${className}">${escapeHtml(value)}</span>`);
+    return `@@TOKEN_${tokenId}@@`;
+  };
+
+  let working = code;
+  const apply = (regex: RegExp, className: string) => {
+    working = working.replace(regex, (match) => reserveToken(match, className));
+  };
+
+  apply(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|<!--[\s\S]*?-->/g, "token-comment");
+  apply(/(["'`])(?:\\.|(?!\1)[\s\S])*\1/g, "token-string");
+
+  if (["html", "htm", "xml", "svg"].includes(normalizedLang)) {
+    apply(/<\/?[A-Za-z][^>]*?>/g, "token-tag");
+  } else {
+    apply(/\b(function|const|let|var|return|if|else|for|while|switch|case|break|continue|try|catch|finally|async|await|class|new|import|export|from|default|extends|implements|interface|type|public|private|protected|true|false|null|undefined|throw)\b/g, "token-keyword");
+    apply(/\b\d+(?:\.\d+)?\b/g, "token-number");
+    apply(/\b([A-Za-z_$][\w$]*)(?=\s*\()/g, "token-function");
+  }
+
+  return working.replace(/@@TOKEN_(\d+)@@/g, (_, id) => tokens[Number(id)] || "");
+};
+
 const BidiText = ({ children }: { children: React.ReactNode }) => {
   if (typeof children === "string") {
     return <>{wrapEnglishInBdi(children)}</>;
@@ -142,6 +181,7 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
         
         if (isBlock && lang) {
           const canPreview = isPreviewableCode(lang, codeStr);
+          const highlighted = highlightCodeHtml(codeStr, lang);
           return (
             <div className="relative my-3 rounded-xl overflow-hidden border border-border/40 bg-secondary/30">
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30 bg-secondary/50">
@@ -158,8 +198,8 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
                   )}
                 </div>
               </div>
-              <pre className="p-3 overflow-x-auto text-xs leading-relaxed">
-                <code className={className} {...props}>{children}</code>
+              <pre className="code-highlight p-3 overflow-x-auto text-xs leading-relaxed selectable">
+                <code className={className} dangerouslySetInnerHTML={{ __html: highlighted }} {...props} />
               </pre>
             </div>
           );
@@ -182,9 +222,25 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
   </ReactMarkdown>
 );
 
-const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onStructuredAction, searchQuery }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onStructuredAction, searchQuery, createdAt, onUserLongPress }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const startLongPress = useCallback(() => {
+    clearLongPress();
+    longPressTimerRef.current = window.setTimeout(() => {
+      onUserLongPress?.();
+      clearLongPress();
+    }, 420);
+  }, [clearLongPress, onUserLongPress]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -227,9 +283,28 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               ))}
             </div>
           )}
-          <div className="bg-secondary text-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
+          <motion.div
+            whileTap={{ scale: 0.985 }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              onUserLongPress?.();
+            }}
+            onTouchStart={startLongPress}
+            onTouchEnd={clearLongPress}
+            onTouchCancel={clearLongPress}
+            onMouseDown={startLongPress}
+            onMouseUp={clearLongPress}
+            onMouseLeave={clearLongPress}
+            dir="auto"
+            className="selectable bg-secondary/90 text-foreground px-4 py-3 rounded-[1.35rem] rounded-br-md text-[0.95rem] leading-8 border border-border/40 shadow-[0_12px_24px_-18px_hsl(var(--foreground)/0.8)] transition-transform duration-200"
+          >
             {content}
-          </div>
+          </motion.div>
+          {createdAt && (
+            <div className="mt-1.5 text-right text-[10px] text-muted-foreground/80">
+              {new Date(createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -288,14 +363,14 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
                   return null;
                 }
                 return (
-                  <div key={idx} className="prose-chat text-foreground">
+                  <div key={idx} className="prose-chat text-foreground" dir="auto">
                     <MarkdownRenderer content={typeof block.data === "string" ? block.data : JSON.stringify(block.data)} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="prose-chat text-foreground">
+            <div className="prose-chat text-foreground" dir="auto">
               <MarkdownRenderer content={content} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />
               {isStreaming && (
                 <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
@@ -328,27 +403,30 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
 
           {/* Action buttons */}
           {!isStreaming && content && (
-            <div className="flex items-center gap-0.5 mt-2">
-              <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all active:scale-90 duration-150" title="Copy">
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <button onClick={handleCopy} className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-background/30 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all active:scale-95 duration-150" title="Copy">
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                <span>{copied ? "Copied" : "Copy"}</span>
               </button>
               <motion.button
                 onClick={() => onLike?.(liked === true ? null : true)}
-                className={`p-1.5 rounded-lg transition-all duration-150 ${liked === true ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150 ${liked === true ? "border-primary/30 bg-primary/10 text-primary" : "border-border/40 bg-background/30 text-muted-foreground hover:text-foreground hover:bg-accent/60"}`}
                 title="Like"
-                whileTap={{ scale: 1.4 }}
+                whileTap={{ scale: 1.04 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
-                <ThumbsUp className="w-4 h-4" />
+                <Heart className="w-4 h-4" />
+                <span>Helpful</span>
               </motion.button>
               <motion.button
                 onClick={() => onLike?.(liked === false ? null : false)}
-                className={`p-1.5 rounded-lg transition-all duration-150 ${liked === false ? "text-destructive bg-destructive/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150 ${liked === false ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-border/40 bg-background/30 text-muted-foreground hover:text-foreground hover:bg-accent/60"}`}
                 title="Dislike"
-                whileTap={{ scale: 1.4 }}
+                whileTap={{ scale: 1.04 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
-                <ThumbsDown className="w-4 h-4" />
+                <CircleOff className="w-4 h-4" />
+                <span>Needs work</span>
               </motion.button>
             </div>
           )}

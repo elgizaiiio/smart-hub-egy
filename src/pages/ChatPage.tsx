@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical } from "lucide-react";
+import { Menu, Camera, Image, FileUp, X, ArrowDown, Pencil, Trash2, Globe, Lock, Share2, MoreVertical, UserPlus, Pin, PinOff, HousePlus, Copy, Type } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +35,7 @@ interface Message {
   attachedFiles?: {name: string;type: string;}[];
   liked?: boolean | null;
   id?: string;
+  createdAt?: string;
 }
 
 type ChatMode = "normal" | "learning" | "shopping" | "deep-research";
@@ -84,12 +85,18 @@ const ChatPage = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
+  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+  const [activeUserMessageIndex, setActiveUserMessageIndex] = useState<number | null>(null);
+  const [selectTextOpen, setSelectTextOpen] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const installPromptRef = useRef<any>(null);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setShowScrollBtn(distFromBottom > 200);
+    const isScrollable = el.scrollHeight - el.clientHeight > 80;
+    setShowScrollBtn(isScrollable && distFromBottom > 160);
   }, []);
 
   const scrollToBottom = useCallback(() => {
@@ -97,8 +104,28 @@ const ChatPage = () => {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      installPromptRef.current = event;
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+  }, []);
+
+  useEffect(() => {
+    requestAnimationFrame(handleScroll);
+  }, [messages, isLoading, handleScroll]);
+
+  useEffect(() => {
+    if (!conversationId) {
+      setIsPinned(false);
+      return;
+    }
+
+    const pinned = JSON.parse(localStorage.getItem("megsy_pinned_chats") || "[]") as string[];
+    setIsPinned(pinned.includes(conversationId));
+  }, [conversationId]);
 
   const createOrUpdateConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
@@ -112,6 +139,23 @@ const ChatPage = () => {
 
   const saveMessage = async (convId: string, role: string, content: string, images?: string[]) => {
     await supabase.from("messages").insert({ conversation_id: convId, role, content, images: images || null });
+  };
+
+  const ensurePublicShareLink = async () => {
+    if (!conversationId) return null;
+
+    const newShareId = shareId || Math.random().toString(36).substring(2, 10);
+    const { error } = await supabase.from("conversations").update({ is_shared: true, share_id: newShareId } as any).eq("id", conversationId);
+    if (error) {
+      toast.error("Failed to create share link");
+      return null;
+    }
+
+    setIsShared(true);
+    setShareId(newShareId);
+    const url = `${window.location.origin}/share/${newShareId}`;
+    setGeneratedShareUrl(url);
+    return url;
   };
 
   const handleLike = async (index: number, liked: boolean | null) => {
@@ -129,8 +173,7 @@ const ChatPage = () => {
     }
     const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true });
     if (msgs) {
-      setMessages(msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content, images: m.images || undefined, liked: m.liked, id: m.id })));
-      setTimeout(() => scrollToBottom(), 150);
+      setMessages(msgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content, images: m.images || undefined, liked: m.liked, id: m.id, createdAt: m.created_at })));
     }
   };
 
@@ -194,6 +237,14 @@ const ChatPage = () => {
     setPendingQuestions([]);
   };
 
+  const removeMessagesFrom = async (startIndex: number) => {
+    const idsToDelete = messages.slice(startIndex).map((message) => message.id).filter(Boolean) as string[];
+    setMessages((prev) => prev.slice(0, startIndex));
+    if (idsToDelete.length > 0) {
+      await supabase.from("messages").delete().in("id", idsToDelete);
+    }
+  };
+
   const handleSendWithText = async (overrideText?: string) => {
     const text = overrideText || input;
     if (!text.trim() && attachedFiles.length === 0) return;
@@ -206,11 +257,13 @@ const ChatPage = () => {
       role: "user",
       content: text || (attachedFiles.length > 0 ? `[${attachedFiles.length} file(s) attached]` : ""),
       attachedImages: imageAttachments.map((f) => f.data),
-      attachedFiles: fileAttachments.map((f) => ({ name: f.name, type: f.type }))
+      attachedFiles: fileAttachments.map((f) => ({ name: f.name, type: f.type })),
+      createdAt: new Date().toISOString()
     };
     setMessages((prev) => [...prev, userMsg]);
     const userInput = text;
     setInput("");
+    setEditingMessageIndex(null);
     const currentFiles = [...attachedFiles];
     setAttachedFiles([]);
     setIsLoading(true);setIsThinking(true);
@@ -234,7 +287,7 @@ const ChatPage = () => {
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-        return [...prev, { role: "assistant", content: assistantContent }];
+        return [...prev, { role: "assistant", content: assistantContent, createdAt: new Date().toISOString() }];
       });
     };
 
@@ -340,19 +393,23 @@ const ChatPage = () => {
     setShareDialogOpen(true);
   };
 
+  const handleInvitePeople = async () => {
+    const url = await ensurePublicShareLink();
+    if (!url) return;
+
+    if (navigator.share) {
+      await navigator.share({ title: conversationTitle || "Megsy Chat", text: "Join this chat", url });
+      return;
+    }
+
+    await navigator.clipboard.writeText(url);
+    toast.success("Invite link copied");
+  };
+
   const handleCreateShareLink = async () => {
     if (!conversationId) return;
     if (shareMode === "public") {
-      const newShareId = shareId || Math.random().toString(36).substring(2, 10);
-      const { error } = await supabase.
-      from("conversations").
-      update({ is_shared: true, share_id: newShareId } as any).
-      eq("id", conversationId);
-      if (error) {toast.error("Failed to share");return;}
-      setIsShared(true);
-      setShareId(newShareId);
-      const url = `${window.location.origin}/share/${newShareId}`;
-      setGeneratedShareUrl(url);
+      await ensurePublicShareLink();
     } else {
       await supabase.
       from("conversations").
@@ -366,10 +423,44 @@ const ChatPage = () => {
   };
 
   const handleCopyShareLink = async () => {
-    if (generatedShareUrl) {
-      await navigator.clipboard.writeText(generatedShareUrl);
+    const url = generatedShareUrl || await ensurePublicShareLink();
+    if (url) {
+      await navigator.clipboard.writeText(url);
       toast.success("Link copied!");
     }
+  };
+
+  const togglePinnedConversation = () => {
+    if (!conversationId) return;
+    const pinned = new Set<string>(JSON.parse(localStorage.getItem("megsy_pinned_chats") || "[]"));
+    if (pinned.has(conversationId)) {
+      pinned.delete(conversationId);
+      setIsPinned(false);
+      toast.success("Chat unpinned");
+    } else {
+      pinned.add(conversationId);
+      setIsPinned(true);
+      toast.success("Chat pinned");
+    }
+    localStorage.setItem("megsy_pinned_chats", JSON.stringify(Array.from(pinned)));
+  };
+
+  const handleAddToHomeScreen = async () => {
+    if (installPromptRef.current) {
+      installPromptRef.current.prompt();
+      return;
+    }
+    toast.message("Use your browser menu to add this app to the home screen");
+  };
+
+  const handleEditMessage = async () => {
+    if (activeUserMessageIndex === null) return;
+    const target = messages[activeUserMessageIndex];
+    if (!target) return;
+    await removeMessagesFrom(activeUserMessageIndex);
+    setInput(target.content);
+    setEditingMessageIndex(activeUserMessageIndex);
+    setActiveUserMessageIndex(null);
   };
 
   const handleRename = async () => {
@@ -464,7 +555,7 @@ const ChatPage = () => {
       onNewChat={handleNewChat}
       activeConversationId={conversationId}>
       
-      <div className="h-full flex flex-col bg-background overflow-x-hidden">
+      <div className="chat-aurora-shell h-full flex flex-col bg-background overflow-x-hidden">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -474,51 +565,66 @@ const ChatPage = () => {
           currentMode="chat" />
         
 
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-background/60 backdrop-blur-xl">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="hidden md:block" />
-          </div>
+        <div className="relative flex-1 min-h-0 overflow-hidden">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-3 md:px-6">
+            <div className="mx-auto flex min-h-[56px] max-w-4xl items-center justify-between rounded-[1.6rem] border border-border/30 bg-background/35 px-3 py-2 backdrop-blur-2xl shadow-[0_18px_55px_-35px_hsl(var(--foreground)/0.9)] pointer-events-auto">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setSidebarOpen(true)} className="md:hidden w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors long-press-animate">
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="hidden md:block" />
+              </div>
 
-          {!hasConversation &&
-          <div className="absolute left-1/2 -translate-x-1/2 md:hidden">
-              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
+              {!hasConversation &&
+              <div className="absolute left-1/2 -translate-x-1/2 md:hidden">
+                  <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
+                </div>
+              }
+
+              <div className="flex items-center gap-2">
+                {hasConversation && conversationId &&
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors long-press-animate">
+                        <MoreVertical className="w-4.5 h-4.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 rounded-2xl border border-border/60 bg-popover/95 backdrop-blur-2xl shadow-xl p-1.5">
+                      <DropdownMenuItem onClick={handleInvitePeople} className="rounded-xl px-3 py-3 text-sm gap-3 cursor-pointer">
+                        <UserPlus className="w-4 h-4 text-primary" />
+                        دعوة أشخاص
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleShare} className="rounded-xl px-3 py-3 text-sm gap-3 cursor-pointer">
+                        <Share2 className="w-4 h-4 text-sky-400" />
+                        مشاركة
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-xl px-3 py-3 text-sm gap-3 cursor-pointer">
+                        <Pencil className="w-4 h-4 text-amber-400" />
+                        إعادة تسمية
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={togglePinnedConversation} className="rounded-xl px-3 py-3 text-sm gap-3 cursor-pointer">
+                        {isPinned ? <PinOff className="w-4 h-4 text-rose-400" /> : <Pin className="w-4 h-4 text-emerald-400" />}
+                        {isPinned ? "إلغاء التثبيت" : "تثبيت الدردشة"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleAddToHomeScreen} className="rounded-xl px-3 py-3 text-sm gap-3 cursor-pointer">
+                        <HousePlus className="w-4 h-4 text-violet-400" />
+                        أضف إلى الصفحة الرئيسية
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="my-1" />
+                      <DropdownMenuItem onClick={handleDelete} className="rounded-xl px-3 py-3 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                }
+              </div>
             </div>
-          }
-
-          <div className="flex items-center gap-2">
-            {hasConversation && conversationId &&
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
-                    <MoreVertical className="w-4.5 h-4.5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
-                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Share2 className="w-4 h-4 text-muted-foreground" />
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Pencil className="w-4 h-4 text-muted-foreground" />
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1" />
-                  <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            }
           </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
+          <div className="flex-1 overflow-y-auto min-h-0 relative h-full chat-scroll-region" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ?
-          <div className="flex flex-col h-full px-4">
+          <div className="flex flex-col h-full px-4 pt-24 pb-6">
               <div className="flex-1 flex flex-col items-center justify-center">
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
                   <div className="flex items-center justify-center gap-2 mb-4">
@@ -570,7 +676,7 @@ const ChatPage = () => {
               </div>
             </div> :
 
-          <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
+          <div className="max-w-3xl mx-auto px-4 md:px-6 pt-24 pb-52 space-y-2">
               {messages.map((msg, i) =>
             <ChatMessage
               key={i}
@@ -584,7 +690,9 @@ const ChatPage = () => {
               liked={msg.liked}
               onLike={(liked) => handleLike(i, liked)}
               onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
-              onStructuredAction={handleStructuredAction} />
+              onStructuredAction={handleStructuredAction}
+              createdAt={msg.createdAt}
+              onUserLongPress={msg.role === "user" ? () => setActiveUserMessageIndex(i) : undefined} />
 
             )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
@@ -596,23 +704,23 @@ const ChatPage = () => {
           }
 
           <AnimatePresence>
-            {showScrollBtn && messages.length > 0
-
-
-
-
-
-
-
-
-
-            }
+            {showScrollBtn && messages.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                onClick={scrollToBottom}
+                className="fixed bottom-36 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-border/40 bg-background/70 text-foreground shadow-[0_18px_48px_-24px_hsl(var(--foreground)/0.9)] backdrop-blur-2xl hover:bg-accent/70 md:right-8"
+              >
+                <ArrowDown className="w-5 h-5" />
+              </motion.button>
+            )}
           </AnimatePresence>
         </div>
 
         {hasConversation &&
-        <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-4 bg-gradient-to-t from-background via-background/80 to-transparent">
-            <div className="max-w-3xl mx-auto space-y-1.5">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 md:px-6 pb-3 md:pb-5">
+            <div className="max-w-3xl mx-auto space-y-1.5 pointer-events-auto">
               <AnimatePresence>
                 {chatMode !== "normal" &&
               <motion.div
@@ -638,11 +746,13 @@ const ChatPage = () => {
                 <AnimatePresence>
                   {plusMenuOpen && renderPlusMenu(window.innerWidth < 768)}
                 </AnimatePresence>
-                <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
+                <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} editingLabel={editingMessageIndex !== null ? "سيتم حذف الرد السابق وإرسال الرسالة المعدلة" : null} onCancelEditing={() => {setEditingMessageIndex(null);setInput("");}} />
               </div>
             </div>
           </div>
         }
+
+        </div>
 
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.doc,.docx" multiple />
         <input ref={cameraInputRef} type="file" className="hidden" onChange={handleCameraCapture} accept="image/*" capture="environment" />
@@ -725,6 +835,44 @@ const ChatPage = () => {
             <div className="flex justify-end gap-2">
               <button onClick={() => setIsRenaming(false)} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">Cancel</button>
               <button onClick={handleRename} className="px-4 py-2 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity">Save</button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={activeUserMessageIndex !== null} onOpenChange={(open) => !open && setActiveUserMessageIndex(null)}>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[420px] rounded-[2rem] border border-border/60 bg-popover/95 p-0 gap-0 overflow-hidden backdrop-blur-2xl">
+            <div className="px-5 py-4 text-sm text-muted-foreground border-b border-border/40">
+              {activeUserMessageIndex !== null && messages[activeUserMessageIndex]?.createdAt ? new Date(messages[activeUserMessageIndex].createdAt as string).toLocaleString() : "Message"}
+            </div>
+            <div className="p-2">
+              <button onClick={async () => { await navigator.clipboard.writeText(activeUserMessageIndex !== null ? messages[activeUserMessageIndex]?.content || "" : ""); toast.success("Copied"); setActiveUserMessageIndex(null); }} className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm hover:bg-accent/50 transition-colors">
+                <span>نسخ</span>
+                <Copy className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button onClick={() => setSelectTextOpen(true)} className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm hover:bg-accent/50 transition-colors">
+                <span>تحديد نص</span>
+                <Type className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button onClick={handleEditMessage} className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm hover:bg-accent/50 transition-colors">
+                <span>تحرير الرسالة</span>
+                <Pencil className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button onClick={() => { setActiveUserMessageIndex(null); handleShare(); }} className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm hover:bg-accent/50 transition-colors">
+                <span>مشاركة</span>
+                <Share2 className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={selectTextOpen} onOpenChange={setSelectTextOpen}>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[560px] rounded-[2rem] border border-border/60 bg-popover/95 backdrop-blur-2xl">
+            <DialogHeader>
+              <DialogTitle>تحديد نص الرسالة</DialogTitle>
+              <DialogDescription>اسحب لتحديد النص ثم انسخه.</DialogDescription>
+            </DialogHeader>
+            <div className="selectable max-h-[50vh] overflow-y-auto rounded-2xl border border-border/40 bg-background/40 p-4 text-sm leading-8 text-foreground" dir="auto">
+              {activeUserMessageIndex !== null ? messages[activeUserMessageIndex]?.content : ""}
             </div>
           </DialogContent>
         </Dialog>
