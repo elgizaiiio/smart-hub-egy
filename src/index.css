@@ -203,6 +203,111 @@
     --sidebar-accent-foreground: 20 15% 18%;
     --sidebar-border: 30 12% 84%;
   }
+
+  [data-theme="aurora-spectrum"] {
+    --background: 224 46% 8%;
+    --foreground: 220 25% 95%;
+    --card: 226 38% 12%;
+    --card-foreground: 220 25% 95%;
+    --popover: 226 38% 12%;
+    --popover-foreground: 220 25% 95%;
+    --primary: 206 88% 58%;
+    --primary-foreground: 220 25% 98%;
+    --secondary: 228 24% 18%;
+    --secondary-foreground: 220 18% 85%;
+    --muted: 228 24% 18%;
+    --muted-foreground: 220 14% 68%;
+    --accent: 230 24% 22%;
+    --accent-foreground: 220 25% 95%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 228 28% 26%;
+    --input: 228 28% 26%;
+    --ring: 206 88% 58%;
+    --glass: 228 42% 14% / 0.55;
+    --glass-border: 220 60% 90% / 0.16;
+    --sidebar-background: 226 40% 10%;
+    --sidebar-foreground: 220 25% 90%;
+    --sidebar-primary: 206 88% 58%;
+    --sidebar-primary-foreground: 220 25% 98%;
+    --sidebar-accent: 228 24% 18%;
+    --sidebar-accent-foreground: 220 25% 95%;
+    --sidebar-border: 228 28% 22%;
+    --sidebar-ring: 206 88% 58%;
+    --aurora-a: 206 88% 58%;
+    --aurora-b: 332 94% 62%;
+    --aurora-c: 36 100% 58%;
+  }
+
+  [data-theme="nebula-glass"] {
+    --background: 232 36% 10%;
+    --foreground: 214 24% 95%;
+    --card: 234 28% 14%;
+    --card-foreground: 214 24% 95%;
+    --popover: 234 28% 14%;
+    --popover-foreground: 214 24% 95%;
+    --primary: 170 82% 48%;
+    --primary-foreground: 220 25% 8%;
+    --secondary: 236 18% 20%;
+    --secondary-foreground: 214 18% 84%;
+    --muted: 236 18% 20%;
+    --muted-foreground: 214 14% 66%;
+    --accent: 236 20% 24%;
+    --accent-foreground: 214 24% 95%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 236 20% 28%;
+    --input: 236 20% 28%;
+    --ring: 170 82% 48%;
+    --glass: 236 28% 16% / 0.52;
+    --glass-border: 214 70% 88% / 0.14;
+    --sidebar-background: 234 30% 12%;
+    --sidebar-foreground: 214 24% 90%;
+    --sidebar-primary: 170 82% 48%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 236 18% 20%;
+    --sidebar-accent-foreground: 214 24% 95%;
+    --sidebar-border: 236 20% 24%;
+    --sidebar-ring: 170 82% 48%;
+    --aurora-a: 170 82% 48%;
+    --aurora-b: 265 84% 68%;
+    --aurora-c: 36 100% 58%;
+  }
+
+  [data-theme="solar-flare"] {
+    --background: 16 40% 10%;
+    --foreground: 34 28% 96%;
+    --card: 16 34% 14%;
+    --card-foreground: 34 28% 96%;
+    --popover: 16 34% 14%;
+    --popover-foreground: 34 28% 96%;
+    --primary: 18 100% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 18 24% 20%;
+    --secondary-foreground: 34 18% 86%;
+    --muted: 18 24% 20%;
+    --muted-foreground: 28 12% 70%;
+    --accent: 12 28% 24%;
+    --accent-foreground: 34 28% 96%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 18 26% 28%;
+    --input: 18 26% 28%;
+    --ring: 18 100% 58%;
+    --glass: 16 34% 16% / 0.58;
+    --glass-border: 34 80% 92% / 0.14;
+    --sidebar-background: 16 40% 12%;
+    --sidebar-foreground: 34 28% 94%;
+    --sidebar-primary: 18 100% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 18 24% 20%;
+    --sidebar-accent-foreground: 34 28% 96%;
+    --sidebar-border: 18 26% 24%;
+    --sidebar-ring: 18 100% 58%;
+    --aurora-a: 18 100% 58%;
+    --aurora-b: 330 88% 62%;
+    --aurora-c: 48 100% 58%;
+  }
 }
 
 @layer base {
@@ -507,6 +612,46 @@
   isolation: isolate;
 }
 
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+}
+
+html[data-theme="aurora-spectrum"] body::before,
+html[data-theme="nebula-glass"] body::before,
+html[data-theme="solar-flare"] body::before,
+html[data-theme="aurora-spectrum"] body::after,
+html[data-theme="nebula-glass"] body::after,
+html[data-theme="solar-flare"] body::after {
+  opacity: 1;
+  filter: blur(90px);
+}
+
+html[data-theme="aurora-spectrum"] body::before,
+html[data-theme="nebula-glass"] body::before,
+html[data-theme="solar-flare"] body::before {
+  top: 8%;
+  left: -8%;
+  width: 28rem;
+  height: 28rem;
+  background: radial-gradient(circle, hsl(var(--aurora-a) / 0.34), transparent 60%), radial-gradient(circle at 70% 35%, hsl(var(--aurora-b) / 0.28), transparent 52%);
+}
+
+html[data-theme="aurora-spectrum"] body::after,
+html[data-theme="nebula-glass"] body::after,
+html[data-theme="solar-flare"] body::after {
+  right: -10%;
+  bottom: 2%;
+  width: 30rem;
+  height: 30rem;
+  background: radial-gradient(circle, hsl(var(--aurora-b) / 0.28), transparent 62%), radial-gradient(circle at 70% 70%, hsl(var(--aurora-c) / 0.24), transparent 46%);
+}
+
 .chat-aurora-shell::before,
 .chat-aurora-shell::after {
   content: "";
@@ -552,6 +697,51 @@
   background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--aurora-b) / 0.92), hsl(var(--aurora-c) / 0.88));
   background-size: 200% 200%;
   animation: unlock-pro-flow 3s ease infinite;
+}
+
+.unlock-surface {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid hsl(var(--glass-border));
+  background: linear-gradient(140deg, hsl(var(--glass)), hsl(var(--card) / 0.54)), linear-gradient(135deg, hsl(var(--aurora-a) / 0.12), hsl(var(--aurora-b) / 0.08), hsl(var(--aurora-c) / 0.12));
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  box-shadow: 0 24px 70px -36px hsl(var(--foreground) / 0.75);
+}
+
+.unlock-surface::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 30%, hsl(var(--primary-foreground) / 0.12), transparent 60%);
+  animation: unlock-pro-sheen 4.8s linear infinite;
+  pointer-events: none;
+}
+
+.unlock-chip {
+  border: 1px solid hsl(var(--glass-border));
+  background: linear-gradient(135deg, hsl(var(--card) / 0.46), hsl(var(--secondary) / 0.34));
+  box-shadow: inset 0 1px 0 hsl(var(--primary-foreground) / 0.05), 0 16px 36px -28px hsl(var(--foreground) / 0.8);
+}
+
+.unlock-action-btn {
+  border: 1px solid hsl(var(--glass-border));
+  background: linear-gradient(135deg, hsl(var(--card) / 0.54), hsl(var(--secondary) / 0.42));
+  box-shadow: 0 16px 34px -26px hsl(var(--foreground) / 0.85);
+}
+
+.unlock-message-user {
+  border: 1px solid hsl(var(--glass-border));
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.16), hsl(var(--aurora-b) / 0.14), hsl(var(--aurora-c) / 0.12)), hsl(var(--card) / 0.6);
+  box-shadow: 0 20px 44px -28px hsl(var(--foreground) / 0.8);
+  backdrop-filter: blur(22px);
+}
+
+.unlock-message-assistant {
+  border: 1px solid hsl(var(--glass-border));
+  background: linear-gradient(140deg, hsl(var(--card) / 0.72), hsl(var(--secondary) / 0.44)), linear-gradient(135deg, hsl(var(--aurora-a) / 0.08), transparent 44%, hsl(var(--aurora-c) / 0.06));
+  box-shadow: 0 22px 48px -34px hsl(var(--foreground) / 0.75);
+  backdrop-filter: blur(24px);
 }
 
 .unlock-pro-button::before {

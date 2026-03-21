@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAppLanguage } from "@/hooks/useAppLanguage";
 
 interface SmartQuestion {
   title: string;
@@ -24,14 +25,12 @@ interface AnimatedInputProps {
   onCancelEditing?: () => void;
 }
 
-const DEFAULT_PLACEHOLDERS = [
-  "Ask Megsy ?",
-  "What's on your mind?",
-  "Ask anything...",
-];
-
 const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip, editingLabel, onCancelEditing }: AnimatedInputProps) => {
-  const items = placeholders || DEFAULT_PLACEHOLDERS;
+  const { isArabic } = useAppLanguage();
+  const defaultPlaceholders = isArabic
+    ? ["اسأل ميغسي؟", "بماذا تفكر؟", "اكتب أي شيء..."]
+    : ["Ask Megsy ?", "What's on your mind?", "Ask anything..."];
+  const items = placeholders || defaultPlaceholders;
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [isTyping, setIsTyping] = useState(true);
@@ -107,18 +106,18 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
   return (
     <div className="relative">
-      <div className="rounded-[1.75rem] border border-border/70 bg-background/55 backdrop-blur-2xl overflow-hidden shadow-[0_18px_60px_-30px_hsl(var(--foreground)/0.5)]">
+      <div className="unlock-surface rounded-[1.75rem] overflow-hidden">
         {editingLabel && (
-          <div className="flex items-center justify-between gap-3 border-b border-border/40 bg-background/40 px-4 py-2.5">
+          <div className="flex items-center justify-between gap-3 border-b border-border/40 px-4 py-2.5">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-primary">Editing message</p>
+              <p className="text-[11px] font-semibold text-primary">{isArabic ? "وضع التعديل" : "Editing message"}</p>
               <p className="truncate text-xs text-muted-foreground">{editingLabel}</p>
             </div>
             <button
               onClick={onCancelEditing}
               className="shrink-0 rounded-full px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
             >
-              Cancel
+              {isArabic ? "إلغاء" : "Cancel"}
             </button>
           </div>
         )}
@@ -142,31 +141,31 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                     </button>
                   </div>
                 </div>
-                <p className="mb-2.5 text-[11px] text-muted-foreground">اختر من المربعات أو اكتب إجابتك بالأسفل.</p>
+                 <p className="mb-2.5 text-[11px] text-muted-foreground">{isArabic ? "اضغط على أي مربع أدناه أو اكتب إجابتك." : "Tap any box below or type your answer."}</p>
                 <div className="flex flex-wrap gap-2">
                   {currentQuestion.options.map((opt, i) => (
                     <button
                       key={i}
                       onClick={() => handleQuestionSelect(opt)}
-                      className="min-h-9 px-3.5 py-2 rounded-full border border-border/50 bg-background/75 text-xs font-medium text-foreground hover:bg-accent/50 hover:border-primary/30 active:scale-[0.98] transition-all duration-200"
+                       className="unlock-chip min-h-9 px-3.5 py-2 rounded-full text-xs font-medium text-foreground hover:bg-accent/50 active:scale-[0.98] transition-all duration-200"
                     >
                       {opt}
                     </button>
                   ))}
                 </div>
                 {currentQuestion.allowText && (
-                  <div className="flex items-center gap-2 mt-3 rounded-2xl border border-border/40 bg-background/65 px-3 py-2">
+                  <div className="unlock-chip flex items-center gap-2 mt-3 rounded-2xl px-3 py-2">
                     <input
                       value={questionInput}
                       onChange={(e) => setQuestionInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleQuestionTextSend()}
-                      placeholder="Type your answer..."
+                       placeholder={isArabic ? "اكتب إجابتك..." : "Type your answer..."}
                       className="flex-1 bg-transparent border-none px-0.5 py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
                     />
                     <button
                       onClick={handleQuestionTextSend}
                       disabled={!questionInput.trim()}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
+                       className="unlock-pro-button w-7 h-7 flex items-center justify-center rounded-full text-primary-foreground disabled:opacity-30 transition-opacity"
                     >
                       <ArrowUp className="w-3 h-3" />
                     </button>
@@ -181,7 +180,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
         <div className="relative flex items-end gap-2 px-3 py-3">
           <button
             onClick={onPlusClick}
-            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full border border-border/40 bg-background/40 text-muted-foreground hover:text-foreground hover:bg-accent/35 active:scale-95 transition-all mb-0.5"
+            className="unlock-chip shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent/35 active:scale-95 transition-all mb-0.5"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -202,7 +201,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           {isLoading ? (
             <button
               onClick={onCancel}
-              className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all animate-pulse-slow mb-0.5"
+               className="unlock-pro-button shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-primary-foreground hover:opacity-90 transition-all animate-pulse-slow mb-0.5"
             >
               <Square className="w-3.5 h-3.5" />
             </button>

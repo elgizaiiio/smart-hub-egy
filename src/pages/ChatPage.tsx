@@ -324,7 +324,7 @@ const ChatPage = () => {
     if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Deep Research in progress..." : "Agent is thinking...");
 
     await streamChat({
-      messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
+      messages: allMessages, model: MEGSY_MODEL, mode: chatMode, searchEnabled: searchEnabled || isDeepResearch,
       deepResearch: isDeepResearch,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
@@ -692,7 +692,7 @@ const ChatPage = () => {
               onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
               onStructuredAction={handleStructuredAction}
               createdAt={msg.createdAt}
-              onUserLongPress={msg.role === "user" ? () => setActiveUserMessageIndex(i) : undefined} />
+              onUserLongPress={msg.role === "user" ? (_rect) => setActiveUserMessageIndex(i) : undefined} />
 
             )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&

@@ -3,6 +3,8 @@ import { Bell, CreditCard, Settings, Sparkles, Users, CheckCheck } from "lucide-
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppLanguage } from "@/hooks/useAppLanguage";
 
 const typeConfig: Record<string, { icon: typeof Bell; className: string }> = {
   credits: { icon: CreditCard, className: "text-yellow-500" },
@@ -16,6 +18,8 @@ interface NotificationBellProps {
 }
 
 const NotificationBell = ({ collapsed }: NotificationBellProps) => {
+  const isMobile = useIsMobile();
+  const { isArabic } = useAppLanguage();
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -58,7 +62,7 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
       <button
         onClick={() => setOpen(!open)}
         className="relative flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors w-9 h-9"
-        title="Notifications"
+        title={isArabic ? "الإشعارات" : "Notifications"}
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -69,9 +73,9 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-2 left-0 w-[320px] bg-popover border border-border rounded-xl shadow-lg z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
-            <span className="text-sm font-semibold text-foreground">Notifications</span>
+        <div className={`${isMobile ? "fixed inset-x-3 bottom-3" : "absolute bottom-full mb-2 left-0 w-[320px]"} unlock-surface z-50 overflow-hidden rounded-[1.75rem]`}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
+            <span className="text-sm font-semibold text-foreground">{isArabic ? "الإشعارات" : "Notifications"}</span>
             <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
@@ -79,24 +83,24 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
                   className="text-xs text-primary hover:underline flex items-center gap-1"
                 >
                   <CheckCheck className="w-3 h-3" />
-                  Mark all read
+                  {isArabic ? "قراءة الكل" : "Mark all read"}
                 </button>
               )}
             </div>
           </div>
-          <div className="max-h-[340px] overflow-y-auto p-1.5 space-y-0.5">
+          <div className={`overflow-y-auto p-2 space-y-1 ${isMobile ? "max-h-[52vh]" : "max-h-[340px]"}`}>
             {notifications.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No notifications</p>
+              <p className="text-sm text-muted-foreground text-center py-8">{isArabic ? "لا توجد إشعارات" : "No notifications"}</p>
             ) : (
               notifications.slice(0, 15).map(renderItem)
             )}
           </div>
-          <div className="border-t border-border px-3 py-2">
+          <div className="border-t border-border/40 px-4 py-3">
             <button
               onClick={() => { setOpen(false); navigate("/notifications"); }}
               className="text-xs text-primary hover:underline w-full text-center"
             >
-              View all notifications
+              {isArabic ? "عرض كل الإشعارات" : "View all notifications"}
             </button>
           </div>
         </div>
