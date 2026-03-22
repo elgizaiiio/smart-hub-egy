@@ -50,37 +50,97 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_summaries: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          key_points: Json
+          last_message_at: string | null
+          metadata: Json
+          summary: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          key_points?: Json
+          last_message_at?: string | null
+          metadata?: Json
+          summary: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          key_points?: Json
+          last_message_at?: string | null
+          metadata?: Json
+          summary?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_summaries_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_summaries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
           id: string
+          is_pinned: boolean
           is_shared: boolean | null
           mode: string
           model: string | null
+          pinned_at: string | null
           share_id: string | null
           title: string
+          ui_state: Json
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_pinned?: boolean
           is_shared?: boolean | null
           mode?: string
           model?: string | null
+          pinned_at?: string | null
           share_id?: string | null
           title?: string
+          ui_state?: Json
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_pinned?: boolean
           is_shared?: boolean | null
           mode?: string
           model?: string | null
+          pinned_at?: string | null
           share_id?: string | null
           title?: string
+          ui_state?: Json
           updated_at?: string
           user_id?: string
         }
@@ -816,6 +876,108 @@ export type Database = {
         }
         Relationships: []
       }
+      user_memory_entries: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json
+          relevance_score: number
+          scope: Database["public"]["Enums"]["memory_scope"]
+          source_conversation_id: string | null
+          source_project_id: string | null
+          summary: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          relevance_score?: number
+          scope: Database["public"]["Enums"]["memory_scope"]
+          source_conversation_id?: string | null
+          source_project_id?: string | null
+          summary: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          relevance_score?: number
+          scope?: Database["public"]["Enums"]["memory_scope"]
+          source_conversation_id?: string | null
+          source_project_id?: string | null
+          summary?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memory_entries_source_conversation_id_fkey"
+            columns: ["source_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_memory_entries_source_project_id_fkey"
+            columns: ["source_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_memory_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_memory_profiles: {
+        Row: {
+          account_summary: string | null
+          created_at: string
+          id: string
+          preferences: Json
+          profile_snapshot: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_summary?: string | null
+          created_at?: string
+          id?: string
+          preferences?: Json
+          profile_snapshot?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_summary?: string | null
+          created_at?: string
+          id?: string
+          preferences?: Json
+          profile_snapshot?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memory_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       withdrawal_requests: {
         Row: {
           amount: number
@@ -916,7 +1078,12 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      memory_scope:
+        | "account"
+        | "conversation"
+        | "project"
+        | "file"
+        | "preference"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1043,6 +1210,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      memory_scope: [
+        "account",
+        "conversation",
+        "project",
+        "file",
+        "preference",
+      ],
+    },
   },
 } as const
