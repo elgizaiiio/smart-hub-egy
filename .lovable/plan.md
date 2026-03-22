@@ -1,67 +1,157 @@
 
+خطة التنفيذ الشاملة
 
-# Plan: Chat UI Overhaul -- Visual Upgrade
+1) الاستقرار أولاً
+- إيقاف الـ auto-scroll بالكامل في `ChatPage.tsx`.
+- جعل التحديثات الجديدة تُكتب أمام المستخدم من أعلى لأسفل بدون خطف موضعه.
+- إعادة منطق زر “النزول لآخر رسالة” ليظهر فقط عندما يكون المستخدم بعيدًا فعلاً عن الأسفل، ويختفي فور الرجوع.
+- تثبيت سلوك الـ streaming حتى لا يسبب قفزات أو lag أو تغيّر ارتفاعات مزعج.
 
-## Changes Overview
+2) إعادة بناء طبقات صفحة الشات لتكون “عائمة”
+- جعل الهيدر العلوي شفافًا بالكامل بدون خلفية/حدود، والأزرار فقط عائمة.
+- جعل مربع الإدخال يطفو فوق المحتوى فعليًا، مع مرور الرسائل من أسفله ومن خلف الهيدر مثل المرجع.
+- تكبير مربع الإدخال قليلًا مع الحفاظ على نفس الفكرة الحالية.
+- فصل تصميم الهاتف عن الكمبيوتر داخل `ChatPage.tsx` و`AnimatedInput.tsx` بدل الاكتفاء بتصغير نفس الواجهة.
 
-### 1. Flow Cards with Colored Gradient + Fancy Animation
-**File**: `src/components/FlowCard.tsx`
-- Each card gets a unique gradient color (purple, blue, green, amber, teal -- cycling)
-- Apply the `fancy-btn` shimmer/particle animation to each card
-- Add typewriter effect: card content (title + description) appears character by character with a slight delay per card
-- Remove all action buttons from cards -- interaction is tap-only (tap card to expand details inline)
-- Add CSS classes for each color variant in `src/index.css`
+3) تحسين النصوص واتجاه الرسائل RTL/LTR
+- تثبيت قاعدة: ردود Megsy دائمًا في جهة، ورسائل المستخدم في الجهة المقابلة دائمًا.
+- تحسين معالجة العربي والإنجليزي داخل `ChatMessage.tsx` بدل الاكتفاء بـ `<bdi>` فقط:
+  - عزل المقاطع الإنجليزية.
+  - ضبط `dir`, `unicode-bidi`, ومحاذاة الفقرات/القوائم/الجداول/الكود.
+  - إزالة النصوص الثابتة العربية من الواجهة واستبدالها بنصوص مرتبطة باللغة الحالية.
+- مراجعة `TranslationWrapper` وربط كل النصوص الجديدة باللغة المختارة.
 
-### 2. InfoCards with Colored Gradients + Fancy Animation
-**File**: `src/components/InfoCards.tsx`
-- Same treatment: each card gets a different gradient color
-- Fancy-btn particle animation on each card
-- Typewriter text effect for title and description
+4) Syntax Highlighting حقيقي للكود
+- إضافة تلوين كود حقيقي داخل رسائل الشات باستخدام highlighter مناسب مع ثيمات داكنة واضحة.
+- دعم HTML / CSS / JS / TS / JSX / TSX بشكل جيد داخل `ChatMessage.tsx`.
+- الحفاظ على زر Preview لكن بعد تحسين نظام عرض الكود نفسه.
 
-### 3. Sources Display -- Inline with Search Context
-**File**: `src/components/ChatMessage.tsx`
-- Redesign sources section: show "Searching for X" with favicon bubbles inline (like the reference image)
-- Sources appear as small circular favicon icons in a row with site name below
-- Cleaner, more compact layout
+5) نظام Preview موثوق وكامل الشاشة
+- إعادة بناء `CodePreviewModal.tsx` ليصبح Fullscreen فعليًا بلا حواف، مع هيدر علوي فقط يحوي:
+  - رجوع
+  - تنزيل الكود
+- تحسين تشغيل HTML/JS/JSX/TSX:
+  - استخدام غلاف تشغيل أفضل.
+  - دعم Babel للـ JSX/TSX عند الحاجة.
+  - إظهار أخطاء التشغيل داخل المعاينة بدل الفشل الصامت.
+- منع الحالات التي لا يعمل فيها الـ preview حاليًا بسبب الغلاف البسيط الحالي.
 
-### 4. ThinkingLoader -- Star with Dynamic Status Text
-**File**: `src/components/ThinkingLoader.tsx`
-- Use the existing animated star (PegtopIcon SVG)
-- Star color changes based on state: Blue (searching), Green (writing), Amber (reading)
-- Collapsible research steps shown as text lines with chevron toggle
-- Status text cycles: "Searching...", "Reading...", "Writing..." with smooth transitions
-- Add collapsible step list showing what the agent is doing (like images 3&4)
+6) تفاعلات الرسائل
+- رسائل الذكاء الاصطناعي:
+  - السماح بالنسخ المباشر عند الضغط على الرد.
+  - الإبقاء على أزرار: أعجبني / لم يعجبني / نسخ لكن بتصميم أحدث وأوضح وأيقونات أفضل.
+- رسائل المستخدم:
+  - ضغط مطول أطول من الحالي.
+  - إظهار قائمة أسفل الرسالة نفسها مثل المرجع.
+  - عناصر حقيقية: نسخ، تحديد نص، تحرير، مشاركة.
+  - “تحديد نص” يفتح طبقة اختيار مخصصة لنص الرسالة فقط.
+  - “تحرير” يعيد النص إلى مربع الإدخال مع شارة تعديل، ويحذف رسالة المستخدم القديمة ورد الذكاء السابق ثم يعيد الإرسال.
+  - “مشاركة” يربط مع مشاركة المحادثة الحقيقية الحالية.
 
-### 5. Smart Questions -- Embedded in Input Bar
-**Files**: `src/pages/ChatPage.tsx`, `src/components/AnimatedInput.tsx`
-- When questions arrive, they appear as a bottom sheet/panel INSIDE the input area (not as a chat message)
-- Show question counter "X of Y" at top right
-- Options as numbered list items (tap to select)
-- Text input at bottom with send arrow
-- X button to dismiss/skip
-- Remove SmartQuestionCard rendering from ChatMessage -- move it to ChatPage input area
+7) تحسين Smart Questions وCards
+- الإبقاء على الأسئلة داخل مربع الإدخال لكن إعادة تصميمها لتصبح أوضح وأسهل مثل المرجع:
+  - عداد سؤال.
+  - خيارات واضحة.
+  - إدخال نص حر.
+  - مساحة أفضل للموبايل.
+- تعديل الـ system prompt ليقول بوضوح للمستخدم:
+  - اضغط على أي مربع أدناه لتختار ما تريد.
+- تبسيط بطاقات الـ flow/cards وجعل سلوكها أوضح بدون ازدحام.
 
-### 6. Input Bar -- Borderless, No Background
-**File**: `src/components/AnimatedInput.tsx`
-- Remove border, background, and rounded container styles
-- Make it fully transparent -- content scrolls UNDERNEATH (not through) the input
-- Plus button: circular outlined style matching the reference image
-- Keep the gradient fade on the container div in ChatPage
+8) القائمة الثلاثية والهيدر والقوائم المنبثقة
+- استبدال قائمة الثلاث نقاط الحالية في `ChatPage.tsx` بقائمة جديدة حقيقية تشمل:
+  - دعوة أشخاص إلى المحادثة
+  - مشاركة
+  - إعادة تسمية
+  - تثبيت الدردشة
+  - إضافة إلى الصفحة الرئيسية
+- جعل “إعادة التسمية” وكل الحوارات الأخرى بتصميم زجاجي حديث موحد.
+- “إضافة إلى الصفحة الرئيسية”:
+  - تفعيل PWA/install prompt إن كان متاحًا.
+  - وإلا fallback بتعليمات مناسبة حسب الجهاز.
 
-### 7. Remove Long-Press Copy Popup
-**File**: `src/components/ChatMessage.tsx`
-- Delete all `showCopyPopup` state, `longPressTimer`, `handleLongPressStart`, `handleLongPressEnd`
-- Remove the `AnimatePresence` copy popup block entirely
-- Remove `onTouchStart`/`onTouchEnd` handlers from message divs
+9) الثيمات الجديدة بدون المساس بالثيمات الحالية
+- إضافة 2–3 ثيمات جديدة متعددة الألوان داخل `src/index.css` وواجهة التخصيص، مع الإبقاء على الحالية كما هي.
+- كل ثيم جديد يستخدم:
+  - خلفيات ضبابية متعددة الألوان
+  - أسطح زجاجية
+  - نفس روح أنيميشن `unlock pro`
+- تطبيق الثيمات الجديدة على كل الصفحات وليس الشات فقط، مع مراعاة الأداء.
 
-### 8. Remove Action Buttons from Flow Cards
-**File**: `src/components/FlowCard.tsx`
-- No "Execute" or "Details" buttons
-- Tap on card sends the step title as a message (gesture-based)
+10) الذاكرة القصوى عبر كل المحادثات
+- لأن الجدول الحالي `memories` عام ومكشوف للقراءة، سيتم عدم استخدامه بصيغته الحالية للذاكرة الشخصية.
+- إنشاء طبقة ذاكرة آمنة جديدة مرتبطة بالمستخدم في Supabase:
+  - ذاكرة حساب: الاسم، الخطة، الرصيد، التفضيلات
+  - ذاكرة محادثات: ملخصات عبر كل المحادثات
+  - ذاكرة مشاريع/ملفات: آخر المشاريع والملفات المهمة
+- تحديث `supabase/functions/chat/index.ts` ليقوم بـ:
+  - جلب ملف المستخدم
+  - دمج ملخصات المحادثات السابقة
+  - ضغط السياق الطويل تلقائيًا
+  - حفظ/تحديث الذاكرة بعد الرسائل المهمة
+- هذا يحقق “أقصى شيء” بشكل آمن وقابل للتوسع.
 
-## Technical Notes
-- New CSS classes `flow-card-purple`, `flow-card-blue`, `flow-card-green`, `flow-card-amber`, `flow-card-teal` in index.css with gradient backgrounds and particle animations
-- Typewriter effect via a small React hook that reveals text progressively using `useState` + `setInterval`
-- Questions state lifted from ChatMessage to ChatPage for input-bar integration
-- No emojis anywhere in new/modified code
+11) Deep Research أعمق ووكيل تسوق أقوى
+- تطوير edge function `chat` ليستخدم البحث على مراحل متعددة فعليًا، مع تقسيم المهمة إلى sub-tasks.
+- دعم صور ضمن النتيجة النهائية في deep research بشكل أوضح.
+- جعل Shopping mode يعرض بطاقات منتجات حقيقية:
+  - صورة
+  - وصف
+  - سعر
+  - رابط المتجر
+- إضافة Smart Questions تلقائيًا داخل وضع التسوق لتحسين فهم الطلب.
+- عند طلب تكامل خارجي، يرجع النظام استجابة منظمة تفعل زر Connect في الواجهة بدل النص فقط.
 
+12) File Agent داخل نفس الشات بدون تغيير التصميم
+- توسيع المنطق الخلفي فقط:
+  - تحليل PDF / DOCX / TXT / XLSX / PPTX
+  - دمج “User Message + File Content + Page Content”
+  - قرار داخلي للإجراء: analyze / extract / rewrite / generate_document / ask_user / multi_file_analysis / external_connection_required
+- في حال التكامل الخارجي المطلوب:
+  - Megsy يطلب الربط طبيعيًا
+  - والواجهة تعرض زر Connect فعلي.
+- دون إنشاء صفحات جديدة أو UI منفصل.
+
+13) الإشعارات والموبايل
+- تحديث شكل ومكان الإشعارات لتناسب الهاتف أكثر.
+- الحفاظ على `sonner` أو استبداله بنمط بصري أنعم إن لزم، بدون التأثير على الاستقرار.
+
+الملفات الأكثر تأثرًا
+- `src/pages/ChatPage.tsx`
+- `src/components/ChatMessage.tsx`
+- `src/components/AnimatedInput.tsx`
+- `src/components/ThinkingLoader.tsx`
+- `src/components/CodePreviewModal.tsx`
+- `src/components/AppSidebar.tsx`
+- `src/components/ConnectorsDialog.tsx`
+- `src/index.css`
+- `src/components/TranslationWrapper.tsx`
+- `supabase/functions/chat/index.ts`
+
+تغييرات قاعدة البيانات المتوقعة
+- إنشاء جداول ذاكرة جديدة آمنة مرتبطة بالمستخدم بدل الاعتماد على `memories` الحالية.
+- سياسات RLS صارمة لهذه الجداول.
+- ربما جدول/حقول إضافية لدعوات المحادثة، تثبيت المحادثة، وملخصات الذاكرة إذا أردنا تنفيذها بشكل حقيقي كامل.
+
+ملاحظات تقنية مهمة
+- سأتعامل مع هذا كتنفيذ على مراحل داخل نفس الدفعة لكن بترتيب آمن:
+  1. الاستقرار والتمرير والاتجاهات
+  2. الإدخال والهيدر والقوائم
+  3. الكود والـ preview
+  4. التفاعلات والتحرير والمشاركة
+  5. الثيمات الجديدة
+  6. الذاكرة القصوى والـ backend agent upgrades
+- أهم نقطة أمان تم اكتشافها: جدول `memories` الحالي غير مناسب لذاكرة شخصية لأنه قابل للقراءة العامة، لذلك سيتم عزله عمليًا واستبداله بطبقة ذاكرة آمنة.
+- تخصيص “حمزة حسن / الجزايري” سيتم وضعه في الـ system/backend behavior بحيث يبدأ من `elgiza.site` ثم يستكمل من الويب عند الحاجة، مع اعتماد اسم العلامة “ميغسي”.
+- سألتزم بعدم تغيير الواجهة جذريًا في File Agent، بل سأضيف فقط زر Connect عند الحاجة والمنطق الخلفي المطلوب.
+
+معيار النجاح
+- لا auto-scroll قسري
+- لا ظهور خاطئ لزر النزول
+- اتجاه عربي/إنجليزي ثابت وواضح
+- Preview موثوق بملء الشاشة
+- ضغط مطول مستقر وحقيقي
+- أسئلة ذكية أوضح داخل الإدخال
+- ثيمات جديدة متعددة الألوان بدون كسر الحالية
+- ذاكرة آمنة وعابرة لكل المحادثات
+- Deep Research وShopping وFiles تعمل بشكل أقوى مع أقل أثر ممكن على الأداء
