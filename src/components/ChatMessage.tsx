@@ -1,8 +1,9 @@
-import { useState, useCallback, useMemo } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Check, Play, FileUp } from "lucide-react";
+import { useState, useCallback, useMemo, useRef } from "react";
+import { Copy, ThumbsUp, ThumbsDown, Check, Play, FileUp, Share2, Pencil, Type, Ellipsis } from "lucide-react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { toast } from "sonner";
 import ThinkingLoader from "./ThinkingLoader";
 import FlowCard from "./FlowCard";
 import InfoCards from "./InfoCards";
@@ -21,6 +22,7 @@ interface ChatMessageProps {
   onShare?: () => void;
   onStructuredAction?: (text: string) => void;
   searchQuery?: string;
+  onEditUserMessage?: (text: string) => void;
 }
 
 const getDomain = (url: string) => {
@@ -182,15 +184,63 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
   </ReactMarkdown>
 );
 
-const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onStructuredAction, searchQuery }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onShare, onStructuredAction, searchQuery, onEditUserMessage }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied");
   };
+
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+
+  const openMenuAt = useCallback((x: number, y: number) => {
+    setMenuPosition({ x, y });
+    setMenuOpen(true);
+  }, []);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+  }, []);
+
+  const handleUserShare = useCallback(async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: content });
+        return;
+      } catch {}
+    }
+    await navigator.clipboard.writeText(content);
+    toast.success("Message copied for sharing");
+  }, [content]);
+
+  const handleSelectText = useCallback(async () => {
+    await navigator.clipboard.writeText(content);
+    toast.success("Text copied");
+  }, [content]);
+
+  const handleLongPressStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (role !== "user") return;
+    const touch = e.touches[0];
+    longPressRef.current = setTimeout(() => {
+      openMenuAt(touch.clientX, touch.clientY - 12);
+    }, 450);
+  }, [openMenuAt, role]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (role !== "user") return;
+    e.preventDefault();
+    openMenuAt(e.clientX, e.clientY);
+  }, [openMenuAt, role]);
 
   const handleLinkClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
@@ -208,7 +258,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
 
   if (role === "user") {
     return (
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end mb-4 relative">
         <div className="max-w-[80%]">
           {attachedImages && attachedImages.length > 0 && (
             <div className="flex gap-2 mb-2 justify-end flex-wrap">
@@ -227,9 +277,52 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               ))}
             </div>
           )}
-          <div className="bg-secondary text-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-[0.9375rem] leading-relaxed">
+          <div
+            onContextMenu={handleContextMenu}
+            onTouchStart={handleLongPressStart}
+            onTouchEnd={clearLongPress}
+            onTouchCancel={clearLongPress}
+            className="bg-secondary/70 text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-[0.9375rem] leading-relaxed border border-border/30 shadow-[0_12px_32px_hsl(var(--foreground)/0.06)]"
+          >
             {content}
           </div>
+
+          {menuOpen && (
+            <>
+              <button aria-label="Close user message menu" className="fixed inset-0 z-40 cursor-default" onClick={closeMenu} />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 6 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 6 }}
+                className="fixed z-50 w-[min(88vw,18rem)] overflow-hidden rounded-[1.5rem] border border-border/50 bg-popover/90 backdrop-blur-xl shadow-[0_24px_80px_hsl(var(--foreground)/0.18)]"
+                style={{ left: `min(${menuPosition.x}px, calc(100vw - 19rem))`, top: `min(${menuPosition.y}px, calc(100vh - 18rem))` }}
+              >
+                <div className="px-4 py-3 border-b border-border/40 bg-secondary/20">
+                  <p className="text-sm font-medium text-foreground">Message actions</p>
+                  <p className="text-[11px] text-muted-foreground">Choose what to do with this message</p>
+                </div>
+                <div className="p-2">
+                  {[
+                    { icon: Copy, label: "Copy", action: async () => { await handleCopy(); closeMenu(); } },
+                    { icon: Share2, label: "Share", action: async () => { await handleUserShare(); closeMenu(); } },
+                    { icon: Pencil, label: "Edit", action: () => { onEditUserMessage?.(content); closeMenu(); } },
+                    { icon: Type, label: "Select text", action: async () => { await handleSelectText(); closeMenu(); } },
+                  ].map(({ icon: Icon, label, action }) => (
+                    <button
+                      key={label}
+                      onClick={action}
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-foreground hover:bg-accent/40 transition-colors"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary/40 text-muted-foreground">
+                        <Icon className="w-4 h-4" />
+                      </span>
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -328,13 +421,13 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
 
           {/* Action buttons */}
           {!isStreaming && content && (
-            <div className="flex items-center gap-1 mt-2">
-              <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all active:scale-90 duration-150" title="Copy">
+            <div className="flex items-center gap-2 mt-2">
+              <button onClick={handleCopy} className="p-1 text-muted-foreground/60 hover:text-foreground transition-all active:scale-90 duration-150" title="Copy">
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
               <motion.button
                 onClick={() => onLike?.(liked === true ? null : true)}
-                className={`p-1.5 rounded-lg transition-all duration-150 ${liked === true ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
+                className={`p-1 transition-all duration-150 ${liked === true ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"}`}
                 title="Like"
                 whileTap={{ scale: 1.4 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -343,13 +436,18 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               </motion.button>
               <motion.button
                 onClick={() => onLike?.(liked === false ? null : false)}
-                className={`p-1.5 rounded-lg transition-all duration-150 ${liked === false ? "text-destructive bg-destructive/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-accent"}`}
+                className={`p-1 transition-all duration-150 ${liked === false ? "text-destructive" : "text-muted-foreground/60 hover:text-foreground"}`}
                 title="Dislike"
                 whileTap={{ scale: 1.4 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
                 <ThumbsDown className="w-4 h-4" />
               </motion.button>
+              {onShare && (
+                <button onClick={onShare} className="p-1 text-muted-foreground/60 hover:text-foreground transition-colors" title="Share">
+                  <Ellipsis className="w-4 h-4" />
+                </button>
+              )}
             </div>
           )}
         </>

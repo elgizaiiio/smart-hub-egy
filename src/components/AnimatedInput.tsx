@@ -36,23 +36,31 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const [questionInput, setQuestionInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const placeholderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const placeholderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasQuestions = !!pendingQuestions?.length;
   const safeQuestionIndex = hasQuestions ? Math.min(questionIndex, pendingQuestions!.length - 1) : 0;
   const currentQuestion = hasQuestions ? pendingQuestions![safeQuestionIndex] : null;
 
   useEffect(() => {
-    if (value) return;
+    if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
+    if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
+
+    if (value) {
+      setDisplayedPlaceholder("");
+      return;
+    }
+
     const target = items[placeholderIndex] || DEFAULT_PLACEHOLDERS[0];
     let charIndex = 0;
     setDisplayedPlaceholder("");
 
-    const typeInterval = setInterval(() => {
+    placeholderIntervalRef.current = setInterval(() => {
       if (charIndex < target.length) {
         setDisplayedPlaceholder(target.slice(0, charIndex + 1));
         charIndex += 1;
       } else {
-        clearInterval(typeInterval);
+        if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
         placeholderTimeoutRef.current = setTimeout(() => {
           setPlaceholderIndex((prev) => (prev + 1) % items.length);
         }, 2500);
@@ -60,7 +68,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     }, 50);
 
     return () => {
-      clearInterval(typeInterval);
+      if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
       if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
     };
   }, [placeholderIndex, value, items]);
@@ -113,16 +121,16 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
   return (
     <div className="relative">
-      <div className="rounded-2xl border border-border/60 bg-secondary/30 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-[2rem] border border-border/50 bg-background/35 backdrop-blur-xl overflow-hidden shadow-[0_18px_60px_hsl(var(--foreground)/0.08)]">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
-            <motion.div
+              <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="border-b border-border/40"
+                className="border-b border-border/30 bg-secondary/15"
             >
-              <div className="p-3">
+              <div className="p-3.5">
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <p className="text-sm font-medium text-foreground">{currentQuestion.title}</p>
                   <div className="flex items-center gap-2 shrink-0">
@@ -178,7 +186,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           )}
         </AnimatePresence>
 
-        <div className="relative flex items-end gap-2 px-2 py-2">
+          <div className="relative flex items-end gap-2 px-3 py-3">
           <button
             onClick={onPlusClick}
             className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors mb-0.5"
@@ -187,7 +195,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             <Plus className="w-4 h-4" />
           </button>
 
-          <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
               value={value}
@@ -195,8 +203,8 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
               onKeyDown={handleKeyDown}
               placeholder={displayedPlaceholder}
               rows={1}
-              className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/40 py-1.5 px-1"
-              style={{ minHeight: "28px" }}
+                className="w-full bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
+                style={{ minHeight: "36px" }}
             />
           </div>
 
