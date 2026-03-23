@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -416,7 +416,7 @@ const FilesPage = () => {
           {attachedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2 px-1">
               {attachedFiles.map((f, i) => (
-                <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm text-foreground">
+                <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm text-foreground border border-border/40">
                   {f.type === "image" ? (
                     <img src={f.data} alt="" className="w-6 h-6 rounded object-cover" />
                   ) : (
@@ -433,7 +433,7 @@ const FilesPage = () => {
 
           <div className="flex items-end gap-2 rounded-2xl border border-primary/30 bg-transparent backdrop-blur-md px-3 py-2">
             <div ref={menuRef} className="relative">
-              <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+              <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors">
                 <Plus className="w-5 h-5" />
               </button>
 
@@ -477,6 +477,16 @@ const FilesPage = () => {
                       <div className="min-w-0">
                         <span className="text-sm text-foreground block">Google Drive</span>
                         <span className="text-[10px] text-muted-foreground">Upload & access files</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => { navigate("/settings/integrations"); setMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors"
+                    >
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <span className="text-sm text-foreground block">Notion</span>
+                        <span className="text-[10px] text-muted-foreground">Sync docs and notes</span>
                       </div>
                     </button>
                     <button

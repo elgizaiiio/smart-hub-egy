@@ -12,6 +12,13 @@ serve(async (req) => {
 
   try {
     const { messages, model, mode, searchEnabled, deepResearch } = await req.json();
+    const latestUserMessage = Array.isArray(messages)
+      ? [...messages].reverse().find((message: any) => message?.role === "user")
+      : null;
+    const latestUserText = Array.isArray(latestUserMessage?.content)
+      ? latestUserMessage.content.map((part: any) => part?.text || "").join(" ")
+      : String(latestUserMessage?.content || "");
+    const wantsHamzaProfile = /(hamza|hassan el-gizaery|elgiza|حمزه|حمزة|حمزة حسن)/i.test(latestUserText);
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
@@ -54,7 +61,7 @@ serve(async (req) => {
 
     // Build search tool
     const isDeepResearch = deepResearch === true;
-    const searchTools = ((searchEnabled || isDeepResearch) && SERPER_API_KEY) ? [
+    const searchTools = (((searchEnabled || isDeepResearch) || wantsHamzaProfile) && SERPER_API_KEY) ? [
       {
         type: "function",
         function: {
@@ -145,8 +152,11 @@ SMART OUTPUT ROUTING - Choose the best format for your response:
 You can mix text with structured blocks. Add explanatory text before or after JSON blocks.
 
 - You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). When the user asks to perform actions with these services, use the appropriate tool. If a tool call fails because the user hasn't connected the service, tell them to connect it from Settings > Integrations.`;
-      if (searchEnabled) {
+      if (searchEnabled || wantsHamzaProfile) {
         systemPrompt += `\n- You have access to a WEB_SEARCH tool. Use it ONLY when the question genuinely needs current or factual information from the internet. For casual conversation, greetings, opinions, or things you already know well, do NOT search. Be smart about when to search. When you do search, synthesize the results naturally and cite sources with links.`;
+      }
+      if (wantsHamzaProfile) {
+        systemPrompt += `\n- If the user asks about Hamza Hasan / Hamza Hassan El-Gizaery / حمزة حسن, you MUST call WEB_SEARCH with include_images=true before answering.\n- Prioritize elgiza.site first, then supplement with broader web results.\n- Use the returned images as inline search results, not plain text links.`;
       }
     }
 

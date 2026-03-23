@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -29,41 +29,43 @@ const DEFAULT_PLACEHOLDERS = [
 ];
 
 const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip }: AnimatedInputProps) => {
-  const items = placeholders || DEFAULT_PLACEHOLDERS;
+  const items = useMemo(() => placeholders && placeholders.length > 0 ? placeholders : DEFAULT_PLACEHOLDERS, [placeholders]);
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
-  const [isTyping, setIsTyping] = useState(true);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [questionInput, setQuestionInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const placeholderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const hasQuestions = pendingQuestions && pendingQuestions.length > 0;
-  const currentQuestion = hasQuestions ? pendingQuestions![questionIndex] : null;
+  const hasQuestions = !!pendingQuestions?.length;
+  const safeQuestionIndex = hasQuestions ? Math.min(questionIndex, pendingQuestions!.length - 1) : 0;
+  const currentQuestion = hasQuestions ? pendingQuestions![safeQuestionIndex] : null;
 
   useEffect(() => {
     if (value) return;
-    const target = items[placeholderIndex];
+    const target = items[placeholderIndex] || DEFAULT_PLACEHOLDERS[0];
     let charIndex = 0;
-    setIsTyping(true);
     setDisplayedPlaceholder("");
 
     const typeInterval = setInterval(() => {
       if (charIndex < target.length) {
         setDisplayedPlaceholder(target.slice(0, charIndex + 1));
-        charIndex++;
+        charIndex += 1;
       } else {
         clearInterval(typeInterval);
-        setIsTyping(false);
-        setTimeout(() => {
+        placeholderTimeoutRef.current = setTimeout(() => {
           setPlaceholderIndex((prev) => (prev + 1) % items.length);
         }, 2500);
       }
     }, 50);
 
-    return () => clearInterval(typeInterval);
+    return () => {
+      clearInterval(typeInterval);
+      if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
+    };
   }, [placeholderIndex, value, items]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (value.trim() && !disabled && !isLoading) onSend();
@@ -74,7 +76,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     const el = textareaRef.current;
     if (el) {
       el.style.height = "auto";
-      const maxH = typeof window !== 'undefined' && window.innerWidth < 768 ? 120 : 160;
+      const maxH = typeof window !== "undefined" && window.innerWidth < 768 ? 120 : 160;
       el.style.height = Math.min(el.scrollHeight, maxH) + "px";
     }
   };
@@ -83,31 +85,35 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     autoResize();
   }, [value]);
 
-  const handleQuestionSelect = (option: string) => {
-    onQuestionAnswer?.(option);
-    if (questionIndex < (pendingQuestions?.length || 0) - 1) {
-      setQuestionIndex((p) => p + 1);
+  useEffect(() => {
+    setQuestionIndex(0);
+    setQuestionInput("");
+  }, [pendingQuestions]);
+
+  const moveToNextQuestion = () => {
+    if (!pendingQuestions?.length) return;
+    if (safeQuestionIndex < pendingQuestions.length - 1) {
+      setQuestionIndex((prev) => prev + 1);
     } else {
       setQuestionIndex(0);
     }
+    setQuestionInput("");
+  };
+
+  const handleQuestionSelect = (option: string) => {
+    onQuestionAnswer?.(option);
+    moveToNextQuestion();
   };
 
   const handleQuestionTextSend = () => {
     if (!questionInput.trim()) return;
     onQuestionAnswer?.(questionInput.trim());
-    setQuestionInput("");
-    if (questionIndex < (pendingQuestions?.length || 0) - 1) {
-      setQuestionIndex((p) => p + 1);
-    } else {
-      setQuestionIndex(0);
-    }
+    moveToNextQuestion();
   };
 
   return (
     <div className="relative">
-      {/* Input Bar with border */}
       <div className="rounded-2xl border border-border/60 bg-secondary/30 backdrop-blur-sm overflow-hidden">
-        {/* Smart Questions Panel - inside the input container */}
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
             <motion.div
@@ -117,19 +123,20 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
               className="border-b border-border/40"
             >
               <div className="p-3">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 gap-2">
                   <p className="text-sm font-medium text-foreground">{currentQuestion.title}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground">{questionIndex + 1}/{pendingQuestions!.length}</span>
-                    <button onClick={onQuestionSkip} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] text-muted-foreground">{safeQuestionIndex + 1}/{pendingQuestions!.length}</span>
+                    <button onClick={onQuestionSkip} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors" aria-label="Skip smart question">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
+
                 <div className="flex flex-wrap gap-1.5">
                   {currentQuestion.options.map((opt, i) => (
                     <button
-                      key={i}
+                      key={`${opt}-${i}`}
                       onClick={() => handleQuestionSelect(opt)}
                       className="px-3 py-1.5 rounded-full border border-border/40 bg-background/60 text-xs text-foreground hover:bg-accent/40 hover:border-primary/30 transition-colors"
                     >
@@ -137,12 +144,22 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                     </button>
                   ))}
                 </div>
+
                 {currentQuestion.allowText && (
                   <div className="flex items-center gap-2 mt-2">
                     <input
+                      type="text"
+                      autoComplete="off"
+                      dir="auto"
                       value={questionInput}
                       onChange={(e) => setQuestionInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleQuestionTextSend()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleQuestionTextSend();
+                        }
+                      }}
                       placeholder="Type your answer..."
                       className="flex-1 bg-transparent border-none px-1 py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
                     />
@@ -150,6 +167,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                       onClick={handleQuestionTextSend}
                       disabled={!questionInput.trim()}
                       className="w-6 h-6 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
+                      aria-label="Send question answer"
                     >
                       <ArrowUp className="w-3 h-3" />
                     </button>
@@ -160,11 +178,11 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           )}
         </AnimatePresence>
 
-        {/* Input row */}
         <div className="relative flex items-end gap-2 px-2 py-2">
           <button
             onClick={onPlusClick}
-            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors mb-0.5"
+            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors mb-0.5"
+            aria-label="Open attachments"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -173,7 +191,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             <textarea
               ref={textareaRef}
               value={value}
-              onChange={(e) => { onChange(e.target.value); }}
+              onChange={(e) => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={displayedPlaceholder}
               rows={1}
@@ -186,6 +204,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             <button
               onClick={onCancel}
               className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all animate-pulse-slow mb-0.5"
+              aria-label="Stop generation"
             >
               <Square className="w-3 h-3" />
             </button>
@@ -194,6 +213,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
               onClick={onSend}
               disabled={!value.trim() || disabled}
               className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed mb-0.5"
+              aria-label="Send message"
             >
               <ArrowUp className="w-3.5 h-3.5" />
             </button>

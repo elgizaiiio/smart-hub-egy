@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,6 +75,7 @@ const ChatPage = () => {
   const [generatedShareUrl, setGeneratedShareUrl] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [isPinned, setIsPinned] = useState(false);
   const [pendingQuestions, setPendingQuestions] = useState<{title: string;options: string[];allowText?: boolean;}[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -120,12 +121,13 @@ const ChatPage = () => {
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
-    const { data: conv } = await supabase.from("conversations").select("title, is_shared, share_id").eq("id", id).single();
+    const { data: conv } = await supabase.from("conversations").select("title, is_shared, share_id, is_pinned").eq("id", id).single();
     if (conv) {
       setConversationTitle(conv.title || "Untitled");
       setIsShared(conv.is_shared || false);
       setShareId(conv.share_id || null);
       setShareMode(conv.is_shared ? "public" : "private");
+      setIsPinned(!!conv.is_pinned);
     }
     const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true });
     if (msgs) {
@@ -297,7 +299,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,6 +380,39 @@ const ChatPage = () => {
     setConversationTitle(renameValue.trim());
     setIsRenaming(false);
     toast.success("Renamed");
+  };
+
+  const handleTogglePin = async () => {
+    if (!conversationId) return;
+    const nextPinned = !isPinned;
+    const payload = nextPinned
+      ? { is_pinned: true, pinned_at: new Date().toISOString() }
+      : { is_pinned: false, pinned_at: null };
+    const { error } = await supabase.from("conversations").update(payload as any).eq("id", conversationId);
+    if (error) {
+      toast.error("Failed to update pin");
+      return;
+    }
+    setIsPinned(nextPinned);
+    toast.success(nextPinned ? "Pinned" : "Unpinned");
+  };
+
+  const handleInvite = async () => {
+    if (!conversationId) return;
+    if (!isShared || !shareId) {
+      setShareMode("public");
+      setShareDialogOpen(true);
+      return;
+    }
+    const url = `${window.location.origin}/share/${shareId}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: conversationTitle || "Shared chat", url });
+        return;
+      } catch {}
+    }
+    await navigator.clipboard.writeText(url);
+    toast.success("Invite link copied");
   };
 
   const handleDelete = async () => {
@@ -501,9 +536,17 @@ const ChatPage = () => {
                     <Share2 className="w-4 h-4 text-muted-foreground" />
                     Share
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleInvite} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
+                    <UserPlus className="w-4 h-4 text-muted-foreground" />
+                    Invite
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
                     <Pencil className="w-4 h-4 text-muted-foreground" />
                     Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleTogglePin} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
+                    <Pin className="w-4 h-4 text-muted-foreground" />
+                    {isPinned ? "Unpin" : "Pin"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="my-1" />
                   <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
@@ -542,6 +585,28 @@ const ChatPage = () => {
                   </div>
 
                   <div className="hidden md:block w-full max-w-2xl mx-auto space-y-2 mt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                      <button onClick={handleInvite} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
+                        <UserPlus className="w-4 h-4 text-primary" />
+                        <span className="text-sm text-foreground">Invite</span>
+                      </button>
+                      <button onClick={handleShare} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
+                        <Share2 className="w-4 h-4 text-primary" />
+                        <span className="text-sm text-foreground">Share</span>
+                      </button>
+                      <button onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
+                        <Pencil className="w-4 h-4 text-primary" />
+                        <span className="text-sm text-foreground">Rename</span>
+                      </button>
+                      <button onClick={handleTogglePin} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
+                        <Pin className="w-4 h-4 text-primary" />
+                        <span className="text-sm text-foreground">{isPinned ? "Unpin" : "Pin"}</span>
+                      </button>
+                      <button onClick={() => setConnectorsOpen(true)} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
+                        <Plus className="w-4 h-4 text-primary" />
+                        <span className="text-sm text-foreground">Add</span>
+                      </button>
+                    </div>
                     <div className="relative">
                       <AnimatePresence>
                         {plusMenuOpen && renderPlusMenu(false)}
@@ -691,9 +756,9 @@ const ChatPage = () => {
                   <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{generatedShareUrl}</span>
                   <button
                   onClick={handleCopyShareLink}
-                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-accent/50 transition-colors whitespace-nowrap">
-                  
-                    Copy
+                  className="shrink-0 p-2 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors whitespace-nowrap"
+                  aria-label="Copy share link">
+                    <Copy className="w-4 h-4 text-foreground" />
                   </button>
                 </div> :
 
