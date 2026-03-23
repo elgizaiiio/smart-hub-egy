@@ -343,14 +343,14 @@ const FilesPage = () => {
         )}
       </AnimatePresence>
 
-      <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-2 bg-transparent">
-        <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+      <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-transparent">
+        <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
           <Menu className="w-5 h-5" />
         </button>
         <div className="w-9" />
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 pb-44 md:pb-52">
         {!hasMessages ? (
           <div className="flex flex-col items-center justify-center h-full px-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
@@ -410,8 +410,8 @@ const FilesPage = () => {
         )}
       </div>
 
-      <div className="sticky bottom-0 z-20 shrink-0 px-3 pb-3 pt-1 bg-background/80 backdrop-blur-md">
-        <div className="max-w-3xl mx-auto relative">
+      <div className="fixed inset-x-0 bottom-0 z-30 shrink-0 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-1 pointer-events-none">
+        <div className="max-w-3xl mx-auto relative pointer-events-auto">
           {/* Attached files preview */}
           {attachedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2 px-1">
@@ -431,7 +431,7 @@ const FilesPage = () => {
             </div>
           )}
 
-          <div className="flex items-end gap-2 rounded-2xl border border-primary/30 bg-transparent backdrop-blur-md px-3 py-2">
+          <div className="flex items-end gap-2 rounded-[2rem] border border-primary/25 bg-background/20 backdrop-blur-xl px-4 py-3 shadow-[0_20px_80px_hsl(var(--foreground)/0.08)]">
             <div ref={menuRef} className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors">
                 <Plus className="w-5 h-5" />
@@ -512,8 +512,8 @@ const FilesPage = () => {
               }}
               placeholder={displayedPlaceholder + "│"}
               rows={1}
-              className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
-              style={{ minHeight: "32px" }}
+              className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-2.5 max-h-36"
+              style={{ minHeight: "42px" }}
             />
             <button onClick={handleGenerate} disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating} className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors disabled:opacity-20 ${isGenerating ? "bg-[#7C3AED] text-white animate-pulse-slow" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}

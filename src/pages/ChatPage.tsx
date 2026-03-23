@@ -9,7 +9,6 @@ import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
 import ThinkingLoader from "@/components/ThinkingLoader";
-import FancyButton from "@/components/FancyButton";
 import { streamChat } from "@/lib/streamChat";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
 import {
@@ -509,25 +508,20 @@ const ChatPage = () => {
           currentMode="chat" />
         
 
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 min-h-[48px] bg-background/60 backdrop-blur-xl">
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 min-h-[48px] bg-transparent">
           <div className="flex items-center gap-2">
-            <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
               <Menu className="w-5 h-5" />
             </button>
             <div className="hidden md:block" />
           </div>
 
-          {!hasConversation &&
-          <div className="absolute left-1/2 -translate-x-1/2 md:hidden">
-              <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
-            </div>
-          }
 
           <div className="flex items-center gap-2">
             {hasConversation && conversationId &&
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                  <button className="w-8 h-8 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
                     <MoreVertical className="w-4.5 h-4.5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -559,9 +553,9 @@ const ChatPage = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
+        <div className="flex-1 overflow-y-auto min-h-0 relative pb-44 md:pb-52" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ?
-          <div className="flex flex-col h-full px-4">
+          <div className="flex flex-col h-full px-4 pb-40 md:pb-48">
               <div className="flex-1 flex flex-col items-center justify-center">
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
                   <div className="flex items-center justify-center gap-2 mb-4">
@@ -607,12 +601,6 @@ const ChatPage = () => {
                         <span className="text-sm text-foreground">Add</span>
                       </button>
                     </div>
-                    <div className="relative">
-                      <AnimatePresence>
-                        {plusMenuOpen && renderPlusMenu(false)}
-                      </AnimatePresence>
-                      <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
-                    </div>
                     <button
                     onClick={() => setConnectorsOpen(true)}
                     className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-secondary/40 border border-border/30 hover:bg-secondary/60 transition-colors">
@@ -624,15 +612,7 @@ const ChatPage = () => {
                 </motion.div>
               </div>
 
-              <div className="shrink-0 pb-3 md:hidden w-full max-w-2xl mx-auto space-y-2">
-                {renderAttachments()}
-                <div className="relative">
-                  <AnimatePresence>
-                    {plusMenuOpen && renderPlusMenu(true)}
-                  </AnimatePresence>
-                  <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
-                </div>
-              </div>
+
             </div> :
 
           <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
@@ -675,22 +655,21 @@ const ChatPage = () => {
           </AnimatePresence>
         </div>
 
-        {hasConversation &&
-        <div className="shrink-0 px-3 md:px-6 pb-3 md:pb-5 pt-4 bg-gradient-to-t from-background via-background/80 to-transparent">
-            <div className="max-w-3xl mx-auto space-y-1.5">
+        <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pointer-events-none">
+            <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
               <AnimatePresence>
                 {chatMode !== "normal" &&
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/8 backdrop-blur-md border border-primary/15 w-fit pointer-events-auto"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 backdrop-blur-md border border-primary/15 w-fit"
                 style={{ touchAction: "none" }}>
                 
                     <span className="text-xs text-primary font-medium">
                       {chatMode === "learning" ? "Learning" : chatMode === "deep-research" ? "Deep Research" : "Shopping"} Mode
                     </span>
-                    <button onClick={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors pointer-events-auto">
+                    <button onClick={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors">
                       <X className="w-3 h-3 text-primary" />
                     </button>
                   </motion.div>
@@ -699,7 +678,7 @@ const ChatPage = () => {
 
               {renderAttachments()}
 
-              <div className="relative">
+              <div className="relative mx-auto w-full max-w-3xl rounded-[2rem] bg-background/20 backdrop-blur-xl shadow-[0_20px_80px_hsl(var(--foreground)/0.08)]">
                 <AnimatePresence>
                   {plusMenuOpen && renderPlusMenu(window.innerWidth < 768)}
                 </AnimatePresence>
@@ -707,7 +686,6 @@ const ChatPage = () => {
               </div>
             </div>
           </div>
-        }
 
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.doc,.docx" multiple />
         <input ref={cameraInputRef} type="file" className="hidden" onChange={handleCameraCapture} accept="image/*" capture="environment" />
