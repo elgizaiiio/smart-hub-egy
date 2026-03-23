@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogDescription } from
 "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface Message {
   role: "user" | "assistant";
@@ -422,6 +423,20 @@ const ChatPage = () => {
     handleNewChat();
   };
 
+  const handleEditUserMessage = (messageText: string) => {
+    setInput(messageText);
+    setMessages((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i >= 0; i -= 1) {
+        if (next[i]?.role === "user" && next[i].content === messageText) {
+          next.splice(i, next[i + 1]?.role === "assistant" ? 2 : 1);
+          break;
+        }
+      }
+      return next;
+    });
+  };
+
   const hasConversation = messages.length > 0;
 
   const renderPlusMenu = (isMobile: boolean) =>
@@ -579,26 +594,33 @@ const ChatPage = () => {
                   </div>
 
                   <div className="hidden md:block w-full max-w-2xl mx-auto space-y-2 mt-4">
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                      <button onClick={handleInvite} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
-                        <UserPlus className="w-4 h-4 text-primary" />
-                        <span className="text-sm text-foreground">Invite</span>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                       <button onClick={handleInvite} className="group flex items-center gap-3 px-4 py-4 rounded-[1.75rem] bg-secondary/25 border border-border/40 hover:bg-secondary/40 hover:border-border/60 transition-colors text-left shadow-[0_16px_44px_hsl(var(--foreground)/0.05)]">
+                         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-background/60 text-primary border border-border/30">
+                           <UserPlus className="w-4 h-4" />
+                         </span>
+                         <span className="min-w-0">
+                           <span className="block text-sm font-medium text-foreground">Invite people</span>
+                           <span className="block text-xs text-muted-foreground">Send a real share link</span>
+                         </span>
                       </button>
-                      <button onClick={handleShare} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
-                        <Share2 className="w-4 h-4 text-primary" />
-                        <span className="text-sm text-foreground">Share</span>
+                       <button onClick={handleShare} className="group flex items-center gap-3 px-4 py-4 rounded-[1.75rem] bg-secondary/25 border border-border/40 hover:bg-secondary/40 hover:border-border/60 transition-colors text-left shadow-[0_16px_44px_hsl(var(--foreground)/0.05)]">
+                         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-background/60 text-primary border border-border/30">
+                           <Share2 className="w-4 h-4" />
+                         </span>
+                         <span className="min-w-0">
+                           <span className="block text-sm font-medium text-foreground">Share chat</span>
+                           <span className="block text-xs text-muted-foreground">Choose private or public access</span>
+                         </span>
                       </button>
-                      <button onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
-                        <Pencil className="w-4 h-4 text-primary" />
-                        <span className="text-sm text-foreground">Rename</span>
-                      </button>
-                      <button onClick={handleTogglePin} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
-                        <Pin className="w-4 h-4 text-primary" />
-                        <span className="text-sm text-foreground">{isPinned ? "Unpin" : "Pin"}</span>
-                      </button>
-                      <button onClick={() => setConnectorsOpen(true)} className="flex flex-col items-start gap-1 px-3 py-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors text-left">
-                        <Plus className="w-4 h-4 text-primary" />
-                        <span className="text-sm text-foreground">Add</span>
+                       <button onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="group flex items-center gap-3 px-4 py-4 rounded-[1.75rem] bg-secondary/25 border border-border/40 hover:bg-secondary/40 hover:border-border/60 transition-colors text-left shadow-[0_16px_44px_hsl(var(--foreground)/0.05)]">
+                         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-background/60 text-primary border border-border/30">
+                           <Pencil className="w-4 h-4" />
+                         </span>
+                         <span className="min-w-0">
+                           <span className="block text-sm font-medium text-foreground">Rename chat</span>
+                           <span className="block text-xs text-muted-foreground">Update the conversation title</span>
+                         </span>
                       </button>
                     </div>
                     <button
@@ -629,7 +651,8 @@ const ChatPage = () => {
               liked={msg.liked}
               onLike={(liked) => handleLike(i, liked)}
               onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
-              onStructuredAction={handleStructuredAction} />
+              onStructuredAction={handleStructuredAction}
+              onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
 
             )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
@@ -758,10 +781,10 @@ const ChatPage = () => {
             <DialogHeader>
               <DialogTitle className="text-lg">Rename chat</DialogTitle>
             </DialogHeader>
-            <input
+            <Input
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary transition-colors"
+              className="h-12 rounded-2xl border-border/50 bg-secondary/30 text-sm"
               onKeyDown={(e) => e.key === "Enter" && handleRename()}
               autoFocus />
             
