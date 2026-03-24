@@ -65,17 +65,26 @@ const FilesPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isGenerating]);
 
+  const inputRef2 = useRef(input);
+  useEffect(() => { inputRef2.current = input; }, [input]);
+
   useEffect(() => {
-    if (input) return;
+    if (inputRef2.current) { setDisplayedPlaceholder(""); return; }
     const target = FILE_PLACEHOLDERS[placeholderIdx];
     let i = 0;
     setDisplayedPlaceholder("");
     const t = setInterval(() => {
+      if (inputRef2.current) { clearInterval(t); setDisplayedPlaceholder(""); return; }
       if (i < target.length) { setDisplayedPlaceholder(target.slice(0, i + 1)); i++; }
       else { clearInterval(t); setTimeout(() => setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length), 2500); }
     }, 50);
     return () => clearInterval(t);
-  }, [placeholderIdx, input]);
+  }, [placeholderIdx]);
+
+  useEffect(() => {
+    if (input) { setDisplayedPlaceholder(""); }
+    else if (!input) { setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length); }
+  }, [input]);
 
   // Auto-resize textarea
   useEffect(() => {
