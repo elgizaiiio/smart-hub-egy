@@ -1139,6 +1139,10 @@ export type Database = {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_invite_for_current_user: {
+        Args: { p_invite_email: string }
+        Returns: boolean
+      }
       mark_notifications_read: {
         Args: { p_notification_ids?: string[]; p_user_id: string }
         Returns: undefined
