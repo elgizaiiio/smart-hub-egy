@@ -85,6 +85,11 @@ const ChatPage = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
