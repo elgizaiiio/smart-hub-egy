@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -37,16 +37,24 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const placeholderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const placeholderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const valueRef = useRef(value);
+
+  // Keep valueRef in sync without triggering placeholder effect
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   const hasQuestions = !!pendingQuestions?.length;
   const safeQuestionIndex = hasQuestions ? Math.min(questionIndex, pendingQuestions!.length - 1) : 0;
   const currentQuestion = hasQuestions ? pendingQuestions![safeQuestionIndex] : null;
 
+  // Placeholder typing animation - only depends on placeholderIndex and items, NOT value
   useEffect(() => {
     if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
     if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
 
-    if (value) {
+    // If there's text, don't animate
+    if (valueRef.current) {
       setDisplayedPlaceholder("");
       return;
     }
@@ -56,6 +64,12 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     setDisplayedPlaceholder("");
 
     placeholderIntervalRef.current = setInterval(() => {
+      // Stop if user started typing
+      if (valueRef.current) {
+        if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
+        setDisplayedPlaceholder("");
+        return;
+      }
       if (charIndex < target.length) {
         setDisplayedPlaceholder(target.slice(0, charIndex + 1));
         charIndex += 1;
@@ -71,7 +85,19 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
       if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
       if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
     };
-  }, [placeholderIndex, value, items]);
+  }, [placeholderIndex, items]);
+
+  // Clear placeholder when user types
+  useEffect(() => {
+    if (value) {
+      setDisplayedPlaceholder("");
+      if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
+      if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
+    } else if (!value && !placeholderIntervalRef.current) {
+      // Restart animation when input becomes empty
+      setPlaceholderIndex((prev) => (prev + 1) % items.length);
+    }
+  }, [value, items]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -80,18 +106,18 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     }
   };
 
-  const autoResize = () => {
+  const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (el) {
       el.style.height = "auto";
       const maxH = typeof window !== "undefined" && window.innerWidth < 768 ? 120 : 160;
       el.style.height = Math.min(el.scrollHeight, maxH) + "px";
     }
-  };
+  }, []);
 
   useEffect(() => {
     autoResize();
-  }, [value]);
+  }, [value, autoResize]);
 
   useEffect(() => {
     setQuestionIndex(0);
@@ -124,11 +150,11 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
       <div className="rounded-[2rem] border border-border/50 bg-background/35 backdrop-blur-xl overflow-hidden shadow-[0_18px_60px_hsl(var(--foreground)/0.08)]">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
-              <motion.div
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-                className="border-b border-border/30 bg-secondary/15"
+              className="border-b border-border/30 bg-secondary/15"
             >
               <div className="p-3.5">
                 <div className="flex items-center justify-between mb-2 gap-2">
@@ -140,7 +166,6 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                     </button>
                   </div>
                 </div>
-
                 <div className="flex flex-wrap gap-1.5">
                   {currentQuestion.options.map((opt, i) => (
                     <button
@@ -152,7 +177,6 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                     </button>
                   ))}
                 </div>
-
                 {currentQuestion.allowText && (
                   <div className="flex items-center gap-2 mt-2">
                     <input
@@ -163,10 +187,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                       onChange={(e) => setQuestionInput(e.target.value)}
                       onKeyDown={(e) => {
                         e.stopPropagation();
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleQuestionTextSend();
-                        }
+                        if (e.key === "Enter") { e.preventDefault(); handleQuestionTextSend(); }
                       }}
                       placeholder="Type your answer..."
                       className="flex-1 bg-transparent border-none px-1 py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
@@ -186,7 +207,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           )}
         </AnimatePresence>
 
-          <div className="relative flex items-end gap-2 px-3 py-3">
+        <div className="relative flex items-end gap-2 px-3 py-3">
           <button
             onClick={onPlusClick}
             className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors mb-0.5"
@@ -195,16 +216,16 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             <Plus className="w-4 h-4" />
           </button>
 
-            <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={displayedPlaceholder}
+              placeholder={displayedPlaceholder || " "}
               rows={1}
-                className="w-full bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
-                style={{ minHeight: "36px" }}
+              className="w-full bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
+              style={{ minHeight: "36px" }}
             />
           </div>
 

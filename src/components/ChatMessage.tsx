@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import { Copy, ThumbsUp, ThumbsDown, Check, Play, FileUp, Share2, Pencil, Type, Ellipsis } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
@@ -81,7 +81,6 @@ const wrapCodeForPreview = (lang: string, code: string): string => {
   if (["html", "htm"].includes(lang.toLowerCase())) {
     return code;
   }
-  // For JS/JSX/TSX, wrap in a basic HTML page
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111}</style>
@@ -287,42 +286,39 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             {content}
           </div>
 
-          {menuOpen && (
-            <>
-              <button aria-label="Close user message menu" className="fixed inset-0 z-40 cursor-default" onClick={closeMenu} />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96, y: 6 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 6 }}
-                className="fixed z-50 w-[min(88vw,18rem)] overflow-hidden rounded-[1.5rem] border border-border/50 bg-popover/90 backdrop-blur-xl shadow-[0_24px_80px_hsl(var(--foreground)/0.18)]"
-                style={{ left: `min(${menuPosition.x}px, calc(100vw - 19rem))`, top: `min(${menuPosition.y}px, calc(100vh - 18rem))` }}
-              >
-                <div className="px-4 py-3 border-b border-border/40 bg-secondary/20">
-                  <p className="text-sm font-medium text-foreground">Message actions</p>
-                  <p className="text-[11px] text-muted-foreground">Choose what to do with this message</p>
-                </div>
-                <div className="p-2">
-                  {[
-                    { icon: Copy, label: "Copy", action: async () => { await handleCopy(); closeMenu(); } },
-                    { icon: Share2, label: "Share", action: async () => { await handleUserShare(); closeMenu(); } },
-                    { icon: Pencil, label: "Edit", action: () => { onEditUserMessage?.(content); closeMenu(); } },
-                    { icon: Type, label: "Select text", action: async () => { await handleSelectText(); closeMenu(); } },
-                  ].map(({ icon: Icon, label, action }) => (
-                    <button
-                      key={label}
-                      onClick={action}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-foreground hover:bg-accent/40 transition-colors"
-                    >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary/40 text-muted-foreground">
-                        <Icon className="w-4 h-4" />
-                      </span>
-                      <span>{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            </>
-          )}
+          <AnimatePresence>
+            {menuOpen && (
+              <>
+                <button aria-label="Close" className="fixed inset-0 z-40 cursor-default" onClick={closeMenu} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.92 }}
+                  transition={{ duration: 0.18 }}
+                  className="fixed z-50 overflow-hidden rounded-2xl border border-border/40 bg-popover/95 backdrop-blur-2xl shadow-[0_24px_80px_hsl(var(--foreground)/0.2)]"
+                  style={{ left: `min(${menuPosition.x}px, calc(100vw - 14rem))`, top: `min(${menuPosition.y}px, calc(100vh - 14rem))`, width: "13rem" }}
+                >
+                  <div className="p-1.5">
+                    {[
+                      { icon: Copy, label: "Copy", action: async () => { await handleCopy(); closeMenu(); } },
+                      { icon: Share2, label: "Share", action: async () => { await handleUserShare(); closeMenu(); } },
+                      { icon: Pencil, label: "Edit", action: () => { onEditUserMessage?.(content); closeMenu(); } },
+                      { icon: Type, label: "Select text", action: async () => { await handleSelectText(); closeMenu(); } },
+                    ].map(({ icon: Icon, label, action }) => (
+                      <button
+                        key={label}
+                        onClick={action}
+                        className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-foreground hover:bg-accent/50 transition-colors"
+                      >
+                        <Icon className="w-4 h-4 text-muted-foreground" />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
@@ -356,30 +352,12 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             <div className="space-y-3">
               {structuredBlocks!.map((block, idx) => {
                 if (block.type === "flow") {
-                  return (
-                    <FlowCard
-                      key={idx}
-                      steps={block.data.steps}
-                      onAction={(action, stepTitle) => {
-                        onStructuredAction?.(`${action}: ${stepTitle}`);
-                      }}
-                    />
-                  );
+                  return <FlowCard key={idx} steps={block.data.steps} onAction={(action, stepTitle) => { onStructuredAction?.(`${action}: ${stepTitle}`); }} />;
                 }
                 if (block.type === "cards") {
-                  return (
-                    <InfoCards
-                      key={idx}
-                      items={block.data.items}
-                      onAction={(action, title) => {
-                        onStructuredAction?.(`${action}: ${title}`);
-                      }}
-                    />
-                  );
+                  return <InfoCards key={idx} items={block.data.items} onAction={(action, title) => { onStructuredAction?.(`${action}: ${title}`); }} />;
                 }
-                if (block.type === "questions") {
-                  return null;
-                }
+                if (block.type === "questions") return null;
                 return (
                   <div key={idx} className="prose-chat text-foreground">
                     <MarkdownRenderer content={typeof block.data === "string" ? block.data : JSON.stringify(block.data)} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />
@@ -388,7 +366,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
               })}
             </div>
           ) : (
-            <div className="prose-chat text-foreground bg-transparent border-0 shadow-none">
+            <div className="prose-chat text-foreground">
               <MarkdownRenderer content={content} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />
               {isStreaming && (
                 <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
@@ -396,21 +374,14 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
 
-          {/* Sources - Inline favicons */}
+          {/* Sources */}
           {!isStreaming && uniqueLinks.length > 0 && (
             <div className="mt-3 pt-3 border-t border-border/40">
               <div className="flex items-center gap-3 overflow-x-auto pb-1">
                 {uniqueLinks.slice(0, 8).map((link, i) => (
-                  <a
-                    key={i}
-                    href={link.url}
-                    onClick={(e) => handleLinkClick(e, link.url)}
-                    className="flex flex-col items-center gap-1 shrink-0 group"
-                  >
+                  <a key={i} href={link.url} onClick={(e) => handleLinkClick(e, link.url)} className="flex flex-col items-center gap-1 shrink-0 group">
                     <div className="w-8 h-8 rounded-full bg-secondary/60 border border-border/40 flex items-center justify-center group-hover:border-primary/40 transition-colors">
-                      {getFavicon(link.url) && (
-                        <img src={getFavicon(link.url)!} alt="" className="w-4 h-4 rounded-sm" />
-                      )}
+                      {getFavicon(link.url) && <img src={getFavicon(link.url)!} alt="" className="w-4 h-4 rounded-sm" />}
                     </div>
                     <span className="text-[9px] text-muted-foreground max-w-[56px] truncate">{getDomain(link.url)}</span>
                   </a>
@@ -419,33 +390,33 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
             </div>
           )}
 
-          {/* Action buttons */}
+          {/* Action buttons - icons only, no bg/border */}
           {!isStreaming && content && (
-            <div className="flex items-center gap-2 mt-2">
-              <button onClick={handleCopy} className="p-1 text-muted-foreground/60 hover:text-foreground transition-all active:scale-90 duration-150" title="Copy">
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <div className="flex items-center gap-1 mt-2">
+              <button onClick={handleCopy} className="p-1.5 text-muted-foreground/50 hover:text-foreground transition-colors" title="Copy">
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
               <motion.button
                 onClick={() => onLike?.(liked === true ? null : true)}
-                className={`p-1 transition-all duration-150 ${liked === true ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"}`}
+                className={`p-1.5 transition-colors ${liked === true ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}
                 title="Like"
-                whileTap={{ scale: 1.4 }}
+                whileTap={{ scale: 1.3 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
-                <ThumbsUp className="w-4 h-4" />
+                <ThumbsUp className="w-3.5 h-3.5" />
               </motion.button>
               <motion.button
                 onClick={() => onLike?.(liked === false ? null : false)}
-                className={`p-1 transition-all duration-150 ${liked === false ? "text-destructive" : "text-muted-foreground/60 hover:text-foreground"}`}
+                className={`p-1.5 transition-colors ${liked === false ? "text-destructive" : "text-muted-foreground/50 hover:text-foreground"}`}
                 title="Dislike"
-                whileTap={{ scale: 1.4 }}
+                whileTap={{ scale: 1.3 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
-                <ThumbsDown className="w-4 h-4" />
+                <ThumbsDown className="w-3.5 h-3.5" />
               </motion.button>
               {onShare && (
-                <button onClick={onShare} className="p-1 text-muted-foreground/60 hover:text-foreground transition-colors" title="Share">
-                  <Ellipsis className="w-4 h-4" />
+                <button onClick={onShare} className="p-1.5 text-muted-foreground/50 hover:text-foreground transition-colors" title="More">
+                  <Ellipsis className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -453,7 +424,6 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
         </>
       )}
 
-      {/* Code Preview Modal */}
       {previewCode && (
         <CodePreviewModal
           code={previewCode.code}
