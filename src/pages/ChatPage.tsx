@@ -543,6 +543,7 @@ const ChatPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
+  const handleDelete = async () => {
     if (!conversationId) return;
     await supabase.from("messages").delete().eq("conversation_id", conversationId);
     await supabase.from("conversations").delete().eq("id", conversationId);
