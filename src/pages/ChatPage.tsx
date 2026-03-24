@@ -892,10 +892,97 @@ const ChatPage = () => {
               className="h-12 rounded-2xl border-border/50 bg-secondary/30 text-sm"
               onKeyDown={(e) => e.key === "Enter" && handleRename()}
               autoFocus />
-            
             <div className="flex justify-end gap-2">
               <button onClick={() => setIsRenaming(false)} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">Cancel</button>
               <button onClick={handleRename} className="px-4 py-2 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity">Save</button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Invite Dialog */}
+        <Dialog open={inviteDialogOpen} onOpenChange={(open) => { setInviteDialogOpen(open); if (!open) { setInviteLink(null); setInviteEmail(""); } }}>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[420px] p-0 gap-0 overflow-hidden rounded-2xl">
+            <div className="px-5 pt-5 pb-3">
+              <DialogHeader className="mb-0">
+                <DialogTitle className="text-base font-semibold text-left flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Invite to conversation
+                </DialogTitle>
+                <DialogDescription className="text-xs text-left">Invite someone to join and chat together with AI</DialogDescription>
+              </DialogHeader>
+            </div>
+
+            <div className="px-5 pb-4 space-y-4">
+              {/* Email invite */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Invite by email</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="friend@example.com"
+                      className="h-11 pl-9 rounded-xl border-border/50 bg-secondary/30 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && handleSendInviteEmail()}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSendInviteEmail}
+                    disabled={inviteLoading || !inviteEmail.trim()}
+                    className="px-4 h-11 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-[10px] text-muted-foreground uppercase">or</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              {/* Link invite */}
+              {inviteLink ? (
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2.5 overflow-hidden">
+                  <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{inviteLink}</span>
+                  <button onClick={handleCopyInviteLink} className="shrink-0 p-2 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors">
+                    <Copy className="w-4 h-4 text-foreground" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleGenerateInviteLink}
+                  disabled={inviteLoading}
+                  className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-border/50 bg-secondary/20 hover:bg-secondary/40 transition-colors text-sm text-foreground"
+                >
+                  <Link2 className="w-4 h-4" />
+                  Generate invite link
+                </button>
+              )}
+
+              {/* Members list */}
+              {members.length > 0 && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-[10px] text-muted-foreground uppercase mb-2">Members ({members.length + 1})</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">You</div>
+                      <span className="text-xs text-foreground">Owner</span>
+                    </div>
+                    {members.map((m) => (
+                      <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
+                        <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-muted-foreground">
+                          {m.email ? m.email[0].toUpperCase() : "?"}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{m.role}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
