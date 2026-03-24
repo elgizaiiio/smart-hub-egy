@@ -520,7 +520,29 @@ const ChatPage = () => {
     })();
   }, []);
 
-  const handleDelete = async () => {
+  // Realtime subscription for new members joining
+  useEffect(() => {
+    if (!conversationId) return;
+    const channel = supabase
+      .channel(`members-${conversationId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "conversation_members",
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) => {
+        const newMember = payload.new as any;
+        setMembers((prev) => {
+          if (prev.some((m) => m.id === newMember.user_id)) return prev;
+          return [...prev, { id: newMember.user_id, email: "", role: newMember.role }];
+        });
+        toast.success("A new member joined!");
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [conversationId]);
+
     if (!conversationId) return;
     await supabase.from("messages").delete().eq("conversation_id", conversationId);
     await supabase.from("conversations").delete().eq("id", conversationId);
