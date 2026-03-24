@@ -50,6 +50,82 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_invites: {
+        Row: {
+          accepted_by: string | null
+          conversation_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          invite_email: string | null
+          invite_token: string
+          invited_by: string
+          status: string
+        }
+        Insert: {
+          accepted_by?: string | null
+          conversation_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invite_email?: string | null
+          invite_token?: string
+          invited_by: string
+          status?: string
+        }
+        Update: {
+          accepted_by?: string | null
+          conversation_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invite_email?: string | null
+          invite_token?: string
+          invited_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_invites_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_members: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_summaries: {
         Row: {
           conversation_id: string
@@ -1058,6 +1134,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      is_conversation_member: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
       }
       mark_notifications_read: {
         Args: { p_notification_ids?: string[]; p_user_id: string }
