@@ -637,7 +637,11 @@ const ChatPage = () => {
           </div>
 
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <button onClick={() => navigate("/pricing")} className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors text-xs font-medium">
+              <Crown className="w-3.5 h-3.5 text-primary" />
+              <span className="text-primary">Unlock Pro</span>
+            </button>
             {hasConversation && conversationId &&
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
