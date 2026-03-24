@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2 } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -520,6 +520,29 @@ const ChatPage = () => {
     })();
   }, []);
 
+  // Realtime subscription for new members joining
+  useEffect(() => {
+    if (!conversationId) return;
+    const channel = supabase
+      .channel(`members-${conversationId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "conversation_members",
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) => {
+        const newMember = payload.new as any;
+        setMembers((prev) => {
+          if (prev.some((m) => m.id === newMember.user_id)) return prev;
+          return [...prev, { id: newMember.user_id, email: "", role: newMember.role }];
+        });
+        toast.success("A new member joined!");
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [conversationId]);
+
   const handleDelete = async () => {
     if (!conversationId) return;
     await supabase.from("messages").delete().eq("conversation_id", conversationId);
@@ -637,7 +660,11 @@ const ChatPage = () => {
           </div>
 
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <button onClick={() => navigate("/pricing")} className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors text-xs font-medium">
+              <Crown className="w-3.5 h-3.5 text-primary" />
+              <span className="text-primary">Unlock Pro</span>
+            </button>
             {hasConversation && conversationId &&
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
