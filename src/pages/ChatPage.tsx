@@ -650,7 +650,7 @@ const ChatPage = () => {
               isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
               liked={msg.liked}
               onLike={(liked) => handleLike(i, liked)}
-              onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
+              onShare={undefined}
               onStructuredAction={handleStructuredAction}
               onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
 
