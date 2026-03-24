@@ -403,22 +403,122 @@ const ChatPage = () => {
   };
 
   const handleInvite = async () => {
-    if (!conversationId) return;
-    if (!isShared || !shareId) {
-      setShareMode("public");
-      setShareDialogOpen(true);
+    if (!conversationId) {
+      toast.error("Start a conversation first");
       return;
     }
-    const url = `${window.location.origin}/share/${shareId}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: conversationTitle || "Shared chat", url });
-        return;
-      } catch {}
+    setInviteDialogOpen(true);
+    setInviteLink(null);
+    setInviteEmail("");
+    // Load existing members
+    const { data: memberRows } = await supabase
+      .from("conversation_members")
+      .select("user_id, role")
+      .eq("conversation_id", conversationId);
+    if (memberRows) {
+      setMembers(memberRows.map((m: any) => ({ id: m.user_id, email: "", role: m.role })));
     }
-    await navigator.clipboard.writeText(url);
-    toast.success("Invite link copied");
   };
+
+  const handleSendInviteEmail = async () => {
+    if (!conversationId || !inviteEmail.trim()) return;
+    setInviteLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setInviteLoading(false); return; }
+
+    const { data, error } = await supabase
+      .from("conversation_invites")
+      .insert({
+        conversation_id: conversationId,
+        invited_by: user.id,
+        invite_email: inviteEmail.trim().toLowerCase(),
+      } as any)
+      .select("invite_token")
+      .single();
+
+    if (error) {
+      toast.error("Failed to create invite");
+      setInviteLoading(false);
+      return;
+    }
+
+    const link = `${window.location.origin}/chat?invite=${(data as any).invite_token}`;
+    setInviteLink(link);
+    setInviteLoading(false);
+    toast.success("Invite created!");
+  };
+
+  const handleGenerateInviteLink = async () => {
+    if (!conversationId) return;
+    setInviteLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setInviteLoading(false); return; }
+
+    const { data, error } = await supabase
+      .from("conversation_invites")
+      .insert({
+        conversation_id: conversationId,
+        invited_by: user.id,
+      } as any)
+      .select("invite_token")
+      .single();
+
+    if (error) {
+      toast.error("Failed to create invite link");
+      setInviteLoading(false);
+      return;
+    }
+
+    const link = `${window.location.origin}/chat?invite=${(data as any).invite_token}`;
+    setInviteLink(link);
+    setInviteLoading(false);
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (inviteLink) {
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success("Invite link copied!");
+    }
+  };
+
+  // Accept invite on page load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const inviteToken = params.get("invite");
+    if (!inviteToken) return;
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Please sign in to accept invite"); return; }
+
+      const { data: invite } = await supabase
+        .from("conversation_invites")
+        .select("*")
+        .eq("invite_token", inviteToken)
+        .eq("status", "pending")
+        .single();
+
+      if (!invite) { toast.error("Invalid or expired invite"); return; }
+
+      // Add as member
+      await supabase.from("conversation_members").insert({
+        conversation_id: (invite as any).conversation_id,
+        user_id: user.id,
+        role: "member",
+      } as any);
+
+      // Mark invite as accepted
+      await supabase
+        .from("conversation_invites")
+        .update({ status: "accepted", accepted_by: user.id } as any)
+        .eq("id", (invite as any).id);
+
+      // Load the conversation
+      loadConversation((invite as any).conversation_id);
+      window.history.replaceState({}, "", "/chat");
+      toast.success("You joined the conversation!");
+    })();
+  }, []);
 
   const handleDelete = async () => {
     if (!conversationId) return;
