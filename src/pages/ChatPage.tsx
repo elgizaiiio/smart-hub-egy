@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +85,11 @@ const ChatPage = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [connectorsOpen, setConnectorsOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -398,22 +403,122 @@ const ChatPage = () => {
   };
 
   const handleInvite = async () => {
-    if (!conversationId) return;
-    if (!isShared || !shareId) {
-      setShareMode("public");
-      setShareDialogOpen(true);
+    if (!conversationId) {
+      toast.error("Start a conversation first");
       return;
     }
-    const url = `${window.location.origin}/share/${shareId}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: conversationTitle || "Shared chat", url });
-        return;
-      } catch {}
+    setInviteDialogOpen(true);
+    setInviteLink(null);
+    setInviteEmail("");
+    // Load existing members
+    const { data: memberRows } = await supabase
+      .from("conversation_members")
+      .select("user_id, role")
+      .eq("conversation_id", conversationId);
+    if (memberRows) {
+      setMembers(memberRows.map((m: any) => ({ id: m.user_id, email: "", role: m.role })));
     }
-    await navigator.clipboard.writeText(url);
-    toast.success("Invite link copied");
   };
+
+  const handleSendInviteEmail = async () => {
+    if (!conversationId || !inviteEmail.trim()) return;
+    setInviteLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setInviteLoading(false); return; }
+
+    const { data, error } = await supabase
+      .from("conversation_invites")
+      .insert({
+        conversation_id: conversationId,
+        invited_by: user.id,
+        invite_email: inviteEmail.trim().toLowerCase(),
+      } as any)
+      .select("invite_token")
+      .single();
+
+    if (error) {
+      toast.error("Failed to create invite");
+      setInviteLoading(false);
+      return;
+    }
+
+    const link = `${window.location.origin}/chat?invite=${(data as any).invite_token}`;
+    setInviteLink(link);
+    setInviteLoading(false);
+    toast.success("Invite created!");
+  };
+
+  const handleGenerateInviteLink = async () => {
+    if (!conversationId) return;
+    setInviteLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setInviteLoading(false); return; }
+
+    const { data, error } = await supabase
+      .from("conversation_invites")
+      .insert({
+        conversation_id: conversationId,
+        invited_by: user.id,
+      } as any)
+      .select("invite_token")
+      .single();
+
+    if (error) {
+      toast.error("Failed to create invite link");
+      setInviteLoading(false);
+      return;
+    }
+
+    const link = `${window.location.origin}/chat?invite=${(data as any).invite_token}`;
+    setInviteLink(link);
+    setInviteLoading(false);
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (inviteLink) {
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success("Invite link copied!");
+    }
+  };
+
+  // Accept invite on page load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const inviteToken = params.get("invite");
+    if (!inviteToken) return;
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Please sign in to accept invite"); return; }
+
+      const { data: invite } = await supabase
+        .from("conversation_invites")
+        .select("*")
+        .eq("invite_token", inviteToken)
+        .eq("status", "pending")
+        .single();
+
+      if (!invite) { toast.error("Invalid or expired invite"); return; }
+
+      // Add as member
+      await supabase.from("conversation_members").insert({
+        conversation_id: (invite as any).conversation_id,
+        user_id: user.id,
+        role: "member",
+      } as any);
+
+      // Mark invite as accepted
+      await supabase
+        .from("conversation_invites")
+        .update({ status: "accepted", accepted_by: user.id } as any)
+        .eq("id", (invite as any).id);
+
+      // Load the conversation
+      loadConversation((invite as any).conversation_id);
+      window.history.replaceState({}, "", "/chat");
+      toast.success("You joined the conversation!");
+    })();
+  }, []);
 
   const handleDelete = async () => {
     if (!conversationId) return;
@@ -787,10 +892,97 @@ const ChatPage = () => {
               className="h-12 rounded-2xl border-border/50 bg-secondary/30 text-sm"
               onKeyDown={(e) => e.key === "Enter" && handleRename()}
               autoFocus />
-            
             <div className="flex justify-end gap-2">
               <button onClick={() => setIsRenaming(false)} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">Cancel</button>
               <button onClick={handleRename} className="px-4 py-2 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity">Save</button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Invite Dialog */}
+        <Dialog open={inviteDialogOpen} onOpenChange={(open) => { setInviteDialogOpen(open); if (!open) { setInviteLink(null); setInviteEmail(""); } }}>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[420px] p-0 gap-0 overflow-hidden rounded-2xl">
+            <div className="px-5 pt-5 pb-3">
+              <DialogHeader className="mb-0">
+                <DialogTitle className="text-base font-semibold text-left flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Invite to conversation
+                </DialogTitle>
+                <DialogDescription className="text-xs text-left">Invite someone to join and chat together with AI</DialogDescription>
+              </DialogHeader>
+            </div>
+
+            <div className="px-5 pb-4 space-y-4">
+              {/* Email invite */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Invite by email</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="friend@example.com"
+                      className="h-11 pl-9 rounded-xl border-border/50 bg-secondary/30 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && handleSendInviteEmail()}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSendInviteEmail}
+                    disabled={inviteLoading || !inviteEmail.trim()}
+                    className="px-4 h-11 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-[10px] text-muted-foreground uppercase">or</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              {/* Link invite */}
+              {inviteLink ? (
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2.5 overflow-hidden">
+                  <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{inviteLink}</span>
+                  <button onClick={handleCopyInviteLink} className="shrink-0 p-2 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors">
+                    <Copy className="w-4 h-4 text-foreground" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleGenerateInviteLink}
+                  disabled={inviteLoading}
+                  className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-border/50 bg-secondary/20 hover:bg-secondary/40 transition-colors text-sm text-foreground"
+                >
+                  <Link2 className="w-4 h-4" />
+                  Generate invite link
+                </button>
+              )}
+
+              {/* Members list */}
+              {members.length > 0 && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-[10px] text-muted-foreground uppercase mb-2">Members ({members.length + 1})</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">You</div>
+                      <span className="text-xs text-foreground">Owner</span>
+                    </div>
+                    {members.map((m) => (
+                      <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
+                        <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-muted-foreground">
+                          {m.email ? m.email[0].toUpperCase() : "?"}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{m.role}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
