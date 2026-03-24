@@ -441,8 +441,8 @@ const ChatPage = () => {
 
   const renderPlusMenu = (isMobile: boolean) =>
   <>
-      <div className="fixed inset-0 z-30" onClick={() => setPlusMenuOpen(false)} />
-      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-3 w-72">
+      <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] glass-panel p-3 w-72">
         <div className="grid grid-cols-3 gap-2 mb-3">
           <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
             <Camera className="w-5 h-5 text-muted-foreground" />
@@ -650,7 +650,7 @@ const ChatPage = () => {
               isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
               liked={msg.liked}
               onLike={(liked) => handleLike(i, liked)}
-              onShare={msg.role === "assistant" && conversationId ? handleShare : undefined}
+              onShare={undefined}
               onStructuredAction={handleStructuredAction}
               onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
 
