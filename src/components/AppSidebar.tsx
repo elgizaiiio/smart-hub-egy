@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Pin, Crown } from "lucide-react";
+import { Pin, Coins, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import FancyButton from "@/components/FancyButton";
 
 interface Conversation {
   id: string;
@@ -30,6 +29,15 @@ const serviceItems = [
   { path: "/files", label: "Files" },
 ];
 
+const COLOR_PALETTES = [
+  { from: "hsl(230, 60%, 15%)", to: "hsl(250, 50%, 25%)", accent: "hsl(240, 70%, 40%)" }, // Navy
+  { from: "hsl(270, 50%, 18%)", to: "hsl(290, 45%, 28%)", accent: "hsl(280, 60%, 40%)" }, // Purple
+  { from: "hsl(170, 50%, 14%)", to: "hsl(160, 45%, 24%)", accent: "hsl(165, 60%, 35%)" }, // Teal
+  { from: "hsl(340, 45%, 18%)", to: "hsl(350, 40%, 28%)", accent: "hsl(345, 55%, 40%)" }, // Rose
+  { from: "hsl(25, 50%, 16%)", to: "hsl(35, 45%, 26%)", accent: "hsl(30, 60%, 38%)" },   // Amber
+  { from: "hsl(210, 20%, 14%)", to: "hsl(220, 18%, 24%)", accent: "hsl(215, 25%, 35%)" }, // Slate
+];
+
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,6 +46,12 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const [userEmail, setUserEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
+
+  // Random color palette on each open
+  const palette = useMemo(() => {
+    if (!open) return COLOR_PALETTES[0];
+    return COLOR_PALETTES[Math.floor(Math.random() * COLOR_PALETTES.length)];
+  }, [open]);
 
   const showRecent = ["chat", "code", "images", "videos", "files"].includes(currentMode);
 
@@ -89,7 +103,10 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 bottom-0 z-50 w-[280px] flex flex-col overflow-hidden sidebar-fancy-bg"
+            className="fixed left-0 top-0 bottom-0 z-50 w-[280px] flex flex-col overflow-hidden rounded-r-2xl"
+            style={{
+              background: `linear-gradient(180deg, ${palette.from} 0%, ${palette.to} 100%)`,
+            }}
           >
             {/* Animated particles overlay */}
             <div className="sidebar-points-wrapper">
@@ -102,9 +119,10 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               <div className="p-3">
                 <button
                   onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
-                  className="w-full px-3 py-3 text-left text-sm font-medium text-white/90 hover:text-white transition-colors"
+                  className="w-full px-4 py-3 text-left text-sm font-medium text-white/90 hover:text-white transition-colors bg-white/15 rounded-xl flex items-center gap-2 hover:bg-white/20"
                 >
-                  + New chat
+                  <Plus className="w-4 h-4" />
+                  New chat
                 </button>
               </div>
 
@@ -169,14 +187,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               {!showRecent && <div className="flex-1" />}
 
               <div className="p-3 space-y-2">
-                {/* Unlock Pro */}
-                <div className="px-1">
-                  <FancyButton onClick={() => { navigate("/pricing"); onClose(); }} className="w-full">
-                    <Crown className="w-4 h-4" />
-                    Unlock Pro
-                  </FancyButton>
-                </div>
-
                 {/* Credits bar */}
                 <div className="px-2 py-2">
                   <div className="flex items-center justify-between mb-1.5">
@@ -188,23 +198,32 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                   </div>
                 </div>
 
-                {/* User info */}
-                <button
-                  onClick={() => { navigate("/settings"); onClose(); }}
-                  className="w-full flex items-center gap-3 px-2 py-2.5 text-left rounded-lg hover:bg-white/5 transition-colors"
-                >
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-sm font-medium text-white">
-                      {initial}
+                {/* User info + Credits icon */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { navigate("/settings"); onClose(); }}
+                    className="flex-1 flex items-center gap-3 px-2 py-2.5 text-left rounded-xl bg-white/10 hover:bg-white/15 transition-colors"
+                  >
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-sm font-medium text-white">
+                        {initial}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white/90 truncate">{userName}</p>
+                      <p className="text-[11px] text-white/40 truncate">{userEmail || "Free Plan"}</p>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white/90 truncate">{userName}</p>
-                    <p className="text-[11px] text-white/40 truncate">{userEmail || "Free Plan"}</p>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={() => { navigate("/pricing"); onClose(); }}
+                    className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors shrink-0"
+                    title="Credits & Plans"
+                  >
+                    <Coins className="w-4 h-4 text-white/70" />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.aside>
