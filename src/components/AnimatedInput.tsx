@@ -207,13 +207,13 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           )}
         </AnimatePresence>
 
-        <div className="relative flex items-end gap-2 px-3 py-3">
+        <div className="relative flex items-center gap-2 px-3 py-3">
           <button
             onClick={onPlusClick}
-            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors mb-0.5"
+            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Open attachments"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
           </button>
 
           <div className="flex-1 min-w-0">
@@ -232,19 +232,19 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           {isLoading ? (
             <button
               onClick={onCancel}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all animate-pulse-slow mb-0.5"
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all animate-pulse-slow"
               aria-label="Stop generation"
             >
-              <Square className="w-3 h-3" />
+              <Square className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button
               onClick={onSend}
               disabled={!value.trim() || disabled}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed mb-0.5"
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
               aria-label="Send message"
             >
-              <ArrowUp className="w-3.5 h-3.5" />
+              <ArrowUp className="w-4 h-4" />
             </button>
           )}
         </div>

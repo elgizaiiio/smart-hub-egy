@@ -67,9 +67,9 @@ serve(async (req) => {
         function: {
           name: "WEB_SEARCH",
           description: isDeepResearch
-            ? "Perform a comprehensive deep research web search. You MUST call this tool MULTIPLE TIMES (at least 3-5 searches) with different queries to gather comprehensive information from multiple angles. Search for: overview, recent developments, expert opinions, data/statistics, and counterarguments. Be thorough and exhaustive."
+            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 6-10 TIMES with different queries to gather exhaustive information from every possible angle. Divide your research into sub-tasks: overview, latest news, expert analysis, data/statistics, case studies, counterarguments, future outlook, and related images. Always set include_images=true for at least half your searches."
             : "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data. Do NOT search for casual greetings or simple conversational messages.",
-          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results." } }, required: ["query"] },
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results. Always true for deep research." } }, required: ["query"] },
         },
       },
     ] : [];
@@ -95,21 +95,22 @@ serve(async (req) => {
       const identityLine = isMegsyModel
         ? "- Your name is Megsy. You were created by Megsy AI company. Never mention Google, Gemini, or any other company as your creator."
         : "";
-      systemPrompt = `You are Megsy, a Deep Research AI assistant made by Megsy AI. The current year is 2026. Rules:
+      systemPrompt = `You are Megsy, a Deep Research AI Agent made by Megsy AI. The current year is 2026. Rules:
 ${identityLine}
-- You are in DEEP RESEARCH mode. Your job is to conduct thorough, comprehensive research on the user's topic.
-- You MUST use the WEB_SEARCH tool MULTIPLE TIMES (3-5+ different searches) to gather information from various angles.
+- You are in DEEP RESEARCH mode. Your job is to conduct the most thorough, exhaustive research possible on the user's topic.
+- You MUST use the WEB_SEARCH tool AT LEAST 6-10 TIMES with different queries to gather information from every possible angle.
+- Divide your research into sub-tasks: 1) General overview 2) Latest developments 3) Expert opinions 4) Data & statistics 5) Case studies 6) Counterarguments 7) Future outlook 8) Visual references
+- For at least half your searches, set include_images=true to gather relevant images.
 - After gathering all information, synthesize it into a comprehensive, well-structured research report.
-- Your report should include: Executive Summary, Key Findings, Detailed Analysis, Data & Statistics, Expert Opinions, Counterarguments/Limitations, and Conclusion.
+- Your report should include: Executive Summary, Key Findings, Detailed Analysis with sub-sections, Data & Statistics (use tables), Expert Opinions, Counterarguments/Limitations, Visual Evidence (reference the images), and Conclusion with Actionable Recommendations.
 - Use markdown formatting extensively: headers (##, ###), bold, bullet points, numbered lists, and tables where appropriate.
-- Cite all sources with links in the format [Source Name](URL).
+- Cite ALL sources with links in the format [Source Name](URL).
 - Match the user's language and dialect exactly.
-- Be thorough - aim for at least 1500-2000 words in your final report.
+- Be extremely thorough - aim for at least 2000-3000 words in your final report.
 - Include relevant images when available by using the include_images parameter in your searches.
 - Never use emoji.
-- Always end with follow-up questions for deeper exploration.`;
+- Always end with 3-5 follow-up questions for deeper exploration.`;
     } else {
-      const isMegsyModel = true; // Always Megsy now
       const identityLine = "- Your name is Megsy. You were created by Megsy AI company. If anyone asks who made you or what model you are, say you are Megsy, built by Megsy AI. Never mention Google, Gemini, or any other company as your creator.";
 
       systemPrompt = `You are Megsy, a smart AI Agent and the user's buddy. The current year is 2026. Rules:
@@ -128,7 +129,7 @@ ${identityLine}
 
 SMART OUTPUT ROUTING - Choose the best format for your response:
 
-1. When the user's request is ambiguous or has multiple possible directions, output a JSON block to ask clarifying questions:
+1. When the user's request is ambiguous or has multiple possible directions, output a JSON block to ask clarifying questions. IMPORTANT: Always add a line before the JSON block saying "Choose from the options below:" or similar guidance so the user knows these are interactive:
 \`\`\`json
 {"type":"questions","questions":[{"title":"What do you want?","options":["Option A","Option B","Option C"],"allowText":true}]}
 \`\`\`
@@ -140,20 +141,30 @@ SMART OUTPUT ROUTING - Choose the best format for your response:
 {"type":"flow","steps":[{"title":"Step 1","description":"Description here","actions":["Execute","Details"]},{"title":"Step 2","description":"Description here","actions":["Execute"]}]}
 \`\`\`
 
-3. When presenting multiple ideas, suggestions, or options as a grid, use Info Cards:
+3. When presenting multiple ideas, suggestions, or options as a grid, use Info Cards. Always add "Click on any card below:" before the JSON:
 \`\`\`json
 {"type":"cards","items":[{"title":"Idea 1","description":"Description","action":"Learn more"},{"title":"Idea 2","description":"Description","action":"Try it"}]}
 \`\`\`
 
-4. For comparisons, use markdown tables.
-5. For code, use markdown code blocks.
-6. For simple answers, use plain text.
+4. For SHOPPING results, use Info Cards with image and link fields:
+\`\`\`json
+{"type":"cards","items":[{"title":"Product Name","description":"Price - Brief description","action":"Buy","image":"https://image-url","link":"https://store-url"}]}
+\`\`\`
+
+5. When a tool or integration is not connected, output a Connect card:
+\`\`\`json
+{"type":"cards","items":[{"title":"Connect Google","description":"This action requires connecting your Google account","action":"Connect"}]}
+\`\`\`
+
+6. For comparisons, use markdown tables.
+7. For code, use markdown code blocks.
+8. For simple answers, use plain text.
 
 You can mix text with structured blocks. Add explanatory text before or after JSON blocks.
 
-- You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). When the user asks to perform actions with these services, use the appropriate tool. If a tool call fails because the user hasn't connected the service, tell them to connect it from Settings > Integrations.`;
+- You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). When the user asks to perform actions with these services, use the appropriate tool. If a tool call fails because the user hasn't connected the service, output a Connect card as shown above.`;
       if (searchEnabled || wantsHamzaProfile) {
-        systemPrompt += `\n- You have access to a WEB_SEARCH tool. Use it ONLY when the question genuinely needs current or factual information from the internet. For casual conversation, greetings, opinions, or things you already know well, do NOT search. Be smart about when to search. When you do search, synthesize the results naturally and cite sources with links.`;
+        systemPrompt += `\n- You have access to a WEB_SEARCH tool. Use it ONLY when the question genuinely needs current or factual information from the internet. For casual conversation, greetings, opinions, or things you already know well, do NOT search. Be smart about when to search. When you do search, synthesize the results naturally and cite sources with links. When searching for people, always set include_images=true to find their photos.`;
       }
       if (wantsHamzaProfile) {
         systemPrompt += `\n- If the user asks about Hamza Hasan / Hamza Hassan El-Gizaery / حمزة حسن, you MUST call WEB_SEARCH with include_images=true before answering.\n- Prioritize elgiza.site first, then supplement with broader web results.\n- Use the returned images as inline search results, not plain text links.`;
@@ -230,10 +241,8 @@ You can mix text with structured blocks. Add explanatory text before or after JS
             if (data === "[DONE]") {
               // If we have tool calls, execute them
               if (toolCalls.length > 0) {
-                // Process ALL tool calls - for deep research this may be multiple searches
                 const allSearchResults: string[] = [];
                 const allImages: string[] = [];
-                let lastToolCall: any = null;
 
                 for (const tc of toolCalls) {
                   try {
@@ -241,22 +250,22 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                     const toolArgs = JSON.parse(tc.function?.arguments || "{}");
 
                     if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
-                      lastToolCall = tc;
                       const searchQuery = toolArgs.query || "";
-                      const includeImages = toolArgs.include_images ?? false;
+                      // For deep research, always include images
+                      const includeImages = isDeepResearch ? true : (toolArgs.include_images ?? false);
                       
                       const fetches: Promise<Response>[] = [
                         fetch("https://google.serper.dev/search", {
                           method: "POST",
                           headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                          body: JSON.stringify({ q: searchQuery, num: 8 }),
+                          body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 10 : 8 }),
                         }),
                       ];
                       if (includeImages) {
                         fetches.push(fetch("https://google.serper.dev/images", {
                           method: "POST",
                           headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                          body: JSON.stringify({ q: searchQuery, num: 4 }),
+                          body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 6 : 4 }),
                         }));
                       }
 
@@ -276,7 +285,7 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                         if (kg.imageUrl) allImages.push(kg.imageUrl);
                       }
                       if (imageData?.images) {
-                        imageData.images.slice(0, 4).forEach((img: any) => {
+                        imageData.images.slice(0, isDeepResearch ? 6 : 4).forEach((img: any) => {
                           if (img.imageUrl) allImages.push(img.imageUrl);
                         });
                       }
@@ -300,8 +309,10 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                     );
 
                     if (!account) {
-                      const msg = `\n\n---\n**Tool: ${toolName}** - Service not connected. Please connect it from Settings > Integrations first.`;
-                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: msg } }] })}\n\n`));
+                      // Output a connect card instead of plain text
+                      const serviceName = toolName.split("_")[0];
+                      const connectCard = `\n\n\`\`\`json\n{"type":"cards","items":[{"title":"Connect ${serviceName}","description":"This action requires connecting your ${serviceName} account first","action":"Connect"}]}\n\`\`\``;
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: connectCard } }] })}\n\n`));
                       continue;
                     }
 
@@ -350,6 +361,11 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                   ];
 
                   const secondBody: any = { model: modelId, messages: searchMessages, stream: true };
+                  // For deep research, allow more tool calls in second pass
+                  if (isDeepResearch && SERPER_API_KEY) {
+                    secondBody.tools = searchTools;
+                    secondBody.tool_choice = "auto";
+                  }
 
                   const secondResp = await fetch(apiUrl, {
                     method: "POST",
@@ -379,20 +395,38 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                           // Handle additional tool calls from second response (deep research continuation)
                           if (secondToolCalls.length > 0) {
                             const moreResults: string[] = [];
+                            const moreImages: string[] = [];
                             for (const stc of secondToolCalls) {
                               try {
                                 const sToolName = stc.function?.name;
                                 const sToolArgs = JSON.parse(stc.function?.arguments || "{}");
                                 if (sToolName === "WEB_SEARCH" && SERPER_API_KEY) {
-                                  const sr = await fetch("https://google.serper.dev/search", {
-                                    method: "POST",
-                                    headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                                    body: JSON.stringify({ q: sToolArgs.query || "", num: 8 }),
-                                  });
-                                  const sd = await sr.json();
+                                  const includeImgs = isDeepResearch ? true : (sToolArgs.include_images ?? false);
+                                  const fetches2: Promise<Response>[] = [
+                                    fetch("https://google.serper.dev/search", {
+                                      method: "POST",
+                                      headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+                                      body: JSON.stringify({ q: sToolArgs.query || "", num: 8 }),
+                                    }),
+                                  ];
+                                  if (includeImgs) {
+                                    fetches2.push(fetch("https://google.serper.dev/images", {
+                                      method: "POST",
+                                      headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+                                      body: JSON.stringify({ q: sToolArgs.query || "", num: 4 }),
+                                    }));
+                                  }
+                                  const resps2 = await Promise.all(fetches2);
+                                  const sd = await resps2[0].json();
+                                  const id2 = includeImgs && resps2[1] ? await resps2[1].json() : null;
                                   let ctx = `Search: "${sToolArgs.query}"\n`;
                                   if (sd.organic) {
                                     ctx += sd.organic.map((r: any, i: number) => `[${i+1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`).join("\n\n");
+                                  }
+                                  if (id2?.images) {
+                                    id2.images.slice(0, 4).forEach((img: any) => {
+                                      if (img.imageUrl) moreImages.push(img.imageUrl);
+                                    });
                                   }
                                   moreResults.push(ctx);
                                 }
@@ -400,7 +434,7 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                             }
 
                             if (moreResults.length > 0) {
-                              // Third call with all accumulated results
+                              allImages.push(...moreImages);
                               const thirdMessages = [
                                 ...searchMessages,
                                 {
@@ -455,7 +489,6 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                         }
                         try {
                           const p = JSON.parse(d);
-                          // Accumulate tool calls from second response
                           if (p.choices?.[0]?.delta?.tool_calls) {
                             for (const stc of p.choices[0].delta.tool_calls) {
                               const idx = stc.index ?? 0;
@@ -475,7 +508,9 @@ You can mix text with structured blocks. Add explanatory text before or after JS
 
                   // Send images as a special event
                   if (allImages.length > 0) {
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "" } }], images: allImages })}\n\n`));
+                    // Deduplicate images
+                    const uniqueImages = [...new Set(allImages)];
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "" } }], images: uniqueImages })}\n\n`));
                   }
                 }
               }
