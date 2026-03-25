@@ -1,8 +1,14 @@
-import { useState, useRef, useEffect } from "react";
 import { Bell, CreditCard, Settings, Sparkles, Users, CheckCheck } from "lucide-react";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 const typeConfig: Record<string, { icon: typeof Bell; className: string }> = {
   credits: { icon: CreditCard, className: "text-yellow-500" },
@@ -11,23 +17,9 @@ const typeConfig: Record<string, { icon: typeof Bell; className: string }> = {
   referral: { icon: Users, className: "text-green-500" },
 };
 
-interface NotificationBellProps {
-  collapsed?: boolean;
-}
-
-const NotificationBell = ({ collapsed }: NotificationBellProps) => {
+const NotificationBell = () => {
   const { notifications, unreadCount, markAllRead, markOneRead } = useNotifications();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   const renderItem = (n: Notification) => {
     const config = typeConfig[n.type] || typeConfig.system;
@@ -36,13 +28,13 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
       <button
         key={n.id}
         onClick={() => { markOneRead(n.id); }}
-        className={`w-full text-left px-3 py-2.5 flex items-start gap-2.5 rounded-lg transition-colors ${
-          n.read ? "opacity-60" : "bg-sidebar-accent/40"
-        } hover:bg-sidebar-accent/60`}
+        className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${
+          n.read ? "opacity-60" : "bg-accent/30"
+        } hover:bg-accent/40 active:bg-accent/50`}
       >
         <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${config.className}`} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-sidebar-foreground truncate">{n.title}</p>
+          <p className="text-sm font-medium text-foreground truncate">{n.title}</p>
           <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
           <p className="text-[10px] text-muted-foreground mt-1">
             {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
@@ -54,54 +46,50 @@ const NotificationBell = ({ collapsed }: NotificationBellProps) => {
   };
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="relative flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors w-9 h-9"
-        title="Notifications"
-      >
-        <Bell className="w-4 h-4" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div className="absolute bottom-full mb-2 left-0 w-[320px] bg-popover border border-border rounded-xl shadow-lg z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
-            <span className="text-sm font-semibold text-foreground">Notifications</span>
-            <div className="flex items-center gap-1">
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllRead}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  <CheckCheck className="w-3 h-3" />
-                  Mark all read
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="max-h-[340px] overflow-y-auto p-1.5 space-y-0.5">
-            {notifications.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No notifications</p>
-            ) : (
-              notifications.slice(0, 15).map(renderItem)
-            )}
-          </div>
-          <div className="border-t border-border px-3 py-2">
+    <Drawer>
+      <DrawerTrigger asChild>
+        <button
+          className="relative flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors w-9 h-9"
+          title="Notifications"
+        >
+          <Bell className="w-4 h-4" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
+      </DrawerTrigger>
+      <DrawerContent className="max-h-[70vh]">
+        <DrawerHeader className="flex flex-row items-center justify-between px-4 py-3 border-b border-border">
+          <DrawerTitle className="text-base font-semibold">Notifications</DrawerTitle>
+          {unreadCount > 0 && (
             <button
-              onClick={() => { setOpen(false); navigate("/notifications"); }}
-              className="text-xs text-primary hover:underline w-full text-center"
+              onClick={markAllRead}
+              className="text-xs text-primary hover:underline flex items-center gap-1"
             >
-              View all notifications
+              <CheckCheck className="w-3 h-3" />
+              Mark all read
             </button>
-          </div>
+          )}
+        </DrawerHeader>
+        <div className="overflow-y-auto flex-1 divide-y divide-border">
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-12">No notifications</p>
+          ) : (
+            notifications.slice(0, 20).map(renderItem)
+          )}
         </div>
-      )}
-    </div>
+        <div className="border-t border-border px-4 py-3">
+          <button
+            onClick={() => navigate("/notifications")}
+            className="text-xs text-primary hover:underline w-full text-center"
+          >
+            View all notifications
+          </button>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, Crown } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
+import NotificationBell from "@/components/NotificationBell";
 import { streamChat } from "@/lib/streamChat";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
 import {
@@ -164,7 +165,6 @@ const ChatPage = () => {
   };
 
   const handleStructuredAction = (text: string) => {
-    // Handle connect actions - navigate to integrations
     if (text.startsWith("Connect:")) {
       navigate("/settings/integrations");
       return;
@@ -176,15 +176,16 @@ const ChatPage = () => {
     }, 50);
   };
 
+  // Fix: detect smart questions from the LATEST assistant message when streaming completes
   useEffect(() => {
+    if (isLoading) return; // Wait until streaming is done
     const lastMsg = messages[messages.length - 1];
-    if (!lastMsg || lastMsg.role !== "user" || isLoading) return;
-    const assistantMsg = messages.length >= 2 ? messages[messages.length - 2] : null;
-    if (!assistantMsg || assistantMsg.role !== "assistant") return;
+    if (!lastMsg || lastMsg.role !== "assistant") return;
+    
     const jsonBlockRegex = /```json\s*\n?([\s\S]*?)\n?```/g;
     let match;
     const questions: {title: string;options: string[];allowText?: boolean;}[] = [];
-    while ((match = jsonBlockRegex.exec(assistantMsg.content)) !== null) {
+    while ((match = jsonBlockRegex.exec(lastMsg.content)) !== null) {
       try {
         const parsed = JSON.parse(match[1]);
         if (parsed.type === "questions" && parsed.questions) {
@@ -224,6 +225,7 @@ const ChatPage = () => {
     const currentFiles = [...attachedFiles];
     setAttachedFiles([]);
     setIsLoading(true);setIsThinking(true);
+    setPendingQuestions([]); // Clear previous questions on new send
 
     const convId = await createOrUpdateConversation(userInput || "File analysis");
     if (convId) await saveMessage(convId, "user", userInput || `[${currentFiles.length} file(s) attached]`);
@@ -280,6 +282,7 @@ const ChatPage = () => {
     await streamChat({
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
       deepResearch: isDeepResearch,
+      chatMode: chatMode,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
       onDone: async () => {
@@ -304,7 +307,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -413,8 +416,26 @@ const ChatPage = () => {
     if (error) { toast.error("Failed to create invite"); setInviteLoading(false); return; }
     const link = `${window.location.origin}/chat?invite=${(data as any).invite_token}`;
     setInviteLink(link);
+
+    // Send actual invite email
+    try {
+      await supabase.functions.invoke("send-email", {
+        body: {
+          to: inviteEmail.trim().toLowerCase(),
+          template: "invite",
+          user_id: user.id,
+          type: "system",
+          variables: {
+            name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Someone",
+            invite_link: link,
+            app_url: window.location.origin,
+          },
+        },
+      });
+    } catch {}
+
     setInviteLoading(false);
-    toast.success("Invite created!");
+    toast.success("Invite sent!");
   };
 
   const handleGenerateInviteLink = async () => {
@@ -583,51 +604,49 @@ const ChatPage = () => {
           {!hasConversation && (
             <div className="flex-1 flex justify-center">
               <FancyButton onClick={() => navigate("/pricing")}>
-                <Crown className="w-4 h-4" />
                 Unlock Pro
               </FancyButton>
             </div>
           )}
 
-          {hasConversation && conversationId ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 rounded-xl border border-white/10 bg-black/80 backdrop-blur-2xl shadow-xl p-1.5">
-                <DropdownMenuItem onClick={() => navigate("/pricing")} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80 hover:text-white">
-                  <Crown className="w-4 h-4 text-primary" />
-                  Unlock Pro
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="my-1 bg-white/10" />
-                <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
-                  <Share2 className="w-4 h-4 text-white/40" />
-                  Share
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleInvite} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
-                  <UserPlus className="w-4 h-4 text-white/40" />
-                  Invite
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
-                  <Pencil className="w-4 h-4 text-white/40" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleTogglePin} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
-                  <Pin className="w-4 h-4 text-white/40" />
-                  {isPinned ? "Unpin" : "Pin"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="my-1 bg-white/10" />
-                <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-red-400 focus:text-red-400">
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="w-9" /> 
-          )}
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+
+            {hasConversation && conversationId ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl border border-white/10 bg-black/80 backdrop-blur-2xl shadow-xl p-1.5">
+                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
+                    <Share2 className="w-4 h-4 text-white/40" />
+                    Share
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleInvite} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
+                    <UserPlus className="w-4 h-4 text-white/40" />
+                    Invite
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
+                    <Pencil className="w-4 h-4 text-white/40" />
+                    Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleTogglePin} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
+                    <Pin className="w-4 h-4 text-white/40" />
+                    {isPinned ? "Unpin" : "Pin"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-1 bg-white/10" />
+                  <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-red-400 focus:text-red-400">
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="w-9" /> 
+            )}
+          </div>
         </div>
 
         {/* Messages area */}
@@ -697,8 +716,8 @@ const ChatPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Bottom input */}
-        <div className="sticky bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent">
+        {/* Bottom input - floating with blur */}
+        <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
               <AnimatePresence>
                 {chatMode !== "normal" &&

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ImageOff } from "lucide-react";
 
 interface InfoItem {
   title: string;
@@ -50,6 +50,34 @@ const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) =
   return <>{started ? displayed : ""}</>;
 };
 
+const CardImage = ({ src, alt }: { src: string; alt: string }) => {
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  if (error) {
+    return (
+      <div className="w-full h-28 bg-white/5 flex items-center justify-center">
+        <ImageOff className="w-6 h-6 text-white/20" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-28 overflow-hidden relative">
+      {loading && <div className="absolute inset-0 bg-white/5 animate-pulse" />}
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-full object-cover"
+        onError={() => setError(true)}
+        onLoad={() => setLoading(false)}
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
+      />
+    </div>
+  );
+};
+
 const InfoCards = ({ items, onAction }: InfoCardsProps) => {
   const handleCardClick = (item: InfoItem) => {
     if (item.link) {
@@ -57,7 +85,6 @@ const InfoCards = ({ items, onAction }: InfoCardsProps) => {
       return;
     }
     if (item.action && onAction) {
-      // Navigate to integrations for connect actions
       if (item.action === "Connect") {
         onAction(item.action, item.title);
         return;
@@ -80,11 +107,7 @@ const InfoCards = ({ items, onAction }: InfoCardsProps) => {
             onClick={() => isClickable && handleCardClick(item)}
             className={`rounded-xl overflow-hidden ${colorClass} ${isClickable ? "cursor-pointer active:scale-[0.98]" : ""} transition-transform`}
           >
-            {item.image && (
-              <div className="w-full h-28 overflow-hidden">
-                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-              </div>
-            )}
+            {item.image && <CardImage src={item.image} alt={item.title} />}
             <div className="p-3.5 relative">
               <div className="flow-points-wrapper">
                 {Array.from({ length: 8 }).map((_, j) => (
