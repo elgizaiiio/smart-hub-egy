@@ -115,7 +115,7 @@ Always add "Choose from the options below:" before any questions block.
 {"type":"cards","items":[{"title":"Connect Google Drive","description":"This action requires connecting your Google Drive","action":"Connect"}]}
 \`\`\`
 - For PowerPoint requests, return structured JSON slides.`;
-    } else if (chatMode === "shopping" || (latestUserText && /shop|buy|price|product|store|متجر|سعر|شراء|منتج/i.test(latestUserText) && !isDeepResearch)) {
+    } else if (isDeepResearch) {
       const isMegsyModel = requestedModel.includes("gemini-3-flash");
       const identityLine = isMegsyModel
         ? "- Your name is Megsy. You were created by Megsy AI company. Never mention Google, Gemini, or any other company as your creator."
