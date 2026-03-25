@@ -1,113 +1,109 @@
 
 
-# Chat Page Comprehensive Redesign Plan
+# Comprehensive Chat, Files, Sidebar & Notifications Update
 
-This is a large set of changes spanning the input bar, header, sidebar, deep research, shopping mode, notifications, dialogs, and the edge function. Here is the full breakdown.
-
----
-
-## 1. Input Bar Fixes
-
-**Animated placeholder issue**: The current `AnimatedInput` still has potential interference between the placeholder animation and actual typing. Will audit the `useEffect` dependencies and ensure the interval is fully cleared the moment `value` changes, using a stable `useRef` pattern.
-
-**Plus (+) and Send buttons**: Increase icon container size from `w-7/w-8` to `w-9 h-9`, and vertically center them with `items-center` instead of `items-end` on the flex row.
-
-**Plus menu backdrop**: Add stronger `backdrop-blur-2xl bg-black/60` to the menu container and ensure the `fixed inset-0 z-[45]` backdrop click handler closes it reliably.
+This plan covers all the requested changes across multiple files.
 
 ---
 
-## 2. Empty State Centering
+## Changes Overview
 
-Move "Ask Megsy ?" heading and service navigation pills to exact vertical + horizontal center using `flex items-center justify-center h-full`. Remove extra padding that pushes content down.
+### 1. Smart Questions Not Showing
+The smart questions logic in `ChatPage.tsx` (lines 179-196) only checks the PREVIOUS assistant message when a NEW user message arrives. This means questions are never shown at the right time. Fix: detect questions from the LATEST assistant message immediately after streaming completes, not only when a new user message is sent.
 
----
+### 2. Shopping Product Card Images Not Loading
+`InfoCards.tsx` renders `<img src={item.image}>` but shopping mode images come from web search results which may have CORS issues or broken URLs. Add error handling with `onError` fallback and a placeholder. Also ensure the edge function's shopping prompt instructs the AI to use direct image URLs.
 
-## 3. Unlock Pro Button
+### 3. Floating Input Bar (Messages Pass Behind It)
+Currently the bottom input has `sticky bottom-0` with a gradient background. Change to `fixed bottom-0` with fully transparent/blur background so messages scroll freely underneath.
 
-Replace the plain text+Crown button in the header with the `FancyButton` component (same as ProgrammingPage), centered in the header. When a conversation is active, it stays visible alongside the 3-dot menu.
+### 4. Remove Crown Icon from Unlock Pro Button
+In `ChatPage.tsx` header, remove `<Crown>` from the FancyButton. Remove Unlock Pro from the 3-dot dropdown menu entirely.
 
----
+### 5. Remove Unlock Pro from Sidebar
+In `AppSidebar.tsx`, remove the FancyButton/Unlock Pro section (lines 172-178). Add a credits icon button next to the user profile that navigates to `/pricing`.
 
-## 4. Header Behavior on Conversation Start
+### 6. Sidebar "New Chat" Button Redesign
+Give it a visible background: `bg-white/15 rounded-xl` with hover effect, making it stand out.
 
-When `messages.length > 0`:
-- Hide all header content except: sidebar menu button (left) and 3-dot MoreVertical button (right)
-- Both floating, transparent, no background
-- Unlock Pro moves inside the 3-dot dropdown menu
+### 7. Sidebar Random Color on Each Open
+Replace the fixed gradient with a JS-driven random color palette. In `AppSidebar.tsx`, use `useState` with random selection from 6+ color palettes on each mount. Apply via inline `style` on the aside element. Keep the same animation keyframes.
 
-When `messages.length === 0`:
-- Show full header with FancyButton centered
+Color palettes:
+- Navy/Blue (current)
+- Purple/Violet
+- Teal/Emerald
+- Rose/Pink
+- Amber/Orange
+- Slate/Charcoal
 
----
+### 8. User Profile Button Different Color + Credits Icon
+Give the user info button at the bottom a distinct `bg-white/10` background. Add a small coin/credits icon button beside it linking to `/pricing`.
 
-## 5. Full-Height Layout Without Scroll Issues
+### 9. Files Page - Smart File Agent
+Upgrade `FilesPage.tsx` to use the full agent system:
+- Pass `mode: "files"` to the chat edge function (already done)
+- Update the edge function's `files` mode system prompt to include the full Decision Engine: `analyze_file`, `answer`, `extract`, `rewrite`, `generate_document`, `ask_user`, `auto_review`, `multi_file_analysis`, `external_connection_required`
+- Add auto-review behavior: if user uploads file without text, agent automatically reviews
+- Add smart questions support (reuse the same JSON block pattern from chat)
+- Add Connect card support for external services
+- Support PPTX JSON output format
+- Use streaming for the response (already partially done, but improve to show real-time text)
 
-Ensure the chat container uses `h-[100dvh]` with proper flex layout so the header, messages area, and floating input all fit without the input disappearing or requiring scroll on the page itself (only messages scroll).
+### 10. Share & Invite - Make Fully Functional
+The invite system already has DB tables and handlers. Verify invite email sends by checking the edge function. Fix: ensure `handleSendInviteEmail` also sends an actual email via the `send-email` edge function. Fix: ensure invite link works when opened by another user.
 
----
+### 11. Notification System - Mobile Redesign
+Replace the `NotificationBell` popover with a slide-up drawer (using the existing `Drawer` component from vaul). Add a bell icon in the chat header. On tap, open a full-width bottom drawer with notifications list.
 
-## 6. Sidebar Redesign
-
-**Visual overhaul**:
-- Apply FancyButton-style animated gradient background to the sidebar itself (using CSS from `.fancy-btn` adapted for the sidebar panel)
-- All sidebar items: borderless, transparent hover states
-- Add subtle animated particle/glow effects similar to FancyButton's `.points_wrapper`
-
-**Structure**: Keep existing functionality (services, recent chats, user info, credits bar) but with the new visual treatment.
-
----
-
-## 7. Deep Research Mode Improvements
-
-**Edge function changes** (`supabase/functions/chat/index.ts`):
-- Increase search count from 3-5 to 6-10 searches
-- Always include `include_images: true` for deep research searches
-- Add image search calls for every deep research query (not just when explicitly requested)
-- Forward collected images via the `images` SSE event so they render in chat
-- Update system prompt to instruct: "Divide research into sub-tasks, search each thoroughly, include relevant images in your final report"
-
-**Frontend**: Deep research results already render images via `ChatMessage` -- ensure the images array flows through properly.
-
----
-
-## 8. Shopping Mode Enhancement
-
-**Edge function**: Add a shopping-specific system prompt when `chatMode === "shopping"`:
-- Instruct the AI to search multiple stores, extract product info
-- Output product cards as structured JSON blocks:
-  ```json
-  {"type":"cards","items":[{"title":"Product Name","description":"Description + Price","action":"Buy","link":"https://store.com/product","image":"https://..."}]}
-  ```
-- Inject smart questions to clarify: budget, brand preference, features needed
-
-**Frontend** (`InfoCards.tsx`): Extend card rendering to support `image` and `link` fields -- show product image, and make the action button open the store link.
+### 12. Input Bar Placeholder Text Fix
+The placeholder animation in `AnimatedInput.tsx` currently appends `"│"` cursor character in FilesPage but not in ChatPage. Ensure consistency. The main ChatPage AnimatedInput already has the fix with `useRef` pattern - verify it works.
 
 ---
 
-## 9. Search Images for People
+## Technical Details
 
-Already partially implemented. Ensure `include_images: true` is passed for all person-related searches. The images SSE event already renders in `ChatMessage`. Verify the image rendering works by checking the `images` prop flow.
+### Files to modify:
 
----
+1. **`src/pages/ChatPage.tsx`**
+   - Fix smart questions detection: add `useEffect` that checks the latest assistant message for questions blocks when streaming ends
+   - Make input bar `fixed` instead of `sticky`
+   - Remove Crown from FancyButton, remove Unlock Pro from dropdown
+   - Add Bell icon in header opening notification drawer
 
-## 10. Smart Questions Visibility
+2. **`src/components/AnimatedInput.tsx`**
+   - No changes needed (already working)
 
-Add a visual hint when smart questions/cards appear. The AI's system prompt will include: "When presenting interactive options, add a brief line like 'Choose from the options below' or 'Click on any card below' before the JSON block."
+3. **`src/components/InfoCards.tsx`**
+   - Add `onError` handler to `<img>` with fallback placeholder
+   - Add loading state for images
 
----
+4. **`src/components/AppSidebar.tsx`**
+   - Remove FancyButton/Unlock Pro section
+   - New chat button: add `bg-white/15 rounded-xl` background
+   - Random color palette on mount using `useMemo` with random selection
+   - User button: distinct background + credits icon linking to `/pricing`
+   - Pass random gradient colors via inline style
 
-## 11. Integration Connect Button in Chat
+5. **`src/index.css`**
+   - Remove fixed sidebar gradient colors (moved to JS)
 
-When the AI detects a tool call fails (service not connected), it already outputs a text message. Enhance this to include a structured block:
-```json
-{"type":"cards","items":[{"title":"Connect [Service]","description":"This action requires connecting your account","action":"Connect"}]}
-```
-Frontend: When a card with action "Connect" is clicked, navigate to `/settings/integrations`.
+6. **`src/pages/FilesPage.tsx`**
+   - Upgrade to smart agent: auto-review when file uploaded without text
+   - Add structured blocks rendering (questions, cards, flow)
+   - Reuse `ChatMessage` component or add parsing for JSON blocks
+   - Add Connect button support
 
----
+7. **`supabase/functions/chat/index.ts`**
+   - Update `files` mode system prompt with full Decision Engine
+   - Add auto-review instructions
+   - Add smart questions support for files mode
 
-## 12. Dialog Redesigns
+8. **`src/components/NotificationBell.tsx`**
+   - Redesign as a bottom drawer using `Drawer` component
+   - Full-width slide-up panel on mobile
+   - Add to chat header
 
-**Rename dialog**: Glassmorphism style -- `bg-black/80 backdrop-blur-2xl border-white/10 rounded-2xl`. Ensure text stays inside the container with `overflow-hidden` and `truncate` on the generated URL.
+9. **`src/components/ChatMessage.tsx`**
+   - No structural changes needed (questions blocks already return null in structured rendering, which is correct since they're shown in the input bar)
 
-**Share dialog**: Same glass treatment. Fix the URL overflow
