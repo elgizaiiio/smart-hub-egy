@@ -9,6 +9,7 @@ import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
 import ThinkingLoader from "@/components/ThinkingLoader";
+import FancyButton from "@/components/FancyButton";
 import { streamChat } from "@/lib/streamChat";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
 import {
@@ -162,8 +163,12 @@ const ChatPage = () => {
     setPlusMenuOpen(false);
   };
 
-  // Handle structured action from FlowCard, InfoCards
   const handleStructuredAction = (text: string) => {
+    // Handle connect actions - navigate to integrations
+    if (text.startsWith("Connect:")) {
+      navigate("/settings/integrations");
+      return;
+    }
     setInput(text);
     setTimeout(() => {
       setInput(text);
@@ -171,11 +176,9 @@ const ChatPage = () => {
     }, 50);
   };
 
-  // Extract questions from last assistant message and show in input bar
   useEffect(() => {
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || lastMsg.role !== "user" || isLoading) return;
-    // Check the second-to-last (assistant) message for questions
     const assistantMsg = messages.length >= 2 ? messages[messages.length - 2] : null;
     if (!assistantMsg || assistantMsg.role !== "assistant") return;
     const jsonBlockRegex = /```json\s*\n?([\s\S]*?)\n?```/g;
@@ -261,10 +264,7 @@ const ChatPage = () => {
     });
 
     if (currentFiles.some((f) => f.type === "file")) {
-      const fileTexts = currentFiles.
-      filter((f) => f.type === "file").
-      map((f) => `--- File: ${f.name} ---\n${f.data}`).
-      join("\n\n");
+      const fileTexts = currentFiles.filter((f) => f.type === "file").map((f) => `--- File: ${f.name} ---\n${f.data}`).join("\n\n");
       const lastMsg = allMessages[allMessages.length - 1];
       if (typeof lastMsg.content === "string") {
         lastMsg.content = `${lastMsg.content}\n\n${fileTexts}`;
@@ -351,20 +351,14 @@ const ChatPage = () => {
     if (!conversationId) return;
     if (shareMode === "public") {
       const newShareId = shareId || Math.random().toString(36).substring(2, 10);
-      const { error } = await supabase.
-      from("conversations").
-      update({ is_shared: true, share_id: newShareId } as any).
-      eq("id", conversationId);
+      const { error } = await supabase.from("conversations").update({ is_shared: true, share_id: newShareId } as any).eq("id", conversationId);
       if (error) {toast.error("Failed to share");return;}
       setIsShared(true);
       setShareId(newShareId);
       const url = `${window.location.origin}/share/${newShareId}`;
       setGeneratedShareUrl(url);
     } else {
-      await supabase.
-      from("conversations").
-      update({ is_shared: false } as any).
-      eq("id", conversationId);
+      await supabase.from("conversations").update({ is_shared: false } as any).eq("id", conversationId);
       setIsShared(false);
       setGeneratedShareUrl(null);
       toast.success("Chat set to private");
@@ -394,27 +388,17 @@ const ChatPage = () => {
       ? { is_pinned: true, pinned_at: new Date().toISOString() }
       : { is_pinned: false, pinned_at: null };
     const { error } = await supabase.from("conversations").update(payload as any).eq("id", conversationId);
-    if (error) {
-      toast.error("Failed to update pin");
-      return;
-    }
+    if (error) { toast.error("Failed to update pin"); return; }
     setIsPinned(nextPinned);
     toast.success(nextPinned ? "Pinned" : "Unpinned");
   };
 
   const handleInvite = async () => {
-    if (!conversationId) {
-      toast.error("Start a conversation first");
-      return;
-    }
+    if (!conversationId) { toast.error("Start a conversation first"); return; }
     setInviteDialogOpen(true);
     setInviteLink(null);
     setInviteEmail("");
-    // Load existing members
-    const { data: memberRows } = await supabase
-      .from("conversation_members")
-      .select("user_id, role")
-      .eq("conversation_id", conversationId);
+    const { data: memberRows } = await supabase.from("conversation_members").select("user_id, role").eq("conversation_id", conversationId);
     if (memberRows) {
       setMembers(memberRows.map((m: any) => ({ id: m.user_id, email: "", role: m.role })));
     }
@@ -425,23 +409,8 @@ const ChatPage = () => {
     setInviteLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setInviteLoading(false); return; }
-
-    const { data, error } = await supabase
-      .from("conversation_invites")
-      .insert({
-        conversation_id: conversationId,
-        invited_by: user.id,
-        invite_email: inviteEmail.trim().toLowerCase(),
-      } as any)
-      .select("invite_token")
-      .single();
-
-    if (error) {
-      toast.error("Failed to create invite");
-      setInviteLoading(false);
-      return;
-    }
-
+    const { data, error } = await supabase.from("conversation_invites").insert({ conversation_id: conversationId, invited_by: user.id, invite_email: inviteEmail.trim().toLowerCase() } as any).select("invite_token").single();
+    if (error) { toast.error("Failed to create invite"); setInviteLoading(false); return; }
     const link = `${window.location.origin}/chat?invite=${(data as any).invite_token}`;
     setInviteLink(link);
     setInviteLoading(false);
@@ -453,32 +422,15 @@ const ChatPage = () => {
     setInviteLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setInviteLoading(false); return; }
-
-    const { data, error } = await supabase
-      .from("conversation_invites")
-      .insert({
-        conversation_id: conversationId,
-        invited_by: user.id,
-      } as any)
-      .select("invite_token")
-      .single();
-
-    if (error) {
-      toast.error("Failed to create invite link");
-      setInviteLoading(false);
-      return;
-    }
-
+    const { data, error } = await supabase.from("conversation_invites").insert({ conversation_id: conversationId, invited_by: user.id } as any).select("invite_token").single();
+    if (error) { toast.error("Failed to create invite link"); setInviteLoading(false); return; }
     const link = `${window.location.origin}/chat?invite=${(data as any).invite_token}`;
     setInviteLink(link);
     setInviteLoading(false);
   };
 
   const handleCopyInviteLink = async () => {
-    if (inviteLink) {
-      await navigator.clipboard.writeText(inviteLink);
-      toast.success("Invite link copied!");
-    }
+    if (inviteLink) { await navigator.clipboard.writeText(inviteLink); toast.success("Invite link copied!"); }
   };
 
   // Accept invite on page load
@@ -486,60 +438,30 @@ const ChatPage = () => {
     const params = new URLSearchParams(window.location.search);
     const inviteToken = params.get("invite");
     if (!inviteToken) return;
-
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error("Please sign in to accept invite"); return; }
-
-      const { data: invite } = await supabase
-        .from("conversation_invites")
-        .select("*")
-        .eq("invite_token", inviteToken)
-        .eq("status", "pending")
-        .single();
-
+      const { data: invite } = await supabase.from("conversation_invites").select("*").eq("invite_token", inviteToken).eq("status", "pending").single();
       if (!invite) { toast.error("Invalid or expired invite"); return; }
-
-      // Add as member
-      await supabase.from("conversation_members").insert({
-        conversation_id: (invite as any).conversation_id,
-        user_id: user.id,
-        role: "member",
-      } as any);
-
-      // Mark invite as accepted
-      await supabase
-        .from("conversation_invites")
-        .update({ status: "accepted", accepted_by: user.id } as any)
-        .eq("id", (invite as any).id);
-
-      // Load the conversation
+      await supabase.from("conversation_members").insert({ conversation_id: (invite as any).conversation_id, user_id: user.id, role: "member" } as any);
+      await supabase.from("conversation_invites").update({ status: "accepted", accepted_by: user.id } as any).eq("id", (invite as any).id);
       loadConversation((invite as any).conversation_id);
       window.history.replaceState({}, "", "/chat");
       toast.success("You joined the conversation!");
     })();
   }, []);
 
-  // Realtime subscription for new members joining
+  // Realtime for new members
   useEffect(() => {
     if (!conversationId) return;
-    const channel = supabase
-      .channel(`members-${conversationId}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "conversation_members",
-        filter: `conversation_id=eq.${conversationId}`,
-      }, (payload) => {
-        const newMember = payload.new as any;
-        setMembers((prev) => {
-          if (prev.some((m) => m.id === newMember.user_id)) return prev;
-          return [...prev, { id: newMember.user_id, email: "", role: newMember.role }];
-        });
-        toast.success("A new member joined!");
-      })
-      .subscribe();
-
+    const channel = supabase.channel(`members-${conversationId}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "conversation_members", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+      const newMember = payload.new as any;
+      setMembers((prev) => {
+        if (prev.some((m) => m.id === newMember.user_id)) return prev;
+        return [...prev, { id: newMember.user_id, email: "", role: newMember.role }];
+      });
+      toast.success("A new member joined!");
+    }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
@@ -567,49 +489,49 @@ const ChatPage = () => {
 
   const hasConversation = messages.length > 0;
 
-  const renderPlusMenu = (isMobile: boolean) =>
+  const renderPlusMenu = () =>
   <>
       <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] glass-panel p-3 w-72">
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/70 backdrop-blur-2xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
         <div className="grid grid-cols-3 gap-2 mb-3">
-          <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-            <Camera className="w-5 h-5 text-muted-foreground" />
-            <span className="text-[11px] text-foreground">Camera</span>
+          <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
+            <Camera className="w-5 h-5 text-white/60" />
+            <span className="text-[11px] text-white/80">Camera</span>
           </button>
-          <button onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-            <Image className="w-5 h-5 text-muted-foreground" />
-            <span className="text-[11px] text-foreground">Photos</span>
+          <button onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
+            <Image className="w-5 h-5 text-white/60" />
+            <span className="text-[11px] text-white/80">Photos</span>
           </button>
-          <button onClick={() => {fileInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:bg-accent/50 transition-colors">
-            <FileUp className="w-5 h-5 text-muted-foreground" />
-            <span className="text-[11px] text-foreground">Files</span>
+          <button onClick={() => {fileInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
+            <FileUp className="w-5 h-5 text-white/60" />
+            <span className="text-[11px] text-white/80">Files</span>
           </button>
         </div>
-        <div className="border-t border-border pt-2 space-y-1">
-          <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
-            <span className="text-sm text-foreground">Web search</span>
-            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-border justify-start"}`}>
+        <div className="border-t border-white/10 pt-2 space-y-1">
+          <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
+            <span className="text-sm text-white/80">Web search</span>
+            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-white/20 justify-start"}`}>
               <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
             </div>
           </button>
-          <div className="border-t border-border mt-1 pt-1">
-            <p className="text-[10px] text-muted-foreground uppercase px-3 py-1.5">Modes</p>
-            <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-              <span className="text-sm text-foreground">Learning Mode</span>
+          <div className="border-t border-white/10 mt-1 pt-1">
+            <p className="text-[10px] text-white/30 uppercase px-3 py-1.5">Modes</p>
+            <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
+              <span className="text-sm">Learning Mode</span>
               {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
-            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-              <span className="text-sm text-foreground">Shopping Mode</span>
+            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
+              <span className="text-sm">Shopping Mode</span>
               {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
-            <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/10 text-primary" : "hover:bg-accent"}`}>
-              <span className="text-sm text-foreground">Deep Research</span>
+            <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
+              <span className="text-sm">Deep Research</span>
               {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
           </div>
-          <div className="border-t border-border mt-1 pt-1">
-            <button onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-accent transition-colors">
-              <span className="text-sm text-foreground">Integrations</span>
+          <div className="border-t border-white/10 mt-1 pt-1">
+            <button onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-white/5 transition-colors">
+              <span className="text-sm text-white/70">Integrations</span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
             </button>
           </div>
@@ -632,8 +554,10 @@ const ChatPage = () => {
           </div>
         )}
       </div>);
-
   };
+
+  // Glass dialog class
+  const glassDialogClass = "max-w-[calc(100vw-2rem)] sm:max-w-[400px] p-0 gap-0 overflow-hidden rounded-2xl border-white/10 bg-black/80 backdrop-blur-2xl shadow-[0_32px_100px_rgba(0,0,0,0.5)]";
 
   return (
     <AppLayout
@@ -641,7 +565,7 @@ const ChatPage = () => {
       onNewChat={handleNewChat}
       activeConversationId={conversationId}>
       
-      <div className="h-full flex flex-col bg-background overflow-x-hidden">
+      <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -649,168 +573,132 @@ const ChatPage = () => {
           onSelectConversation={loadConversation}
           activeConversationId={conversationId}
           currentMode="chat" />
-        
 
+        {/* Header */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 min-h-[48px] bg-transparent">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setSidebarOpen(true)} className="md:hidden w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="hidden md:block" />
-          </div>
+          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
+            <Menu className="w-5 h-5" />
+          </button>
 
+          {!hasConversation && (
+            <div className="flex-1 flex justify-center">
+              <FancyButton onClick={() => navigate("/pricing")}>
+                <Crown className="w-4 h-4" />
+                Unlock Pro
+              </FancyButton>
+            </div>
+          )}
 
-          <div className="flex items-center gap-1">
-            <button onClick={() => navigate("/pricing")} className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors text-xs font-medium">
-              <Crown className="w-3.5 h-3.5 text-primary" />
-              <span className="text-primary">Unlock Pro</span>
-            </button>
-            {hasConversation && conversationId &&
+          {hasConversation && conversationId ? (
             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="w-8 h-8 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
-                    <MoreVertical className="w-4.5 h-4.5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-lg shadow-xl p-1.5">
-                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Share2 className="w-4 h-4 text-muted-foreground" />
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleInvite} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <UserPlus className="w-4 h-4 text-muted-foreground" />
-                    Invite
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Pencil className="w-4 h-4 text-muted-foreground" />
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleTogglePin} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer">
-                    <Pin className="w-4 h-4 text-muted-foreground" />
-                    {isPinned ? "Unpin" : "Pin"}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1" />
-                  <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            }
-          </div>
+              <DropdownMenuTrigger asChild>
+                <button className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl border border-white/10 bg-black/80 backdrop-blur-2xl shadow-xl p-1.5">
+                <DropdownMenuItem onClick={() => navigate("/pricing")} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80 hover:text-white">
+                  <Crown className="w-4 h-4 text-primary" />
+                  Unlock Pro
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1 bg-white/10" />
+                <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
+                  <Share2 className="w-4 h-4 text-white/40" />
+                  Share
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInvite} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
+                  <UserPlus className="w-4 h-4 text-white/40" />
+                  Invite
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
+                  <Pencil className="w-4 h-4 text-white/40" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleTogglePin} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
+                  <Pin className="w-4 h-4 text-white/40" />
+                  {isPinned ? "Unpin" : "Pin"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1 bg-white/10" />
+                <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-red-400 focus:text-red-400">
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="w-9" /> 
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 relative pb-44 md:pb-52" ref={messagesContainerRef} onScroll={handleScroll}>
-          {messages.length === 0 ?
-          <div className="flex flex-col h-full px-4 pb-40 md:pb-48">
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <PegtopIcon className="text-primary" />
-                    <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
-                  </div>
+        {/* Messages area */}
+        <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full px-4">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <PegtopIcon className="text-primary" />
+                  <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
+                </div>
 
-                  <div className="flex md:hidden items-center justify-center gap-2 mb-6 flex-wrap">
-                    <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                      Photos
-                    </button>
-                    <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                      Files
-                    </button>
-                    <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                      Videos
-                    </button>
-                    <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                      Code
-                    </button>
-                  </div>
-
-                  <div className="hidden md:block w-full max-w-2xl mx-auto space-y-2 mt-4">
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                       <button onClick={handleInvite} className="group flex items-center gap-3 px-4 py-4 rounded-[1.75rem] bg-secondary/25 border border-border/40 hover:bg-secondary/40 hover:border-border/60 transition-colors text-left shadow-[0_16px_44px_hsl(var(--foreground)/0.05)]">
-                         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-background/60 text-primary border border-border/30">
-                           <UserPlus className="w-4 h-4" />
-                         </span>
-                         <span className="min-w-0">
-                           <span className="block text-sm font-medium text-foreground">Invite people</span>
-                           <span className="block text-xs text-muted-foreground">Send a real share link</span>
-                         </span>
-                      </button>
-                       <button onClick={handleShare} className="group flex items-center gap-3 px-4 py-4 rounded-[1.75rem] bg-secondary/25 border border-border/40 hover:bg-secondary/40 hover:border-border/60 transition-colors text-left shadow-[0_16px_44px_hsl(var(--foreground)/0.05)]">
-                         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-background/60 text-primary border border-border/30">
-                           <Share2 className="w-4 h-4" />
-                         </span>
-                         <span className="min-w-0">
-                           <span className="block text-sm font-medium text-foreground">Share chat</span>
-                           <span className="block text-xs text-muted-foreground">Choose private or public access</span>
-                         </span>
-                      </button>
-                       <button onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="group flex items-center gap-3 px-4 py-4 rounded-[1.75rem] bg-secondary/25 border border-border/40 hover:bg-secondary/40 hover:border-border/60 transition-colors text-left shadow-[0_16px_44px_hsl(var(--foreground)/0.05)]">
-                         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-background/60 text-primary border border-border/30">
-                           <Pencil className="w-4 h-4" />
-                         </span>
-                         <span className="min-w-0">
-                           <span className="block text-sm font-medium text-foreground">Rename chat</span>
-                           <span className="block text-xs text-muted-foreground">Update the conversation title</span>
-                         </span>
-                      </button>
-                    </div>
-                    <button
-                    onClick={() => setConnectorsOpen(true)}
-                    className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-secondary/40 border border-border/30 hover:bg-secondary/60 transition-colors">
-                    
-                      <span className="text-xs text-muted-foreground">Connect your tools to Megsy</span>
-                      <span className="text-xs text-primary font-medium">Browse</span>
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-
-
-            </div> :
-
-          <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2">
+                <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+                  <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                    Photos
+                  </button>
+                  <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                    Files
+                  </button>
+                  <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                    Videos
+                  </button>
+                  <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                    Code
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          ) : (
+            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-44 md:pb-52">
               {messages.map((msg, i) =>
-            <ChatMessage
-              key={i}
-              role={msg.role}
-              content={msg.content}
-              images={msg.images}
-              attachedImages={msg.attachedImages}
-              attachedFiles={msg.attachedFiles}
-              isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
-              isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
-              liked={msg.liked}
-              onLike={(liked) => handleLike(i, liked)}
-              onShare={undefined}
-              onStructuredAction={handleStructuredAction}
-              onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
-
-            )}
+                <ChatMessage
+                  key={i}
+                  role={msg.role}
+                  content={msg.content}
+                  images={msg.images}
+                  attachedImages={msg.attachedImages}
+                  attachedFiles={msg.attachedFiles}
+                  isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
+                  isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
+                  liked={msg.liked}
+                  onLike={(liked) => handleLike(i, liked)}
+                  onShare={undefined}
+                  onStructuredAction={handleStructuredAction}
+                  onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
+              )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
-            <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
-            }
+                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
+              }
               {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader />}
               <div ref={messagesEndRef} />
             </div>
-          }
+          )}
 
           <AnimatePresence>
-            {showScrollBtn && messages.length > 0
-
-
-
-
-
-
-
-
-
-            }
+            {showScrollBtn && messages.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={scrollToBottom}
+                className="fixed bottom-36 right-4 z-20 w-9 h-9 rounded-full bg-secondary/80 backdrop-blur-lg border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground shadow-lg transition-colors"
+              >
+                <ArrowDown className="w-4 h-4" />
+              </motion.button>
+            )}
           </AnimatePresence>
         </div>
 
-        <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pointer-events-none">
+        {/* Bottom input */}
+        <div className="sticky bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
               <AnimatePresence>
                 {chatMode !== "normal" &&
@@ -820,7 +708,6 @@ const ChatPage = () => {
                 exit={{ opacity: 0, y: 6 }}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 backdrop-blur-md border border-primary/15 w-fit"
                 style={{ touchAction: "none" }}>
-                
                     <span className="text-xs text-primary font-medium">
                       {chatMode === "learning" ? "Learning" : chatMode === "deep-research" ? "Deep Research" : "Shopping"} Mode
                     </span>
@@ -833,131 +720,123 @@ const ChatPage = () => {
 
               {renderAttachments()}
 
-              <div className="relative mx-auto w-full max-w-3xl rounded-[2rem] bg-background/20 backdrop-blur-xl shadow-[0_20px_80px_hsl(var(--foreground)/0.08)]">
+              <div className="relative mx-auto w-full max-w-3xl">
                 <AnimatePresence>
-                  {plusMenuOpen && renderPlusMenu(window.innerWidth < 768)}
+                  {plusMenuOpen && renderPlusMenu()}
                 </AnimatePresence>
                 <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
               </div>
             </div>
           </div>
 
+        {/* Hidden file inputs */}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.doc,.docx" multiple />
         <input ref={cameraInputRef} type="file" className="hidden" onChange={handleCameraCapture} accept="image/*" capture="environment" />
         <input ref={imageInputRef} type="file" className="hidden" onChange={handleImageUpload} accept="image/*" multiple />
 
-        <ConnectorsDialog
-          open={connectorsOpen}
-          onOpenChange={setConnectorsOpen}
-          onNavigateIntegrations={() => navigate("/settings/integrations")} />
-        
+        <ConnectorsDialog open={connectorsOpen} onOpenChange={setConnectorsOpen} onNavigateIntegrations={() => navigate("/settings/integrations")} />
 
+        {/* Share Dialog - Glass */}
         <Dialog open={shareDialogOpen} onOpenChange={(open) => {setShareDialogOpen(open);if (!open) setGeneratedShareUrl(null);}}>
-          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[380px] p-0 gap-0 overflow-hidden rounded-2xl">
+          <DialogContent className={glassDialogClass}>
             <div className="px-4 pt-4 pb-3">
               <DialogHeader className="mb-0">
-                <DialogTitle className="text-base font-semibold text-left">Share chat</DialogTitle>
-                <DialogDescription className="text-xs text-left">Future messages aren't included</DialogDescription>
+                <DialogTitle className="text-base font-semibold text-left text-white">Share chat</DialogTitle>
+                <DialogDescription className="text-xs text-left text-white/50">Future messages aren't included</DialogDescription>
               </DialogHeader>
             </div>
-            <div className="border-t border-border">
+            <div className="border-t border-white/10">
               <button
                 onClick={() => {setShareMode("private");setGeneratedShareUrl(null);}}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${shareMode === "private" ? "bg-accent/40" : "hover:bg-accent/20"}`}>
-                
-                <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${shareMode === "private" ? "bg-white/5" : "hover:bg-white/5"}`}>
+                <Lock className="w-4 h-4 text-white/40 shrink-0" />
                 <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">Keep private</p>
-                  <p className="text-[11px] text-muted-foreground">Only you have access</p>
+                  <p className="text-sm font-medium text-white/90">Keep private</p>
+                  <p className="text-[11px] text-white/40">Only you have access</p>
                 </div>
               </button>
-              <div className="h-px bg-border mx-4" />
+              <div className="h-px bg-white/10 mx-4" />
               <button
                 onClick={() => setShareMode("public")}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${shareMode === "public" ? "bg-accent/40" : "hover:bg-accent/20"}`}>
-                
-                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${shareMode === "public" ? "bg-white/5" : "hover:bg-white/5"}`}>
+                <Globe className="w-4 h-4 text-white/40 shrink-0" />
                 <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">Create public link</p>
-                  <p className="text-[11px] text-muted-foreground">Anyone with the link can view</p>
+                  <p className="text-sm font-medium text-white/90">Create public link</p>
+                  <p className="text-[11px] text-white/40">Anyone with the link can view</p>
                 </div>
               </button>
             </div>
-            <div className="px-4 py-3 border-t border-border">
-              {shareMode === "public" && generatedShareUrl ?
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2 overflow-hidden">
-                  <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{generatedShareUrl}</span>
-                  <button
-                  onClick={handleCopyShareLink}
-                  className="shrink-0 p-2 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors whitespace-nowrap"
-                  aria-label="Copy share link">
-                    <Copy className="w-4 h-4 text-foreground" />
+            <div className="px-4 py-3 border-t border-white/10">
+              {shareMode === "public" && generatedShareUrl ? (
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 overflow-hidden">
+                  <span className="flex-1 text-[11px] text-white/50 truncate min-w-0 select-all break-all">{generatedShareUrl}</span>
+                  <button onClick={handleCopyShareLink} className="shrink-0 p-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors" aria-label="Copy">
+                    <Copy className="w-4 h-4 text-white/70" />
                   </button>
-                </div> :
-
-              <div className="flex justify-end">
-                  <button
-                  onClick={handleCreateShareLink}
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity">
-                  
+                </div>
+              ) : (
+                <div className="flex justify-end">
+                  <button onClick={handleCreateShareLink} className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-black hover:opacity-90 transition-opacity">
                     {shareMode === "public" ? "Create link" : "Save"}
                   </button>
                 </div>
-              }
+              )}
             </div>
           </DialogContent>
         </Dialog>
 
+        {/* Rename Dialog - Glass */}
         <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
-          <DialogContent className="sm:max-w-sm gap-3">
-            <DialogHeader>
-              <DialogTitle className="text-lg">Rename chat</DialogTitle>
-            </DialogHeader>
-            <Input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              className="h-12 rounded-2xl border-border/50 bg-secondary/30 text-sm"
-              onKeyDown={(e) => e.key === "Enter" && handleRename()}
-              autoFocus />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setIsRenaming(false)} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">Cancel</button>
-              <button onClick={handleRename} className="px-4 py-2 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity">Save</button>
+          <DialogContent className={`${glassDialogClass} sm:max-w-sm`}>
+            <div className="p-5 space-y-3">
+              <DialogHeader>
+                <DialogTitle className="text-lg text-white">Rename chat</DialogTitle>
+              </DialogHeader>
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                className="h-12 rounded-2xl border-white/10 bg-white/5 text-sm text-white placeholder:text-white/30"
+                onKeyDown={(e) => e.key === "Enter" && handleRename()}
+                autoFocus />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setIsRenaming(false)} className="px-4 py-2 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
+                <button onClick={handleRename} className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-black hover:opacity-90 transition-opacity">Save</button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Invite Dialog */}
+        {/* Invite Dialog - Glass */}
         <Dialog open={inviteDialogOpen} onOpenChange={(open) => { setInviteDialogOpen(open); if (!open) { setInviteLink(null); setInviteEmail(""); } }}>
-          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[420px] p-0 gap-0 overflow-hidden rounded-2xl">
+          <DialogContent className={`${glassDialogClass} sm:max-w-[420px]`}>
             <div className="px-5 pt-5 pb-3">
               <DialogHeader className="mb-0">
-                <DialogTitle className="text-base font-semibold text-left flex items-center gap-2">
+                <DialogTitle className="text-base font-semibold text-left flex items-center gap-2 text-white">
                   <Users className="w-4 h-4 text-primary" />
                   Invite to conversation
                 </DialogTitle>
-                <DialogDescription className="text-xs text-left">Invite someone to join and chat together with AI</DialogDescription>
+                <DialogDescription className="text-xs text-left text-white/40">Invite someone to join and chat together with AI</DialogDescription>
               </DialogHeader>
             </div>
 
             <div className="px-5 pb-4 space-y-4">
-              {/* Email invite */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Invite by email</label>
+                <label className="text-xs font-medium text-white/40">Invite by email</label>
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                     <Input
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder="friend@example.com"
-                      className="h-11 pl-9 rounded-xl border-border/50 bg-secondary/30 text-sm"
+                      className="h-11 pl-9 rounded-xl border-white/10 bg-white/5 text-sm text-white placeholder:text-white/30"
                       onKeyDown={(e) => e.key === "Enter" && handleSendInviteEmail()}
                     />
                   </div>
                   <button
                     onClick={handleSendInviteEmail}
                     disabled={inviteLoading || !inviteEmail.trim()}
-                    className="px-4 h-11 rounded-xl text-sm font-medium bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="px-4 h-11 rounded-xl text-sm font-medium bg-white text-black hover:opacity-90 transition-opacity disabled:opacity-50"
                   >
                     {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}
                   </button>
@@ -965,46 +844,44 @@ const ChatPage = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-[10px] text-muted-foreground uppercase">or</span>
-                <div className="flex-1 h-px bg-border" />
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-[10px] text-white/30 uppercase">or</span>
+                <div className="flex-1 h-px bg-white/10" />
               </div>
 
-              {/* Link invite */}
               {inviteLink ? (
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2.5 overflow-hidden">
-                  <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{inviteLink}</span>
-                  <button onClick={handleCopyInviteLink} className="shrink-0 p-2 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors">
-                    <Copy className="w-4 h-4 text-foreground" />
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 overflow-hidden">
+                  <Link2 className="w-4 h-4 text-white/30 shrink-0" />
+                  <span className="flex-1 text-[11px] text-white/50 truncate min-w-0 select-all break-all">{inviteLink}</span>
+                  <button onClick={handleCopyInviteLink} className="shrink-0 p-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+                    <Copy className="w-4 h-4 text-white/70" />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={handleGenerateInviteLink}
                   disabled={inviteLoading}
-                  className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-border/50 bg-secondary/20 hover:bg-secondary/40 transition-colors text-sm text-foreground"
+                  className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-sm text-white/70"
                 >
                   <Link2 className="w-4 h-4" />
                   Generate invite link
                 </button>
               )}
 
-              {/* Members list */}
               {members.length > 0 && (
-                <div className="pt-2 border-t border-border">
-                  <p className="text-[10px] text-muted-foreground uppercase mb-2">Members ({members.length + 1})</p>
+                <div className="pt-2 border-t border-white/10">
+                  <p className="text-[10px] text-white/30 uppercase mb-2">Members ({members.length + 1})</p>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
                       <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">You</div>
-                      <span className="text-xs text-foreground">Owner</span>
+                      <span className="text-xs text-white/70">Owner</span>
                     </div>
                     {members.map((m) => (
                       <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
-                        <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-muted-foreground">
+                        <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white/50">
                           {m.email ? m.email[0].toUpperCase() : "?"}
                         </div>
-                        <span className="text-xs text-muted-foreground">{m.role}</span>
+                        <span className="text-xs text-white/50">{m.role}</span>
                       </div>
                     ))}
                   </div>
@@ -1015,7 +892,6 @@ const ChatPage = () => {
         </Dialog>
       </div>
     </AppLayout>);
-
 };
 
 export default ChatPage;
