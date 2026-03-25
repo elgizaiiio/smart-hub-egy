@@ -780,3 +780,48 @@
 .flow-point:nth-child(6) { left: 75%; animation-duration: 3.8s; animation-delay: 1.3s; }
 .flow-point:nth-child(7) { left: 85%; animation-duration: 3.1s; animation-delay: 0.1s; }
 .flow-point:nth-child(8) { left: 92%; animation-duration: 2.9s; animation-delay: 0.8s; }
+
+/* Sidebar Fancy Background */
+.sidebar-fancy-bg {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #1a1a2e 75%, #16213e 100%);
+  background-size: 400% 400%;
+  animation: sidebar-gradient-shift 8s ease infinite;
+}
+@keyframes sidebar-gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.sidebar-points-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.sidebar-point {
+  position: absolute;
+  bottom: -10px;
+  width: 2px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  animation: sidebar-float infinite ease-in-out;
+}
+@keyframes sidebar-float {
+  0% { transform: translateY(0); opacity: 0.3; }
+  50% { opacity: 0.1; }
+  100% { transform: translateY(-200px); opacity: 0; }
+}
+.sidebar-point:nth-child(1) { left: 5%; animation-duration: 4s; animation-delay: 0s; }
+.sidebar-point:nth-child(2) { left: 15%; animation-duration: 5s; animation-delay: 0.8s; }
+.sidebar-point:nth-child(3) { left: 25%; animation-duration: 3.5s; animation-delay: 0.3s; }
+.sidebar-point:nth-child(4) { left: 35%; animation-duration: 4.5s; animation-delay: 1.2s; }
+.sidebar-point:nth-child(5) { left: 45%; animation-duration: 3.8s; animation-delay: 0.5s; }
+.sidebar-point:nth-child(6) { left: 55%; animation-duration: 4.2s; animation-delay: 1.8s; }
+.sidebar-point:nth-child(7) { left: 65%; animation-duration: 3.2s; animation-delay: 0.1s; }
+.sidebar-point:nth-child(8) { left: 75%; animation-duration: 5.5s; animation-delay: 1s; }
+.sidebar-point:nth-child(9) { left: 82%; animation-duration: 3.6s; animation-delay: 0.7s; }
+.sidebar-point:nth-child(10) { left: 88%; animation-duration: 4.8s; animation-delay: 1.5s; }
+.sidebar-point:nth-child(11) { left: 93%; animation-duration: 3.9s; animation-delay: 0.4s; }
+.sidebar-point:nth-child(12) { left: 97%; animation-duration: 4.3s; animation-delay: 2s; }
