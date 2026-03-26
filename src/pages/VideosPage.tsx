@@ -17,7 +17,7 @@ const VideosPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studioVideos, setStudioVideos] = useState<any[]>([]);
   const [communityItems, setCommunityItems] = useState<ShowcaseItem[]>([]);
-  const { models: dynamicModels } = useModels("videos");
+  const { models: dynamicModels } = useDynamicModels();
 
   useEffect(() => {
     if (activeTab === 'studio') loadStudioVideos();

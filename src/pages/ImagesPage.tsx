@@ -17,7 +17,7 @@ const ImagesPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studioImages, setStudioImages] = useState<any[]>([]);
   const [communityItems, setCommunityItems] = useState<ShowcaseItem[]>([]);
-  const { models: dynamicModels } = useModels("images");
+  const { models: dynamicModels } = useDynamicModels();
 
   useEffect(() => {
     if (activeTab === 'studio') loadStudioImages();
