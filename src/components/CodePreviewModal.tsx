@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Maximize2, Minimize2 } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface CodePreviewModalProps {
@@ -23,7 +23,7 @@ const wrapCodeForPreview = (lang: string, code: string): string => {
 
 const CodePreviewModal = ({ code, lang, onClose }: CodePreviewModalProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true);
 
   useEffect(() => {
     if (iframeRef.current) {
@@ -38,41 +38,31 @@ const CodePreviewModal = ({ code, lang, onClose }: CodePreviewModalProps) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex flex-col bg-background"
     >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className={`bg-background border border-border rounded-2xl overflow-hidden flex flex-col ${
-          isFullscreen ? "w-full h-full" : "w-full max-w-2xl h-[70vh]"
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40 bg-secondary/30">
-          <span className="text-xs font-medium text-muted-foreground">Live Preview</span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-            >
-              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-        <iframe
-          ref={iframeRef}
-          className="flex-1 w-full bg-black"
-          sandbox="allow-scripts allow-same-origin"
-          title="Code preview"
-        />
-      </motion.div>
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 bg-secondary/30 shrink-0">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+        <span className="text-xs font-medium text-muted-foreground">Live Preview</span>
+        <button
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+        >
+          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+      </div>
+      <iframe
+        ref={iframeRef}
+        className="flex-1 w-full bg-black"
+        sandbox="allow-scripts allow-same-origin"
+        title="Code preview"
+      />
     </motion.div>
   );
 };

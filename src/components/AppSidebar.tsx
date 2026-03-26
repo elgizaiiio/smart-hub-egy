@@ -30,12 +30,12 @@ const serviceItems = [
 ];
 
 const COLOR_PALETTES = [
-  { from: "hsl(230, 60%, 15%)", to: "hsl(250, 50%, 25%)", accent: "hsl(240, 70%, 40%)" }, // Navy
-  { from: "hsl(270, 50%, 18%)", to: "hsl(290, 45%, 28%)", accent: "hsl(280, 60%, 40%)" }, // Purple
-  { from: "hsl(170, 50%, 14%)", to: "hsl(160, 45%, 24%)", accent: "hsl(165, 60%, 35%)" }, // Teal
-  { from: "hsl(340, 45%, 18%)", to: "hsl(350, 40%, 28%)", accent: "hsl(345, 55%, 40%)" }, // Rose
-  { from: "hsl(25, 50%, 16%)", to: "hsl(35, 45%, 26%)", accent: "hsl(30, 60%, 38%)" },   // Amber
-  { from: "hsl(210, 20%, 14%)", to: "hsl(220, 18%, 24%)", accent: "hsl(215, 25%, 35%)" }, // Slate
+  { from: "hsl(230, 60%, 15%)", to: "hsl(250, 50%, 25%)", accent: "hsl(240, 70%, 40%)" },
+  { from: "hsl(270, 50%, 18%)", to: "hsl(290, 45%, 28%)", accent: "hsl(280, 60%, 40%)" },
+  { from: "hsl(170, 50%, 14%)", to: "hsl(160, 45%, 24%)", accent: "hsl(165, 60%, 35%)" },
+  { from: "hsl(340, 45%, 18%)", to: "hsl(350, 40%, 28%)", accent: "hsl(345, 55%, 40%)" },
+  { from: "hsl(25, 50%, 16%)", to: "hsl(35, 45%, 26%)", accent: "hsl(30, 60%, 38%)" },
+  { from: "hsl(210, 20%, 14%)", to: "hsl(220, 18%, 24%)", accent: "hsl(215, 25%, 35%)" },
 ];
 
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
@@ -47,7 +47,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [credits, setCredits] = useState(0);
 
-  // Random color palette on each open
   const palette = useMemo(() => {
     if (!open) return COLOR_PALETTES[0];
     return COLOR_PALETTES[Math.floor(Math.random() * COLOR_PALETTES.length)];
@@ -116,18 +115,27 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             </div>
 
             <div className="relative z-10 flex flex-col h-full">
+              {/* New Chat - fancy animated button */}
               <div className="p-3">
                 <button
                   onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
-                  className="w-full px-4 py-3 text-left text-sm font-medium text-white/90 hover:text-white transition-colors bg-white/15 rounded-xl flex items-center gap-2 hover:bg-white/20"
+                  className="fancy-btn w-full"
                 >
-                  <Plus className="w-4 h-4" />
-                  New chat
+                  <span className="fold" />
+                  <div className="points_wrapper">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <span key={i} className="point" />
+                    ))}
+                  </div>
+                  <span className="inner flex items-center justify-center gap-2 w-full text-sm font-medium">
+                    <Plus className="w-4 h-4" />
+                    New chat
+                  </span>
                 </button>
               </div>
 
+              {/* Services - no label */}
               <div className="px-3">
-                <p className="text-[11px] text-white/40 px-3 py-2 uppercase tracking-wider">Services</p>
                 <div className="space-y-0.5">
                   {serviceItems.map((item) => (
                     <button
@@ -156,11 +164,9 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                 </div>
               )}
 
+              {/* Recent - no label */}
               {showRecent && (
                 <div className="flex-1 overflow-y-auto px-3 pt-2">
-                  <div className="sticky top-0 z-10 py-2">
-                    <p className="text-[11px] text-white/40 px-3 uppercase tracking-wider">Recent</p>
-                  </div>
                   {conversations.length === 0 ? (
                     <p className="text-xs text-white/30 px-3 py-4">No conversations yet</p>
                   ) : (
@@ -186,8 +192,8 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
 
               {!showRecent && <div className="flex-1" />}
 
+              {/* Bottom: credits bar + merged user/credits button */}
               <div className="p-3 space-y-2">
-                {/* Credits bar */}
                 <div className="px-2 py-2">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-sm font-medium text-white/80">MC Balance</span>
@@ -198,11 +204,11 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                   </div>
                 </div>
 
-                {/* User info + Credits icon */}
-                <div className="flex items-center gap-2">
+                {/* Merged user + credits as one bar with divider */}
+                <div className="flex items-center rounded-xl bg-white/10 overflow-hidden">
                   <button
                     onClick={() => { navigate("/settings"); onClose(); }}
-                    className="flex-1 flex items-center gap-3 px-2 py-2.5 text-left rounded-xl bg-white/10 hover:bg-white/15 transition-colors"
+                    className="flex-1 flex items-center gap-3 px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
                   >
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -216,9 +222,10 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                       <p className="text-[11px] text-white/40 truncate">{userEmail || "Free Plan"}</p>
                     </div>
                   </button>
+                  <div className="w-px h-8 bg-white/15" />
                   <button
                     onClick={() => { navigate("/pricing"); onClose(); }}
-                    className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors shrink-0"
+                    className="w-12 h-full flex items-center justify-center hover:bg-white/5 transition-colors shrink-0"
                     title="Credits & Plans"
                   >
                     <Coins className="w-4 h-4 text-white/70" />
