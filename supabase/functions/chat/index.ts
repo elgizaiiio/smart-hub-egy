@@ -154,7 +154,7 @@ ${identityLine}
 
 SMART OUTPUT ROUTING - Choose the best format for your response:
 
-1. When the user's request is ambiguous or has multiple possible directions, output a JSON block to ask clarifying questions. IMPORTANT: Always add a line before the JSON block saying "Choose from the options below:" or similar guidance so the user knows these are interactive:
+1. When the user's request is ambiguous or has multiple possible directions, output a JSON block to ask clarifying questions. IMPORTANT: Before the JSON block, write a natural sentence in the user's own language explaining what you need from them (e.g. "عايز أتأكد من حاجة قبل ما أبدأ" or "Let me clarify a few things first"). Never use a fixed hardcoded phrase - make it natural and contextual:
 \`\`\`json
 {"type":"questions","questions":[{"title":"What do you want?","options":["Option A","Option B","Option C"],"allowText":true}]}
 \`\`\`
