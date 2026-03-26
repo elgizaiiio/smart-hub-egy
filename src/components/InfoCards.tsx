@@ -54,10 +54,10 @@ const CardImage = ({ src, alt }: { src: string; alt: string }) => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Try proxy for CORS images
   const proxiedSrc = src.startsWith("http") 
-    ? `https://images.weserv.nl/?url=${encodeURIComponent(src)}&w=400&h=200&fit=cover&output=webp`
+    ? `https://wsrv.nl/?url=${encodeURIComponent(src)}&w=400&h=200&fit=cover&output=webp`
     : src;
+  const [fallbackDirect, setFallbackDirect] = useState(false);
 
   if (error) {
     return (
@@ -71,10 +71,10 @@ const CardImage = ({ src, alt }: { src: string; alt: string }) => {
     <div className="w-full h-28 overflow-hidden relative">
       {loading && <div className="absolute inset-0 bg-white/5 animate-pulse" />}
       <img
-        src={proxiedSrc}
+        src={fallbackDirect ? src : proxiedSrc}
         alt={alt}
         className={`w-full h-full object-cover transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}
-        onError={() => setError(true)}
+        onError={() => { if (!fallbackDirect) setFallbackDirect(true); else setError(true); }}
         onLoad={() => setLoading(false)}
         referrerPolicy="no-referrer"
       />

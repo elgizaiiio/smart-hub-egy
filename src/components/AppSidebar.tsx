@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Pin, Coins, Plus } from "lucide-react";
+import { Pin, CreditCard, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -205,7 +205,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                 </div>
 
                 {/* Merged user + credits as one bar with divider */}
-                <div className="flex items-center rounded-xl bg-white/10 overflow-hidden">
+                <div className="flex items-center rounded-xl overflow-hidden fancy-btn-bg">
                   <button
                     onClick={() => { navigate("/settings"); onClose(); }}
                     className="flex-1 flex items-center gap-3 px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
@@ -228,7 +228,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                     className="w-12 h-full flex items-center justify-center hover:bg-white/5 transition-colors shrink-0"
                     title="Credits & Plans"
                   >
-                    <Coins className="w-4 h-4 text-white/70" />
+                    <CreditCard className="w-4 h-4 text-white/70" />
                   </button>
                 </div>
               </div>

@@ -58,6 +58,31 @@ import SupportPage from "./pages/SupportPage";
 import EnterprisePage from "./pages/EnterprisePage";
 import AboutPage from "./pages/AboutPage";
 import AuthDocsPage from "./pages/AuthDocsPage";
+
+// Image tool pages
+import InpaintPage from "./pages/tools/InpaintPage";
+import ClothesChangerPage from "./pages/tools/ClothesChangerPage";
+import HeadshotPage from "./pages/tools/HeadshotPage";
+import BgRemoverPage from "./pages/tools/BgRemoverPage";
+import FaceSwapPage from "./pages/tools/FaceSwapPage";
+import RelightPage from "./pages/tools/RelightPage";
+import ColorizerPage from "./pages/tools/ColorizerPage";
+import CharacterSwapPage from "./pages/tools/CharacterSwapPage";
+import StoryboardPage from "./pages/tools/StoryboardPage";
+import SketchToImagePage from "./pages/tools/SketchToImagePage";
+import RetouchingPage from "./pages/tools/RetouchingPage";
+import RemoverPage from "./pages/tools/RemoverPage";
+import HairChangerPage from "./pages/tools/HairChangerPage";
+import CartoonPage from "./pages/tools/CartoonPage";
+import AvatarMakerPage from "./pages/tools/AvatarMakerPage";
+
+// Video tool pages
+import VideoSwapPage from "./pages/tools/VideoSwapPage";
+import VideoUpscalePage from "./pages/tools/VideoUpscalePage";
+import TalkingPhotoPage from "./pages/tools/TalkingPhotoPage";
+import VideoExtenderPage from "./pages/tools/VideoExtenderPage";
+import AutoCaptionPage from "./pages/tools/AutoCaptionPage";
+import LipSyncPage from "./pages/tools/LipSyncPage";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -156,6 +181,29 @@ const App = () => {
                 <Route path="/videos/studio" element={<ProtectedRoute><VideoStudioPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/videos/agent" element={<ProtectedRoute><VideoAgentPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/files" element={<ProtectedRoute><FilesPage key={currentUserId} /></ProtectedRoute>} />
+                {/* Image tool routes */}
+                <Route path="/images/tools/inpaint" element={<ProtectedRoute><InpaintPage /></ProtectedRoute>} />
+                <Route path="/images/tools/clothes-changer" element={<ProtectedRoute><ClothesChangerPage /></ProtectedRoute>} />
+                <Route path="/images/tools/headshot" element={<ProtectedRoute><HeadshotPage /></ProtectedRoute>} />
+                <Route path="/images/tools/bg-remover" element={<ProtectedRoute><BgRemoverPage /></ProtectedRoute>} />
+                <Route path="/images/tools/face-swap" element={<ProtectedRoute><FaceSwapPage /></ProtectedRoute>} />
+                <Route path="/images/tools/relight" element={<ProtectedRoute><RelightPage /></ProtectedRoute>} />
+                <Route path="/images/tools/colorizer" element={<ProtectedRoute><ColorizerPage /></ProtectedRoute>} />
+                <Route path="/images/tools/character-swap" element={<ProtectedRoute><CharacterSwapPage /></ProtectedRoute>} />
+                <Route path="/images/tools/storyboard" element={<ProtectedRoute><StoryboardPage /></ProtectedRoute>} />
+                <Route path="/images/tools/sketch-to-image" element={<ProtectedRoute><SketchToImagePage /></ProtectedRoute>} />
+                <Route path="/images/tools/retouching" element={<ProtectedRoute><RetouchingPage /></ProtectedRoute>} />
+                <Route path="/images/tools/remover" element={<ProtectedRoute><RemoverPage /></ProtectedRoute>} />
+                <Route path="/images/tools/hair-changer" element={<ProtectedRoute><HairChangerPage /></ProtectedRoute>} />
+                <Route path="/images/tools/cartoon" element={<ProtectedRoute><CartoonPage /></ProtectedRoute>} />
+                <Route path="/images/tools/avatar-maker" element={<ProtectedRoute><AvatarMakerPage /></ProtectedRoute>} />
+                {/* Video tool routes */}
+                <Route path="/videos/tools/swap-characters" element={<ProtectedRoute><VideoSwapPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/upscale" element={<ProtectedRoute><VideoUpscalePage /></ProtectedRoute>} />
+                <Route path="/videos/tools/talking-photo" element={<ProtectedRoute><TalkingPhotoPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-extender" element={<ProtectedRoute><VideoExtenderPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/auto-caption" element={<ProtectedRoute><AutoCaptionPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/lip-sync" element={<ProtectedRoute><LipSyncPage /></ProtectedRoute>} />
                 <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

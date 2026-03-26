@@ -4,26 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile: Prevent content copying. Desktop: allow normal selection */
-@media (max-width: 767px) {
-  * {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-  }
-  input, textarea, [contenteditable="true"], pre, code, .selectable {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
-    -webkit-touch-callout: default;
-  }
-  img, video {
-    pointer-events: none;
-    -webkit-user-drag: none;
-  }
+/* Allow text selection globally */
+* {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}
+img, video {
+  -webkit-user-drag: none;
+}
+
+/* Fancy button background for sidebar user section */
+.fancy-btn-bg {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.15));
+  border: 1px solid hsl(var(--primary) / 0.2);
 }
 
 @media (min-width: 768px) {
