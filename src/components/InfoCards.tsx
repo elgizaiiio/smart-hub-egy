@@ -54,10 +54,10 @@ const CardImage = ({ src, alt }: { src: string; alt: string }) => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Try proxy for CORS images
   const proxiedSrc = src.startsWith("http") 
-    ? `https://images.weserv.nl/?url=${encodeURIComponent(src)}&w=400&h=200&fit=cover&output=webp`
+    ? `https://wsrv.nl/?url=${encodeURIComponent(src)}&w=400&h=200&fit=cover&output=webp`
     : src;
+  const [fallbackDirect, setFallbackDirect] = useState(false);
 
   if (error) {
     return (
