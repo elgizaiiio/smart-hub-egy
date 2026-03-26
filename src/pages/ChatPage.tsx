@@ -757,7 +757,7 @@ const ChatPage = () => {
         {/* Share Dialog - Glass */}
         <Dialog open={shareDialogOpen} onOpenChange={(open) => {setShareDialogOpen(open);if (!open) setGeneratedShareUrl(null);}}>
           <DialogContent className={glassDialogClass}>
-            <div className="px-4 pt-4 pb-3">
+            <div className="px-5 pt-5 pb-3">
               <DialogHeader className="mb-0">
                 <DialogTitle className="text-base font-semibold text-left text-white">Share chat</DialogTitle>
                 <DialogDescription className="text-xs text-left text-white/50">Future messages aren't included</DialogDescription>
@@ -766,17 +766,17 @@ const ChatPage = () => {
             <div className="border-t border-white/10">
               <button
                 onClick={() => {setShareMode("private");setGeneratedShareUrl(null);}}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${shareMode === "private" ? "bg-white/5" : "hover:bg-white/5"}`}>
+                className={`w-full flex items-center gap-3 px-5 py-3.5 transition-colors ${shareMode === "private" ? "bg-white/5" : "hover:bg-white/5"}`}>
                 <Lock className="w-4 h-4 text-white/40 shrink-0" />
                 <div className="text-left flex-1 min-w-0">
                   <p className="text-sm font-medium text-white/90">Keep private</p>
                   <p className="text-[11px] text-white/40">Only you have access</p>
                 </div>
               </button>
-              <div className="h-px bg-white/10 mx-4" />
+              <div className="h-px bg-white/10 mx-5" />
               <button
                 onClick={() => setShareMode("public")}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${shareMode === "public" ? "bg-white/5" : "hover:bg-white/5"}`}>
+                className={`w-full flex items-center gap-3 px-5 py-3.5 transition-colors ${shareMode === "public" ? "bg-white/5" : "hover:bg-white/5"}`}>
                 <Globe className="w-4 h-4 text-white/40 shrink-0" />
                 <div className="text-left flex-1 min-w-0">
                   <p className="text-sm font-medium text-white/90">Create public link</p>
@@ -784,17 +784,17 @@ const ChatPage = () => {
                 </div>
               </button>
             </div>
-            <div className="px-4 py-3 border-t border-white/10">
+            <div className="px-5 py-4 border-t border-white/10">
               {shareMode === "public" && generatedShareUrl ? (
-                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 overflow-hidden">
-                  <span className="flex-1 text-[11px] text-white/50 truncate min-w-0 select-all break-all">{generatedShareUrl}</span>
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 max-w-full overflow-hidden">
+                  <span className="flex-1 text-[11px] text-white/50 truncate min-w-0 select-all">{generatedShareUrl}</span>
                   <button onClick={handleCopyShareLink} className="shrink-0 p-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors" aria-label="Copy">
                     <Copy className="w-4 h-4 text-white/70" />
                   </button>
                 </div>
               ) : (
                 <div className="flex justify-end">
-                  <button onClick={handleCreateShareLink} className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-black hover:opacity-90 transition-opacity">
+                  <button onClick={handleCreateShareLink} className="px-5 py-2.5 rounded-xl text-sm font-medium bg-white text-black hover:opacity-90 transition-opacity">
                     {shareMode === "public" ? "Create link" : "Save"}
                   </button>
                 </div>
@@ -837,7 +837,7 @@ const ChatPage = () => {
               </DialogHeader>
             </div>
 
-            <div className="px-5 pb-4 space-y-4">
+            <div className="px-5 pb-5 space-y-4">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-white/40">Invite by email</label>
                 <div className="flex gap-2">
@@ -868,9 +868,9 @@ const ChatPage = () => {
               </div>
 
               {inviteLink ? (
-                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 overflow-hidden">
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 max-w-full overflow-hidden">
                   <Link2 className="w-4 h-4 text-white/30 shrink-0" />
-                  <span className="flex-1 text-[11px] text-white/50 truncate min-w-0 select-all break-all">{inviteLink}</span>
+                  <span className="flex-1 text-[11px] text-white/50 truncate min-w-0 select-all">{inviteLink}</span>
                   <button onClick={handleCopyInviteLink} className="shrink-0 p-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
                     <Copy className="w-4 h-4 text-white/70" />
                   </button>
@@ -887,7 +887,7 @@ const ChatPage = () => {
               )}
 
               {members.length > 0 && (
-                <div className="pt-2 border-t border-white/10">
+                <div className="pt-3 border-t border-white/10">
                   <p className="text-[10px] text-white/30 uppercase mb-2">Members ({members.length + 1})</p>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
