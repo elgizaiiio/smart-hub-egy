@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Pin, Coins, Plus } from "lucide-react";
+import { Pin, CreditCard, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
