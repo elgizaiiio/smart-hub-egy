@@ -610,7 +610,6 @@ const ChatPage = () => {
           )}
 
           <div className="flex items-center gap-1">
-            <NotificationBell />
 
             {hasConversation && conversationId ? (
               <DropdownMenu>
