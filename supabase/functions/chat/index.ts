@@ -109,7 +109,7 @@ Rules:
 \`\`\`json
 {"type":"questions","questions":[{"title":"What format do you need?","options":["Report","Presentation","Summary"],"allowText":true}]}
 \`\`\`
-Always add "Choose from the options below:" before any questions block.
+IMPORTANT: Before ANY questions JSON block, write a natural sentence in the user's language explaining what you need from them. Never use a fixed English phrase. Write it naturally as part of your response.`;
 - If external access is needed, output a Connect card:
 \`\`\`json
 {"type":"cards","items":[{"title":"Connect Google Drive","description":"This action requires connecting your Google Drive","action":"Connect"}]}
