@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import { IMAGE_TOOLS, NEW_IMAGE_MODELS } from "@/lib/imageToolsData";
-import { useModels } from "@/hooks/useModels";
+import { useDynamicModels } from "@/hooks/useModels";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 
 type Tab = 'home' | 'studio' | 'community';
