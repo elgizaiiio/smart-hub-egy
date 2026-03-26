@@ -58,6 +58,31 @@ import SupportPage from "./pages/SupportPage";
 import EnterprisePage from "./pages/EnterprisePage";
 import AboutPage from "./pages/AboutPage";
 import AuthDocsPage from "./pages/AuthDocsPage";
+
+// Image tool pages
+import InpaintPage from "./pages/tools/InpaintPage";
+import ClothesChangerPage from "./pages/tools/ClothesChangerPage";
+import HeadshotPage from "./pages/tools/HeadshotPage";
+import BgRemoverPage from "./pages/tools/BgRemoverPage";
+import FaceSwapPage from "./pages/tools/FaceSwapPage";
+import RelightPage from "./pages/tools/RelightPage";
+import ColorizerPage from "./pages/tools/ColorizerPage";
+import CharacterSwapPage from "./pages/tools/CharacterSwapPage";
+import StoryboardPage from "./pages/tools/StoryboardPage";
+import SketchToImagePage from "./pages/tools/SketchToImagePage";
+import RetouchingPage from "./pages/tools/RetouchingPage";
+import RemoverPage from "./pages/tools/RemoverPage";
+import HairChangerPage from "./pages/tools/HairChangerPage";
+import CartoonPage from "./pages/tools/CartoonPage";
+import AvatarMakerPage from "./pages/tools/AvatarMakerPage";
+
+// Video tool pages
+import VideoSwapPage from "./pages/tools/VideoSwapPage";
+import VideoUpscalePage from "./pages/tools/VideoUpscalePage";
+import TalkingPhotoPage from "./pages/tools/TalkingPhotoPage";
+import VideoExtenderPage from "./pages/tools/VideoExtenderPage";
+import AutoCaptionPage from "./pages/tools/AutoCaptionPage";
+import LipSyncPage from "./pages/tools/LipSyncPage";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
