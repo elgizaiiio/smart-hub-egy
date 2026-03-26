@@ -54,6 +54,11 @@ const CardImage = ({ src, alt }: { src: string; alt: string }) => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Try proxy for CORS images
+  const proxiedSrc = src.startsWith("http") 
+    ? `https://images.weserv.nl/?url=${encodeURIComponent(src)}&w=400&h=200&fit=cover&output=webp`
+    : src;
+
   if (error) {
     return (
       <div className="w-full h-28 bg-white/5 flex items-center justify-center">
@@ -66,13 +71,12 @@ const CardImage = ({ src, alt }: { src: string; alt: string }) => {
     <div className="w-full h-28 overflow-hidden relative">
       {loading && <div className="absolute inset-0 bg-white/5 animate-pulse" />}
       <img
-        src={src}
+        src={proxiedSrc}
         alt={alt}
-        className="w-full h-full object-cover"
+        className={`w-full h-full object-cover transition-opacity ${loading ? 'opacity-0' : 'opacity-100'}`}
         onError={() => setError(true)}
         onLoad={() => setLoading(false)}
         referrerPolicy="no-referrer"
-        crossOrigin="anonymous"
       />
     </div>
   );

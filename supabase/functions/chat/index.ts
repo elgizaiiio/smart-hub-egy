@@ -109,7 +109,7 @@ Rules:
 \`\`\`json
 {"type":"questions","questions":[{"title":"What format do you need?","options":["Report","Presentation","Summary"],"allowText":true}]}
 \`\`\`
-Always add "Choose from the options below:" before any questions block.
+IMPORTANT: Before ANY questions JSON block, write a natural sentence in the user's language explaining what you need from them. Never use a fixed English phrase. Write it naturally as part of your response.
 - If external access is needed, output a Connect card:
 \`\`\`json
 {"type":"cards","items":[{"title":"Connect Google Drive","description":"This action requires connecting your Google Drive","action":"Connect"}]}
@@ -154,7 +154,7 @@ ${identityLine}
 
 SMART OUTPUT ROUTING - Choose the best format for your response:
 
-1. When the user's request is ambiguous or has multiple possible directions, output a JSON block to ask clarifying questions. IMPORTANT: Always add a line before the JSON block saying "Choose from the options below:" or similar guidance so the user knows these are interactive:
+1. When the user's request is ambiguous or has multiple possible directions, output a JSON block to ask clarifying questions. IMPORTANT: Before the JSON block, write a natural sentence in the user's own language explaining what you need from them (e.g. "عايز أتأكد من حاجة قبل ما أبدأ" or "Let me clarify a few things first"). Never use a fixed hardcoded phrase - make it natural and contextual:
 \`\`\`json
 {"type":"questions","questions":[{"title":"What do you want?","options":["Option A","Option B","Option C"],"allowText":true}]}
 \`\`\`
