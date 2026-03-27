@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Sparkles, Crown, Building2, Rocket, Star, Shield, Zap, Users, Server, Headphones, Lock, BarChart3, FileText, Clock, Gem } from "lucide-react";
+import { ArrowLeft, Check, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FancyButton from "@/components/FancyButton";
 
