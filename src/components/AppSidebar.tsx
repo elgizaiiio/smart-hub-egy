@@ -25,6 +25,7 @@ const serviceItems = [
   { path: "/", label: "Chat" },
   { path: "/images", label: "Images" },
   { path: "/videos", label: "Videos" },
+  { path: "/voice", label: "Voice" },
   { path: "/code", label: "Programming" },
   { path: "/files", label: "Files" },
 ];

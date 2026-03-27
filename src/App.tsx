@@ -58,6 +58,8 @@ import SupportPage from "./pages/SupportPage";
 import EnterprisePage from "./pages/EnterprisePage";
 import AboutPage from "./pages/AboutPage";
 import AuthDocsPage from "./pages/AuthDocsPage";
+import VoicePage from "./pages/VoicePage";
+import VideoToTextPage from "./pages/tools/VideoToTextPage";
 
 // Image tool pages
 import InpaintPage from "./pages/tools/InpaintPage";
@@ -204,6 +206,8 @@ const App = () => {
                 <Route path="/videos/tools/video-extender" element={<ProtectedRoute><VideoExtenderPage /></ProtectedRoute>} />
                 <Route path="/videos/tools/auto-caption" element={<ProtectedRoute><AutoCaptionPage /></ProtectedRoute>} />
                 <Route path="/videos/tools/lip-sync" element={<ProtectedRoute><LipSyncPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-to-text" element={<ProtectedRoute><VideoToTextPage /></ProtectedRoute>} />
+                <Route path="/voice" element={<ProtectedRoute><VoicePage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
