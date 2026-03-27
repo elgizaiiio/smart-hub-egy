@@ -333,10 +333,10 @@ const PricingPage = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {enterpriseFeatures.map((f, i) => (
+                {enterpriseFeatures.map((text, i) => (
                   <div key={i} className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                    <f.icon className="w-4 h-4 shrink-0 text-cyan-400" />
-                    <span>{f.text}</span>
+                    <Check className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                    <span>{text}</span>
                   </div>
                 ))}
               </div>
