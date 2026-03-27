@@ -1,9 +1,8 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Upload, Download, Loader2, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Upload, Download, Loader2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 
 interface ToolPageLayoutProps {
@@ -16,7 +15,7 @@ interface ToolPageLayoutProps {
   resultUrl?: string | null;
   resultType?: 'image' | 'video' | '3d';
   previewVideo?: string;
-  redirectTo?: string; // e.g. '/images' or '/videos'
+  redirectTo?: string;
 }
 
 const ToolPageLayout = ({
@@ -67,14 +66,7 @@ const ToolPageLayout = ({
       {/* Preview video */}
       {previewVideo && !resultUrl && (
         <div className="px-4 pt-4">
-          <video
-            src={previewVideo}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full max-h-48 rounded-2xl object-cover"
-          />
+          <video src={previewVideo} autoPlay loop muted playsInline className="w-full max-h-48 rounded-2xl object-cover" />
         </div>
       )}
 
@@ -119,10 +111,7 @@ const ToolPageLayout = ({
               Generating...
             </>
           ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Generate · {cost} MC
-            </>
+            <>Generate · {cost} MC</>
           )}
         </button>
       </div>
