@@ -16,6 +16,7 @@ interface ToolPageLayoutProps {
   resultUrl?: string | null;
   resultType?: 'image' | 'video' | '3d';
   previewVideo?: string;
+  redirectTo?: string; // e.g. '/images' or '/videos'
 }
 
 const ToolPageLayout = ({
@@ -28,6 +29,7 @@ const ToolPageLayout = ({
   resultUrl,
   resultType = 'image',
   previewVideo,
+  redirectTo,
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
   const { credits, hasEnoughCredits } = useCredits();
