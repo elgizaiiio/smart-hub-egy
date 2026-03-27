@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, ArrowUp, Layers } from "lucide-react";
+import { Menu, ArrowUp, Settings2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
@@ -12,6 +12,8 @@ import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 
 type Tab = 'home' | 'studio' | 'community';
 
+const FALLBACK_ICON = "/model-logos/megsy.png";
+
 const ImagesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,6 +23,8 @@ const ImagesPage = () => {
   const [communityItems, setCommunityItems] = useState<ShowcaseItem[]>([]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
+  const [selectedModel, setSelectedModel] = useState<{ id: string; name: string; iconUrl: string } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { models: dynamicModels } = useDynamicModels();
 
   useEffect(() => {
@@ -28,7 +32,6 @@ const ImagesPage = () => {
     if (activeTab === 'community') loadCommunity();
   }, [activeTab]);
 
-  // Read tab from navigation state
   useEffect(() => {
     const s = (location.state as any)?.tab;
     if (s === 'studio') setActiveTab('studio');
@@ -37,7 +40,7 @@ const ImagesPage = () => {
   const loadStudioImages = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase.from("messages").select("content, images, created_at").not("images", "is", null).order("created_at", { ascending: false }).limit(100);
+    const { data } = await supabase.from("messages").select("content, images, created_at").eq("role", "assistant").not("images", "is", null).order("created_at", { ascending: false }).limit(100);
     if (data) {
       const imgs = data.flatMap(m => (m.images || []).filter((u: string) => !u.includes('.mp4') && !u.includes('video')).map((url: string) => ({ url, prompt: m.content, created_at: m.created_at })));
       setStudioImages(imgs);
@@ -49,14 +52,32 @@ const ImagesPage = () => {
     if (data) setCommunityItems(data as any);
   };
 
-  const allModels = [
+  // Filter only image models
+  const imageModels = [
     ...NEW_IMAGE_MODELS.map(m => ({ id: m.id, name: m.name, cost: m.cost, iconUrl: m.iconUrl, badge: m.badge })),
-    ...dynamicModels.map(m => ({ id: m.id, name: m.name, cost: Number(m.credits) || 1, iconUrl: m.iconUrl || '', badge: (Number(m.credits) >= 3 ? 'PRO' : undefined) as 'PRO' | undefined })),
+    ...dynamicModels
+      .filter(m => m.type === 'image' || m.type === 'image-tool')
+      .map(m => ({ id: m.id, name: m.name, cost: Number(m.credits) || 1, iconUrl: m.iconUrl || '', badge: (Number(m.credits) >= 3 ? 'PRO' : m.badges?.includes('NEW') ? 'NEW' : undefined) as 'NEW' | 'PRO' | undefined })),
   ];
 
-  const handleModelSelect = (modelId: string) => {
+  const currentIcon = selectedModel?.iconUrl || FALLBACK_ICON;
+
+  const handleModelSelect = (model: typeof imageModels[0]) => {
+    setSelectedModel({ id: model.id, name: model.name, iconUrl: model.iconUrl });
     setModelPickerOpen(false);
-    navigate("/images/studio", { state: { selectedModelId: modelId } });
+  };
+
+  const handleSend = () => {
+    if (!prompt.trim()) return;
+    navigate("/images/studio", { state: { prompt: prompt.trim(), selectedModelId: selectedModel?.id } });
+  };
+
+  // Auto-resize textarea
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPrompt(e.target.value);
+    const ta = e.target;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
   };
 
   const TABS: { id: Tab; label: string }[] = [
@@ -93,7 +114,7 @@ const ImagesPage = () => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pb-28">
+        <div className="flex-1 overflow-y-auto px-4 pb-32">
           {activeTab === 'home' && (
             <div className="space-y-4 pt-4">
               <h2 className="text-sm font-semibold text-foreground">Tools</h2>
@@ -108,9 +129,7 @@ const ImagesPage = () => {
                     {tool.previewVideo ? (
                       <video src={tool.previewVideo} autoPlay loop muted playsInline className="w-full h-28 object-cover" />
                     ) : (
-                      <div className="w-full h-28 bg-accent/30 flex items-center justify-center">
-                        <Layers className="w-6 h-6 text-muted-foreground" />
-                      </div>
+                      <div className="w-full h-28 bg-accent/30" />
                     )}
                     {tool.badge && (
                       <span className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${tool.badge === 'NEW' ? 'bg-green-500/90 text-white' : 'bg-amber-500/90 text-white'}`}>
@@ -132,13 +151,13 @@ const ImagesPage = () => {
               {studioImages.length === 0 ? (
                 <div className="text-center py-20">
                   <p className="text-muted-foreground text-sm">No images generated yet</p>
-                  <button onClick={() => setActiveTab('home')} className="mt-3 text-sm text-primary font-medium">Start creating →</button>
+                  <button onClick={() => setActiveTab('home')} className="mt-3 text-sm text-primary font-medium">Start creating</button>
                 </div>
               ) : (
                 <div className="columns-2 gap-2">
                   {studioImages.map((img, i) => (
                     <div key={i} className="break-inside-avoid mb-2 rounded-2xl overflow-hidden">
-                      <img src={img.url} alt={img.prompt} className="w-full object-cover" loading="lazy" />
+                      <img src={img.url} alt="" className="w-full object-cover" loading="lazy" />
                     </div>
                   ))}
                 </div>
@@ -153,14 +172,21 @@ const ImagesPage = () => {
               ) : (
                 <div className="columns-2 gap-2">
                   {communityItems.map((item) => (
-                    <div key={item.id} className="break-inside-avoid mb-3 rounded-2xl overflow-hidden border border-border/30 bg-card">
-                      <img src={item.media_url} alt={item.prompt} className="w-full object-cover" loading="lazy" />
-                      <div className="p-2 space-y-1">
-                        <p className="text-[10px] text-muted-foreground line-clamp-2">{item.prompt}</p>
-                        <div className="flex gap-2">
-                          <button onClick={() => { navigator.clipboard.writeText(item.prompt || ''); toast.success("Copied"); }} className="text-[10px] text-primary font-medium">Copy Prompt</button>
-                          <button onClick={() => { setPrompt(item.prompt || ''); setActiveTab('home'); }} className="text-[10px] text-primary font-medium">Reuse</button>
-                        </div>
+                    <div key={item.id} className="break-inside-avoid mb-3 rounded-2xl overflow-hidden bg-card border border-border/30">
+                      <img src={item.media_url} alt="" className="w-full object-cover" loading="lazy" />
+                      <div className="p-2 flex gap-2">
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(item.prompt || ''); toast.success("Copied"); }}
+                          className="flex-1 py-1.5 rounded-xl text-[11px] font-semibold text-primary-foreground fancy-btn-bg transition-all"
+                        >
+                          Copy Prompt
+                        </button>
+                        <button
+                          onClick={() => { setPrompt(item.prompt || ''); setActiveTab('home'); }}
+                          className="flex-1 py-1.5 rounded-xl text-[11px] font-semibold text-primary-foreground fancy-btn-bg transition-all"
+                        >
+                          Reuse
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -177,21 +203,21 @@ const ImagesPage = () => {
             <AnimatePresence>
               {modelPickerOpen && (
                 <>
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40" onClick={() => setModelPickerOpen(false)} />
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/20" onClick={() => setModelPickerOpen(false)} />
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="absolute bottom-full mb-2 left-0 right-0 z-50 bg-card border border-border/50 rounded-2xl p-3 max-h-64 overflow-y-auto shadow-xl"
+                    className="absolute bottom-full mb-2 left-0 right-0 z-50 bg-card/95 backdrop-blur-2xl border border-border/50 rounded-2xl p-3 max-h-64 overflow-y-auto shadow-xl"
                   >
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Select Model</p>
-                    {allModels.map((model) => (
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Image Models</p>
+                    {imageModels.map((model) => (
                       <button
                         key={model.id}
-                        onClick={() => handleModelSelect(model.id)}
+                        onClick={() => handleModelSelect(model)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent/50 text-left transition-colors"
                       >
-                        {model.iconUrl && <img src={model.iconUrl} alt="" className="w-7 h-7 rounded-lg object-cover" />}
+                        {model.iconUrl && <img src={model.iconUrl} alt="" className="w-6 h-6 rounded-lg object-contain" />}
                         <span className="flex-1 text-sm text-foreground truncate">{model.name}</span>
                         {model.badge && (
                           <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${model.badge === 'NEW' ? 'bg-green-500/90 text-white' : 'bg-amber-500/90 text-white'}`}>{model.badge}</span>
@@ -204,28 +230,42 @@ const ImagesPage = () => {
               )}
             </AnimatePresence>
 
-            <div className="flex items-center gap-2 rounded-[2rem] border border-primary/25 bg-background/80 backdrop-blur-xl px-4 py-3 shadow-lg">
+            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-background/80 backdrop-blur-xl px-3 py-2.5 shadow-lg">
+              {/* Model icon button */}
               <button
                 onClick={() => setModelPickerOpen(!modelPickerOpen)}
-                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent/50 transition-colors"
+                title={selectedModel?.name || "Select model"}
               >
-                <Layers className="w-4 h-4" />
+                <img src={currentIcon} alt="" className="w-6 h-6 rounded-md object-contain" />
               </button>
-              <input
+
+              <textarea
+                ref={textareaRef}
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={handleTextareaChange}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && prompt.trim()) {
-                    navigate("/images/studio", { state: { prompt: prompt.trim() } });
-                  }
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
                 }}
                 placeholder="Describe what you want to create..."
-                className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/60"
+                rows={1}
+                className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-2 max-h-[120px]"
+                style={{ minHeight: '36px' }}
               />
+
+              {/* Settings button */}
               <button
-                onClick={() => { if (prompt.trim()) navigate("/images/studio", { state: { prompt: prompt.trim() } }); }}
+                onClick={() => toast.info("Settings coming soon")}
+                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+              >
+                <Settings2 className="w-4 h-4" />
+              </button>
+
+              {/* Send button */}
+              <button
+                onClick={handleSend}
                 disabled={!prompt.trim()}
-                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20 transition-colors"
+                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20 transition-colors"
               >
                 <ArrowUp className="w-4 h-4" />
               </button>
