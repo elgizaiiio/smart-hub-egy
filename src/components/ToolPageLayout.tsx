@@ -16,6 +16,7 @@ interface ToolPageLayoutProps {
   resultUrl?: string | null;
   resultType?: 'image' | 'video' | '3d';
   previewVideo?: string;
+  redirectTo?: string; // e.g. '/images' or '/videos'
 }
 
 const ToolPageLayout = ({
