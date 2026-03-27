@@ -29,6 +29,7 @@ const ToolPageLayout = ({
   resultUrl,
   resultType = 'image',
   previewVideo,
+  redirectTo,
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
   const { credits, hasEnoughCredits } = useCredits();
