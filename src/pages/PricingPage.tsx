@@ -147,21 +147,21 @@ const plans = [
 ];
 
 const enterpriseFeatures = [
-  { icon: Gem, text: "Custom MC Allocation" },
-  { icon: Zap, text: "All Models with Priority Speed" },
-  { icon: Server, text: "Dedicated Infrastructure" },
-  { icon: Shield, text: "SLA Guarantees" },
-  { icon: Rocket, text: "Custom API Access & Integrations" },
-  { icon: Lock, text: "Enterprise Security (SOC2, GDPR)" },
-  { icon: Shield, text: "Data Privacy & Compliance" },
-  { icon: Star, text: "Early Access to New AI Models" },
-  { icon: BarChart3, text: "Advanced Analytics & Reporting" },
-  { icon: Users, text: "Dedicated Account Manager" },
-  { icon: Headphones, text: "24/7 Priority Support" },
-  { icon: Clock, text: "Priority Onboarding & Training" },
-  { icon: FileText, text: "Monthly Business Reviews" },
-  { icon: Crown, text: "Volume Discounts" },
-  { icon: Building2, text: "Custom Contract & Invoicing" },
+  "Custom MC Allocation",
+  "All Models with Priority Speed",
+  "Dedicated Infrastructure",
+  "SLA Guarantees",
+  "Custom API Access & Integrations",
+  "Enterprise Security (SOC2, GDPR)",
+  "Data Privacy & Compliance",
+  "Early Access to New AI Models",
+  "Advanced Analytics & Reporting",
+  "Dedicated Account Manager",
+  "24/7 Priority Support",
+  "Priority Onboarding & Training",
+  "Monthly Business Reviews",
+  "Volume Discounts",
+  "Custom Contract & Invoicing",
 ];
 
 const tierStyles: Record<string, { gradient: string; check: string; border: string; glow: string }> = {
