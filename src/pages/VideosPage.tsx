@@ -197,7 +197,7 @@ const VideosPage = () => {
                         {model.iconUrl && <img src={model.iconUrl} alt="" className="w-7 h-7 rounded-lg object-cover" />}
                         <span className="flex-1 text-sm text-foreground truncate">{model.name}</span>
                         {model.badge && (
-                          <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${model.badge === 'NEW' ? 'bg-green-500/90 text-white' : 'bg-amber-500/90 text-white'}`}>{model.badge}</span>
+                          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/90 text-white">{model.badge}</span>
                         )}
                         <span className="text-xs text-muted-foreground">{model.cost} MC</span>
                       </button>
