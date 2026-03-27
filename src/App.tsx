@@ -58,6 +58,8 @@ import SupportPage from "./pages/SupportPage";
 import EnterprisePage from "./pages/EnterprisePage";
 import AboutPage from "./pages/AboutPage";
 import AuthDocsPage from "./pages/AuthDocsPage";
+import VoicePage from "./pages/VoicePage";
+import VideoToTextPage from "./pages/tools/VideoToTextPage";
 
 // Image tool pages
 import InpaintPage from "./pages/tools/InpaintPage";
