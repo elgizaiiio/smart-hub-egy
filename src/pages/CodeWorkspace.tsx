@@ -387,26 +387,53 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
     abortRef.current = controller;
     let assistantContent = "";
 
-    const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete React+Vite project with Tailwind CSS. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. 
-
-Rules:
-- Use React with JSX (.jsx files)
-- Use react-router-dom for multi-page apps (BrowserRouter)
-- Tailwind CSS for all styling
-- Keep files in src/ directory
-- Include proper error handling and responsive design
-- Do NOT include package.json, vite.config.js, index.html, src/main.jsx, src/index.css, tailwind.config.js, postcss.config.js unless you need to modify defaults
-- Output raw JSON only, no markdown.`;
-
-    const allMessages = messages
-      .filter(m => m.role !== "system")
+    const allBuildMessages = messages
+      .filter(m => m.role !== "system" && m.type !== "log" && m.type !== "timeline")
       .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
-    allMessages.unshift({ role: "user" as const, content: `[System]: ${buildPrompt}` });
-    allMessages.push({ role: "user" as const, content: "Build the project now. Output only JSON." });
 
-    await streamChat({
-      messages: allMessages,
-      model: "x-ai/grok-3",
+    // Use Claude via code-generate edge function
+    const buildResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ messages: allBuildMessages, action: "build" }),
+    });
+
+    if (!buildResp.ok || !buildResp.body) {
+      const err = await buildResp.json().catch(() => ({ error: "Build request failed" }));
+      throw new Error(err.error || "Build request failed");
+    }
+
+    // Read the SSE stream
+    const buildReader = buildResp.body.getReader();
+    const buildDecoder = new TextDecoder();
+    let buildBuffer = "";
+
+    const readBuildStream = async () => {
+      while (true) {
+        const { done, value } = await buildReader.read();
+        if (done) break;
+        buildBuffer += buildDecoder.decode(value, { stream: true });
+        let ni: number;
+        while ((ni = buildBuffer.indexOf("\n")) !== -1) {
+          let line = buildBuffer.slice(0, ni);
+          buildBuffer = buildBuffer.slice(ni + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") return;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              setIsThinking(false);
+              assistantContent += content;
+            }
+          } catch {}
+        }
+      }
+    };
+
+    await readBuildStream();
       onDelta: (chunk) => {
         setIsThinking(false);
         assistantContent += chunk;
