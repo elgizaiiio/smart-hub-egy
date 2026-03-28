@@ -1,12 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, Github, RefreshCw, Triangle, Download } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-// streamChat no longer used - using Claude edge function directly
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
-import { useUserPlan } from "@/hooks/useUserPlan";
-import { canUseCodeWorkspace } from "@/lib/subscriptionGating";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import BuildTimeline, { BuildStep } from "@/components/BuildTimeline";
@@ -23,111 +20,237 @@ interface ChatMsg {
   type?: "plan" | "build" | "log" | "status" | "timeline";
 }
 
-interface SandboxState {
-  spriteName: string | null;
-  previewUrl: string | null;
-  status: "idle" | "creating" | "ready" | "building" | "error";
-}
-
 type FileTree = Record<string, string>;
 
-const callSandbox = async (body: Record<string, unknown>) => {
-  const resp = await fetch(`${SUPABASE_URL}/functions/v1/sprites-sandbox`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(err.error || err.message || err.code || `Sandbox error: ${resp.status}`);
+// ── Parse ===FILE: path=== ... ===END=== format ──
+const parseFileMarkers = (raw: string): FileTree => {
+  const files: FileTree = {};
+  const regex = /===FILE:\s*(.+?)===\n([\s\S]*?)===END===/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(raw)) !== null) {
+    const path = match[1].trim();
+    const content = match[2];
+    if (path && content !== undefined) {
+      files[path] = content;
+    }
   }
-  return resp.json();
+  return files;
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// ── Fallback: try JSON parse ──
+const parseJsonFallback = (raw: string): FileTree => {
+  let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const jsonStart = cleaned.search(/[\{\[]/);
+  const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === "[" ? "]" : "}");
+  if (jsonStart === -1 || jsonEnd === -1) return {};
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed.files && typeof parsed.files === "object") return parsed.files;
+  } catch {}
+  return {};
+};
 
-const waitForPreviewReady = async (
-  spriteName: string,
-  maxAttempts = 30,
-  intervalMs = 2000,
-  onAttempt?: (attempt: number, maxAttempts: number) => void,
-) => {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    await sleep(intervalMs);
-    onAttempt?.(attempt, maxAttempts);
-
-    try {
-      const healthCheck = await callSandbox({
-        action: "exec",
-        sprite_name: spriteName,
-        command: "cd /app && (curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000 || true)",
-      });
-
-      if (String(healthCheck?.output || "").includes("200")) {
-        return true;
-      }
-    } catch {
-      // Keep polling while sandbox boots
+// ── Build HTML for in-browser preview ──
+const buildPreviewHtml = (files: FileTree): string => {
+  // Collect all JSX/JS files
+  const modules: Record<string, string> = {};
+  for (const [path, content] of Object.entries(files)) {
+    if (path.match(/\.(jsx|js|tsx|ts)$/) && !path.includes("vite.config") && !path.includes("postcss") && !path.includes("tailwind.config")) {
+      modules[path] = content;
     }
   }
 
-  return false;
+  // Get CSS
+  const cssFiles = Object.entries(files)
+    .filter(([p]) => p.endsWith(".css"))
+    .map(([, c]) => c.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+[^;]+;/g, ""))
+    .join("\n");
+
+  // Build module map as inline scripts
+  const moduleScripts = Object.entries(modules)
+    .map(([path, code]) => {
+      // Escape for embedding in HTML
+      const escaped = code
+        .replace(/\\/g, "\\\\")
+        .replace(/`/g, "\\`")
+        .replace(/\$\{/g, "\\${");
+      return `__modules["${path}"] = \`${escaped}\`;`;
+    })
+    .join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview</title>
+<script src="https://cdn.tailwindcss.com"><\/script>
+<script src="https://unpkg.com/react@18/umd/react.development.js"><\/script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"><\/script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+<script src="https://unpkg.com/react-router-dom@6/dist/umd/react-router-dom.production.min.js"><\/script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; }
+${cssFiles}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// Simple module system for in-browser preview
+const __modules = {};
+${moduleScripts}
+
+// Resolve imports
+function __require(name) {
+  if (name === 'react' || name === 'React') return React;
+  if (name === 'react-dom' || name === 'react-dom/client') return ReactDOM;
+  if (name === 'react-router-dom') return ReactRouterDOM;
+  
+  // Try to find module
+  const candidates = [name, name + '.jsx', name + '.js', 'src/' + name, 'src/' + name + '.jsx', 'src/' + name + '.js'];
+  for (const c of candidates) {
+    if (__modules[c]) return __evalModule(c);
+  }
+  
+  // Return empty module
+  console.warn('Module not found:', name);
+  return {};
+}
+
+const __moduleCache = {};
+function __evalModule(path) {
+  if (__moduleCache[path]) return __moduleCache[path];
+  
+  const code = __modules[path];
+  if (!code) return {};
+  
+  try {
+    // Transform import/export with Babel
+    let transformed = code;
+    
+    // Replace import statements
+    transformed = transformed.replace(/import\\s+(?:React|{[^}]*}|\\*\\s+as\\s+\\w+|\\w+)\\s+from\\s+['"]([^'"]+)['"]/g, (match, mod) => {
+      return '/* import from ' + mod + ' */';
+    });
+    transformed = transformed.replace(/import\\s+['"]([^'"]+)['"]/g, '/* import $1 */');
+    
+    // Replace export default
+    transformed = transformed.replace(/export\\s+default\\s+/g, '__exports.default = ');
+    transformed = transformed.replace(/export\\s+(?:const|let|var|function|class)\\s+/g, '__exports.');
+    
+    const __exports = {};
+    const fn = new Function('React', 'ReactDOM', 'ReactRouterDOM', '__exports', '__require', transformed);
+    fn(React, ReactDOM, ReactRouterDOM, __exports, __require);
+    
+    __moduleCache[path] = __exports.default || __exports;
+    return __moduleCache[path];
+  } catch(e) {
+    console.error('Error evaluating', path, e);
+    return {};
+  }
+}
+
+// Try Babel approach for JSX
+try {
+  // Find App component
+  const appCandidates = ['src/App.jsx', 'src/App.js', 'src/App.tsx', 'App.jsx', 'App.js'];
+  let appCode = null;
+  let appPath = null;
+  
+  for (const c of appCandidates) {
+    if (__modules[c]) {
+      appCode = __modules[c];
+      appPath = c;
+      break;
+    }
+  }
+  
+  if (appCode) {
+    // Use Babel to transform ALL modules
+    const allCode = [];
+    
+    // Sort: non-App files first, App last
+    const sortedPaths = Object.keys(__modules).sort((a, b) => {
+      if (a.includes('App')) return 1;
+      if (b.includes('App')) return -1;
+      return 0;
+    });
+    
+    for (const p of sortedPaths) {
+      if (p.includes('main.jsx') || p.includes('main.js') || p.includes('main.tsx')) continue;
+      
+      let code = __modules[p];
+      // Clean imports
+      code = code.replace(/import\\s+.*?from\\s+['"][^'"]+['"]/g, '');
+      code = code.replace(/import\\s+['"][^'"]+['"]/g, '');
+      // Replace exports
+      code = code.replace(/export\\s+default\\s+function\\s+(\\w+)/g, 'function $1');
+      code = code.replace(/export\\s+default\\s+/g, 'var __default_' + p.replace(/[^a-zA-Z0-9]/g, '_') + ' = ');
+      code = code.replace(/export\\s+(const|let|var|function|class)\\s+/g, '$1 ');
+      
+      allCode.push('// --- ' + p + ' ---\\n' + code);
+    }
+    
+    const combined = allCode.join('\\n\\n');
+    
+    const transformed = Babel.transform(combined, {
+      presets: ['react'],
+      filename: 'combined.jsx',
+    }).code;
+    
+    eval(transformed);
+    
+    // Find App component
+    const AppComponent = window.App || window.__default_src_App_jsx || eval('typeof App !== "undefined" ? App : null');
+    
+    if (AppComponent) {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      
+      // Check if react-router-dom is used
+      if (typeof ReactRouterDOM !== 'undefined' && appCode.includes('Router')) {
+        root.render(React.createElement(ReactRouterDOM.BrowserRouter, null, React.createElement(AppComponent)));
+      } else {
+        root.render(React.createElement(AppComponent));
+      }
+    } else {
+      document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#888;">Could not find App component</div>';
+    }
+  } else {
+    document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#888;">No App component found in generated files</div>';
+  }
+} catch(e) {
+  console.error('Preview error:', e);
+  document.getElementById('root').innerHTML = '<div style="padding:2rem;"><h3 style="color:#ef4444;margin-bottom:8px;">Preview Error</h3><pre style="background:#1a1a1a;color:#fca5a5;padding:1rem;border-radius:8px;overflow:auto;font-size:12px;">' + e.message + '</pre></div>';
+}
+<\/script>
+</body>
+</html>`;
 };
 
-const callGithub = async (body: Record<string, unknown>) => {
-  const resp = await fetch(`${SUPABASE_URL}/functions/v1/github-repo`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
-  return resp.json();
-};
-
+// ── VITE template defaults ──
 const VITE_TEMPLATE: FileTree = {
-  "package.json": JSON.stringify({
-    name: "megsy-project",
-    private: true,
-    version: "0.0.0",
-    type: "module",
-    scripts: { dev: "vite --host 0.0.0.0 --port 3000", build: "vite build", preview: "vite preview" },
-    dependencies: {
-      react: "^18.3.1",
-      "react-dom": "^18.3.1",
-      "react-router-dom": "^6.30.0",
-    },
-    devDependencies: {
-      "@types/react": "^18.3.1",
-      "@types/react-dom": "^18.3.1",
-      "@vitejs/plugin-react": "^4.3.1",
-      vite: "^5.4.0",
-      tailwindcss: "^3.4.0",
-      postcss: "^8.4.0",
-      autoprefixer: "^10.4.0",
-    },
-  }, null, 2),
-  "vite.config.js": `import { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\nexport default defineConfig({ plugins: [react()], server: { host: '0.0.0.0', port: 3000 } })`,
-  "index.html": `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Megsy Project</title></head>\n<body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>\n</html>`,
   "src/main.jsx": `import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App'\nimport './index.css'\nReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)`,
   "src/App.jsx": `export default function App() { return <div className="min-h-screen flex items-center justify-center bg-gray-50"><h1 className="text-4xl font-bold text-gray-900">Hello from Megsy!</h1></div> }`,
   "src/index.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\nbody { font-family: system-ui, sans-serif; margin: 0; }`,
-  "tailwind.config.js": `/** @type {import('tailwindcss').Config} */\nexport default {\n  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],\n  theme: { extend: {} },\n  plugins: [],\n}`,
-  "postcss.config.js": `export default { plugins: { tailwindcss: {}, autoprefixer: {} } }`,
 };
 
 const DEFAULT_STEPS: () => BuildStep[] = () => [
   { id: "ai", label: "AI Generation", status: "pending" },
   { id: "parse", label: "Parsing files", status: "pending" },
-  { id: "sandbox", label: "Creating sandbox", status: "pending" },
-  { id: "write", label: "Writing files", status: "pending" },
-  { id: "install", label: "Installing dependencies", status: "pending" },
-  { id: "start", label: "Starting dev server", status: "pending" },
+  { id: "preview", label: "Rendering preview", status: "pending" },
 ];
+
+const callGithub = async (body: Record<string, unknown>) => {
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/github-repo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify(body),
+  });
+  return resp.json();
+};
 
 const CodeWorkspace = () => {
   const navigate = useNavigate();
@@ -141,31 +264,38 @@ const CodeWorkspace = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-  const [mode, setMode] = useState<"plan" | "build">("plan");
   const [menuOpen, setMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [buildSteps, setBuildSteps] = useState<BuildStep[]>([]);
   const [isBuildActive, setIsBuildActive] = useState(false);
-  const [previewError, setPreviewError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loadedConversation, setLoadedConversation] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [consoleErrors, setConsoleErrors] = useState<string[]>([]);
 
-  const [sandbox, setSandbox] = useState<SandboxState>({
-    spriteName: null, previewUrl: null, status: "idle",
-  });
   const [files, setFiles] = useState<FileTree>({});
   const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
 
   const { userId, hasEnoughCredits, refreshCredits } = useCredits();
-  const { plan } = useUserPlan();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, buildSteps]);
 
-  // Load saved conversation messages
+  // Listen for iframe console errors
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "console-error") {
+        setConsoleErrors(prev => [...prev.slice(-9), e.data.message]);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
+  // Load saved conversation
   useEffect(() => {
     if (!paramConversationId || loadedConversation) return;
     const loadMessages = async () => {
@@ -175,49 +305,47 @@ const CodeWorkspace = () => {
         .eq("conversation_id", paramConversationId)
         .order("created_at", { ascending: true });
       if (data && data.length > 0) {
-        const loaded: ChatMsg[] = data.map(m => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-          type: "plan" as const,
-        }));
-        setMessages(loaded);
+        setMessages(data.map(m => ({ role: m.role as "user" | "assistant", content: m.content })));
       }
       setLoadedConversation(true);
     };
     loadMessages();
   }, [paramConversationId, loadedConversation]);
 
-  // Load saved project sandbox info
+  // Load saved project files
   useEffect(() => {
     if (!paramProjectId) return;
     const loadProject = async () => {
       const { data } = await supabase
         .from("projects")
-        .select("fly_app_name, preview_url, status, files_snapshot")
+        .select("files_snapshot")
         .eq("id", paramProjectId)
         .single();
-      if (data) {
-        if (data.preview_url && data.fly_app_name) {
-          setSandbox({
-            spriteName: data.fly_app_name,
-            previewUrl: data.preview_url,
-            status: data.status === "running" ? "ready" : "idle",
-          });
-        }
-        if (data.files_snapshot && typeof data.files_snapshot === "object") {
-          setFiles(data.files_snapshot as FileTree);
-        }
+      if (data?.files_snapshot && typeof data.files_snapshot === "object") {
+        const loadedFiles = data.files_snapshot as FileTree;
+        setFiles(loadedFiles);
+        // Re-render preview from saved files
+        const html = buildPreviewHtml({ ...VITE_TEMPLATE, ...loadedFiles });
+        setPreviewHtml(html);
       }
     };
     loadProject();
   }, [paramProjectId]);
 
-  // Auto-send initial prompt (only if no conversation loaded)
+  // Auto-send initial prompt
   useEffect(() => {
     if (prompt && messages.length === 0 && !paramConversationId) {
       handleSend(prompt);
     }
   }, [prompt, loadedConversation]);
+
+  // Render preview in iframe when previewHtml changes
+  useEffect(() => {
+    if (previewHtml && iframeRef.current) {
+      const blob = new Blob([previewHtml], { type: "text/html" });
+      iframeRef.current.src = URL.createObjectURL(blob);
+    }
+  }, [previewHtml]);
 
   const updateStep = (stepId: string, updates: Partial<BuildStep>) => {
     setBuildSteps(prev => prev.map(s => s.id === stepId ? { ...s, ...updates } : s));
@@ -230,148 +358,46 @@ const CodeWorkspace = () => {
     const title = firstMessage.slice(0, 50) || "Code Project";
     const { data } = await supabase
       .from("conversations")
-      .insert({ title, mode: "code", model: "grok-3", user_id: user.id } as any)
+      .insert({ title, mode: "code", model: "claude-sonnet", user_id: user.id } as any)
       .select("id")
       .single();
-    if (data) {
-      setConversationId(data.id);
-      return data.id;
-    }
+    if (data) { setConversationId(data.id); return data.id; }
     return null;
   };
 
-  const handleSend = async (text?: string) => {
+  // ── Direct build: prompt → generate → parse → preview ──
+  const handleSend = async (text?: string, retryCount = 0) => {
     const msgText = text || input;
     if (!msgText.trim() || isLoading) return;
 
-    const userMsg: ChatMsg = { role: "user", content: msgText };
-    setMessages(prev => [...prev, userMsg]);
-    if (!text) setInput("");
-    setIsLoading(true);
-    setIsThinking(true);
-
-    const convId = await createOrGetConversation(msgText);
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    let assistantContent = "";
-
-    // Always use plan mode for chat - user must explicitly switch
-    const allMessages = messages
-      .filter(m => m.role !== "system" && m.type !== "log" && m.type !== "timeline")
-      .concat(userMsg)
-      .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
-
-    // Use Claude via code-generate edge function for planning
-    const planResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
-      body: JSON.stringify({ messages: allMessages, action: "plan" }),
-    });
-
-    if (!planResp.ok || !planResp.body) {
-      const err = await planResp.json().catch(() => ({ error: "Request failed" }));
-      toast.error(err.error || "Failed to connect to AI");
-      setIsLoading(false);
-      setIsThinking(false);
-      return;
-    }
-
-    const reader = planResp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    const readStream = async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") return;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              setIsThinking(false);
-              assistantContent += content;
-              setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant" && last.type !== "log" && last.type !== "timeline") {
-                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-                }
-                return [...prev, { role: "assistant", content: assistantContent, type: "plan" }];
-              });
-            }
-          } catch {}
-        }
-      }
-    };
-
-    await readStream();
-
-    // Done streaming
-    setIsLoading(false);
-    setIsThinking(false);
-    if (convId) {
-      supabase.from("messages").insert([
-        { conversation_id: convId, role: "user", content: msgText },
-        { conversation_id: convId, role: "assistant", content: assistantContent },
-      ]);
-    }
-  };
-
-  const provisionSandbox = async (): Promise<SandboxState> => {
-    const spriteName = `megsy-${Date.now()}`;
-    setSandbox(s => ({ ...s, status: "creating" }));
-
-    const spriteData = await callSandbox({ action: "create", sprite_name: spriteName });
-    const previewUrl = spriteData.url || `https://${spriteName}.sprites.app`;
-
-    await new Promise(r => setTimeout(r, 3000));
-
-    const newState: SandboxState = { spriteName, previewUrl, status: "ready" };
-    setSandbox(newState);
-    return newState;
-  };
-
-  const writeFilesToSandbox = async (sb: SandboxState, filesToWrite: FileTree) => {
-    const entries = Object.entries(filesToWrite);
-    for (let i = 0; i < entries.length; i++) {
-      const [filePath, content] = entries[i];
-      updateStep("write", { detail: filePath });
-      await callSandbox({
-        action: "write-file",
-        sprite_name: sb.spriteName,
-        file_path: `/app/${filePath}`,
-        file_content: content,
-      });
-    }
-  };
-
-  const handleApprove = async () => {
     if (!hasEnoughCredits(BUILD_CREDIT_COST)) {
       toast.error("رصيد MC غير كافي. تحتاج 5 MC للبناء.");
       return;
     }
 
-    // Initialize build timeline
-    const steps = DEFAULT_STEPS();
-    setBuildSteps(steps);
-    setIsBuildActive(true);
+    const userMsg: ChatMsg = { role: "user", content: msgText };
+    if (retryCount === 0) {
+      setMessages(prev => [...prev, userMsg]);
+      if (!text) setInput("");
+    }
+
     setIsLoading(true);
     setIsThinking(true);
+    setIsBuildActive(true);
 
-    // Add timeline message
-    setMessages(prev => [...prev, { role: "system", content: "", type: "timeline" }]);
+    // Initialize build steps
+    const steps = DEFAULT_STEPS();
+    setBuildSteps(steps);
+    setMessages(prev => {
+      // Remove previous timeline if retrying
+      const filtered = prev.filter(m => m.type !== "timeline");
+      return [...filtered, { role: "system", content: "", type: "timeline" }];
+    });
+
+    const convId = await createOrGetConversation(msgText);
 
     // Deduct credits
-    if (userId) {
+    if (userId && retryCount === 0) {
       const deductResp = await fetch(`${SUPABASE_URL}/functions/v1/deduct-credits`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
@@ -383,9 +409,7 @@ const CodeWorkspace = () => {
       const deductData = await deductResp.json();
       if (!deductData.success) {
         toast.error(deductData.error || "MC deduction failed");
-        setIsLoading(false);
-        setIsThinking(false);
-        setIsBuildActive(false);
+        setIsLoading(false); setIsThinking(false); setIsBuildActive(false);
         return;
       }
       refreshCredits();
@@ -394,307 +418,214 @@ const CodeWorkspace = () => {
     // Step 1: AI Generation
     updateStep("ai", { status: "running" });
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-    let assistantContent = "";
-
-    const allBuildMessages = messages
+    const allMessages = messages
       .filter(m => m.role !== "system" && m.type !== "log" && m.type !== "timeline")
+      .concat(retryCount === 0 ? [userMsg] : [])
       .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-    // Use Claude via code-generate edge function
-    const buildResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
-      body: JSON.stringify({ messages: allBuildMessages, action: "build" }),
-    });
-
-    if (!buildResp.ok || !buildResp.body) {
-      const err = await buildResp.json().catch(() => ({ error: "Build request failed" }));
-      throw new Error(err.error || "Build request failed");
-    }
-
-    // Read the SSE stream
-    const buildReader = buildResp.body.getReader();
-    const buildDecoder = new TextDecoder();
-    let buildBuffer = "";
-
-    const readBuildStream = async () => {
-      while (true) {
-        const { done, value } = await buildReader.read();
-        if (done) break;
-        buildBuffer += buildDecoder.decode(value, { stream: true });
-        let ni: number;
-        while ((ni = buildBuffer.indexOf("\n")) !== -1) {
-          let line = buildBuffer.slice(0, ni);
-          buildBuffer = buildBuffer.slice(ni + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") return;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              setIsThinking(false);
-              assistantContent += content;
-            }
-          } catch {}
-        }
-      }
-    };
-
-    await readBuildStream();
-
-    // Done with AI generation
-    setIsThinking(false);
-    updateStep("ai", { status: "done" });
-
-    // Step 2: Parse
-    updateStep("parse", { status: "running" });
-
     try {
-      let parsed: { files: FileTree };
-      let cleaned = assistantContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-      const jsonStart = cleaned.search(/[\{\[]/);
-      const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === "[" ? "]" : "}");
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
-      cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
-      try {
-        parsed = JSON.parse(cleaned);
-      } catch {
-        cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, "");
-        parsed = JSON.parse(cleaned);
+      const buildResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({ messages: allMessages, action: "build" }),
+      });
+
+      if (!buildResp.ok || !buildResp.body) {
+        const err = await buildResp.json().catch(() => ({ error: "Build request failed" }));
+        throw new Error(err.error || "Build request failed");
       }
 
-      if (!parsed.files || typeof parsed.files !== "object") throw new Error("Invalid file structure");
+      // Stream response
+      const reader = buildResp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullContent = "";
+      let streamingFiles: FileTree = {};
 
-      const allFiles = { ...VITE_TEMPLATE, ...parsed.files };
+      const readStream = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let ni: number;
+          while ((ni = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, ni);
+            buffer = buffer.slice(ni + 1);
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") return;
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                setIsThinking(false);
+                fullContent += content;
+
+                // Streaming file detection
+                const currentFiles = parseFileMarkers(fullContent);
+                if (Object.keys(currentFiles).length > Object.keys(streamingFiles).length) {
+                  streamingFiles = currentFiles;
+                  updateStep("ai", { detail: `${Object.keys(streamingFiles).length} files detected` });
+                }
+              }
+            } catch {}
+          }
+        }
+      };
+
+      await readStream();
+      updateStep("ai", { status: "done" });
+
+      // Step 2: Parse files
+      updateStep("parse", { status: "running" });
+
+      let parsedFiles = parseFileMarkers(fullContent);
+
+      // Fallback to JSON if no file markers found
+      if (Object.keys(parsedFiles).length === 0) {
+        parsedFiles = parseJsonFallback(fullContent);
+      }
+
+      if (Object.keys(parsedFiles).length === 0) {
+        // Auto-retry once
+        if (retryCount < 1) {
+          updateStep("parse", { status: "error", detail: "Retrying..." });
+          setIsLoading(false); setIsThinking(false);
+          return handleSend(msgText, retryCount + 1);
+        }
+        throw new Error("Could not parse generated files");
+      }
+
+      const allFiles = { ...VITE_TEMPLATE, ...parsedFiles };
       setFiles(allFiles);
-      updateStep("parse", { status: "done", detail: `${Object.keys(parsed.files).length} files` });
+      updateStep("parse", { status: "done", detail: `${Object.keys(parsedFiles).length} files` });
+
+      // Step 3: Render preview
+      updateStep("preview", { status: "running" });
+
+      const html = buildPreviewHtml(allFiles);
+      setPreviewHtml(html);
+
+      updateStep("preview", { status: "done" });
 
       setMessages(prev => [
         ...prev,
         {
           role: "assistant",
-          content: `Project built with ${Object.keys(parsed.files).length} files:\n${Object.keys(parsed.files).map(f => `• ${f}`).join("\n")}`,
+          content: `Project built with ${Object.keys(parsedFiles).length} files:\n${Object.keys(parsedFiles).map(f => `- ${f}`).join("\n")}`,
           type: "build",
         },
       ]);
 
-      let savedProjectId: string | null = null;
+      // Save project
       if (userId) {
         const { data: proj } = await supabase
           .from("projects")
           .insert({
             user_id: userId,
             name: prompt.slice(0, 50) || "Untitled Project",
-            status: "created",
+            status: "ready",
             files_snapshot: allFiles as any,
             conversation_id: conversationId,
           })
           .select("id")
           .single();
-        if (proj) {
-          savedProjectId = proj.id;
-          setProjectId(proj.id);
-        }
+        if (proj) setProjectId(proj.id);
       }
 
-      updateStep("sandbox", { status: "running" });
-      try {
-        const sb = await provisionSandbox();
-        updateStep("sandbox", { status: "done" });
-
-        updateStep("write", { status: "running" });
-        await writeFilesToSandbox(sb, allFiles);
-        updateStep("write", { status: "done" });
-
-        updateStep("install", { status: "running" });
-        await callSandbox({
-          action: "exec",
-          sprite_name: sb.spriteName,
-          command: "nohup bash -lc 'cd /app && npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo STARTED",
-          detach: true,
-        });
-        updateStep("install", { status: "done", detail: "Install queued" });
-
-        updateStep("start", { status: "running", detail: "Waiting for server..." });
-        const isReady = await waitForPreviewReady(sb.spriteName!, 30, 2000, (attempt, max) => {
-          updateStep("start", { detail: `Booting... ${attempt}/${max}` });
-        });
-
-        if (!isReady) {
-          const startupLogs = await callSandbox({
-            action: "exec",
-            sprite_name: sb.spriteName,
-            command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
-          });
-          throw new Error(`Preview server failed to start: ${String(startupLogs?.output || "").slice(0, 280)}`);
-        }
-
-        updateStep("start", { status: "done", detail: "Server is live" });
-
-        if (savedProjectId) {
-          await supabase.from("projects").update({
-            fly_app_name: sb.spriteName,
-            preview_url: sb.previewUrl,
-            status: "running",
-          }).eq("id", savedProjectId);
-        }
-
-        setPreviewError(false);
-        setActiveTab("preview");
-      } catch (sandboxErr) {
-        updateStep("start", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
-        if (savedProjectId) {
-          await supabase.from("projects").update({ status: "ready" }).eq("id", savedProjectId);
-        }
-        setMessages(prev => [
-          ...prev,
-          { role: "assistant", content: `Preview start failed: ${sandboxErr instanceof Error ? sandboxErr.message : "Unknown error"}` },
+      // Save messages
+      if (convId) {
+        supabase.from("messages").insert([
+          { conversation_id: convId, role: "user", content: msgText },
+          { conversation_id: convId, role: "assistant", content: `Built ${Object.keys(parsedFiles).length} files` },
         ]);
       }
+
+      // Switch to preview on mobile
+      if (isMobile) setActiveTab("preview");
+
     } catch (e) {
-      updateStep("parse", { status: "error", detail: e instanceof Error ? e.message : "Error" });
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", content: `Build error: ${e instanceof Error ? e.message : "Unknown"}. Please try again.` },
-      ]);
+      const errMsg = e instanceof Error ? e.message : "Unknown error";
+      updateStep("parse", { status: "error", detail: errMsg });
+      setMessages(prev => [...prev, { role: "assistant", content: `Build error: ${errMsg}. Please try again.` }]);
     }
 
     setIsLoading(false);
-    setMode("plan");
+    setIsThinking(false);
+    setIsBuildActive(false);
+  };
+
+  const handleRefreshPreview = () => {
+    if (Object.keys(files).length > 0) {
+      const html = buildPreviewHtml(files);
+      setPreviewHtml(html);
+    }
+  };
+
+  const handleDownloadFiles = () => {
+    if (Object.keys(files).length === 0) return;
+    const content = Object.entries(files)
+      .map(([path, code]) => `// ===== ${path} =====\n${code}`)
+      .join("\n\n");
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "megsy-project.txt";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleGitHubPush = async () => {
-    if (Object.keys(files).length === 0) {
-      toast.error("No project files to push. Build the project first.");
-      return;
-    }
+    if (Object.keys(files).length === 0) { toast.error("No files to push. Build first."); return; }
     const connCheck = await callGithub({ action: "check-connection" });
-    if (!connCheck.connected) {
-      toast.error("GitHub not connected. Go to Settings > Integrations.");
-      navigate("/settings/integrations");
-      return;
-    }
+    if (!connCheck.connected) { toast.error("GitHub not connected."); navigate("/settings/integrations"); return; }
     const repoName = `megsy-${prompt.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "project"}-${Date.now().toString(36)}`;
-    const createResult = await callGithub({
-      action: "create-repo", repo_name: repoName,
-      description: `Created by Megsy Code: ${prompt.slice(0, 100)}`,
-    });
+    const createResult = await callGithub({ action: "create-repo", repo_name: repoName, description: `Created by Megsy Code` });
     if (createResult.error) { toast.error("Failed to create repository"); return; }
     const fileArray = Object.entries(files).map(([path, content]) => ({ path, content }));
     await callGithub({ action: "push-files", repo_name: repoName, files: fileArray });
-    const repoUrl = createResult.data?.execution_output?.data?.html_url || `https://github.com/${repoName}`;
-    setMessages(prev => [
-      ...prev,
-      { role: "assistant", content: `GitHub repository created!\n\n[${repoName}](${repoUrl})`, type: "status" },
-    ]);
     toast.success("Repository created on GitHub!");
   };
 
   const handleVercelDeploy = async () => {
-    if (Object.keys(files).length === 0) {
-      toast.error("No project files to deploy. Build the project first.");
-      return;
-    }
-    setMessages(prev => [...prev, { role: "system", content: "Deploying to Vercel...", type: "log" }]);
+    if (Object.keys(files).length === 0) { toast.error("No files to deploy. Build first."); return; }
     try {
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/vercel-deploy`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
-        body: JSON.stringify({
-          files,
-          project_name: prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "megsy-project",
-        }),
+        body: JSON.stringify({ files, project_name: prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "megsy-project" }),
       });
       const data = await resp.json();
       if (data.success && data.url) {
-        setMessages(prev => [
-          ...prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")),
-          { role: "assistant", content: `Deployed to Vercel!\n\n[${data.url}](${data.url})`, type: "status" },
-        ]);
+        setMessages(prev => [...prev, { role: "assistant", content: `Deployed to Vercel!\n\n[${data.url}](${data.url})`, type: "status" }]);
         toast.success("Deployed to Vercel!");
-      } else {
-        toast.error(data.error || "Vercel deployment failed");
-        setMessages(prev => prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")));
-      }
-    } catch {
-      toast.error("Failed to deploy to Vercel");
-      setMessages(prev => prev.filter(m => !(m.type === "log" && m.content === "Deploying to Vercel...")));
-    }
+      } else toast.error(data.error || "Vercel deployment failed");
+    } catch { toast.error("Failed to deploy"); }
   };
 
-  const handleRetryPreview = async () => {
-    setPreviewError(false);
-    if (!sandbox.spriteName || !sandbox.previewUrl) return;
-
-    try {
-      await callSandbox({
-        action: "exec",
-        sprite_name: sandbox.spriteName,
-        command: "nohup bash -lc 'cd /app && pkill -f \"vite --host 0.0.0.0 --port 3000\" || true; npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo RESTARTED",
-        detach: true,
-      });
-
-      const isReady = await waitForPreviewReady(sandbox.spriteName, 25, 2000);
-      if (!isReady) {
-        const restartLogs = await callSandbox({
-          action: "exec",
-          sprite_name: sandbox.spriteName,
-          command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
-        });
-        throw new Error(String(restartLogs?.output || "Preview restart timed out").slice(0, 280));
-      }
-
-      setSandbox((s) => ({ ...s, previewUrl: `${s.previewUrl}?${Date.now()}` }));
-      toast.success("Preview restarted");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to restart preview");
-    }
-  };
-
-  const lastAssistantIsPlan =
-    messages.length > 0 &&
-    messages[messages.length - 1]?.role === "assistant" &&
-    mode === "plan" &&
-    !isLoading &&
-    !isBuildActive;
-
-  // Shared chat panel content
+  // ── Chat Panel ──
   const chatPanel = (
     <div className="h-full flex flex-col bg-background">
-      {/* Chat header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
         <button onClick={() => navigate("/code")} className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
-            {isBuildActive ? "Building..." : "Chat"}
-          </span>
-          {sandbox.status === "ready" && <span className="w-2 h-2 rounded-full bg-success" title="Sandbox running" />}
-        </div>
+        <span className="text-xs text-muted-foreground">{isBuildActive ? "Building..." : "Megsy Code"}</span>
         <div className="w-8" />
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 max-w-3xl mx-auto w-full space-y-4">
         {messages.map((msg, i) => (
           <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>
             {msg.role === "user" ? (
-              <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm">
-                {msg.content}
-              </div>
+              <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm">{msg.content}</div>
             ) : msg.type === "timeline" ? (
-              buildSteps.length > 0 && (
-                <BuildTimeline steps={buildSteps} title="Building your project" />
-              )
+              buildSteps.length > 0 && <BuildTimeline steps={buildSteps} title="Building your project" />
             ) : msg.type === "log" ? (
               <div className="text-xs text-muted-foreground font-mono py-1 flex items-center gap-2">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                {msg.content}
+                <Loader2 className="w-3 h-3 animate-spin" />{msg.content}
               </div>
             ) : (
               <div className="prose-chat text-foreground text-sm" dir="auto">
@@ -704,23 +635,9 @@ const CodeWorkspace = () => {
           </div>
         ))}
         {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && <ThinkingLoader />}
-        {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && <ThinkingLoader />}
-
-        {/* Approve plan button */}
-        {lastAssistantIsPlan && (
-          <motion.button
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={handleApprove}
-            className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Approve Plan ({BUILD_CREDIT_COST} MC)
-          </motion.button>
-        )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className="shrink-0 px-4 py-3 max-w-3xl mx-auto w-full">
         <div className="relative">
           <AnimatedPlusMenu
@@ -728,6 +645,7 @@ const CodeWorkspace = () => {
             onClose={() => setMenuOpen(false)}
             onGitHub={handleGitHubPush}
             onVercel={handleVercelDeploy}
+            onDownload={handleDownloadFiles}
             onSupabase={() => navigate("/settings/integrations")}
             hasFiles={Object.keys(files).length > 0}
           />
@@ -738,7 +656,8 @@ const CodeWorkspace = () => {
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Ask about your project..."
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="Describe your project..."
               rows={1}
               className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
               style={{ minHeight: "32px" }}
@@ -756,21 +675,19 @@ const CodeWorkspace = () => {
     </div>
   );
 
-  // Shared preview panel content
+  // ── Preview Panel ──
   const previewPanel = (
     <div className="h-full relative bg-secondary">
-      {sandbox.previewUrl && !previewError ? (
+      {previewHtml ? (
         <>
           <iframe
             ref={iframeRef}
-            src={sandbox.previewUrl}
             className="w-full h-full border-none"
             title="Project Preview"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            onError={() => setPreviewError(true)}
+            sandbox="allow-scripts allow-same-origin"
           />
           <button
-            onClick={handleRetryPreview}
+            onClick={handleRefreshPreview}
             className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm"
             title="Reload preview"
           >
@@ -779,97 +696,43 @@ const CodeWorkspace = () => {
         </>
       ) : (
         <div className="h-full flex items-center justify-center">
-          <div className="text-center space-y-3">
-            {previewError ? (
-              <>
-                <p className="text-foreground text-sm font-medium">Preview unavailable</p>
-                <p className="text-xs text-muted-foreground">The sandbox may still be starting up</p>
-                <button
-                  onClick={handleRetryPreview}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
-                >
-                  <RefreshCw className="w-4 h-4" /> Retry
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="text-muted-foreground text-sm">Preview will appear here</p>
-                <p className="text-xs text-muted-foreground">
-                  {sandbox.status === "creating"
-                    ? "Creating sandbox..."
-                    : sandbox.status === "building"
-                    ? "Building project..."
-                    : "Approve the plan to start building"}
-                </p>
-              </>
-            )}
+          <div className="text-center space-y-2">
+            <Globe className="w-8 h-8 text-muted-foreground/30 mx-auto" />
+            <p className="text-muted-foreground text-sm">Preview will appear here</p>
+            <p className="text-xs text-muted-foreground/60">Describe your project to start building</p>
           </div>
         </div>
       )}
     </div>
   );
 
-  // Desktop: side-by-side layout
+  // Desktop: side-by-side
   if (!isMobile) {
     return (
       <div className="h-[100dvh] flex bg-background">
-        {/* Chat panel - left side */}
-        <div className="w-[420px] shrink-0 border-r border-border">
-          {chatPanel}
-        </div>
-        {/* Preview panel - right side fills remaining space */}
-        <div className="flex-1 min-w-0">
-          {previewPanel}
-        </div>
+        <div className="w-[420px] shrink-0 border-r border-border">{chatPanel}</div>
+        <div className="flex-1 min-w-0">{previewPanel}</div>
       </div>
     );
   }
 
-  // Mobile: tabbed layout (unchanged)
+  // Mobile: tabbed
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
       <div className="flex-1 overflow-hidden min-h-0">
         {activeTab === "chat" ? chatPanel : previewPanel}
       </div>
-
-      {/* Bottom tabs - mobile only */}
       <div className="flex border-t border-border">
-        <button
-          onClick={() => setActiveTab("chat")}
-          className={`flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors ${
-            activeTab === "chat" ? "text-primary border-t-2 border-primary" : "text-muted-foreground"
-          }`}
-        >
-          Chat
-        </button>
-        <button
-          onClick={() => setActiveTab("preview")}
-          className={`flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors ${
-            activeTab === "preview" ? "text-primary border-t-2 border-primary" : "text-muted-foreground"
-          }`}
-        >
-          Preview
-        </button>
+        <button onClick={() => setActiveTab("chat")} className={`flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors ${activeTab === "chat" ? "text-primary border-t-2 border-primary" : "text-muted-foreground"}`}>Chat</button>
+        <button onClick={() => setActiveTab("preview")} className={`flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors ${activeTab === "preview" ? "text-primary border-t-2 border-primary" : "text-muted-foreground"}`}>Preview</button>
       </div>
     </div>
   );
 };
 
-// Plus menu - removed Chat Mode toggle since it should always be in plan/chat mode
-const AnimatedPlusMenu = ({
-  open,
-  onClose,
-  onGitHub,
-  onVercel,
-  onSupabase,
-  hasFiles,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onGitHub: () => void;
-  onVercel: () => void;
-  onSupabase: () => void;
-  hasFiles: boolean;
+// ── Plus Menu ──
+const AnimatedPlusMenu = ({ open, onClose, onGitHub, onVercel, onDownload, onSupabase, hasFiles }: {
+  open: boolean; onClose: () => void; onGitHub: () => void; onVercel: () => void; onDownload: () => void; onSupabase: () => void; hasFiles: boolean;
 }) => (
   <AnimatePresence>
     {open && (
@@ -882,30 +745,18 @@ const AnimatedPlusMenu = ({
           className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56"
         >
           <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Deploy</p>
-          <button
-            onClick={() => { onClose(); onVercel(); }}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
-              hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground cursor-not-allowed opacity-50"
-            }`}
-            disabled={!hasFiles}
-          >
-            <Triangle className="w-4 h-4 text-muted-foreground" /> Deploy to Vercel
+          <button onClick={() => { onClose(); onVercel(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}>
+            <Triangle className="w-4 h-4" /> Vercel
           </button>
-          <button
-            onClick={() => { onClose(); onGitHub(); }}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm ${
-              hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground cursor-not-allowed opacity-50"
-            }`}
-            disabled={!hasFiles}
-          >
-            <Github className="w-4 h-4 text-muted-foreground" /> Push to GitHub
+          <button onClick={() => { onClose(); onGitHub(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}>
+            <Github className="w-4 h-4" /> GitHub
+          </button>
+          <button onClick={() => { onClose(); onDownload(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}>
+            <Download className="w-4 h-4" /> Download
           </button>
           <p className="text-[10px] text-muted-foreground uppercase px-3 py-1 mt-1">Connect</p>
-          <button
-            onClick={() => { onClose(); onSupabase(); }}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-accent transition-colors text-sm text-foreground"
-          >
-            <Database className="w-4 h-4 text-muted-foreground" /> Supabase
+          <button onClick={() => { onClose(); onSupabase(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
+            <Globe className="w-4 h-4" /> Integrations
           </button>
         </motion.div>
       </>

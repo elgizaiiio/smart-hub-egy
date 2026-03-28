@@ -14,30 +14,40 @@ serve(async (req) => {
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
     const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
 
-    if (action === "plan") {
-      const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. You build complete React applications with:
-- React + Vite + React Router
-- Tailwind CSS for styling  
-- Multiple pages/routes with react-router-dom
-- Component-based architecture
-- Clean, production-ready code
+    const claudeMessages = messages.map((m: any) => ({
+      role: m.role,
+      content: m.content,
+    }));
 
-You have access to tools:
-- web_search: Search the web for documentation, APIs, examples, and best practices
+    if (action === "build") {
+      // Direct build - no plan phase needed
+      const buildPrompt = `You are Megsy Code, an expert full-stack AI programming agent. Generate a complete React+Vite project with Tailwind CSS.
 
-Analyze the user's request thoroughly:
-1. Understand the full scope (pages, components, features)
-2. Outline a detailed plan with file structure, tech stack, and features
-3. Ask clarifying questions if the request is ambiguous
-4. Plan: Pages → Components → Styling → Interactivity
+OUTPUT FORMAT (CRITICAL - follow exactly):
+For each file, output:
+===FILE: path/to/file===
+file content here
+===END===
 
-Be conversational. Do not use emoji. Respond in the user's language. Keep plans structured and actionable.`;
+Rules:
+- Use React with JSX (.jsx files)
+- Use react-router-dom for multi-page apps (BrowserRouter)
+- Tailwind CSS for all styling
+- Keep files in src/ directory
+- Include proper error handling and responsive design
+- Do NOT include package.json, vite.config.js, index.html, src/main.jsx, src/index.css, tailwind.config.js, postcss.config.js unless you need to modify defaults
+- Make the UI modern, clean, and fully responsive
+- Include all necessary components, pages, hooks, and utilities
+- Use semantic HTML and accessible patterns
+- Respond in the user's language for any text content
+- Do NOT wrap output in markdown code blocks
+- Output ONLY the ===FILE=== blocks, no other text`;
 
-      // Define tools for Claude
+      // Define tools for web search during build
       const tools = SERPER_API_KEY ? [
         {
           name: "web_search",
-          description: "Search the web for documentation, API references, code examples, and best practices to help build the project.",
+          description: "Search the web for documentation, API references, code examples, and best practices.",
           input_schema: {
             type: "object",
             properties: {
@@ -48,28 +58,25 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
         }
       ] : [];
 
-      const claudeMessages = messages.map((m: any) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      // Agentic loop - handle tool calls
-      let currentMessages = [...claudeMessages];
+      // Agentic loop - handle tool calls then stream final response
+      let currentMessages = [...claudeMessages, { role: "user", content: "Build the project now. Output only ===FILE: path=== blocks." }];
       let maxIterations = 5;
       let finalStream: ReadableStream | null = null;
 
       for (let iteration = 0; iteration < maxIterations; iteration++) {
+        const isLastIteration = iteration === maxIterations - 1;
+        const shouldStream = isLastIteration || tools.length === 0;
+
         const requestBody: any = {
           model: "claude-sonnet-4-20250514",
-          max_tokens: 8192,
-          system: systemPrompt,
+          max_tokens: 16384,
+          system: buildPrompt,
           messages: currentMessages,
+          stream: shouldStream,
         };
-        if (tools.length > 0 && iteration < maxIterations - 1) {
+        if (tools.length > 0 && !isLastIteration) {
           requestBody.tools = tools;
         }
-        // Only stream on the final iteration (no tool use)
-        requestBody.stream = iteration === maxIterations - 1 || tools.length === 0;
 
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
@@ -86,8 +93,7 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
           throw new Error(`Claude API error ${response.status}: ${err}`);
         }
 
-        // If streaming (final pass), transform and return
-        if (requestBody.stream) {
+        if (shouldStream) {
           const transformStream = new TransformStream({
             transform(chunk, controller) {
               const text = new TextDecoder().decode(chunk);
@@ -117,14 +123,14 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
         // Non-streaming: check for tool use
         const result = await response.json();
         const toolUseBlocks = (result.content || []).filter((b: any) => b.type === "tool_use");
-        
+
         if (toolUseBlocks.length === 0) {
-          // No tool calls - extract text and stream it as SSE
+          // No tool calls - wrap text as SSE
           const textContent = (result.content || [])
             .filter((b: any) => b.type === "text")
             .map((b: any) => b.text)
             .join("");
-          
+
           const encoder = new TextEncoder();
           finalStream = new ReadableStream({
             start(controller) {
@@ -139,7 +145,6 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
 
         // Process tool calls
         currentMessages.push({ role: "assistant", content: result.content });
-        
         const toolResults: any[] = [];
         for (const toolBlock of toolUseBlocks) {
           if (toolBlock.name === "web_search" && SERPER_API_KEY) {
@@ -156,10 +161,6 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
                   `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`
                 ).join("\n\n");
               }
-              if (searchData.knowledgeGraph) {
-                const kg = searchData.knowledgeGraph;
-                context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
-              }
               toolResults.push({
                 type: "tool_result",
                 tool_use_id: toolBlock.id,
@@ -174,84 +175,12 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
             }
           }
         }
-        
         currentMessages.push({ role: "user", content: toolResults });
       }
 
       if (!finalStream) throw new Error("No response generated");
 
       return new Response(finalStream, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-      });
-    }
-
-    if (action === "build") {
-      const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete React+Vite project with Tailwind CSS.
-
-Output ONLY a valid JSON object: {"files":{"path":"content",...}}
-
-Rules:
-- Use React with JSX (.jsx files)
-- Use react-router-dom for multi-page apps (BrowserRouter)
-- Tailwind CSS for all styling
-- Keep files in src/ directory
-- Include proper error handling and responsive design
-- Do NOT include package.json, vite.config.js, index.html, src/main.jsx, src/index.css, tailwind.config.js, postcss.config.js unless you need to modify defaults
-- Output raw JSON only, no markdown code blocks
-- Make the UI modern, clean, and fully responsive
-- Include all necessary components, pages, hooks, and utilities
-- Use semantic HTML and accessible patterns`;
-
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 16384,
-          system: buildPrompt,
-          messages: [
-            ...messages.map((m: any) => ({ role: m.role, content: m.content })),
-            { role: "user", content: "Build the project now. Output only JSON." },
-          ],
-          stream: true,
-        }),
-      });
-
-      if (!response.ok) {
-        const err = await response.text();
-        throw new Error(`Claude API error ${response.status}: ${err}`);
-      }
-
-      const transformStream = new TransformStream({
-        transform(chunk, controller) {
-          const text = new TextDecoder().decode(chunk);
-          const lines = text.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.type === "content_block_delta" && parsed.delta?.text) {
-                  const openaiChunk = {
-                    choices: [{ delta: { content: parsed.delta.text } }],
-                  };
-                  controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
-                } else if (parsed.type === "message_stop") {
-                  controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
-                }
-              } catch {}
-            }
-          }
-        },
-      });
-
-      const stream = response.body!.pipeThrough(transformStream);
-
-      return new Response(stream, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
