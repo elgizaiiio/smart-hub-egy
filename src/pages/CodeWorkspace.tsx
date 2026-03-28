@@ -257,30 +257,63 @@ const CodeWorkspace = () => {
     let assistantContent = "";
 
     // Always use plan mode for chat - user must explicitly switch
-    const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. You build complete React applications with:
-- React + Vite + React Router
-- Tailwind CSS for styling
-- Multiple pages/routes with react-router-dom
-- Component-based architecture
-- Clean, production-ready code
-
-Analyze the user's request thoroughly:
-1. Understand the full scope (pages, components, features)
-2. Outline a detailed plan with file structure, tech stack, and features
-3. Ask clarifying questions if the request is ambiguous
-4. Plan: Pages → Components → Styling → Interactivity
-
-Be conversational. Do not use emoji. Respond in the user's language. Keep plans structured and actionable.`;
-
     const allMessages = messages
       .filter(m => m.role !== "system" && m.type !== "log" && m.type !== "timeline")
       .concat(userMsg)
       .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
-    allMessages.unshift({ role: "user" as const, content: `[System]: ${systemPrompt}` });
 
-    await streamChat({
-      messages: allMessages,
-      model: "x-ai/grok-3",
+    // Use Claude via code-generate edge function for planning
+    const planResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ messages: allMessages, action: "plan" }),
+    });
+
+    if (!planResp.ok || !planResp.body) {
+      const err = await planResp.json().catch(() => ({ error: "Request failed" }));
+      toast.error(err.error || "Failed to connect to AI");
+      setIsLoading(false);
+      setIsThinking(false);
+      return;
+    }
+
+    const reader = planResp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    const readStream = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") return;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              setIsThinking(false);
+              assistantContent += content;
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant" && last.type !== "log" && last.type !== "timeline") {
+                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
+                }
+                return [...prev, { role: "assistant", content: assistantContent, type: "plan" }];
+              });
+            }
+          } catch {}
+        }
+      }
+    };
+
+    await readStream();
       onDelta: (chunk) => {
         setIsThinking(false);
         assistantContent += chunk;
