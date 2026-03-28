@@ -1,87 +1,104 @@
 
 
-# خطة التعديلات الشاملة
+# خطة شاملة: البرمجة + الصوت + التكاملات + التحسينات
 
 ---
 
-## 1. صفحتا الصور والفيديوهات - إعادة هيكلة Home Tab
+## الجزء 1: تحسين صفحة البرمجة (CodeWorkspace + ProgrammingPage)
 
-### المطلوب:
-- **حذف قسم Models** بالكامل من Home tab (كلا الصفحتين)
-- **إضافة مربع إدخال عائم** في أسفل الصفحة مع زر بداخله يفتح قائمة نماذج (image models في صفحة الصور، video models في صفحة الفيديو)
-- **حذف الإيموجي** (`🖼️` و `🎬`) من fallback واستبدالها بنص أو لا شيء
-- **حذف أيقونة Coins** من بطاقات الأدوات
+### 1.1 التأكد من عمل Claude Code
+- النظام الحالي يعمل بالفعل عبر `code-generate` edge function مع Claude Sonnet 4
+- تحسين: إضافة أدوات ذكية داخل البرمجة (بحث الويب، بحث في الملفات)
 
-### التنفيذ:
-- `ImagesPage.tsx`: حذف أسطر 121-150 (قسم Models)، إضافة floating input bar مع model picker sheet في الأسفل
-- `VideosPage.tsx`: حذف أسطر 119-147 (قسم Models)، نفس الشيء
-- عند اختيار نموذج من القائمة → يتم التوجيه إلى ImageStudioPage أو VideoStudioPage مع النموذج المحدد
-- إضافة `pb-24` لمنع التداخل مع المربع العائم
+### 1.2 إضافة أدوات AI Agent للبرمجة
+تحديث `code-generate/index.ts` ليدعم:
+- **بحث الويب** عبر Serper API (موجود بالفعل كسر)
+- **بحث في الملفات** المولدة
+- نظام function calling مع Claude لتنفيذ الأدوات تلقائيا
 
----
+### 1.3 أزرار التكامل في CodeWorkspace
+القائمة الحالية (`AnimatedPlusMenu`) تحتوي GitHub + Vercel + Supabase. التحسينات:
+- **GitHub**: يعمل بالفعل عبر Composio - نتأكد من صحته
+- **Supabase**: إضافة زر "Connect Supabase" يطلب Project URL + Service Role Key ويحفظهم في المشروع
+- تحسين UI الأزرار
 
-## 2. Studio Tab - إظهار الوسائط الصحيحة فقط
-
-### المشكلة:
-- صفحة الصور تعرض كل الصور (بما فيها التي ليست صور)
-- صفحة الفيديوهات تفلتر بـ `.mp4` أو `video` فقط
-
-### التنفيذ:
-- `ImagesPage.tsx` → Studio: فلترة الصور فقط (استبعاد URLs التي تحتوي `.mp4` أو `video`)
-- `VideosPage.tsx` → Studio: يبقى كما هو (يفلتر الفيديوهات فقط)
+### 1.4 إعادة تصميم ProgrammingPage الرئيسية
+- تحسين التصميم مع عرض المشاريع السابقة بشكل أفضل
+- حفظ المحادثة والملفات بالكامل (موجود بالفعل في `files_snapshot`)
+- عند العودة لمشروع → إعادة بناء الـ preview (sandbox جديد)
 
 ---
 
-## 3. Community Tab - تحسينات
+## الجزء 2: إعادة تصميم صفحة الصوت
 
-### المطلوب:
-- الفيديوهات تشغل تلقائيًا (`autoPlay muted loop playsInline`)
-- إضافة زري "Copy Prompt" و "Reuse" تحت كل بطاقة (ليس overlay)
-- حذف الأيقونات من الأزرار
+### التصميم الجديد
+بدل عرض النماذج كقائمة تقنية، نعرض **خدمات جاهزة** للمستخدم:
 
-### التنفيذ:
-- كلا الصفحتين: تعديل Community section لإضافة أزرار نصية أسفل كل بطاقة
-- الفيديوهات: تغيير من `controls` إلى `autoPlay muted loop playsInline`
+```text
+┌─────────────────────────┐
+│  Clone Your Voice       │  ← يستخدم Qwen3 TTS VoiceClone
+│  Record 10s → Get voice │
+├─────────────────────────┤
+│  Text to Speech         │  ← يستخدم Kokoro / Chatterbox
+│  Type text → Listen     │
+├─────────────────────────┤
+│  Design AI Voice        │  ← يستخدم Qwen3 VoiceDesign
+│  Custom voice creation  │
+├─────────────────────────┤
+│  AI Music Generator     │  ← يستخدم ACE-Step
+│  Describe → Get music   │
+├─────────────────────────┤
+│  Voice Changer          │  ← تحويل الصوت
+│  Upload → Transform     │
+└─────────────────────────┘
+```
 
----
-
-## 4. التوجيه للاستوديو عند التوليد
-
-### المطلوب:
-عند الضغط على Generate في أي أداة أو نموذج → توجيه النتيجة لقسم Studio
-
-### التنفيذ:
-- كل صفحات الأدوات (`/tools/*`) بعد التوليد تحفظ النتيجة وتوجه المستخدم إلى `/images` أو `/videos` مع `state: { tab: 'studio' }`
-- ImagesPage و VideosPage: قراءة `location.state?.tab` لتحديد التبويب النشط
-
----
-
-## 5. صفحة الملفات - تحسين Preview + AI Agent
-
-### 5.1 Preview يدعم كل الأنواع
-- الـ iframe الحالي يعمل فقط مع HTML
-- إضافة دعم: عرض الصور مباشرة، عرض PDF عبر `<object>`، عرض النص العادي
-
-### 5.2 AI Agent لإنشاء الملفات
-- تحديث system prompt في edge function `chat` لوضع `files` mode بنظام أفضل
-- إضافة دعم تنزيل بصيغ متعددة: HTML, PDF, DOCX (عبر تحويل HTML)
-- إضافة دعم Smart Questions (نفس نظام الشات): الـ AI يرسل `[SMART_QUESTIONS]` block والفرونت يعرضها
-
-### 5.3 التنفيذ:
-- `FilesPage.tsx`: إضافة parsing لـ `[SMART_QUESTIONS]` من رد الـ AI + عرض `SmartQuestionCard`
-- تحسين preview modal لعرض أنواع ملفات مختلفة
-- إضافة زر تنزيل DOCX (باستخدام html-to-docx أو تحويل بسيط)
+كل خدمة تفتح صفحة مخصصة بمربع إدخال وإعدادات مناسبة.
 
 ---
 
-## 6. صفحة الاشتراكات - حذف الأيقونات
+## الجزء 3: تحسين مربع الإدخال في الصور والفيديوهات
 
-### المطلوب:
-حذف كل الأيقونات من `PricingPage.tsx` (Crown, Star, Shield, Zap, etc.)
+- تكبير مربع الإدخال قليلا (زيادة padding و min-height)
+- تغيير أيقونة "تحسين البرومبت" من `Sparkles` إلى `Wand2` أو `PenTool`
+- تحسين تجربة المستخدم
 
-### التنفيذ:
-- حذف imports الأيقونات غير المستخدمة
-- حذف الأيقونات من بطاقات الخطط وقوائم الميزات
+---
+
+## الجزء 4: التكاملات (9 خدمات)
+
+### المفاتيح المطلوبة
+سأطلب إضافة المفاتيح التالية كـ secrets:
+
+| الخدمة | اسم السر | الوصف |
+|--------|----------|-------|
+| TikTok | `TIKTOK_API_KEY` | TikTok for Developers |
+| Twitter/X | `TWITTER_CONSUMER_KEY`, `TWITTER_CONSUMER_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_TOKEN_SECRET` | X Developer Portal |
+| Shopify | `SHOPIFY_API_KEY`, `SHOPIFY_ACCESS_TOKEN` | Shopify Partners |
+| Meta | `META_ACCESS_TOKEN` | Meta for Developers |
+| Telegram | موجود بالفعل `TELEGRAM_BOT_TOKEN` | - |
+| Discord | `DISCORD_BOT_TOKEN` | Discord Developer Portal |
+| Slack | موجود بالفعل | - |
+| Notion | `NOTION_API_KEY` | Notion Integrations |
+| Zoom | `ZOOM_API_KEY`, `ZOOM_API_SECRET` | Zoom Marketplace |
+
+### كيف تعمل التكاملات
+- تحديث `chat/index.ts` بإضافة function calling tools لكل خدمة
+- عند طلب المستخدم خدمة تحتاج تكامل → الذكاء الاصطناعي يعرض **بطاقة ربط** في المحادثة:
+  "لاستخدام هذه الخدمة، اربط حسابك" مع زر "ربط"
+- إنشاء edge functions مخصصة لكل خدمة تستخدم المفاتيح مباشرة
+
+---
+
+## الجزء 5: ترقية المستخدم support@megsyai.com
+
+- تحديث خطة المستخدم عبر SQL insert tool إلى أعلى اشتراك
+
+---
+
+## الجزء 6: اقتراحات (100 خطة + 200 اقتراح)
+
+سأقدم الاقتراحات بعد إتمام التنفيذ في رسالة منفصلة.
 
 ---
 
@@ -89,10 +106,23 @@
 
 | ملف | التغيير |
 |-----|---------|
-| `src/pages/ImagesPage.tsx` | حذف Models، إضافة floating input + model picker، فلترة Studio، تحسين Community |
-| `src/pages/VideosPage.tsx` | نفس التغييرات |
-| `src/pages/FilesPage.tsx` | Smart Questions، تحسين Preview، دعم صيغ متعددة |
-| `src/pages/PricingPage.tsx` | حذف الأيقونات |
-| `src/components/ToolPageLayout.tsx` | بعد التوليد → redirect للاستوديو |
-| `supabase/functions/chat/index.ts` | تحسين files mode prompt |
+| `src/pages/VoicePage.tsx` | إعادة تصميم كامل كخدمات جاهزة |
+| `src/pages/CodeWorkspace.tsx` | إضافة أدوات بحث + تحسين التكاملات |
+| `src/pages/ProgrammingPage.tsx` | تحسين التصميم الرئيسي |
+| `src/pages/ImagesPage.tsx` | تكبير مربع الإدخال + تغيير أيقونة |
+| `src/pages/VideosPage.tsx` | نفس التحسينات |
+| `supabase/functions/code-generate/index.ts` | إضافة أدوات بحث |
+| `supabase/functions/chat/index.ts` | إضافة tools للتكاملات الجديدة |
+| `supabase/functions/integrations/index.ts` | **جديد** - edge function موحد للتكاملات |
+
+---
+
+## ترتيب التنفيذ
+
+1. ترقية المستخدم (SQL)
+2. تحسين مربع الإدخال في الصور/الفيديو (سريع)
+3. إعادة تصميم صفحة الصوت
+4. تحسين صفحة البرمجة + أدوات
+5. طلب المفاتيح وإضافة التكاملات
+6. تقديم الاقتراحات
 
