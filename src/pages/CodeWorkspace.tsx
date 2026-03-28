@@ -314,34 +314,16 @@ const CodeWorkspace = () => {
     };
 
     await readStream();
-      onDelta: (chunk) => {
-        setIsThinking(false);
-        assistantContent += chunk;
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === "assistant" && last.type !== "log" && last.type !== "timeline") {
-            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-          }
-          return [...prev, { role: "assistant", content: assistantContent, type: "plan" }];
-        });
-      },
-      onDone: () => {
-        setIsLoading(false);
-        setIsThinking(false);
-        if (convId) {
-          supabase.from("messages").insert([
-            { conversation_id: convId, role: "user", content: msgText },
-            { conversation_id: convId, role: "assistant", content: assistantContent },
-          ]);
-        }
-      },
-      onError: (err) => {
-        toast.error(err);
-        setIsLoading(false);
-        setIsThinking(false);
-      },
-      signal: controller.signal,
-    });
+
+    // Done streaming
+    setIsLoading(false);
+    setIsThinking(false);
+    if (convId) {
+      supabase.from("messages").insert([
+        { conversation_id: convId, role: "user", content: msgText },
+        { conversation_id: convId, role: "assistant", content: assistantContent },
+      ]);
+    }
   };
 
   const provisionSandbox = async (): Promise<SandboxState> => {
