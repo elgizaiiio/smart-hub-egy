@@ -246,7 +246,7 @@ const VideosPage = () => {
               )}
             </AnimatePresence>
 
-            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-background/80 backdrop-blur-xl px-3 py-3 shadow-lg">
+            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-background/80 backdrop-blur-xl px-4 py-4 shadow-lg">
               <button onClick={() => { setModelPickerOpen(!modelPickerOpen); setSettingsOpen(false); }} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-accent/50 transition-colors" title={selectedModel?.name || "Select model"}>
                 <img src={currentIcon} alt="" className="w-7 h-7 rounded-md object-contain" />
               </button>
