@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Menu, ArrowUp, Globe, Code2, FolderOpen } from "lucide-react";
+import { Menu, ArrowUp, Globe, Code2, FolderOpen, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
@@ -9,9 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 const TEMPLATES = [
   { label: "Personal website", icon: Globe },
-  { label: "E-commerce", icon: Globe },
-  { label: "Dashboard", icon: Globe },
+  { label: "E-commerce store", icon: Globe },
+  { label: "Dashboard app", icon: Globe },
   { label: "Mobile app", icon: Globe },
+  { label: "SaaS platform", icon: Globe },
+  { label: "Portfolio", icon: Globe },
 ];
 
 interface Project {
@@ -60,8 +62,20 @@ const ProgrammingPage = () => {
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
-    // Navigate to workspace with the conversation
     navigate(`/code/workspace?conversation_id=${id}`);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   return (
@@ -95,34 +109,35 @@ const ProgrammingPage = () => {
           <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">What do you want to build?</h2>
           <p className="text-sm text-muted-foreground mb-8">Describe your idea and AI will create it for you</p>
 
-          <div className="w-full max-w-md mx-auto">
+          <div className="w-full max-w-lg mx-auto">
             <div className="relative">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="What do you want to build?"
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Describe your project..."
                 rows={3}
-                className="w-full bg-transparent backdrop-blur-md border border-primary/30 rounded-xl px-4 py-3 pr-12 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none"
+                className="w-full bg-transparent backdrop-blur-md border border-primary/30 rounded-2xl px-4 py-4 pr-14 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20"
+                className="absolute bottom-4 right-4 w-9 h-9 flex items-center justify-center rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-20"
               >
                 <ArrowUp className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
+          <div className="flex flex-wrap justify-center gap-2 mt-6">
             {TEMPLATES.map((t, i) => (
               <motion.button
                 key={i}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
+                transition={{ delay: i * 0.06 }}
                 onClick={() => setInput(t.label)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+                className="px-4 py-2 rounded-full border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
               >
                 {t.label}
               </motion.button>
@@ -142,39 +157,37 @@ const ProgrammingPage = () => {
               <FolderOpen className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Your Projects</h3>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {projects.map((project, i) => (
                 <motion.button
                   key={project.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.97 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 + i * 0.05 }}
+                  transition={{ delay: 0.3 + i * 0.04 }}
                   onClick={() => openProject(project)}
-                  className="group relative rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-md transition-all text-left"
+                  className="group flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-primary/30 hover:shadow-sm transition-all text-left"
                 >
-                  {/* Preview thumbnail */}
-                  <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                  <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center overflow-hidden shrink-0">
                     {project.preview_url ? (
                       <img
                         src={project.preview_url}
                         alt={project.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <Code2 className="w-8 h-8 text-muted-foreground/40" />
+                      <Code2 className="w-5 h-5 text-muted-foreground/40" />
                     )}
                   </div>
-                  {/* Info */}
-                  <div className="p-3">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-card-foreground truncate">{project.name}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {new Date(project.updated_at).toLocaleDateString("ar-EG", { month: "short", day: "numeric" })}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Clock className="w-3 h-3 text-muted-foreground/60" />
+                      <p className="text-[11px] text-muted-foreground">{formatDate(project.updated_at)}</p>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        project.status === "running" ? "bg-green-500" : project.status === "building" ? "bg-yellow-500 animate-pulse" : "bg-muted-foreground/30"
+                      }`} />
+                    </div>
                   </div>
-                  {/* Status dot */}
-                  <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
-                    project.status === "ready" ? "bg-green-500" : project.status === "building" ? "bg-yellow-500 animate-pulse" : "bg-muted-foreground/30"
-                  }`} />
                 </motion.button>
               ))}
             </div>
