@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { streamChat } from "@/lib/streamChat";
+// streamChat no longer used - using Claude edge function directly
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
