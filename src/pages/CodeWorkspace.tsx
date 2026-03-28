@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, MessageSquare, Database, Github, RefreshCw, Triangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { streamChat } from "@/lib/streamChat";
+// streamChat no longer used - using Claude edge function directly
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
@@ -257,58 +257,73 @@ const CodeWorkspace = () => {
     let assistantContent = "";
 
     // Always use plan mode for chat - user must explicitly switch
-    const systemPrompt = `You are Megsy Code, an expert full-stack AI programming agent. You build complete React applications with:
-- React + Vite + React Router
-- Tailwind CSS for styling
-- Multiple pages/routes with react-router-dom
-- Component-based architecture
-- Clean, production-ready code
-
-Analyze the user's request thoroughly:
-1. Understand the full scope (pages, components, features)
-2. Outline a detailed plan with file structure, tech stack, and features
-3. Ask clarifying questions if the request is ambiguous
-4. Plan: Pages → Components → Styling → Interactivity
-
-Be conversational. Do not use emoji. Respond in the user's language. Keep plans structured and actionable.`;
-
     const allMessages = messages
       .filter(m => m.role !== "system" && m.type !== "log" && m.type !== "timeline")
       .concat(userMsg)
       .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
-    allMessages.unshift({ role: "user" as const, content: `[System]: ${systemPrompt}` });
 
-    await streamChat({
-      messages: allMessages,
-      model: "x-ai/grok-3",
-      onDelta: (chunk) => {
-        setIsThinking(false);
-        assistantContent += chunk;
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === "assistant" && last.type !== "log" && last.type !== "timeline") {
-            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-          }
-          return [...prev, { role: "assistant", content: assistantContent, type: "plan" }];
-        });
-      },
-      onDone: () => {
-        setIsLoading(false);
-        setIsThinking(false);
-        if (convId) {
-          supabase.from("messages").insert([
-            { conversation_id: convId, role: "user", content: msgText },
-            { conversation_id: convId, role: "assistant", content: assistantContent },
-          ]);
-        }
-      },
-      onError: (err) => {
-        toast.error(err);
-        setIsLoading(false);
-        setIsThinking(false);
-      },
-      signal: controller.signal,
+    // Use Claude via code-generate edge function for planning
+    const planResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ messages: allMessages, action: "plan" }),
     });
+
+    if (!planResp.ok || !planResp.body) {
+      const err = await planResp.json().catch(() => ({ error: "Request failed" }));
+      toast.error(err.error || "Failed to connect to AI");
+      setIsLoading(false);
+      setIsThinking(false);
+      return;
+    }
+
+    const reader = planResp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    const readStream = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") return;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              setIsThinking(false);
+              assistantContent += content;
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant" && last.type !== "log" && last.type !== "timeline") {
+                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
+                }
+                return [...prev, { role: "assistant", content: assistantContent, type: "plan" }];
+              });
+            }
+          } catch {}
+        }
+      }
+    };
+
+    await readStream();
+
+    // Done streaming
+    setIsLoading(false);
+    setIsThinking(false);
+    if (convId) {
+      supabase.from("messages").insert([
+        { conversation_id: convId, role: "user", content: msgText },
+        { conversation_id: convId, role: "assistant", content: assistantContent },
+      ]);
+    }
   };
 
   const provisionSandbox = async (): Promise<SandboxState> => {
@@ -387,165 +402,173 @@ Be conversational. Do not use emoji. Respond in the user's language. Keep plans 
     abortRef.current = controller;
     let assistantContent = "";
 
-    const buildPrompt = `You are Megsy Code in build mode. Based on the conversation, generate a complete React+Vite project with Tailwind CSS. Output ONLY a valid JSON object: {"files":{"path":"content",...}}. 
-
-Rules:
-- Use React with JSX (.jsx files)
-- Use react-router-dom for multi-page apps (BrowserRouter)
-- Tailwind CSS for all styling
-- Keep files in src/ directory
-- Include proper error handling and responsive design
-- Do NOT include package.json, vite.config.js, index.html, src/main.jsx, src/index.css, tailwind.config.js, postcss.config.js unless you need to modify defaults
-- Output raw JSON only, no markdown.`;
-
-    const allMessages = messages
-      .filter(m => m.role !== "system")
+    const allBuildMessages = messages
+      .filter(m => m.role !== "system" && m.type !== "log" && m.type !== "timeline")
       .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
-    allMessages.unshift({ role: "user" as const, content: `[System]: ${buildPrompt}` });
-    allMessages.push({ role: "user" as const, content: "Build the project now. Output only JSON." });
 
-    await streamChat({
-      messages: allMessages,
-      model: "x-ai/grok-3",
-      onDelta: (chunk) => {
-        setIsThinking(false);
-        assistantContent += chunk;
-      },
-      onDone: async () => {
-        setIsThinking(false);
-        updateStep("ai", { status: "done" });
+    // Use Claude via code-generate edge function
+    const buildResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ messages: allBuildMessages, action: "build" }),
+    });
 
-        // Step 2: Parse
-        updateStep("parse", { status: "running" });
+    if (!buildResp.ok || !buildResp.body) {
+      const err = await buildResp.json().catch(() => ({ error: "Build request failed" }));
+      throw new Error(err.error || "Build request failed");
+    }
 
-        try {
-          let parsed: { files: FileTree };
-          let cleaned = assistantContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-          const jsonStart = cleaned.search(/[\{\[]/);
-          const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === "[" ? "]" : "}");
-          if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
-          cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+    // Read the SSE stream
+    const buildReader = buildResp.body.getReader();
+    const buildDecoder = new TextDecoder();
+    let buildBuffer = "";
+
+    const readBuildStream = async () => {
+      while (true) {
+        const { done, value } = await buildReader.read();
+        if (done) break;
+        buildBuffer += buildDecoder.decode(value, { stream: true });
+        let ni: number;
+        while ((ni = buildBuffer.indexOf("\n")) !== -1) {
+          let line = buildBuffer.slice(0, ni);
+          buildBuffer = buildBuffer.slice(ni + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") return;
           try {
-            parsed = JSON.parse(cleaned);
-          } catch {
-            cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, "");
-            parsed = JSON.parse(cleaned);
-          }
-
-          if (!parsed.files || typeof parsed.files !== "object") throw new Error("Invalid file structure");
-
-          const allFiles = { ...VITE_TEMPLATE, ...parsed.files };
-          setFiles(allFiles);
-          updateStep("parse", { status: "done", detail: `${Object.keys(parsed.files).length} files` });
-
-          // Show generated files
-          setMessages(prev => [
-            ...prev,
-            {
-              role: "assistant",
-              content: `Project built with ${Object.keys(parsed.files).length} files:\n${Object.keys(parsed.files).map(f => `• ${f}`).join("\n")}`,
-              type: "build",
-            },
-          ]);
-
-          // Save project
-          let savedProjectId: string | null = null;
-          if (userId) {
-            const { data: proj } = await supabase
-              .from("projects")
-              .insert({
-                user_id: userId,
-                name: prompt.slice(0, 50) || "Untitled Project",
-                status: "created",
-                files_snapshot: allFiles as any,
-                conversation_id: conversationId,
-              })
-              .select("id")
-              .single();
-            if (proj) {
-              savedProjectId = proj.id;
-              setProjectId(proj.id);
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              setIsThinking(false);
+              assistantContent += content;
             }
-          }
+          } catch {}
+        }
+      }
+    };
 
-          // Step 3: Sandbox
-          updateStep("sandbox", { status: "running" });
-          try {
-            const sb = await provisionSandbox();
-            updateStep("sandbox", { status: "done" });
+    await readBuildStream();
 
-            // Step 4: Write files
-            updateStep("write", { status: "running" });
-            await writeFilesToSandbox(sb, allFiles);
-            updateStep("write", { status: "done" });
+    // Done with AI generation
+    setIsThinking(false);
+    updateStep("ai", { status: "done" });
 
-            // Step 5: Install + start (detached to avoid edge worker CPU limits)
-            updateStep("install", { status: "running" });
-            await callSandbox({
-              action: "exec",
-              sprite_name: sb.spriteName,
-              command: "nohup bash -lc 'cd /app && npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo STARTED",
-              detach: true,
-            });
-            updateStep("install", { status: "done", detail: "Install queued" });
+    // Step 2: Parse
+    updateStep("parse", { status: "running" });
 
-            // Step 6: Wait until preview is actually up
-            updateStep("start", { status: "running", detail: "Waiting for server..." });
-            const isReady = await waitForPreviewReady(sb.spriteName!, 30, 2000, (attempt, max) => {
-              updateStep("start", { detail: `Booting... ${attempt}/${max}` });
-            });
+    try {
+      let parsed: { files: FileTree };
+      let cleaned = assistantContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const jsonStart = cleaned.search(/[\{\[]/);
+      const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === "[" ? "]" : "}");
+      if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
+      cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, "");
+        parsed = JSON.parse(cleaned);
+      }
 
-            if (!isReady) {
-              const startupLogs = await callSandbox({
-                action: "exec",
-                sprite_name: sb.spriteName,
-                command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
-              });
-              throw new Error(`Preview server failed to start: ${String(startupLogs?.output || "").slice(0, 280)}`);
-            }
+      if (!parsed.files || typeof parsed.files !== "object") throw new Error("Invalid file structure");
 
-            updateStep("start", { status: "done", detail: "Server is live" });
+      const allFiles = { ...VITE_TEMPLATE, ...parsed.files };
+      setFiles(allFiles);
+      updateStep("parse", { status: "done", detail: `${Object.keys(parsed.files).length} files` });
 
-            if (savedProjectId) {
-              await supabase.from("projects").update({
-                fly_app_name: sb.spriteName,
-                preview_url: sb.previewUrl,
-                status: "running",
-              }).eq("id", savedProjectId);
-            }
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Project built with ${Object.keys(parsed.files).length} files:\n${Object.keys(parsed.files).map(f => `• ${f}`).join("\n")}`,
+          type: "build",
+        },
+      ]);
 
-            setPreviewError(false);
-            setActiveTab("preview");
-          } catch (sandboxErr) {
-            updateStep("start", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
-            if (savedProjectId) {
-              await supabase.from("projects").update({ status: "ready" }).eq("id", savedProjectId);
-            }
-            setMessages(prev => [
-              ...prev,
-              { role: "assistant", content: `Preview start failed: ${sandboxErr instanceof Error ? sandboxErr.message : "Unknown error"}` },
-            ]);
-          }
-        } catch (e) {
-          updateStep("parse", { status: "error", detail: e instanceof Error ? e.message : "Error" });
-          setMessages(prev => [
-            ...prev,
-            { role: "assistant", content: `Build error: ${e instanceof Error ? e.message : "Unknown"}. Please try again.` },
-          ]);
+      let savedProjectId: string | null = null;
+      if (userId) {
+        const { data: proj } = await supabase
+          .from("projects")
+          .insert({
+            user_id: userId,
+            name: prompt.slice(0, 50) || "Untitled Project",
+            status: "created",
+            files_snapshot: allFiles as any,
+            conversation_id: conversationId,
+          })
+          .select("id")
+          .single();
+        if (proj) {
+          savedProjectId = proj.id;
+          setProjectId(proj.id);
+        }
+      }
+
+      updateStep("sandbox", { status: "running" });
+      try {
+        const sb = await provisionSandbox();
+        updateStep("sandbox", { status: "done" });
+
+        updateStep("write", { status: "running" });
+        await writeFilesToSandbox(sb, allFiles);
+        updateStep("write", { status: "done" });
+
+        updateStep("install", { status: "running" });
+        await callSandbox({
+          action: "exec",
+          sprite_name: sb.spriteName,
+          command: "nohup bash -lc 'cd /app && npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo STARTED",
+          detach: true,
+        });
+        updateStep("install", { status: "done", detail: "Install queued" });
+
+        updateStep("start", { status: "running", detail: "Waiting for server..." });
+        const isReady = await waitForPreviewReady(sb.spriteName!, 30, 2000, (attempt, max) => {
+          updateStep("start", { detail: `Booting... ${attempt}/${max}` });
+        });
+
+        if (!isReady) {
+          const startupLogs = await callSandbox({
+            action: "exec",
+            sprite_name: sb.spriteName,
+            command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
+          });
+          throw new Error(`Preview server failed to start: ${String(startupLogs?.output || "").slice(0, 280)}`);
         }
 
-        setIsLoading(false);
-        // Return to plan mode after build so chat mode isn't auto-activated
-        setMode("plan");
-      },
-      onError: (err) => {
-        toast.error(err);
-        setIsLoading(false);
-        setIsThinking(false);
-        updateStep("ai", { status: "error", detail: err });
-      },
-      signal: controller.signal,
-    });
+        updateStep("start", { status: "done", detail: "Server is live" });
+
+        if (savedProjectId) {
+          await supabase.from("projects").update({
+            fly_app_name: sb.spriteName,
+            preview_url: sb.previewUrl,
+            status: "running",
+          }).eq("id", savedProjectId);
+        }
+
+        setPreviewError(false);
+        setActiveTab("preview");
+      } catch (sandboxErr) {
+        updateStep("start", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
+        if (savedProjectId) {
+          await supabase.from("projects").update({ status: "ready" }).eq("id", savedProjectId);
+        }
+        setMessages(prev => [
+          ...prev,
+          { role: "assistant", content: `Preview start failed: ${sandboxErr instanceof Error ? sandboxErr.message : "Unknown error"}` },
+        ]);
+      }
+    } catch (e) {
+      updateStep("parse", { status: "error", detail: e instanceof Error ? e.message : "Error" });
+      setMessages(prev => [
+        ...prev,
+        { role: "assistant", content: `Build error: ${e instanceof Error ? e.message : "Unknown"}. Please try again.` },
+      ]);
+    }
+
+    setIsLoading(false);
+    setMode("plan");
   };
 
   const handleGitHubPush = async () => {
