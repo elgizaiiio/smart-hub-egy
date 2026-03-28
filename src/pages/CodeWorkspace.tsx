@@ -449,145 +449,126 @@ const CodeWorkspace = () => {
     };
 
     await readBuildStream();
-      onDelta: (chunk) => {
-        setIsThinking(false);
-        assistantContent += chunk;
-      },
-      onDone: async () => {
-        setIsThinking(false);
-        updateStep("ai", { status: "done" });
 
-        // Step 2: Parse
-        updateStep("parse", { status: "running" });
+    // Done with AI generation
+    setIsThinking(false);
+    updateStep("ai", { status: "done" });
 
-        try {
-          let parsed: { files: FileTree };
-          let cleaned = assistantContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-          const jsonStart = cleaned.search(/[\{\[]/);
-          const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === "[" ? "]" : "}");
-          if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
-          cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
-          try {
-            parsed = JSON.parse(cleaned);
-          } catch {
-            cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, "");
-            parsed = JSON.parse(cleaned);
-          }
+    // Step 2: Parse
+    updateStep("parse", { status: "running" });
 
-          if (!parsed.files || typeof parsed.files !== "object") throw new Error("Invalid file structure");
+    try {
+      let parsed: { files: FileTree };
+      let cleaned = assistantContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const jsonStart = cleaned.search(/[\{\[]/);
+      const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === "[" ? "]" : "}");
+      if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
+      cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, "");
+        parsed = JSON.parse(cleaned);
+      }
 
-          const allFiles = { ...VITE_TEMPLATE, ...parsed.files };
-          setFiles(allFiles);
-          updateStep("parse", { status: "done", detail: `${Object.keys(parsed.files).length} files` });
+      if (!parsed.files || typeof parsed.files !== "object") throw new Error("Invalid file structure");
 
-          // Show generated files
-          setMessages(prev => [
-            ...prev,
-            {
-              role: "assistant",
-              content: `Project built with ${Object.keys(parsed.files).length} files:\n${Object.keys(parsed.files).map(f => `• ${f}`).join("\n")}`,
-              type: "build",
-            },
-          ]);
+      const allFiles = { ...VITE_TEMPLATE, ...parsed.files };
+      setFiles(allFiles);
+      updateStep("parse", { status: "done", detail: `${Object.keys(parsed.files).length} files` });
 
-          // Save project
-          let savedProjectId: string | null = null;
-          if (userId) {
-            const { data: proj } = await supabase
-              .from("projects")
-              .insert({
-                user_id: userId,
-                name: prompt.slice(0, 50) || "Untitled Project",
-                status: "created",
-                files_snapshot: allFiles as any,
-                conversation_id: conversationId,
-              })
-              .select("id")
-              .single();
-            if (proj) {
-              savedProjectId = proj.id;
-              setProjectId(proj.id);
-            }
-          }
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Project built with ${Object.keys(parsed.files).length} files:\n${Object.keys(parsed.files).map(f => `• ${f}`).join("\n")}`,
+          type: "build",
+        },
+      ]);
 
-          // Step 3: Sandbox
-          updateStep("sandbox", { status: "running" });
-          try {
-            const sb = await provisionSandbox();
-            updateStep("sandbox", { status: "done" });
+      let savedProjectId: string | null = null;
+      if (userId) {
+        const { data: proj } = await supabase
+          .from("projects")
+          .insert({
+            user_id: userId,
+            name: prompt.slice(0, 50) || "Untitled Project",
+            status: "created",
+            files_snapshot: allFiles as any,
+            conversation_id: conversationId,
+          })
+          .select("id")
+          .single();
+        if (proj) {
+          savedProjectId = proj.id;
+          setProjectId(proj.id);
+        }
+      }
 
-            // Step 4: Write files
-            updateStep("write", { status: "running" });
-            await writeFilesToSandbox(sb, allFiles);
-            updateStep("write", { status: "done" });
+      updateStep("sandbox", { status: "running" });
+      try {
+        const sb = await provisionSandbox();
+        updateStep("sandbox", { status: "done" });
 
-            // Step 5: Install + start (detached to avoid edge worker CPU limits)
-            updateStep("install", { status: "running" });
-            await callSandbox({
-              action: "exec",
-              sprite_name: sb.spriteName,
-              command: "nohup bash -lc 'cd /app && npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo STARTED",
-              detach: true,
-            });
-            updateStep("install", { status: "done", detail: "Install queued" });
+        updateStep("write", { status: "running" });
+        await writeFilesToSandbox(sb, allFiles);
+        updateStep("write", { status: "done" });
 
-            // Step 6: Wait until preview is actually up
-            updateStep("start", { status: "running", detail: "Waiting for server..." });
-            const isReady = await waitForPreviewReady(sb.spriteName!, 30, 2000, (attempt, max) => {
-              updateStep("start", { detail: `Booting... ${attempt}/${max}` });
-            });
+        updateStep("install", { status: "running" });
+        await callSandbox({
+          action: "exec",
+          sprite_name: sb.spriteName,
+          command: "nohup bash -lc 'cd /app && npm install --no-audit --no-fund && npm run dev' > /tmp/dev.log 2>&1 & echo STARTED",
+          detach: true,
+        });
+        updateStep("install", { status: "done", detail: "Install queued" });
 
-            if (!isReady) {
-              const startupLogs = await callSandbox({
-                action: "exec",
-                sprite_name: sb.spriteName,
-                command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
-              });
-              throw new Error(`Preview server failed to start: ${String(startupLogs?.output || "").slice(0, 280)}`);
-            }
+        updateStep("start", { status: "running", detail: "Waiting for server..." });
+        const isReady = await waitForPreviewReady(sb.spriteName!, 30, 2000, (attempt, max) => {
+          updateStep("start", { detail: `Booting... ${attempt}/${max}` });
+        });
 
-            updateStep("start", { status: "done", detail: "Server is live" });
-
-            if (savedProjectId) {
-              await supabase.from("projects").update({
-                fly_app_name: sb.spriteName,
-                preview_url: sb.previewUrl,
-                status: "running",
-              }).eq("id", savedProjectId);
-            }
-
-            setPreviewError(false);
-            setActiveTab("preview");
-          } catch (sandboxErr) {
-            updateStep("start", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
-            if (savedProjectId) {
-              await supabase.from("projects").update({ status: "ready" }).eq("id", savedProjectId);
-            }
-            setMessages(prev => [
-              ...prev,
-              { role: "assistant", content: `Preview start failed: ${sandboxErr instanceof Error ? sandboxErr.message : "Unknown error"}` },
-            ]);
-          }
-        } catch (e) {
-          updateStep("parse", { status: "error", detail: e instanceof Error ? e.message : "Error" });
-          setMessages(prev => [
-            ...prev,
-            { role: "assistant", content: `Build error: ${e instanceof Error ? e.message : "Unknown"}. Please try again.` },
-          ]);
+        if (!isReady) {
+          const startupLogs = await callSandbox({
+            action: "exec",
+            sprite_name: sb.spriteName,
+            command: "cd /app && tail -n 80 /tmp/dev.log || echo NO_LOGS",
+          });
+          throw new Error(`Preview server failed to start: ${String(startupLogs?.output || "").slice(0, 280)}`);
         }
 
-        setIsLoading(false);
-        // Return to plan mode after build so chat mode isn't auto-activated
-        setMode("plan");
-      },
-      onError: (err) => {
-        toast.error(err);
-        setIsLoading(false);
-        setIsThinking(false);
-        updateStep("ai", { status: "error", detail: err });
-      },
-      signal: controller.signal,
-    });
+        updateStep("start", { status: "done", detail: "Server is live" });
+
+        if (savedProjectId) {
+          await supabase.from("projects").update({
+            fly_app_name: sb.spriteName,
+            preview_url: sb.previewUrl,
+            status: "running",
+          }).eq("id", savedProjectId);
+        }
+
+        setPreviewError(false);
+        setActiveTab("preview");
+      } catch (sandboxErr) {
+        updateStep("start", { status: "error", detail: sandboxErr instanceof Error ? sandboxErr.message : "Error" });
+        if (savedProjectId) {
+          await supabase.from("projects").update({ status: "ready" }).eq("id", savedProjectId);
+        }
+        setMessages(prev => [
+          ...prev,
+          { role: "assistant", content: `Preview start failed: ${sandboxErr instanceof Error ? sandboxErr.message : "Unknown error"}` },
+        ]);
+      }
+    } catch (e) {
+      updateStep("parse", { status: "error", detail: e instanceof Error ? e.message : "Error" });
+      setMessages(prev => [
+        ...prev,
+        { role: "assistant", content: `Build error: ${e instanceof Error ? e.message : "Unknown"}. Please try again.` },
+      ]);
+    }
+
+    setIsLoading(false);
+    setMode("plan");
   };
 
   const handleGitHubPush = async () => {
