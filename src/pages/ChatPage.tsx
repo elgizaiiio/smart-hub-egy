@@ -92,6 +92,7 @@ const ChatPage = () => {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
+  const [showAllAgents, setShowAllAgents] = useState(false);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
