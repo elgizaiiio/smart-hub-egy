@@ -61,6 +61,7 @@ const SettingsPage = () => {
     { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
     { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
+    { icon: UserRound, label: "AI", desc: "Personalize AI", path: "/settings/ai-personalization" },
   ];
 
   const menuItems = [

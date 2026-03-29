@@ -28,6 +28,7 @@ const serviceItems = [
   { path: "/voice", label: "Voice" },
   { path: "/code", label: "Programming" },
   { path: "/files", label: "Files" },
+  { path: "/cloud", label: "Cloud" },
 ];
 
 const COLOR_PALETTES = [

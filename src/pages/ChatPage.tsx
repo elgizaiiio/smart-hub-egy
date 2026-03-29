@@ -741,8 +741,9 @@ const ChatPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Bottom input - floating with blur */}
-        <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
+        {/* Bottom input - only show when messages exist (centered input handles empty state) */}
+        {messages.length > 0 && (
+          <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
               <AnimatePresence>
                 {chatMode !== "normal" &&
@@ -772,6 +773,7 @@ const ChatPage = () => {
               </div>
             </div>
           </div>
+        )}
 
         {/* Hidden file inputs */}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.doc,.docx" multiple />
