@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ChevronRight, Globe2, Brush, Cable, UserRound, CreditCard,
-  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown, Bell,
+  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown, Bell, Cloud,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
