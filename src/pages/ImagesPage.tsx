@@ -254,19 +254,19 @@ const ImagesPage = () => {
               )}
             </AnimatePresence>
 
-            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-background/80 backdrop-blur-xl px-4 py-4 shadow-lg">
-              <button onClick={() => { setModelPickerOpen(!modelPickerOpen); setSettingsOpen(false); }} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-accent/50 transition-colors" title={selectedModel?.name || "Select model"}>
+            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-background/80 backdrop-blur-xl px-5 py-5 shadow-lg">
+              <button onClick={() => { setModelPickerOpen(!modelPickerOpen); setSettingsOpen(false); }} className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl hover:bg-accent/50 transition-colors" title={selectedModel?.name || "Select model"}>
                 <img src={currentIcon} alt="" className="w-7 h-7 rounded-md object-contain" />
               </button>
-              <textarea ref={textareaRef} value={prompt} onChange={handleTextareaChange} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Describe what you want to create..." rows={1} className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-3 max-h-[150px]" style={{ minHeight: "48px" }} />
-              <button onClick={handleEnhancePrompt} disabled={!prompt.trim() || enhancing} className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 ${enhancing ? "animate-spin" : ""}`} title="Enhance prompt">
-                <Wand2 className="w-4 h-4" />
+              <textarea ref={textareaRef} value={prompt} onChange={handleTextareaChange} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Describe what you want to create..." rows={1} className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-3 max-h-[150px]" style={{ minHeight: "56px" }} />
+              <button onClick={handleEnhancePrompt} disabled={!prompt.trim() || enhancing} className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 ${enhancing ? "animate-spin" : ""}`} title="Enhance prompt">
+                <Wand2 className="w-5 h-5" />
               </button>
-              <button onClick={() => { setSettingsOpen(!settingsOpen); setModelPickerOpen(false); }} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-                <Settings2 className="w-4 h-4" />
+              <button onClick={() => { setSettingsOpen(!settingsOpen); setModelPickerOpen(false); }} className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+                <Settings2 className="w-5 h-5" />
               </button>
-              <button onClick={handleSend} disabled={!prompt.trim()} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20 transition-colors">
-                <ArrowUp className="w-4 h-4" />
+              <button onClick={handleSend} disabled={!prompt.trim()} className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20 transition-colors">
+                <ArrowUp className="w-5 h-5" />
               </button>
             </div>
           </div>

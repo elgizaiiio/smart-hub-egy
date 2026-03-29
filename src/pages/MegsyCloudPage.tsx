@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Image, Video, FileText, Code, Mic, Filter } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Image, Video, FileText, Code, X, Download, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/layouts/AppLayout";
 
-type CloudTab = "all" | "images" | "videos" | "files" | "code" | "voice";
+type CloudTab = "all" | "images" | "videos" | "files" | "code";
 
 const MegsyCloudPage = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<CloudTab>("all");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [preview, setPreview] = useState<{ type: string; url?: string; name?: string } | null>(null);
 
   useEffect(() => { loadItems(); }, [tab]);
 
@@ -19,7 +20,6 @@ const MegsyCloudPage = () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
-
     const results: any[] = [];
 
     if (tab === "all" || tab === "images") {
@@ -55,19 +55,26 @@ const MegsyCloudPage = () => {
     setLoading(false);
   };
 
-  const tabs: { id: CloudTab; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "images", label: "Images" },
-    { id: "videos", label: "Videos" },
-    { id: "files", label: "Files" },
-    { id: "code", label: "Code" },
-    { id: "voice", label: "Voice" },
+  const handleItemClick = (item: any) => {
+    if (item.type === "image") setPreview({ type: "image", url: item.url });
+    else if (item.type === "video") setPreview({ type: "video", url: item.url });
+    else if (item.type === "code" && item.url) window.open(item.url, "_blank");
+    else if (item.type === "code") navigate(`/code?project=${item.id}`);
+    else if (item.type === "file") navigate(`/files?conversation=${item.id}`);
+  };
+
+  const tabs: { id: CloudTab; label: string; icon: any }[] = [
+    { id: "all", label: "All", icon: null },
+    { id: "images", label: "Images", icon: Image },
+    { id: "videos", label: "Videos", icon: Video },
+    { id: "files", label: "Files", icon: FileText },
+    { id: "code", label: "Code", icon: Code },
   ];
 
   return (
     <AppLayout>
       <div className="h-[100dvh] flex flex-col bg-background">
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/30">
+        <div className="flex items-center gap-3 px-4 py-3">
           <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -95,15 +102,18 @@ const MegsyCloudPage = () => {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {items.map((item, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="rounded-xl overflow-hidden border border-border/30 bg-secondary/50 group cursor-pointer hover:border-primary/30 transition-colors">
+                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} onClick={() => handleItemClick(item)} className="rounded-xl overflow-hidden border border-border/30 bg-secondary/50 group cursor-pointer hover:border-primary/30 transition-colors">
                   {item.type === "image" && (
                     <div className="aspect-square">
                       <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />
                     </div>
                   )}
                   {item.type === "video" && (
-                    <div className="aspect-video">
+                    <div className="aspect-video relative">
                       <video src={item.url} className="w-full h-full object-cover" muted />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Play className="w-8 h-8 text-white/80" />
+                      </div>
                     </div>
                   )}
                   {(item.type === "code" || item.type === "file") && (
@@ -120,6 +130,26 @@ const MegsyCloudPage = () => {
             </div>
           )}
         </div>
+
+        {/* Preview Modal */}
+        <AnimatePresence>
+          {preview && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4" onClick={() => setPreview(null)}>
+              <button onClick={() => setPreview(null)} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white"><X className="w-5 h-5" /></button>
+              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="max-w-lg w-full" onClick={e => e.stopPropagation()}>
+                {preview.type === "image" && <img src={preview.url} alt="" className="w-full rounded-2xl object-contain max-h-[70vh]" />}
+                {preview.type === "video" && <video src={preview.url} controls autoPlay className="w-full rounded-2xl max-h-[70vh]" />}
+                <div className="flex justify-center mt-3">
+                  <a href={preview.url} download className="fancy-btn">
+                    <span className="fold" />
+                    <div className="points_wrapper">{Array.from({ length: 8 }).map((_, i) => <span key={i} className="point" />)}</div>
+                    <span className="inner flex items-center gap-2 text-sm"><Download className="w-4 h-4" /> Download</span>
+                  </a>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AppLayout>
   );
