@@ -695,12 +695,20 @@ const CodeWorkspace = () => {
     <div className="h-full relative bg-secondary">
       {previewHtml ? (
         <>
-          <iframe
-            ref={iframeRef}
-            className="w-full h-full border-none"
-            title="Project Preview"
-            sandbox="allow-scripts allow-same-origin"
-          />
+          {previewHtml.startsWith("http") ? (
+            <iframe
+              src={previewHtml}
+              className="w-full h-full border-none"
+              title="Project Preview"
+            />
+          ) : (
+            <iframe
+              ref={iframeRef}
+              className="w-full h-full border-none"
+              title="Project Preview"
+              sandbox="allow-scripts allow-same-origin"
+            />
+          )}
           <button
             onClick={handleRefreshPreview}
             className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm"
