@@ -7,85 +7,109 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
+import { lazy, Suspense } from "react";
+
+// Eager-loaded core pages
 import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
 import LandingPage from "./pages/LandingPage";
-import ImagesPage from "./pages/ImagesPage";
-import VideosPage from "./pages/VideosPage";
-import FilesPage from "./pages/FilesPage";
-import ProgrammingPage from "./pages/ProgrammingPage";
-import CodeWorkspace from "./pages/CodeWorkspace";
-import ProfilePage from "./pages/ProfilePage";
-import PricingPage from "./pages/PricingPage";
-import SettingsPage from "./pages/SettingsPage";
-import CustomizationPage from "./pages/CustomizationPage";
-import ProfileSettingsPage from "./pages/ProfileSettingsPage";
-import BillingPage from "./pages/BillingPage";
-import ReferralsPage from "./pages/ReferralsPage";
 
-import LanguagePage from "./pages/LanguagePage";
-import IntegrationsPage from "./pages/IntegrationsPage";
-import NotFound from "./pages/NotFound";
-import ChangeEmailPage from "./pages/ChangeEmailPage";
-import ChangePasswordPage from "./pages/ChangePasswordPage";
-import DeleteAccountPage from "./pages/DeleteAccountPage";
-import WithdrawPage from "./pages/WithdrawPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import NotificationSettingsPage from "./pages/NotificationSettingsPage";
-import OAuthAuthorizePage from "./pages/OAuthAuthorizePage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import SharedChatPage from "./pages/SharedChatPage";
-import ContactPage from "./pages/ContactPage";
-import ServiceImagesPage from "./pages/services/ServiceImagesPage";
-import ServiceVideosPage from "./pages/services/ServiceVideosPage";
-import ServiceChatPage from "./pages/services/ServiceChatPage";
-import ServiceFilesPage from "./pages/services/ServiceFilesPage";
-import ServiceCodePage from "./pages/services/ServiceCodePage";
-import ImageStudioPage from "./pages/ImageStudioPage";
-import VideoStudioPage from "./pages/VideoStudioPage";
-import ImageAgentPage from "./pages/ImageAgentPage";
-import VideoAgentPage from "./pages/VideoAgentPage";
-import CookieConsent from "./components/CookieConsent";
+// Lazy-loaded pages
+const ImagesPage = lazy(() => import("./pages/ImagesPage"));
+const VideosPage = lazy(() => import("./pages/VideosPage"));
+const FilesPage = lazy(() => import("./pages/FilesPage"));
+const ProgrammingPage = lazy(() => import("./pages/ProgrammingPage"));
+const CodeWorkspace = lazy(() => import("./pages/CodeWorkspace"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const PricingPage = lazy(() => import("./pages/PricingPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const CustomizationPage = lazy(() => import("./pages/CustomizationPage"));
+const ProfileSettingsPage = lazy(() => import("./pages/ProfileSettingsPage"));
+const BillingPage = lazy(() => import("./pages/BillingPage"));
+const ReferralsPage = lazy(() => import("./pages/ReferralsPage"));
+const LanguagePage = lazy(() => import("./pages/LanguagePage"));
+const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ChangeEmailPage = lazy(() => import("./pages/ChangeEmailPage"));
+const ChangePasswordPage = lazy(() => import("./pages/ChangePasswordPage"));
+const DeleteAccountPage = lazy(() => import("./pages/DeleteAccountPage"));
+const WithdrawPage = lazy(() => import("./pages/WithdrawPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettingsPage"));
+const OAuthAuthorizePage = lazy(() => import("./pages/OAuthAuthorizePage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const SharedChatPage = lazy(() => import("./pages/SharedChatPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const ServiceImagesPage = lazy(() => import("./pages/services/ServiceImagesPage"));
+const ServiceVideosPage = lazy(() => import("./pages/services/ServiceVideosPage"));
+const ServiceChatPage = lazy(() => import("./pages/services/ServiceChatPage"));
+const ServiceFilesPage = lazy(() => import("./pages/services/ServiceFilesPage"));
+const ServiceCodePage = lazy(() => import("./pages/services/ServiceCodePage"));
+const ImageStudioPage = lazy(() => import("./pages/ImageStudioPage"));
+const VideoStudioPage = lazy(() => import("./pages/VideoStudioPage"));
+const ImageAgentPage = lazy(() => import("./pages/ImageAgentPage"));
+const VideoAgentPage = lazy(() => import("./pages/VideoAgentPage"));
+const CookieConsent = lazy(() => import("./components/CookieConsent"));
 import TranslationWrapper from "./components/TranslationWrapper";
-import EgyptPage from "./pages/EgyptPage";
-import ModelsPage from "./pages/ModelsPage";
-import CookiePolicyPage from "./pages/CookiePolicyPage";
-import CareersPage from "./pages/CareersPage";
-import SecurityPage from "./pages/SecurityPage";
-import BlogPage from "./pages/BlogPage";
-import ChangelogPage from "./pages/ChangelogPage";
-import SupportPage from "./pages/SupportPage";
-import EnterprisePage from "./pages/EnterprisePage";
-import AboutPage from "./pages/AboutPage";
-import AuthDocsPage from "./pages/AuthDocsPage";
-import VoicePage from "./pages/VoicePage";
-import VideoToTextPage from "./pages/tools/VideoToTextPage";
+const EgyptPage = lazy(() => import("./pages/EgyptPage"));
+const ModelsPage = lazy(() => import("./pages/ModelsPage"));
+const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
+const CareersPage = lazy(() => import("./pages/CareersPage"));
+const SecurityPage = lazy(() => import("./pages/SecurityPage"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
+const ChangelogPage = lazy(() => import("./pages/ChangelogPage"));
+const SupportPage = lazy(() => import("./pages/SupportPage"));
+const EnterprisePage = lazy(() => import("./pages/EnterprisePage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const AuthDocsPage = lazy(() => import("./pages/AuthDocsPage"));
+const VoicePage = lazy(() => import("./pages/VoicePage"));
 
-// Image tool pages
-import InpaintPage from "./pages/tools/InpaintPage";
-import ClothesChangerPage from "./pages/tools/ClothesChangerPage";
-import HeadshotPage from "./pages/tools/HeadshotPage";
-import BgRemoverPage from "./pages/tools/BgRemoverPage";
-import FaceSwapPage from "./pages/tools/FaceSwapPage";
-import RelightPage from "./pages/tools/RelightPage";
-import ColorizerPage from "./pages/tools/ColorizerPage";
-import CharacterSwapPage from "./pages/tools/CharacterSwapPage";
-import StoryboardPage from "./pages/tools/StoryboardPage";
-import SketchToImagePage from "./pages/tools/SketchToImagePage";
-import RetouchingPage from "./pages/tools/RetouchingPage";
-import RemoverPage from "./pages/tools/RemoverPage";
-import HairChangerPage from "./pages/tools/HairChangerPage";
-import CartoonPage from "./pages/tools/CartoonPage";
-import AvatarMakerPage from "./pages/tools/AvatarMakerPage";
+// Image tools
+const InpaintPage = lazy(() => import("./pages/tools/InpaintPage"));
+const ClothesChangerPage = lazy(() => import("./pages/tools/ClothesChangerPage"));
+const HeadshotPage = lazy(() => import("./pages/tools/HeadshotPage"));
+const BgRemoverPage = lazy(() => import("./pages/tools/BgRemoverPage"));
+const FaceSwapPage = lazy(() => import("./pages/tools/FaceSwapPage"));
+const RelightPage = lazy(() => import("./pages/tools/RelightPage"));
+const ColorizerPage = lazy(() => import("./pages/tools/ColorizerPage"));
+const CharacterSwapPage = lazy(() => import("./pages/tools/CharacterSwapPage"));
+const StoryboardPage = lazy(() => import("./pages/tools/StoryboardPage"));
+const SketchToImagePage = lazy(() => import("./pages/tools/SketchToImagePage"));
+const RetouchingPage = lazy(() => import("./pages/tools/RetouchingPage"));
+const RemoverPage = lazy(() => import("./pages/tools/RemoverPage"));
+const HairChangerPage = lazy(() => import("./pages/tools/HairChangerPage"));
+const CartoonPage = lazy(() => import("./pages/tools/CartoonPage"));
+const AvatarMakerPage = lazy(() => import("./pages/tools/AvatarMakerPage"));
 
-// Video tool pages
-import VideoSwapPage from "./pages/tools/VideoSwapPage";
-import VideoUpscalePage from "./pages/tools/VideoUpscalePage";
-import TalkingPhotoPage from "./pages/tools/TalkingPhotoPage";
-import VideoExtenderPage from "./pages/tools/VideoExtenderPage";
-import AutoCaptionPage from "./pages/tools/AutoCaptionPage";
-import LipSyncPage from "./pages/tools/LipSyncPage";
+// Video tools
+const VideoSwapPage = lazy(() => import("./pages/tools/VideoSwapPage"));
+const VideoUpscalePage = lazy(() => import("./pages/tools/VideoUpscalePage"));
+const TalkingPhotoPage = lazy(() => import("./pages/tools/TalkingPhotoPage"));
+const VideoExtenderPage = lazy(() => import("./pages/tools/VideoExtenderPage"));
+const AutoCaptionPage = lazy(() => import("./pages/tools/AutoCaptionPage"));
+const LipSyncPage = lazy(() => import("./pages/tools/LipSyncPage"));
+const VideoToTextPage = lazy(() => import("./pages/tools/VideoToTextPage"));
+
+// Agent pages
+const MeetingNotesPage = lazy(() => import("./pages/agents/MeetingNotesPage"));
+const SlidesAgentPage = lazy(() => import("./pages/agents/SlidesAgentPage"));
+const SpreadsheetAgentPage = lazy(() => import("./pages/agents/SpreadsheetAgentPage"));
+const ImageGeniusPage = lazy(() => import("./pages/agents/ImageGeniusPage"));
+const AdDesignerPage = lazy(() => import("./pages/agents/AdDesignerPage"));
+const YoutubeSummaryPage = lazy(() => import("./pages/agents/YoutubeSummaryPage"));
+const PodcastAgentPage = lazy(() => import("./pages/agents/PodcastAgentPage"));
+const BookCreatorPage = lazy(() => import("./pages/agents/BookCreatorPage"));
+const SocialAnalyzerPage = lazy(() => import("./pages/agents/SocialAnalyzerPage"));
+const NewsAgentPage = lazy(() => import("./pages/agents/NewsAgentPage"));
+const DeepSearchPage = lazy(() => import("./pages/agents/DeepSearchPage"));
+
+// New pages
+const MegsyCloudPage = lazy(() => import("./pages/MegsyCloudPage"));
+const AIPersonalizationPage = lazy(() => import("./pages/AIPersonalizationPage"));
+
 const queryClient = new QueryClient();
+
+const PageLoader = () => <div className="h-screen bg-background" />;
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
@@ -103,13 +127,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) return <div className="h-screen bg-background" />;
+  if (loading) return <PageLoader />;
   if (!authenticated) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 };
 
 const App = () => {
-  // Track current user ID to force remount of protected pages on account switch
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -122,8 +145,6 @@ const App = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const userId = session?.user?.id || null;
       const lastUserId = localStorage.getItem("megsy_last_user_id");
-
-      // Clear caches when user changes
       if (userId && lastUserId && userId !== lastUserId) {
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
@@ -133,9 +154,7 @@ const App = () => {
         keysToRemove.forEach((k) => localStorage.removeItem(k));
         queryClient.clear();
       }
-
       if (userId) localStorage.setItem("megsy_last_user_id", userId);
-
       if (event === "SIGNED_OUT") {
         localStorage.removeItem("megsy_last_user_id");
         const keysToRemove: string[] = [];
@@ -146,18 +165,17 @@ const App = () => {
         keysToRemove.forEach((k) => localStorage.removeItem(k));
         queryClient.clear();
       }
-
-      // Update currentUserId to force remount of all protected components
       setCurrentUserId(userId);
     });
 
-    // Initialize
     supabase.auth.getSession().then(({ data: { session } }) => {
       setCurrentUserId(session?.user?.id || null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const P = ({ children }: { children: React.ReactNode }) => <ProtectedRoute>{children}</ProtectedRoute>;
 
   return (
     <TranslationWrapper>
@@ -168,84 +186,101 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <OfflineBanner />
-              <CookieConsent />
-              <Routes>
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/share/:shareId" element={<SharedChatPage />} />
-                {/* key={currentUserId} forces complete remount when user switches accounts */}
-                <Route path="/chat" element={<ProtectedRoute><ChatPage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/images" element={<ProtectedRoute><ImagesPage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/images/studio" element={<ProtectedRoute><ImageStudioPage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/images/agent" element={<ProtectedRoute><ImageAgentPage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/videos" element={<ProtectedRoute><VideosPage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/videos/studio" element={<ProtectedRoute><VideoStudioPage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/videos/agent" element={<ProtectedRoute><VideoAgentPage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/files" element={<ProtectedRoute><FilesPage key={currentUserId} /></ProtectedRoute>} />
-                {/* Image tool routes */}
-                <Route path="/images/tools/inpaint" element={<ProtectedRoute><InpaintPage /></ProtectedRoute>} />
-                <Route path="/images/tools/clothes-changer" element={<ProtectedRoute><ClothesChangerPage /></ProtectedRoute>} />
-                <Route path="/images/tools/headshot" element={<ProtectedRoute><HeadshotPage /></ProtectedRoute>} />
-                <Route path="/images/tools/bg-remover" element={<ProtectedRoute><BgRemoverPage /></ProtectedRoute>} />
-                <Route path="/images/tools/face-swap" element={<ProtectedRoute><FaceSwapPage /></ProtectedRoute>} />
-                <Route path="/images/tools/relight" element={<ProtectedRoute><RelightPage /></ProtectedRoute>} />
-                <Route path="/images/tools/colorizer" element={<ProtectedRoute><ColorizerPage /></ProtectedRoute>} />
-                <Route path="/images/tools/character-swap" element={<ProtectedRoute><CharacterSwapPage /></ProtectedRoute>} />
-                <Route path="/images/tools/storyboard" element={<ProtectedRoute><StoryboardPage /></ProtectedRoute>} />
-                <Route path="/images/tools/sketch-to-image" element={<ProtectedRoute><SketchToImagePage /></ProtectedRoute>} />
-                <Route path="/images/tools/retouching" element={<ProtectedRoute><RetouchingPage /></ProtectedRoute>} />
-                <Route path="/images/tools/remover" element={<ProtectedRoute><RemoverPage /></ProtectedRoute>} />
-                <Route path="/images/tools/hair-changer" element={<ProtectedRoute><HairChangerPage /></ProtectedRoute>} />
-                <Route path="/images/tools/cartoon" element={<ProtectedRoute><CartoonPage /></ProtectedRoute>} />
-                <Route path="/images/tools/avatar-maker" element={<ProtectedRoute><AvatarMakerPage /></ProtectedRoute>} />
-                {/* Video tool routes */}
-                <Route path="/videos/tools/swap-characters" element={<ProtectedRoute><VideoSwapPage /></ProtectedRoute>} />
-                <Route path="/videos/tools/upscale" element={<ProtectedRoute><VideoUpscalePage /></ProtectedRoute>} />
-                <Route path="/videos/tools/talking-photo" element={<ProtectedRoute><TalkingPhotoPage /></ProtectedRoute>} />
-                <Route path="/videos/tools/video-extender" element={<ProtectedRoute><VideoExtenderPage /></ProtectedRoute>} />
-                <Route path="/videos/tools/auto-caption" element={<ProtectedRoute><AutoCaptionPage /></ProtectedRoute>} />
-                <Route path="/videos/tools/lip-sync" element={<ProtectedRoute><LipSyncPage /></ProtectedRoute>} />
-                <Route path="/videos/tools/video-to-text" element={<ProtectedRoute><VideoToTextPage /></ProtectedRoute>} />
-                <Route path="/voice" element={<ProtectedRoute><VoicePage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                <Route path="/settings/customization" element={<ProtectedRoute><CustomizationPage /></ProtectedRoute>} />
-                <Route path="/settings/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
-                <Route path="/settings/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
-                <Route path="/settings/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
-                <Route path="/settings/language" element={<ProtectedRoute><LanguagePage /></ProtectedRoute>} />
-                <Route path="/settings/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
-                <Route path="/settings/change-email" element={<ProtectedRoute><ChangeEmailPage /></ProtectedRoute>} />
-                <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
-                <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
-                <Route path="/settings/withdraw" element={<ProtectedRoute><WithdrawPage /></ProtectedRoute>} />
-                <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-                <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
-                <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/egypt" element={<EgyptPage />} />
-                <Route path="/apis" element={<PricingPage />} />
-                <Route path="/models" element={<ModelsPage />} />
-                <Route path="/cookies" element={<CookiePolicyPage />} />
-                <Route path="/support" element={<SupportPage />} />
-                <Route path="/careers" element={<CareersPage />} />
-                <Route path="/security" element={<SecurityPage />} />
-                <Route path="/blog" element={<BlogPage />} />
-                <Route path="/changelog" element={<ChangelogPage />} />
-                <Route path="/services/images" element={<ServiceImagesPage />} />
-                <Route path="/services/videos" element={<ServiceVideosPage />} />
-                <Route path="/services/chat" element={<ServiceChatPage />} />
-                <Route path="/services/files" element={<ServiceFilesPage />} />
-                <Route path="/services/code" element={<ServiceCodePage />} />
-                <Route path="/enterprise" element={<EnterprisePage />} />
-                <Route path="/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
-                <Route path="/auth/docs" element={<AuthDocsPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={null}><CookieConsent /></Suspense>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/share/:shareId" element={<SharedChatPage />} />
+                  <Route path="/chat" element={<P><ChatPage key={currentUserId} /></P>} />
+                  <Route path="/images" element={<P><ImagesPage key={currentUserId} /></P>} />
+                  <Route path="/images/studio" element={<P><ImageStudioPage key={currentUserId} /></P>} />
+                  <Route path="/images/agent" element={<P><ImageAgentPage key={currentUserId} /></P>} />
+                  <Route path="/videos" element={<P><VideosPage key={currentUserId} /></P>} />
+                  <Route path="/videos/studio" element={<P><VideoStudioPage key={currentUserId} /></P>} />
+                  <Route path="/videos/agent" element={<P><VideoAgentPage key={currentUserId} /></P>} />
+                  <Route path="/files" element={<P><FilesPage key={currentUserId} /></P>} />
+                  {/* Image tools */}
+                  <Route path="/images/tools/inpaint" element={<P><InpaintPage /></P>} />
+                  <Route path="/images/tools/clothes-changer" element={<P><ClothesChangerPage /></P>} />
+                  <Route path="/images/tools/headshot" element={<P><HeadshotPage /></P>} />
+                  <Route path="/images/tools/bg-remover" element={<P><BgRemoverPage /></P>} />
+                  <Route path="/images/tools/face-swap" element={<P><FaceSwapPage /></P>} />
+                  <Route path="/images/tools/relight" element={<P><RelightPage /></P>} />
+                  <Route path="/images/tools/colorizer" element={<P><ColorizerPage /></P>} />
+                  <Route path="/images/tools/character-swap" element={<P><CharacterSwapPage /></P>} />
+                  <Route path="/images/tools/storyboard" element={<P><StoryboardPage /></P>} />
+                  <Route path="/images/tools/sketch-to-image" element={<P><SketchToImagePage /></P>} />
+                  <Route path="/images/tools/retouching" element={<P><RetouchingPage /></P>} />
+                  <Route path="/images/tools/remover" element={<P><RemoverPage /></P>} />
+                  <Route path="/images/tools/hair-changer" element={<P><HairChangerPage /></P>} />
+                  <Route path="/images/tools/cartoon" element={<P><CartoonPage /></P>} />
+                  <Route path="/images/tools/avatar-maker" element={<P><AvatarMakerPage /></P>} />
+                  {/* Video tools */}
+                  <Route path="/videos/tools/swap-characters" element={<P><VideoSwapPage /></P>} />
+                  <Route path="/videos/tools/upscale" element={<P><VideoUpscalePage /></P>} />
+                  <Route path="/videos/tools/talking-photo" element={<P><TalkingPhotoPage /></P>} />
+                  <Route path="/videos/tools/video-extender" element={<P><VideoExtenderPage /></P>} />
+                  <Route path="/videos/tools/auto-caption" element={<P><AutoCaptionPage /></P>} />
+                  <Route path="/videos/tools/lip-sync" element={<P><LipSyncPage /></P>} />
+                  <Route path="/videos/tools/video-to-text" element={<P><VideoToTextPage /></P>} />
+                  {/* Agent routes */}
+                  <Route path="/agents/meetings" element={<P><MeetingNotesPage /></P>} />
+                  <Route path="/agents/slides" element={<P><SlidesAgentPage /></P>} />
+                  <Route path="/agents/spreadsheets" element={<P><SpreadsheetAgentPage /></P>} />
+                  <Route path="/agents/image-genius" element={<P><ImageGeniusPage /></P>} />
+                  <Route path="/agents/ad-designer" element={<P><AdDesignerPage /></P>} />
+                  <Route path="/agents/youtube-summary" element={<P><YoutubeSummaryPage /></P>} />
+                  <Route path="/agents/podcast" element={<P><PodcastAgentPage /></P>} />
+                  <Route path="/agents/book-creator" element={<P><BookCreatorPage /></P>} />
+                  <Route path="/agents/social-analyzer" element={<P><SocialAnalyzerPage /></P>} />
+                  <Route path="/agents/news" element={<P><NewsAgentPage /></P>} />
+                  <Route path="/agents/deep-search" element={<P><DeepSearchPage /></P>} />
+                  {/* Cloud & Personalization */}
+                  <Route path="/cloud" element={<P><MegsyCloudPage /></P>} />
+                  <Route path="/settings/ai-personalization" element={<P><AIPersonalizationPage /></P>} />
+                  {/* Core */}
+                  <Route path="/voice" element={<P><VoicePage key={currentUserId} /></P>} />
+                  <Route path="/code" element={<P><ProgrammingPage key={currentUserId} /></P>} />
+                  <Route path="/code/workspace" element={<P><CodeWorkspace key={currentUserId} /></P>} />
+                  <Route path="/profile" element={<P><ProfilePage /></P>} />
+                  <Route path="/settings" element={<P><SettingsPage /></P>} />
+                  <Route path="/settings/customization" element={<P><CustomizationPage /></P>} />
+                  <Route path="/settings/profile" element={<P><ProfileSettingsPage /></P>} />
+                  <Route path="/settings/billing" element={<P><BillingPage /></P>} />
+                  <Route path="/settings/referrals" element={<P><ReferralsPage /></P>} />
+                  <Route path="/settings/language" element={<P><LanguagePage /></P>} />
+                  <Route path="/settings/integrations" element={<P><IntegrationsPage /></P>} />
+                  <Route path="/settings/change-email" element={<P><ChangeEmailPage /></P>} />
+                  <Route path="/settings/change-password" element={<P><ChangePasswordPage /></P>} />
+                  <Route path="/settings/delete-account" element={<P><DeleteAccountPage /></P>} />
+                  <Route path="/settings/withdraw" element={<P><WithdrawPage /></P>} />
+                  <Route path="/notifications" element={<P><NotificationsPage /></P>} />
+                  <Route path="/settings/notifications" element={<P><NotificationSettingsPage /></P>} />
+                  <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/egypt" element={<EgyptPage />} />
+                  <Route path="/apis" element={<PricingPage />} />
+                  <Route path="/models" element={<ModelsPage />} />
+                  <Route path="/cookies" element={<CookiePolicyPage />} />
+                  <Route path="/support" element={<SupportPage />} />
+                  <Route path="/careers" element={<CareersPage />} />
+                  <Route path="/security" element={<SecurityPage />} />
+                  <Route path="/blog" element={<BlogPage />} />
+                  <Route path="/changelog" element={<ChangelogPage />} />
+                  <Route path="/services/images" element={<ServiceImagesPage />} />
+                  <Route path="/services/videos" element={<ServiceVideosPage />} />
+                  <Route path="/services/chat" element={<ServiceChatPage />} />
+                  <Route path="/services/files" element={<ServiceFilesPage />} />
+                  <Route path="/services/code" element={<ServiceCodePage />} />
+                  <Route path="/enterprise" element={<EnterprisePage />} />
+                  <Route path="/about" element={<P><AboutPage /></P>} />
+                  <Route path="/auth/docs" element={<AuthDocsPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </BrowserRouter>
           </ErrorBoundary>
         </TooltipProvider>

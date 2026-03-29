@@ -556,10 +556,25 @@ const CodeWorkspace = () => {
     setIsBuildActive(false);
   };
 
-  const handleRefreshPreview = () => {
+  const handleRefreshPreview = async () => {
     if (Object.keys(files).length > 0) {
-      const html = buildPreviewHtml(files);
-      setPreviewHtml(html);
+      // Deploy to Vercel for live preview
+      try {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/vercel-deploy`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+          body: JSON.stringify({ files, project_name: prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "megsy-project" }),
+        });
+        const data = await resp.json();
+        if (data.success && data.url) {
+          setPreviewHtml(data.url);
+        } else {
+          // Fallback to local preview
+          setPreviewHtml(buildPreviewHtml(files));
+        }
+      } catch {
+        setPreviewHtml(buildPreviewHtml(files));
+      }
     }
   };
 
@@ -680,12 +695,20 @@ const CodeWorkspace = () => {
     <div className="h-full relative bg-secondary">
       {previewHtml ? (
         <>
-          <iframe
-            ref={iframeRef}
-            className="w-full h-full border-none"
-            title="Project Preview"
-            sandbox="allow-scripts allow-same-origin"
-          />
+          {previewHtml.startsWith("http") ? (
+            <iframe
+              src={previewHtml}
+              className="w-full h-full border-none"
+              title="Project Preview"
+            />
+          ) : (
+            <iframe
+              ref={iframeRef}
+              className="w-full h-full border-none"
+              title="Project Preview"
+              sandbox="allow-scripts allow-same-origin"
+            />
+          )}
           <button
             onClick={handleRefreshPreview}
             className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm"
