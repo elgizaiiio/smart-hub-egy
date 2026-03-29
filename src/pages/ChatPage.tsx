@@ -676,26 +676,30 @@ const ChatPage = () => {
                   <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Files</button>
                 </div>
 
-                {/* Agent suggestions - horizontal scroll */}
+                {/* Agent suggestions - horizontal scroll with icons */}
                 <div className="overflow-x-auto pb-2 -mx-4 px-4">
                   <div className="flex gap-2 w-max">
                     {[
-                      { label: "Meeting Notes", path: "/agents/meetings" },
-                      { label: "AI Slides", path: "/agents/slides" },
-                      { label: "Spreadsheets", path: "/agents/spreadsheets" },
-                      { label: "Image Genius", path: "/agents/image-genius" },
-                      { label: "Ad Designer", path: "/agents/ad-designer" },
-                      { label: "YouTube Summary", path: "/agents/youtube-summary" },
-                      { label: "AI Podcast", path: "/agents/podcast" },
-                      { label: "Book Creator", path: "/agents/book-creator" },
-                      { label: "Social Analyzer", path: "/agents/social-analyzer" },
-                      { label: "News", path: "/agents/news" },
-                      { label: "Deep Search", path: "/agents/deep-search" },
-                    ].map(a => (
-                      <button key={a.path} onClick={() => navigate(a.path)} className="px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 text-xs text-primary hover:bg-primary/10 transition-colors shrink-0 font-medium">
-                        {a.label}
-                      </button>
-                    ))}
+                      { label: "Meetings", path: "/agents/meetings", icon: "CalendarCheck" },
+                      { label: "Slides", path: "/agents/slides", icon: "Presentation" },
+                      { label: "Sheets", path: "/agents/spreadsheets", icon: "Table2" },
+                      { label: "Image Genius", path: "/agents/image-genius", icon: "Sparkles" },
+                      { label: "Ad Designer", path: "/agents/ad-designer", icon: "Megaphone" },
+                      { label: "YouTube", path: "/agents/youtube-summary", icon: "Youtube" },
+                      { label: "Podcast", path: "/agents/podcast", icon: "Podcast" },
+                      { label: "Books", path: "/agents/book-creator", icon: "BookOpen" },
+                      { label: "Social", path: "/agents/social-analyzer", icon: "BarChart3" },
+                      { label: "News", path: "/agents/news", icon: "Newspaper" },
+                      { label: "Deep Search", path: "/agents/deep-search", icon: "SearchCheck" },
+                    ].map(a => {
+                      const IconComp = agentIcons[a.icon as keyof typeof agentIcons];
+                      return (
+                        <button key={a.path} onClick={() => navigate(a.path)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 text-xs text-primary hover:bg-primary/10 transition-colors shrink-0 font-medium">
+                          {IconComp && <IconComp className="w-3.5 h-3.5" />}
+                          {a.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </motion.div>
