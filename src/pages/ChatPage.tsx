@@ -727,7 +727,6 @@ const ChatPage = () => {
                     { label: "Image AI", path: "/agents/image-genius", icon: Sparkles, bg: "bg-fuchsia-600" },
                   ];
                   const visible = allAgents.slice(0, 5);
-                  const [showAllAgents, setShowAllAgents] = useState(false);
                   return (
                     <>
                       <div className="flex items-center justify-center gap-4 max-w-md mx-auto mb-4">
