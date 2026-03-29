@@ -1,213 +1,144 @@
 
 
-# خطة شاملة: 12 وكيل ذكاء اصطناعي + Megsy Cloud + إصلاحات + تحسينات
-
-هذا طلب ضخم جدا يحتوي على 20+ تغيير. سأقسمه لأجزاء واضحة.
+# خطة شاملة: إعادة تصميم الوكلاء + Cloud + مربعات الإدخال + أيقونات
 
 ---
 
-## الجزء 1: مربع الإدخال في وسط صفحة الشات + اقتراحات الخدمات
+## 1. إعادة بناء كل وكيل بصفحة مخصصة
 
-### التغييرات في `ChatPage.tsx`:
-- عند عدم وجود رسائل: نقل مربع الإدخال (AnimatedInput) إلى وسط الصفحة عموديا بدل تثبيته في الأسفل
-- عند إرسال أول رسالة: مربع الإدخال ينتقل تلقائيا للأسفل (الوضع الحالي)
-- إضافة أزرار اقتراحات أسفل المربع المركزي تشمل: Photos, Videos, Code, Files + الوكلاء الـ 12
+كل الوكلاء حاليا يستخدمون `AgentPageLayout` العام (مجرد chat). المطلوب: كل وكيل يكون له UI مخصص بمتطلباته.
 
-الوكلاء سيظهرون كبطاقات صغيرة قابلة للتمرير أفقيا أسفل أزرار الخدمات الأساسية.
+### 1.1 Meeting Notes (`/agents/meetings`)
+- **UI مخصص**: قسم علوي يعرض "الاجتماعات القادمة" + "آخر الملخصات"
+- زر "ربط التقويم" (Google Calendar / Outlook) يظهر إذا لم يربط المستخدم
+- زر "رفع تسجيل" لرفع ملف صوتي/فيديو
+- مربع إدخال في الأسفل للأسئلة عن الاجتماعات
+- يعرض الملخصات كبطاقات منظمة (Action Items, Decisions, Notes)
 
----
+### 1.2 AI Slides (`/agents/slides`)
+- **UI مخصص**: مربع إدخال كبير في الوسط "ما موضوع العرض التقديمي؟"
+- بعد الإرسال: يتحول لمحادثة مع AI يولد الشرائح
+- زر "قوالب Canva" لاختيار قالب
+- عند الانتهاء: ينقل الملف لصفحة الملفات تلقائيا
 
-## الجزء 2: الوكلاء الـ 12 (Agent Pages)
+### 1.3 Spreadsheets (`/agents/spreadsheets`)
+- **UI مخصص**: مربع إدخال كبير + أمثلة جاهزة (Budget, Tracker, Inventory)
+- بعد التوليد: ينقل لصفحة الملفات
 
-كل وكيل = صفحة جديدة بمربع إدخال + منطق خاص. سنستخدم نمط مشترك `AgentPageLayout` لتقليل التكرار.
+### 1.4 Image Genius (`/agents/image-genius`)
+- **UI مخصص بالكامل**: 
+  - شاشة رفع الصورة أولا (drag & drop + زر اختيار)
+  - بعد الرفع: 4 أزرار كبيرة (Templates / Enhance / Edit / Remove BG)
+  - **Templates**: شبكة قوالب بصور معاينة (تُدار من بوت تليجرام)
+  - **Enhance**: قوالب تحسين بصور معاينة
+  - **Edit**: أدوات (قص، تدوير، فلاتر، تحسين جودة AI، مسح خلفية AI)
+  - مربع إدخال حر للطلبات المخصصة
+  - النتائج تُنقل لاستوديو الصور
 
-### 2.1 وكيل ملاحظات الاجتماعات (`/agents/meetings`)
-- UI: عرض جدول الاجتماعات القادمة + آخر التسجيلات + ملخصات
-- التكامل: Google Calendar / Outlook عبر OAuth (سنطلب المفاتيح لاحقا)
-- Zoom Bot: استخدام `ZOOM_CLIENT_ID` + `ZOOM_CLIENT_SECRET` للانضمام
-- Edge function: `meeting-agent/index.ts` - يلخص التسجيلات عبر AI
-- **ملاحظة**: الانضمام التلقائي للاجتماعات يحتاج خدمة خارجية (Recall.ai أو مشابه). حاليا سنبني الواجهة + التلخيص اليدوي (رفع تسجيل)
-
-### 2.2 وكيل الشرائح (`/agents/slides`)
-- UI: مربع إدخال + معاينة شرائح
-- يستخدم AI لتوليد محتوى الشرائح + نماذج صور (Nano Banana) للصور
-- تكامل Canva عبر `CANVA_CLIENT_ID` + `CANVA_CLIENT_SECRET` لجلب قوالب
-- عند الإنشاء: نقل المحادثة لصفحة الملفات
-- Edge function: `slides-agent/index.ts`
-
-### 2.3 وكيل جداول البيانات (`/agents/spreadsheets`)
-- UI: مربع إدخال + معاينة جدول
-- توليد CSV/XLSX بالذكاء الاصطناعي
-- عند الإنشاء: نقل لصفحة الملفات
-
-### 2.4 عبقري الصور (`/agents/image-genius`)
-- UI: رفع صورة شخصية + أزرار (قوالب / تحسين / تعديل)
-- **القوالب**: تُضاف من بوت تليجرام (name + prompt + صورة معاينة) - نبني الهيكل + واجهة إدارة
-- **تحسين**: قوالب تحسين (name + صورة + prompt) من تليجرام
-- **تعديل**: قص، تدوير، فلاتر، تحسين جودة AI، مسح خلفية AI
-- نموذج أساسي: Nano Banana. تحسين الجودة + قص الخلفية = نماذج رخيصة عبر fal.ai
-- النتائج تُنقل لاستوديو الصور
-
-### 2.5 مصمم الإعلانات (`/agents/ad-designer`)
-- رفع صورة منتج أو رابط
-- AI يجلب معلومات المنتج (fetch + search)
-- ينشئ سكريبت إعلان + يولد صورة/فيديو
+### 1.5 Ad Designer (`/agents/ad-designer`)
+- **UI مخصص**: خيارين في البداية: "رفع صورة منتج" أو "لصق رابط منتج"
+- اختيار المنصة (Instagram, TikTok, Facebook, YouTube)
+- اختيار نوع الإعلان (صورة، فيديو، carousel)
+- مربع إدخال للتعليمات الإضافية
 - النتائج تُنقل للاستوديو المناسب
 
-### 2.6 ملخص يوتيوب (`/agents/youtube-summary`)
-- إدخال رابط فيديو يوتيوب
-- جلب transcript عبر YouTube API (مجاني/أوبن سورس)
-- AI يلخص ويرد بشكل شات تفاعلي
+### 1.6 YouTube Summary (`/agents/youtube-summary`)
+- **UI مخصص**: مربع إدخال كبير مع placeholder "Paste YouTube URL"
+- بعد لصق الرابط: يعرض thumbnail الفيديو + عنوانه
+- يولد الملخص كبطاقات منظمة (Key Points, Timestamps, Summary)
+- مربع إدخال في الأسفل للأسئلة المتابعة
 
-### 2.7 بودكاست AI (`/agents/podcast`)
-- أدوات بحث + fetch لإنشاء سكريبت
-- عرض السكريبت للموافقة/التعديل
-- توليد صوت عبر Deepgram (`DEEPGRAM_APIKEY`)
+### 1.7 AI Podcast (`/agents/podcast`)
+- **UI مخصص**: مربع إدخال "ما موضوع البودكاست؟"
+- اختيار اللغة + عدد المتحدثين
+- يعرض السكريبت للمراجعة مع زر "موافقة" و "تعديل"
+- بعد الموافقة: يولد الصوت عبر Deepgram
 - النتائج تُنقل لصفحة الصوت
 
-### 2.8 كتب وقصص (`/agents/book-creator`)
-- إدخال المحتوى → AI يولد كتاب 20+ صفحة
-- غلاف بـ Nano Banana Pro
-- تحويل لـ PDF مرتب
-- أدوات بحث + fetch مدمجة
+### 1.8 Book Creator (`/agents/book-creator`)
+- **UI مخصص**: مربع إدخال كبير + اختيار النوع (رواية، تعليمي، أطفال)
+- اختيار اللغة + عدد الصفحات التقريبي
+- يعرض المحتوى أثناء التوليد صفحة بصفحة
+- يولد غلاف بـ AI
+- زر تحميل PDF
 
-### 2.9 تحليل سوشيال ميديا (`/agents/social-analyzer`)
-- إدخال رابط حساب أو منشور
-- جلب المعلومات عبر أوبن سورس APIs
-- تحليل وعرض النتائج
+### 1.9 Social Analyzer (`/agents/social-analyzer`)
+- **UI مخصص**: مربع إدخال "Paste profile or post URL"
+- يعرض النتائج كبطاقات إحصائية (Followers, Engagement Rate, Top Posts)
+- رسوم بيانية بسيطة
 
-### 2.10 وكيل الأخبار (`/agents/news`)
-- المستخدم يحدد المجال
-- جلب أخبار عبر أوبن سورس (NewsAPI / RSS)
-- عرض بلغة المستخدم
+### 1.10 News Agent (`/agents/news`)
+- **UI مخصص**: شريط أزرار الفئات (Tech, Business, Sports, Science, etc.)
+- يعرض الأخبار كبطاقات (عنوان، مصدر، ملخص)
+- مربع إدخال للبحث في أخبار محددة
 
-### 2.11 البحث والتلخيص (`/agents/deep-search`)
-- بحث عميق من مصادر متعددة
-- تقرير شامل (قد يستغرق 5+ دقائق)
-- أدوات بحث + fetch متعددة
+### 1.11 Deep Search (`/agents/deep-search`)
+- **UI مخصص**: مربع إدخال كبير في الوسط مع تنبيه "قد يستغرق 5+ دقائق"
+- شريط تقدم يعرض مراحل البحث
+- يعرض التقرير النهائي بأقسام منظمة
 
-### 2.12 وكيل التخصيص (في الإعدادات، ليس صفحة منفصلة)
-- ضمن `/settings/customization` أو صفحة جديدة `/settings/ai-personalization`
-
----
-
-## الجزء 3: صفحة Megsy Cloud (`/cloud`)
-
-- صفحة جديدة تجمع كل ما أنشأه المستخدم عبر الموقع
-- أقسام: صور، فيديوهات، ملفات، أصوات، مشاريع برمجة، محادثات
-- جلب البيانات من جداول: `model_media`, `conversations`, `projects`, `messages`
-- إضافة route في `App.tsx` + رابط في الـ sidebar
+### 1.12 AI Personalization (في الإعدادات - موجود بالفعل)
+- لا تغيير
 
 ---
 
-## الجزء 4: إصلاح البريفيو في صفحة البرمجة
+## 2. ChatPage: مربع إدخال أكبر + زر + في الوسط
 
-### المشكلة: البريفيو الداخلي (iframe + Babel) لا يعمل بشكل موثوق
-### الحل: النشر على Vercel ثم عرض iframe
-
-- تعديل `CodeWorkspace.tsx`:
-  - بعد توليد الملفات → استدعاء `vercel-deploy` edge function
-  - عرض الـ URL الناتج في iframe
-  - `VERCEL_TOKEN` موجود بالفعل كسر
-- تعديل `vercel-deploy/index.ts` ليقبل الملفات مباشرة ويرفعها
-
----
-
-## الجزء 5: تكبير مربع الإدخال في الصور والفيديوهات
-
-- `ImagesPage.tsx` و `VideosPage.tsx`: زيادة `min-h-[52px]` و padding
-- تحسين تنسيق الأزرار (model picker + settings + enhance)
-
----
-
-## الجزء 6: تخصيص AI في الإعدادات
-
-### صفحة جديدة أو إضافة لـ `CustomizationPage.tsx`:
-- خانات: "ما الاسم الذي يناديك به"، "مهنتك"، "وصف عنك"، "صفات AI المطلوبة"، "تعليمات مخصصة"
-- زر حفظ → يحفظ في `user_memory_entries` أو جدول جديد `ai_personalization`
-- يُرسل كـ system prompt إضافي مع كل محادثة
+**تعديل `ChatPage.tsx`:**
+- عندما لا توجد رسائل: مربع الإدخال يكون أكبر (مربع الشكل) مع padding أكبر
+- إضافة زر `+` بجانب مربع الإدخال يفتح **قائمة للأسفل** (بدل للأعلى) لأن المربع في الوسط
+- شريط الوكلاء: إضافة أيقونات حديثة من Lucide لكل وكيل:
+  - Meeting Notes → `CalendarCheck`
+  - AI Slides → `Presentation`
+  - Spreadsheets → `Table2`
+  - Image Genius → `Sparkles`
+  - Ad Designer → `Megaphone`
+  - YouTube Summary → `Youtube` (من lucide)
+  - AI Podcast → `Podcast`
+  - Book Creator → `BookOpen`
+  - Social Analyzer → `BarChart3`
+  - News → `Newspaper`
+  - Deep Search → `SearchCheck`
 
 ---
 
-## الجزء 7: أفاتار فيديو في صفحة الفيديوهات
+## 3. Cloud: نقل من Sidebar للإعدادات
 
-- إضافة أداة "Avatar Video" في `VIDEO_TOOLS`
-- نموذج: `veed/avatars/text-to-video` على fal.ai
-- التكلفة: 5 كريدت/دقيقة
-- الأفاتارات تُضاف من بوت تليجرام (avatar_id) - نبني الهيكل
-
----
-
-## الجزء 8: محادثة تجريبية عند الدخول لأول مرة
-
-- عند أول دخول (لا توجد محادثات سابقة):
-  - إنشاء محادثة تلقائية
-  - رسالة مستخدم: "Explain what is Megsy AI"
-  - رسالة AI: شرح شامل لكل خدمات المنصة
-  - تحفظ كمحادثة عادية
+**تعديل:**
+- `AppSidebar.tsx`: حذف `{ path: "/cloud", label: "Cloud" }` من `serviceItems`
+- `SettingsPage.tsx`: إضافة زر Cloud في `menuItems` أو `quickActions`
+- `MegsyCloudPage.tsx`: إعادة تصميم - عند الضغط على أي عنصر يفتحه (صورة → معاينة، فيديو → تشغيل، ملف → تنزيل، كود → فتح المشروع)
 
 ---
 
-## الجزء 9: إضافة route لـ Megsy Cloud + sidebar
+## 4. مربعات الإدخال في الصور والفيديوهات
 
-- `App.tsx`: إضافة `/cloud` route
-- `DesktopSidebar.tsx` + `AppSidebar.tsx`: إضافة رابط Cloud
+**تعديل `ImagesPage.tsx` و `VideosPage.tsx`:**
+- تكبير مربع الإدخال: `min-h-[56px]` → `min-h-[64px]`، `py-4` → `py-5`، `px-4` → `px-5`
+- تكبير أزرار الأيقونات: `w-10 h-10` → `w-11 h-11`
+- تحسين تباعد الأزرار
 
 ---
 
-## الملفات الجديدة
-
-| ملف | الوصف |
-|-----|-------|
-| `src/pages/MegsyCloudPage.tsx` | صفحة Cloud الشاملة |
-| `src/pages/agents/MeetingNotesPage.tsx` | وكيل الاجتماعات |
-| `src/pages/agents/SlidesAgentPage.tsx` | وكيل الشرائح |
-| `src/pages/agents/SpreadsheetAgentPage.tsx` | وكيل جداول البيانات |
-| `src/pages/agents/ImageGeniusPage.tsx` | عبقري الصور |
-| `src/pages/agents/AdDesignerPage.tsx` | مصمم الإعلانات |
-| `src/pages/agents/YoutubeSummaryPage.tsx` | ملخص يوتيوب |
-| `src/pages/agents/PodcastAgentPage.tsx` | بودكاست AI |
-| `src/pages/agents/BookCreatorPage.tsx` | كتب وقصص |
-| `src/pages/agents/SocialAnalyzerPage.tsx` | تحليل سوشيال |
-| `src/pages/agents/NewsAgentPage.tsx` | وكيل الأخبار |
-| `src/pages/agents/DeepSearchPage.tsx` | البحث والتلخيص |
-| `src/pages/AIPersonalizationPage.tsx` | تخصيص AI |
-| `supabase/functions/agent-router/index.ts` | Edge function موحد لكل الوكلاء |
-
-## الملفات المعدلة
+## الملفات المتأثرة
 
 | ملف | التغيير |
 |-----|---------|
-| `src/App.tsx` | إضافة 14 route جديد |
-| `src/pages/ChatPage.tsx` | مربع إدخال مركزي + اقتراحات + محادثة أولى |
+| `src/pages/agents/MeetingNotesPage.tsx` | إعادة كتابة كاملة - UI مخصص |
+| `src/pages/agents/SlidesAgentPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/SpreadsheetAgentPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/ImageGeniusPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/AdDesignerPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/YoutubeSummaryPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/PodcastAgentPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/BookCreatorPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/SocialAnalyzerPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/NewsAgentPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/agents/DeepSearchPage.tsx` | إعادة كتابة كاملة |
+| `src/pages/ChatPage.tsx` | مربع إدخال أكبر + قائمة + للأسفل + أيقونات وكلاء |
+| `src/pages/MegsyCloudPage.tsx` | إعادة تصميم + تفعيل التفاعل مع العناصر |
 | `src/pages/ImagesPage.tsx` | تكبير مربع الإدخال |
-| `src/pages/VideosPage.tsx` | تكبير مربع الإدخال + أداة أفاتار |
-| `src/pages/CodeWorkspace.tsx` | نشر Vercel + iframe |
-| `src/pages/SettingsPage.tsx` | زر تخصيص AI |
-| `src/components/DesktopSidebar.tsx` | رابط Cloud |
-| `src/components/AppSidebar.tsx` | رابط Cloud |
-| `src/lib/videoToolsData.ts` | إضافة Avatar Video tool |
-
-## Migration مطلوب
-
-```sql
-CREATE TABLE ai_personalization (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
-  call_name text,
-  profession text,
-  about text,
-  ai_traits text,
-  custom_instructions text,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-ALTER TABLE ai_personalization ENABLE ROW LEVEL SECURITY;
-```
-
----
-
-## ملاحظة مهمة
-
-هذا طلب يحتوي على 30+ ملف جديد/معدل. سأبدأ بالأجزاء الأساسية (ChatPage centered input + Cloud page + agents routing) ثم أبني الوكلاء واحدا تلو الآخر. كل وكيل يستخدم نفس الـ layout المشترك لتقليل الحجم.
+| `src/pages/VideosPage.tsx` | تكبير مربع الإدخال |
+| `src/components/AppSidebar.tsx` | حذف Cloud من القائمة |
+| `src/pages/SettingsPage.tsx` | إضافة زر Cloud |
 
