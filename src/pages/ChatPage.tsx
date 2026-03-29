@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, CalendarCheck, Presentation, Table2, Sparkles, Megaphone, Youtube, Podcast, BookOpen, BarChart3, Newspaper, SearchCheck } from "lucide-react";
-
-const agentIcons = { CalendarCheck, Presentation, Table2, Sparkles, Megaphone, Youtube, Podcast, BookOpen, BarChart3, Newspaper, SearchCheck };
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -655,54 +653,94 @@ const ChatPage = () => {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
-                <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="flex items-center justify-center gap-3 mb-6">
                   <PegtopIcon className="text-primary" />
-                  <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
+                  <h2 className="font-display text-xl font-bold text-foreground">Megsy AI Workspace</h2>
                 </div>
 
-                {/* Centered input for empty state */}
-                <div className="mb-6 max-w-md mx-auto">
-                  <div className="relative">
+                {/* Centered input - larger square style */}
+                <div className="mb-8 max-w-sm mx-auto">
+                  <div className="relative rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm p-1">
                     <AnimatePresence>
-                      {plusMenuOpen && renderPlusMenu()}
+                      {plusMenuOpen && (
+                        <>
+                          <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
+                          <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} className="absolute top-full mt-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/70 backdrop-blur-2xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                              <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
+                                <Camera className="w-5 h-5 text-white/60" />
+                                <span className="text-[11px] text-white/80">Camera</span>
+                              </button>
+                              <button onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
+                                <Image className="w-5 h-5 text-white/60" />
+                                <span className="text-[11px] text-white/80">Photos</span>
+                              </button>
+                              <button onClick={() => {fileInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
+                                <FileUp className="w-5 h-5 text-white/60" />
+                                <span className="text-[11px] text-white/80">Files</span>
+                              </button>
+                            </div>
+                            <div className="border-t border-white/10 pt-2 space-y-1">
+                              <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
+                                <span className="text-sm text-white/80">Web search</span>
+                                <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-white/20 justify-start"}`}>
+                                  <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+                                </div>
+                              </button>
+                              <div className="border-t border-white/10 mt-1 pt-1">
+                                <p className="text-[10px] text-white/30 uppercase px-3 py-1.5">Modes</p>
+                                {(["learning","shopping","deep-research"] as ChatMode[]).map(mode => (
+                                  <button key={mode} onClick={() => handleModeChange(mode)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === mode ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
+                                    <span className="text-sm">{mode === "learning" ? "Learning Mode" : mode === "shopping" ? "Shopping Mode" : "Deep Research"}</span>
+                                    {chatMode === mode && <span className="ml-auto text-xs text-primary">On</span>}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
                     </AnimatePresence>
                     <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
                   </div>
                 </div>
 
-                {/* Service suggestions */}
-                <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
-                  <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Photos</button>
-                  <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Videos</button>
-                  <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Code</button>
-                  <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Files</button>
+                {/* Agent grid - Genspark style with colored circular icons */}
+                <div className="grid grid-cols-4 gap-x-2 gap-y-4 max-w-sm mx-auto mb-4">
+                  {[
+                    { label: "Meetings", path: "/agents/meetings", icon: CalendarCheck, bg: "bg-teal-600" },
+                    { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-700" },
+                    { label: "Sheets", path: "/agents/spreadsheets", icon: Table2, bg: "bg-emerald-700" },
+                    { label: "Chat", path: "/", icon: Sparkles, bg: "bg-sky-600" },
+                    { label: "Images", path: "/images", icon: Camera, bg: "bg-purple-600" },
+                    { label: "Videos", path: "/videos", icon: Youtube, bg: "bg-rose-600" },
+                    { label: "Ad Designer", path: "/agents/ad-designer", icon: Megaphone, bg: "bg-violet-700" },
+                    { label: "Podcast", path: "/agents/podcast", icon: Podcast, bg: "bg-pink-600" },
+                  ].map(a => (
+                    <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-2 group">
+                      <div className={`w-14 h-14 rounded-2xl ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
+                        <a.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
+                    </button>
+                  ))}
                 </div>
 
-                {/* Agent suggestions - horizontal scroll with icons */}
-                <div className="overflow-x-auto pb-2 -mx-4 px-4">
-                  <div className="flex gap-2 w-max">
-                    {[
-                      { label: "Meetings", path: "/agents/meetings", icon: "CalendarCheck" },
-                      { label: "Slides", path: "/agents/slides", icon: "Presentation" },
-                      { label: "Sheets", path: "/agents/spreadsheets", icon: "Table2" },
-                      { label: "Image Genius", path: "/agents/image-genius", icon: "Sparkles" },
-                      { label: "Ad Designer", path: "/agents/ad-designer", icon: "Megaphone" },
-                      { label: "YouTube", path: "/agents/youtube-summary", icon: "Youtube" },
-                      { label: "Podcast", path: "/agents/podcast", icon: "Podcast" },
-                      { label: "Books", path: "/agents/book-creator", icon: "BookOpen" },
-                      { label: "Social", path: "/agents/social-analyzer", icon: "BarChart3" },
-                      { label: "News", path: "/agents/news", icon: "Newspaper" },
-                      { label: "Deep Search", path: "/agents/deep-search", icon: "SearchCheck" },
-                    ].map(a => {
-                      const IconComp = agentIcons[a.icon as keyof typeof agentIcons];
-                      return (
-                        <button key={a.path} onClick={() => navigate(a.path)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 text-xs text-primary hover:bg-primary/10 transition-colors shrink-0 font-medium">
-                          {IconComp && <IconComp className="w-3.5 h-3.5" />}
-                          {a.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Second row - more agents */}
+                <div className="grid grid-cols-4 gap-x-2 gap-y-4 max-w-sm mx-auto">
+                  {[
+                    { label: "Books", path: "/agents/book-creator", icon: BookOpen, bg: "bg-orange-600" },
+                    { label: "Social", path: "/agents/social-analyzer", icon: BarChart3, bg: "bg-cyan-600" },
+                    { label: "News", path: "/agents/news", icon: Newspaper, bg: "bg-slate-600" },
+                    { label: "Deep Search", path: "/agents/deep-search", icon: SearchCheck, bg: "bg-indigo-600" },
+                  ].map(a => (
+                    <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-2 group">
+                      <div className={`w-14 h-14 rounded-2xl ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
+                        <a.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
+                    </button>
+                  ))}
                 </div>
               </motion.div>
             </div>
