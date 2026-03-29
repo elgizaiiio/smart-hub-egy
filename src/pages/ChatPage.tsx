@@ -658,19 +658,45 @@ const ChatPage = () => {
                   <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
                 </div>
 
-                <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
-                  <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                    Photos
-                  </button>
-                  <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                    Files
-                  </button>
-                  <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                    Videos
-                  </button>
-                  <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-                    Code
-                  </button>
+                {/* Centered input for empty state */}
+                <div className="mb-6 max-w-md mx-auto">
+                  <div className="relative">
+                    <AnimatePresence>
+                      {plusMenuOpen && renderPlusMenu()}
+                    </AnimatePresence>
+                    <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
+                  </div>
+                </div>
+
+                {/* Service suggestions */}
+                <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+                  <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Photos</button>
+                  <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Videos</button>
+                  <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Code</button>
+                  <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">Files</button>
+                </div>
+
+                {/* Agent suggestions - horizontal scroll */}
+                <div className="overflow-x-auto pb-2 -mx-4 px-4">
+                  <div className="flex gap-2 w-max">
+                    {[
+                      { label: "Meeting Notes", path: "/agents/meetings" },
+                      { label: "AI Slides", path: "/agents/slides" },
+                      { label: "Spreadsheets", path: "/agents/spreadsheets" },
+                      { label: "Image Genius", path: "/agents/image-genius" },
+                      { label: "Ad Designer", path: "/agents/ad-designer" },
+                      { label: "YouTube Summary", path: "/agents/youtube-summary" },
+                      { label: "AI Podcast", path: "/agents/podcast" },
+                      { label: "Book Creator", path: "/agents/book-creator" },
+                      { label: "Social Analyzer", path: "/agents/social-analyzer" },
+                      { label: "News", path: "/agents/news" },
+                      { label: "Deep Search", path: "/agents/deep-search" },
+                    ].map(a => (
+                      <button key={a.path} onClick={() => navigate(a.path)} className="px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 text-xs text-primary hover:bg-primary/10 transition-colors shrink-0 font-medium">
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </div>
