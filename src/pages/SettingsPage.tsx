@@ -67,6 +67,7 @@ const SettingsPage = () => {
   const menuItems = [
     { icon: UserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
+    { icon: Cloud, label: "Cloud", desc: "All your content", path: "/cloud" },
     { icon: Globe2, label: "Language", desc: "Auto-translate UI", path: "/settings/language" },
     { icon: Bell, label: "Notifications", desc: "Alerts & email prefs", path: "/settings/notifications" },
     { icon: SquareCode, label: "APIs", desc: "Developer access", path: "https://api.megsyai.com", external: true },
