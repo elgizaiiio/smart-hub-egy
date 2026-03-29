@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, CalendarCheck, Presentation, Table2, Sparkles, Megaphone, Youtube, Podcast, BookOpen, BarChart3, Newspaper, SearchCheck } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, CalendarCheck, Presentation, Table2, Sparkles, Megaphone, Youtube, Podcast, BookOpen, BarChart3, Newspaper, SearchCheck, MoreHorizontal, Mic, Code, FileText, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,6 +92,7 @@ const ChatPage = () => {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
+  const [showAllAgents, setShowAllAgents] = useState(false);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -512,8 +513,8 @@ const ChatPage = () => {
 
   const renderPlusMenu = () =>
   <>
-      <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/70 backdrop-blur-2xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+      <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} onTouchStart={() => setPlusMenuOpen(false)} />
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-white/[0.06] bg-black/80 backdrop-blur-3xl p-3 w-72 shadow-[0_32px_100px_rgba(0,0,0,0.6)]">
         <div className="grid grid-cols-3 gap-2 mb-3">
           <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
             <Camera className="w-5 h-5 text-white/60" />
@@ -658,14 +659,14 @@ const ChatPage = () => {
                   <h2 className="font-display text-xl font-bold text-foreground">Megsy AI Workspace</h2>
                 </div>
 
-                {/* Centered input - larger square style */}
-                <div className="mb-8 max-w-sm mx-auto">
-                  <div className="relative rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm p-1">
+                {/* Centered input - borderless, larger square style */}
+                <div className="mb-8 max-w-md mx-auto">
+                  <div className="relative rounded-2xl bg-transparent p-0">
                     <AnimatePresence>
                       {plusMenuOpen && (
                         <>
-                          <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-                          <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} className="absolute top-full mt-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/70 backdrop-blur-2xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+                          <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} onTouchStart={() => setPlusMenuOpen(false)} />
+                          <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} className="absolute top-full mt-2 left-0 z-[46] rounded-2xl border border-white/[0.06] bg-black/80 backdrop-blur-3xl p-3 w-72 shadow-[0_32px_100px_rgba(0,0,0,0.6)]">
                             <div className="grid grid-cols-3 gap-2 mb-3">
                               <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
                                 <Camera className="w-5 h-5 text-white/60" />
@@ -705,43 +706,80 @@ const ChatPage = () => {
                   </div>
                 </div>
 
-                {/* Agent grid - Genspark style with colored circular icons */}
-                <div className="grid grid-cols-4 gap-x-2 gap-y-4 max-w-sm mx-auto mb-4">
-                  {[
-                    { label: "Meetings", path: "/agents/meetings", icon: CalendarCheck, bg: "bg-teal-600" },
-                    { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-700" },
-                    { label: "Sheets", path: "/agents/spreadsheets", icon: Table2, bg: "bg-emerald-700" },
-                    { label: "Chat", path: "/", icon: Sparkles, bg: "bg-sky-600" },
-                    { label: "Images", path: "/images", icon: Camera, bg: "bg-purple-600" },
+                {/* Agent icons - 5 visible + More button */}
+                {(() => {
+                  const allAgents = [
+                    { label: "Images", path: "/images", icon: ImageIcon, bg: "bg-purple-600" },
                     { label: "Videos", path: "/videos", icon: Youtube, bg: "bg-rose-600" },
-                    { label: "Ad Designer", path: "/agents/ad-designer", icon: Megaphone, bg: "bg-violet-700" },
+                    { label: "Code", path: "/programming", icon: Code, bg: "bg-sky-600" },
+                    { label: "Voice", path: "/voice", icon: Mic, bg: "bg-teal-600" },
+                    { label: "Files", path: "/files", icon: FileText, bg: "bg-emerald-700" },
+                    { label: "Meetings", path: "/agents/meetings", icon: CalendarCheck, bg: "bg-teal-700" },
+                    { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-700" },
+                    { label: "Sheets", path: "/agents/spreadsheets", icon: Table2, bg: "bg-green-700" },
+                    { label: "Ad Design", path: "/agents/ad-designer", icon: Megaphone, bg: "bg-violet-700" },
                     { label: "Podcast", path: "/agents/podcast", icon: Podcast, bg: "bg-pink-600" },
-                  ].map(a => (
-                    <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-2 group">
-                      <div className={`w-14 h-14 rounded-2xl ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
-                        <a.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Second row - more agents */}
-                <div className="grid grid-cols-4 gap-x-2 gap-y-4 max-w-sm mx-auto">
-                  {[
                     { label: "Books", path: "/agents/book-creator", icon: BookOpen, bg: "bg-orange-600" },
                     { label: "Social", path: "/agents/social-analyzer", icon: BarChart3, bg: "bg-cyan-600" },
                     { label: "News", path: "/agents/news", icon: Newspaper, bg: "bg-slate-600" },
                     { label: "Deep Search", path: "/agents/deep-search", icon: SearchCheck, bg: "bg-indigo-600" },
-                  ].map(a => (
-                    <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-2 group">
-                      <div className={`w-14 h-14 rounded-2xl ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
-                        <a.icon className="w-6 h-6 text-white" />
+                    { label: "YouTube", path: "/agents/youtube-summary", icon: Youtube, bg: "bg-red-600" },
+                    { label: "Image AI", path: "/agents/image-genius", icon: Sparkles, bg: "bg-fuchsia-600" },
+                  ];
+                  const visible = allAgents.slice(0, 5);
+                  return (
+                    <>
+                      <div className="flex items-center justify-center gap-4 max-w-md mx-auto mb-4">
+                        {visible.map(a => (
+                          <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-2 group">
+                            <div className={`w-13 h-13 rounded-2xl ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                              <a.icon className="w-6 h-6 text-white" />
+                            </div>
+                            <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
+                          </button>
+                        ))}
+                        <button onClick={() => setShowAllAgents(true)} className="flex flex-col items-center gap-2 group">
+                          <div className="w-13 h-13 rounded-2xl bg-secondary/60 border border-border/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <MoreHorizontal className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                          <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">More</span>
+                        </button>
                       </div>
-                      <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
-                    </button>
-                  ))}
-                </div>
+
+                      {/* All agents modal */}
+                      <AnimatePresence>
+                        {showAllAgents && (
+                          <>
+                            <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={() => setShowAllAgents(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                              className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-sm mx-auto rounded-2xl border border-white/[0.08] bg-black/80 backdrop-blur-3xl p-5 shadow-[0_32px_100px_rgba(0,0,0,0.6)] max-h-[70vh] overflow-y-auto"
+                            >
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-base font-semibold text-foreground">All Services</h3>
+                                <button onClick={() => setShowAllAgents(false)} className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors">
+                                  <X className="w-4 h-4 text-muted-foreground" />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-4 gap-x-3 gap-y-5">
+                                {allAgents.map(a => (
+                                  <button key={a.path} onClick={() => { setShowAllAgents(false); navigate(a.path); }} className="flex flex-col items-center gap-2 group">
+                                    <div className={`w-13 h-13 rounded-2xl ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                                      <a.icon className="w-5 h-5 text-white" />
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight text-center">{a.label}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </>
+                  );
+                })()}
               </motion.div>
             </div>
           ) : (
