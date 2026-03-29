@@ -513,8 +513,8 @@ const ChatPage = () => {
 
   const renderPlusMenu = () =>
   <>
-      <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/70 backdrop-blur-2xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+      <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} onTouchStart={() => setPlusMenuOpen(false)} />
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-white/[0.06] bg-black/80 backdrop-blur-3xl p-3 w-72 shadow-[0_32px_100px_rgba(0,0,0,0.6)]">
         <div className="grid grid-cols-3 gap-2 mb-3">
           <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
             <Camera className="w-5 h-5 text-white/60" />
