@@ -667,11 +667,11 @@ const ChatPage = () => {
 
                 {/* Centered input - borderless, larger square */}
                 <div className="mb-8 max-w-md mx-auto">
-                  <div className="relative rounded-2xl bg-secondary/30 backdrop-blur-sm p-1">
+                  <div className="relative rounded-2xl bg-secondary/20 p-1">
                     <AnimatePresence>
                       {plusMenuOpen && (
                         <>
-                          <div className="fixed inset-0 z-[45] bg-black/20 backdrop-blur-sm" onClick={() => setPlusMenuOpen(false)} />
+                          <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
                           <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} className="absolute top-full mt-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/80 backdrop-blur-3xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
                             <div className="grid grid-cols-3 gap-2 mb-3">
                               <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
@@ -708,20 +708,18 @@ const ChatPage = () => {
                         </>
                       )}
                     </AnimatePresence>
-                    <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
+                    <div className="min-h-[130px]">
+                      <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
+                    </div>
                   </div>
                 </div>
 
-                {/* 8 agent icons in 4×2 grid */}
-                <div className="grid grid-cols-4 gap-x-6 gap-y-4 max-w-xs mx-auto mb-4">
+                {/* 4 agent icons: 3 agents + All button */}
+                <div className="flex items-center justify-center gap-6 max-w-xs mx-auto mb-4">
                   {[
                     { label: "Images", path: "/images", icon: Camera, bg: "bg-purple-600" },
-                    { label: "Videos", path: "/videos", icon: Youtube, bg: "bg-rose-600" },
                     { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-600" },
                     { label: "Search", path: "/agents/deep-search", icon: SearchCheck, bg: "bg-indigo-600" },
-                    { label: "Code", path: "/code", icon: Code, bg: "bg-emerald-600" },
-                    { label: "Sheets", path: "/agents/spreadsheets", icon: Table2, bg: "bg-green-600" },
-                    { label: "Books", path: "/agents/book-creator", icon: BookOpen, bg: "bg-orange-600" },
                   ].map(a => (
                     <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-1.5 group">
                       <div className={`w-14 h-14 rounded-full ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
@@ -737,7 +735,8 @@ const ChatPage = () => {
                     <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">All</span>
                   </button>
                 </div>
-              </motion.div>
+
+                <p className="text-[10px] text-muted-foreground/40 mt-2">Powered by Lovable AI</p>
 
               {/* All Agents Drawer from bottom */}
               <Drawer open={allAgentsOpen} onOpenChange={setAllAgentsOpen}>
