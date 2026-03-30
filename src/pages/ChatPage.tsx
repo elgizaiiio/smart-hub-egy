@@ -91,6 +91,7 @@ const ChatPage = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [allAgentsOpen, setAllAgentsOpen] = useState(false);
   const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
 
   const handleScroll = useCallback(() => {
