@@ -102,6 +102,9 @@ const BookCreatorPage = lazy(() => import("./pages/agents/BookCreatorPage"));
 const SocialAnalyzerPage = lazy(() => import("./pages/agents/SocialAnalyzerPage"));
 const NewsAgentPage = lazy(() => import("./pages/agents/NewsAgentPage"));
 const DeepSearchPage = lazy(() => import("./pages/agents/DeepSearchPage"));
+const PersonalAssistantPage = lazy(() => import("./pages/agents/PersonalAssistantPage"));
+const StoreManagerPage = lazy(() => import("./pages/agents/StoreManagerPage"));
+const MarketAnalyzerPage = lazy(() => import("./pages/agents/MarketAnalyzerPage"));
 
 // New pages
 const MegsyCloudPage = lazy(() => import("./pages/MegsyCloudPage"));
@@ -237,6 +240,9 @@ const App = () => {
                   <Route path="/agents/social-analyzer" element={<P><SocialAnalyzerPage /></P>} />
                   <Route path="/agents/news" element={<P><NewsAgentPage /></P>} />
                   <Route path="/agents/deep-search" element={<P><DeepSearchPage /></P>} />
+                  <Route path="/agents/assistant" element={<P><PersonalAssistantPage /></P>} />
+                  <Route path="/agents/store" element={<P><StoreManagerPage /></P>} />
+                  <Route path="/agents/market-analyzer" element={<P><MarketAnalyzerPage /></P>} />
                   {/* Cloud & Personalization */}
                   <Route path="/cloud" element={<P><MegsyCloudPage /></P>} />
                   <Route path="/settings/ai-personalization" element={<P><AIPersonalizationPage /></P>} />
