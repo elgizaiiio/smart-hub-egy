@@ -102,6 +102,9 @@ const BookCreatorPage = lazy(() => import("./pages/agents/BookCreatorPage"));
 const SocialAnalyzerPage = lazy(() => import("./pages/agents/SocialAnalyzerPage"));
 const NewsAgentPage = lazy(() => import("./pages/agents/NewsAgentPage"));
 const DeepSearchPage = lazy(() => import("./pages/agents/DeepSearchPage"));
+const PersonalAssistantPage = lazy(() => import("./pages/agents/PersonalAssistantPage"));
+const StoreManagerPage = lazy(() => import("./pages/agents/StoreManagerPage"));
+const MarketAnalyzerPage = lazy(() => import("./pages/agents/MarketAnalyzerPage"));
 
 // New pages
 const MegsyCloudPage = lazy(() => import("./pages/MegsyCloudPage"));
