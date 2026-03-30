@@ -28,6 +28,12 @@ import {
   DialogDescription } from
 "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 interface Message {
   role: "user" | "assistant";
