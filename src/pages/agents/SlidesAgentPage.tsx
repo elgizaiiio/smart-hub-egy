@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Presentation, ArrowUp, Loader2, ChevronLeft, ChevronRight, Download, Plus, X, MoreVertical, Mic, Wand2, Check } from "lucide-react";
+import { ArrowLeft, Presentation, ArrowUp, Loader2, ChevronLeft, ChevronRight, Download, Plus, X, Check, Image, FileUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -37,7 +37,6 @@ const TEMPLATES: Template[] = [
   { id: "project-report", name: "Project Report", description: "Structured layout for project status reports", thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=225&fit=crop", tags: ["Report", "Business"], style: "Professional", color: "#2d3748" },
 ];
 
-const STYLES = ["Professional", "Educational", "Marketing", "Creative"];
 const SLIDE_COUNTS = [5, 8, 10, 15, 20];
 const PLACEHOLDERS = [
   "AI revolution in healthcare...",
@@ -50,7 +49,6 @@ const PLACEHOLDERS = [
 const SlidesAgentPage = () => {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
-  const [style, setStyle] = useState("Professional");
   const [slideCount, setSlideCount] = useState(10);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -58,19 +56,20 @@ const SlidesAgentPage = () => {
   const [progressText, setProgressText] = useState("");
   const [slides, setSlides] = useState<SlideData[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSlideCountMenu, setShowSlideCountMenu] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<{name: string; type: string; data: string}[]>([]);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [tab, setTab] = useState("explore");
-  const [filterStyle, setFilterStyle] = useState("All Styles");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Rotate placeholder
   useEffect(() => {
     const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % PLACEHOLDERS.length), 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // Progress animation
   useEffect(() => {
     if (!isGenerating) { setProgress(0); setProgressText(""); return; }
     const steps = [
@@ -91,6 +90,24 @@ const SlidesAgentPage = () => {
     return () => clearInterval(interval);
   }, [isGenerating]);
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = () => setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
+        reader.readAsDataURL(file);
+      } else {
+        file.text().then(text => {
+          setAttachedFiles(prev => [...prev, { name: file.name, type: "file", data: text.slice(0, 8000) }]);
+        });
+      }
+    });
+    e.target.value = "";
+    setShowAttachMenu(false);
+  };
+
   const handleGenerate = async () => {
     if (!input.trim()) return;
     setIsGenerating(true);
@@ -98,15 +115,22 @@ const SlidesAgentPage = () => {
     setCurrentSlide(0);
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-slides", {
-        body: { topic: input, style, slideCount, templateId: selectedTemplate?.id },
-      });
+      const body: any = { topic: input, style: "Professional", slideCount, templateId: selectedTemplate?.id };
+      if (attachedFiles.length > 0) {
+        body.attachments = attachedFiles.map(f => ({ name: f.name, type: f.type, data: f.data.slice(0, 4000) }));
+      }
+      const { data, error } = await supabase.functions.invoke("generate-slides", { body });
 
-      if (error) throw error;
+      if (error) {
+        if ((error as any).status === 429) { toast.error("Rate limit exceeded. Please try again later."); return; }
+        if ((error as any).status === 402) { toast.error("Insufficient credits. Please add funds."); return; }
+        throw error;
+      }
       if (data?.slides) {
         setSlides(data.slides);
         setProgress(100);
         setProgressText("Done!");
+        setAttachedFiles([]);
         toast.success(`${data.slides.length} slides created!`);
       }
     } catch (err: any) {
@@ -119,40 +143,28 @@ const SlidesAgentPage = () => {
   const handleDownloadPPTX = async () => {
     if (slides.length === 0) return;
     toast.info("Preparing download...");
-    // Client-side PPTX generation using dynamic import
     try {
       const pptxgenjs = (await import("pptxgenjs")).default;
       const pres = new pptxgenjs();
       pres.layout = "LAYOUT_WIDE";
-
       for (const slide of slides) {
         const s = pres.addSlide();
         s.addText(slide.title, { x: 0.5, y: 0.3, w: "90%", fontSize: 28, bold: true, color: "1a202c" });
         const bullets = slide.content.map(c => ({ text: c, options: { fontSize: 16, color: "4a5568", bullet: true } }));
         s.addText(bullets, { x: 0.5, y: 1.5, w: "55%", h: 4 });
-        if (slide.imageUrl) {
-          try {
-            s.addImage({ path: slide.imageUrl, x: 6.5, y: 1.2, w: 5.5, h: 4 });
-          } catch {}
-        }
+        if (slide.imageUrl) { try { s.addImage({ path: slide.imageUrl, x: 6.5, y: 1.2, w: 5.5, h: 4 }); } catch {} }
         if (slide.speakerNotes) s.addNotes(slide.speakerNotes);
       }
-
       await pres.writeFile({ fileName: `${input.slice(0, 30).replace(/[^a-zA-Z0-9\u0600-\u06FF ]/g, "")}_slides.pptx` });
       toast.success("Downloaded!");
-    } catch {
-      toast.error("Download failed. Try again.");
-    }
+    } catch { toast.error("Download failed."); }
   };
-
-  const filteredTemplates = TEMPLATES.filter(t => filterStyle === "All Styles" || t.style === filterStyle);
 
   // ─── SLIDES PREVIEW VIEW ───
   if (slides.length > 0) {
     const slide = slides[currentSlide];
     return (
       <div className="h-[100dvh] flex flex-col bg-background">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border/20">
           <button onClick={() => setSlides([])} className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
@@ -167,16 +179,9 @@ const SlidesAgentPage = () => {
           </button>
         </div>
 
-        {/* Slide Preview */}
         <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={currentSlide}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="w-full max-w-2xl aspect-[16/9] bg-card rounded-2xl border border-border/30 shadow-xl overflow-hidden flex flex-col"
-            >
+            <motion.div key={currentSlide} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="w-full max-w-2xl aspect-[16/9] bg-card rounded-2xl border border-border/30 shadow-xl overflow-hidden flex flex-col">
               <div className="p-6 flex-1 flex flex-col">
                 <h2 className="text-lg md:text-xl font-bold text-foreground mb-4">{slide.title}</h2>
                 <div className="flex-1 flex gap-4">
@@ -197,13 +202,12 @@ const SlidesAgentPage = () => {
               </div>
               <div className="px-6 py-3 border-t border-border/20 flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground">{currentSlide + 1} / {slides.length}</span>
-                <span className="text-[10px] text-muted-foreground">{style}</span>
+                <span className="text-[10px] text-muted-foreground/40">Powered by Lovable AI</span>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Navigation */}
         <div className="flex items-center justify-center gap-4 px-4 py-4 shrink-0">
           <button onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0} className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center disabled:opacity-30">
             <ChevronLeft className="w-5 h-5" />
@@ -218,7 +222,6 @@ const SlidesAgentPage = () => {
           </button>
         </div>
 
-        {/* Speaker Notes */}
         {slide.speakerNotes && (
           <div className="px-4 pb-4">
             <div className="p-3 rounded-xl bg-secondary/50 border border-border/20">
@@ -244,7 +247,8 @@ const SlidesAgentPage = () => {
             <p className="text-sm text-muted-foreground">{progressText}</p>
           </div>
           <Progress value={progress} className="h-2" />
-          <p className="text-xs text-muted-foreground">{slideCount} slides • {style} style</p>
+          <p className="text-xs text-muted-foreground">{slideCount} slides</p>
+          <p className="text-[10px] text-muted-foreground/40">Powered by Lovable AI</p>
         </motion.div>
       </div>
     );
@@ -253,67 +257,61 @@ const SlidesAgentPage = () => {
   // ─── MAIN CREATE VIEW ───
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+      {/* Header - back button only */}
+      <div className="flex items-center gap-3 px-4 py-3 shrink-0">
         <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
-          <X className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-2">
           <Presentation className="w-4 h-4 text-primary" />
           <h1 className="text-sm font-semibold text-foreground">AI Slides</h1>
         </div>
-        <button className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
-          <MoreVertical className="w-5 h-5" />
-        </button>
+        <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">1 MC / 10 slides</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         {/* Title */}
         <div className="text-center mb-4 mt-2">
           <h2 className="text-lg font-bold text-foreground">Ready to create your slides?</h2>
-          <p className="text-xs text-muted-foreground mt-1">1 MC / 10 slides</p>
         </div>
 
-        {/* Mode + Slide count */}
+        {/* Slide count selector */}
         <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="flex items-center rounded-full bg-secondary/60 border border-border/30 p-0.5">
-            <button className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium">Guided</button>
-            <button className="px-3 py-1.5 rounded-full text-xs text-muted-foreground">Auto</button>
-          </div>
-          <button onClick={() => setShowSettings(!showSettings)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary/60 border border-border/30 text-xs text-muted-foreground">
-            {slideCount} slides
-            <ChevronLeft className={`w-3 h-3 transition-transform ${showSettings ? "rotate-90" : "-rotate-90"}`} />
-          </button>
-        </div>
-
-        {/* Settings panel */}
-        <AnimatePresence>
-          {showSettings && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
-              <div className="space-y-3 p-3 rounded-2xl bg-secondary/30 border border-border/20">
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Style</p>
-                  <div className="flex flex-wrap gap-2">
-                    {STYLES.map(s => (
-                      <button key={s} onClick={() => setStyle(s)} className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${style === s ? "bg-primary text-primary-foreground" : "bg-accent/50 text-muted-foreground hover:bg-accent"}`}>{s}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Slides</p>
-                  <div className="flex gap-2">
+          <div className="relative">
+            <button onClick={() => setShowSlideCountMenu(!showSlideCountMenu)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary/60 border border-border/30 text-xs text-muted-foreground">
+              {slideCount} slides
+              <ChevronLeft className={`w-3 h-3 transition-transform ${showSlideCountMenu ? "rotate-90" : "-rotate-90"}`} />
+            </button>
+            <AnimatePresence>
+              {showSlideCountMenu && (
+                <>
+                  <div className="fixed inset-0 z-[45]" onClick={() => setShowSlideCountMenu(false)} />
+                  <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-full mt-1 left-0 z-[46] rounded-xl border border-border/30 bg-black/80 backdrop-blur-2xl p-1.5 shadow-xl">
                     {SLIDE_COUNTS.map(n => (
-                      <button key={n} onClick={() => setSlideCount(n)} className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${slideCount === n ? "bg-primary text-primary-foreground" : "bg-accent/50 text-muted-foreground hover:bg-accent"}`}>{n}</button>
+                      <button key={n} onClick={() => { setSlideCount(n); setShowSlideCountMenu(false); }} className={`w-full px-4 py-2 rounded-lg text-xs text-left transition-colors ${slideCount === n ? "bg-primary/15 text-primary" : "text-white/70 hover:bg-white/5"}`}>{n} slides</button>
                     ))}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
 
         {/* Input */}
         <div className="mb-5">
+          {/* Attached files */}
+          {attachedFiles.length > 0 && (
+            <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
+              {attachedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border shrink-0">
+                  {f.type === "image" ? <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" /> : <FileUp className="w-3 h-3" />}
+                  <span className="truncate max-w-[100px]">{f.name}</span>
+                  <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="rounded-2xl bg-secondary/40 border border-border/30 p-3">
             <textarea
               ref={textareaRef}
@@ -325,11 +323,27 @@ const SlidesAgentPage = () => {
               className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50"
             />
             <div className="flex items-center justify-between mt-2">
-              <div className="flex items-center gap-2">
-                <button className="w-8 h-8 rounded-full bg-accent/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                  <Wand2 className="w-4 h-4" />
+              <div className="relative">
+                <button onClick={() => setShowAttachMenu(!showAttachMenu)} className="w-8 h-8 rounded-full bg-accent/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                  <Plus className="w-4 h-4" />
                 </button>
-                <span className="text-[10px] text-muted-foreground px-2 py-0.5 rounded-full bg-accent/30">{style}</span>
+                <AnimatePresence>
+                  {showAttachMenu && (
+                    <>
+                      <div className="fixed inset-0 z-[45]" onClick={() => setShowAttachMenu(false)} />
+                      <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-xl border border-border/30 bg-black/80 backdrop-blur-2xl p-2 shadow-xl w-40">
+                        <button onClick={() => imageInputRef.current?.click()} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-white/80 hover:bg-white/5 transition-colors">
+                          <Image className="w-4 h-4 text-white/50" />
+                          Images
+                        </button>
+                        <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-white/80 hover:bg-white/5 transition-colors">
+                          <FileUp className="w-4 h-4 text-white/50" />
+                          Files
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
               <button onClick={handleGenerate} disabled={!input.trim()} className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 transition-opacity">
                 <ArrowUp className="w-4 h-4" />
@@ -343,9 +357,7 @@ const SlidesAgentPage = () => {
           <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-primary/5 border border-primary/15">
             <Check className="w-4 h-4 text-primary" />
             <span className="text-xs text-primary font-medium">{selectedTemplate.name}</span>
-            <button onClick={() => setSelectedTemplate(null)} className="ml-auto">
-              <X className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
+            <button onClick={() => setSelectedTemplate(null)} className="ml-auto"><X className="w-3.5 h-3.5 text-muted-foreground" /></button>
           </div>
         )}
 
@@ -357,22 +369,8 @@ const SlidesAgentPage = () => {
           </TabsList>
 
           <TabsContent value="explore" className="mt-3">
-            {/* Filter chips */}
-            <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-              {["All Styles", ...STYLES].map(s => (
-                <button key={s} onClick={() => setFilterStyle(s)} className={`px-3 py-1 rounded-full text-[11px] font-medium shrink-0 transition-colors ${filterStyle === s ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground hover:bg-secondary"}`}>{s}</button>
-              ))}
-            </div>
-
-            {/* Template grid */}
             <div className="grid grid-cols-2 gap-3">
-              {/* Blank slide card */}
-              <button onClick={() => setSelectedTemplate(null)} className="aspect-[16/10] rounded-2xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center gap-2 hover:border-primary/40 transition-colors group">
-                <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-[11px] text-muted-foreground group-hover:text-foreground">Blank Slides</span>
-              </button>
-
-              {filteredTemplates.map(t => (
+              {TEMPLATES.map(t => (
                 <button
                   key={t.id}
                   onClick={() => setSelectedTemplate(t)}
@@ -406,7 +404,13 @@ const SlidesAgentPage = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        <p className="text-center text-[10px] text-muted-foreground/40 mt-6">Powered by Lovable AI</p>
       </div>
+
+      {/* Hidden inputs */}
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.pptx,.xlsx" multiple />
+      <input ref={imageInputRef} type="file" className="hidden" onChange={handleFileUpload} accept="image/*" multiple />
     </div>
   );
 };
