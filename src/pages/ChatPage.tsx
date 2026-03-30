@@ -658,14 +658,14 @@ const ChatPage = () => {
                   <h2 className="font-display text-xl font-bold text-foreground">Megsy AI Workspace</h2>
                 </div>
 
-                {/* Centered input - larger square style */}
-                <div className="mb-8 max-w-sm mx-auto">
-                  <div className="relative rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm p-1">
+                {/* Centered input - borderless, larger square */}
+                <div className="mb-8 max-w-md mx-auto">
+                  <div className="relative rounded-2xl bg-secondary/30 backdrop-blur-sm p-1">
                     <AnimatePresence>
                       {plusMenuOpen && (
                         <>
-                          <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-                          <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} className="absolute top-full mt-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/70 backdrop-blur-2xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+                          <div className="fixed inset-0 z-[45] bg-black/20 backdrop-blur-sm" onClick={() => setPlusMenuOpen(false)} />
+                          <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} className="absolute top-full mt-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/80 backdrop-blur-3xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
                             <div className="grid grid-cols-3 gap-2 mb-3">
                               <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
                                 <Camera className="w-5 h-5 text-white/60" />
@@ -705,17 +705,14 @@ const ChatPage = () => {
                   </div>
                 </div>
 
-                {/* Agent grid - Genspark style with colored circular icons */}
-                <div className="grid grid-cols-4 gap-x-2 gap-y-4 max-w-sm mx-auto mb-4">
+                {/* 5 agents + All button */}
+                <div className="flex items-center justify-center gap-4 max-w-md mx-auto mb-4 flex-wrap">
                   {[
-                    { label: "Meetings", path: "/agents/meetings", icon: CalendarCheck, bg: "bg-teal-600" },
-                    { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-700" },
-                    { label: "Sheets", path: "/agents/spreadsheets", icon: Table2, bg: "bg-emerald-700" },
-                    { label: "Chat", path: "/", icon: Sparkles, bg: "bg-sky-600" },
                     { label: "Images", path: "/images", icon: Camera, bg: "bg-purple-600" },
                     { label: "Videos", path: "/videos", icon: Youtube, bg: "bg-rose-600" },
-                    { label: "Ad Designer", path: "/agents/ad-designer", icon: Megaphone, bg: "bg-violet-700" },
-                    { label: "Podcast", path: "/agents/podcast", icon: Podcast, bg: "bg-pink-600" },
+                    { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-700" },
+                    { label: "Search", path: "/agents/deep-search", icon: SearchCheck, bg: "bg-indigo-600" },
+                    { label: "Code", path: "/code", icon: Code, bg: "bg-emerald-700" },
                   ].map(a => (
                     <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-2 group">
                       <div className={`w-14 h-14 rounded-2xl ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
@@ -724,25 +721,56 @@ const ChatPage = () => {
                       <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
                     </button>
                   ))}
-                </div>
-
-                {/* Second row - more agents */}
-                <div className="grid grid-cols-4 gap-x-2 gap-y-4 max-w-sm mx-auto">
-                  {[
-                    { label: "Books", path: "/agents/book-creator", icon: BookOpen, bg: "bg-orange-600" },
-                    { label: "Social", path: "/agents/social-analyzer", icon: BarChart3, bg: "bg-cyan-600" },
-                    { label: "News", path: "/agents/news", icon: Newspaper, bg: "bg-slate-600" },
-                    { label: "Deep Search", path: "/agents/deep-search", icon: SearchCheck, bg: "bg-indigo-600" },
-                  ].map(a => (
-                    <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-2 group">
-                      <div className={`w-14 h-14 rounded-2xl ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
-                        <a.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
-                    </button>
-                  ))}
+                  <button onClick={() => setAllAgentsOpen(true)} className="flex flex-col items-center gap-2 group">
+                    <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform border border-border/40">
+                      <Grid3X3 className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">All</span>
+                  </button>
                 </div>
               </motion.div>
+
+              {/* All Agents Dialog */}
+              <Dialog open={allAgentsOpen} onOpenChange={setAllAgentsOpen}>
+                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md p-0 gap-0 overflow-hidden rounded-2xl border-border/30 bg-background">
+                  <div className="px-5 pt-5 pb-3">
+                    <DialogHeader>
+                      <DialogTitle className="text-base font-semibold text-left">All Agents</DialogTitle>
+                      <DialogDescription className="text-xs text-left text-muted-foreground">Choose a specialized AI agent</DialogDescription>
+                    </DialogHeader>
+                  </div>
+                  <div className="px-4 pb-5 max-h-[60vh] overflow-y-auto">
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: "Meetings", path: "/agents/meetings", icon: CalendarCheck, bg: "bg-teal-600" },
+                        { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-700" },
+                        { label: "Sheets", path: "/agents/spreadsheets", icon: Table2, bg: "bg-emerald-700" },
+                        { label: "Image Genius", path: "/agents/image-genius", icon: Sparkles, bg: "bg-violet-600" },
+                        { label: "Ad Designer", path: "/agents/ad-designer", icon: Megaphone, bg: "bg-pink-700" },
+                        { label: "YouTube", path: "/agents/youtube-summary", icon: Youtube, bg: "bg-red-600" },
+                        { label: "Podcast", path: "/agents/podcast", icon: Podcast, bg: "bg-pink-600" },
+                        { label: "Books", path: "/agents/book-creator", icon: BookOpen, bg: "bg-orange-600" },
+                        { label: "Social", path: "/agents/social-analyzer", icon: BarChart3, bg: "bg-cyan-600" },
+                        { label: "News", path: "/agents/news", icon: Newspaper, bg: "bg-slate-600" },
+                        { label: "Deep Search", path: "/agents/deep-search", icon: SearchCheck, bg: "bg-indigo-600" },
+                        { label: "Assistant", path: "/agents/assistant", icon: Bot, bg: "bg-sky-600" },
+                        { label: "Store", path: "/agents/store", icon: Store, bg: "bg-lime-700" },
+                        { label: "Market", path: "/agents/market-analyzer", icon: TrendingUp, bg: "bg-fuchsia-700" },
+                        { label: "Images", path: "/images", icon: Camera, bg: "bg-purple-600" },
+                        { label: "Videos", path: "/videos", icon: Youtube, bg: "bg-rose-600" },
+                        { label: "Code", path: "/code", icon: Code, bg: "bg-emerald-700" },
+                      ].map(a => (
+                        <button key={a.path} onClick={() => { navigate(a.path); setAllAgentsOpen(false); }} className="flex flex-col items-center gap-2 py-3 rounded-2xl hover:bg-secondary/50 transition-colors group">
+                          <div className={`w-12 h-12 rounded-2xl ${a.bg} flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}>
+                            <a.icon className="w-5 h-5 text-white" />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-44 md:pb-52">
