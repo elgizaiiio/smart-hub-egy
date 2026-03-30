@@ -737,6 +737,7 @@ const ChatPage = () => {
                 </div>
 
                 <p className="text-[10px] text-muted-foreground/40 mt-2">Powered by Lovable AI</p>
+              </motion.div>
 
               {/* All Agents Drawer from bottom */}
               <Drawer open={allAgentsOpen} onOpenChange={setAllAgentsOpen}>
