@@ -1,175 +1,91 @@
 
 
-# خطة شاملة: ChatPage + 14 وكيل مخصص + 3 وكلاء جدد
+# خطة: إصلاح ChatPage + إعادة بناء Slides Agent بالكامل
 
 ---
 
-## الجزء 1: إصلاحات ChatPage
+## الجزء 1: ChatPage - شبكة 8 أيقونات (4×2) + Drawer
 
-### 1.1 مربع الإدخال المركزي
-- إزالة `border` الخارجي من wrapper (`border-border/40` → لا شيء)
-- تكبير المربع ليكون مربع الشكل أكثر (`min-h-[120px]`, `rounded-2xl`)
-- قائمة `+` تغلق عند الضغط على أي مكان: الـ overlay الحالي `fixed inset-0 z-[45]` موجود لكن يجب جعله `bg-black/20 backdrop-blur-sm`
+### المشكلة الحالية
+- 5 أيقونات + زر "All" بشكل `flex-wrap` غير منظم
+- "All Agents" يفتح `Dialog` عادي بدل drawer من الأسفل
+- الأيقونات صغيرة ولا تشبه التصميم المطلوب (Genspark style)
 
-### 1.2 شبكة الوكلاء → 5 فقط + زر "الكل"
-- عرض 5 وكلاء فقط (الأكثر استخداما) في صف أفقي واحد
-- زر سادس "All Agents" يفتح `Dialog` يعرض كل الوكلاء (17 وكيل) في شبكة 3 أعمدة قابلة للسكرول
-- كل وكيل بأيقونة دائرية ملونة واسم تحته (مثل الصورة المرفقة)
+### التغييرات في `ChatPage.tsx`
+1. **تغيير الشبكة من 5+1 إلى 4×2**: عرض 8 أيقونات في `grid-cols-4` صفين
+   - الصف الأول: Meetings, Slides, Sheets, Deep Search
+   - الصف الثاني: Chat, Images, Image Genius, **All Agents** (الزر الثامن)
+2. **كل أيقونة**: دائرة ملونة `w-14 h-14 rounded-full` مع أيقونة بيضاء بداخلها + اسم تحتها (مثل الصورة)
+3. **زر "All Agents"**: يفتح `Drawer` (من vaul) بدل `Dialog`
+   - الـ Drawer يفتح من الأسفل ويأخذ ~80% من ارتفاع الشاشة
+   - بداخله شبكة `grid-cols-3` قابلة للسكرول بكل الـ 17 وكيل
+   - نفس شكل الأيقونات الدائرية الملونة
 
----
-
-## الجزء 2: الوكلاء الجدد (3 صفحات جديدة)
-
-### 2.1 المساعد الشخصي (`/agents/assistant`)
-**ملف جديد:** `src/pages/agents/PersonalAssistantPage.tsx`
-- شريط سفلي ثابت بـ 4 أزرار: ربط الحسابات، المهام، التنبيهات، المحادثة
-- واجهة الربط: كروت OAuth لـ Google Calendar, Gmail, Outlook, Todoist
-- واجهة المهام: قوائم مقسمة (اليوم/الأسبوع/متأخرة)
-- واجهة التنبيهات: قائمة إشعارات
-- واجهة المحادثة: شات مع المساعد
-- إعداد أولي: اسم المساعد، أسلوب التواصل، أوقات الإزعاج
-- Web Push notifications عبر Service Worker
-- ذاكرة المحادثات في Supabase
-- تجربة مجانية 3 أيام ثم 20 كريدت/شهر
-
-### 2.2 وكيل المتجر (`/agents/store`)
-**ملف جديد:** `src/pages/agents/StoreManagerPage.tsx`
-- شريط سفلي: المخزون، الطلبات، التعليقات، التقارير
-- ربط المتجر: Shopify/WooCommerce/Salla/Zid عبر API key
-- لوحة تحكم: كروت (مبيعات اليوم، طلبات جديدة، مخزون منخفض)
-- واجهة المخزون: قائمة منتجات مع شريط تقدم
-- واجهة الطلبات: تغيير حالة + رسائل تلقائية
-- واجهة التعليقات: رد مقترح من AI
-- واجهة التقارير: جراف + فلاتر
-- تجربة 7 أيام ثم 20 كريدت/شهر (حسب طلب المستخدم 40→20)
-
-### 2.3 محلل المنافسين (`/agents/market-analyzer`)
-**ملف جديد:** `src/pages/agents/MarketAnalyzerPage.tsx`
-- نموذج إدخال: اسم النشاط، المجال، السوق، أسماء منافسين
-- شاشة بحث حي مع progress
-- جدول مقارنة تفاعلي
-- كروت منفصلة لكل منافس
-- تقرير SWOT
-- زر تنزيل PDF
-- 1 كريدت/تقرير
+### الملفات
+- `src/pages/ChatPage.tsx` - تعديل الشبكة + استبدال Dialog بـ Drawer
 
 ---
 
-## الجزء 3: إعادة كتابة الوكلاء الـ 11 الموجودين
+## الجزء 2: Slides Agent - إعادة بناء كاملة (Genspark Style)
 
-كل وكيل سيُعاد كتابته بالكامل حسب المواصفات المفصلة:
+### التصميم الجديد (حسب الصور)
+الصفحة تتكون من:
 
-### 3.1 Slides Agent
-- مربع إدخال + زر `+` لعدد الشرائح والأسلوب
-- كاروسيل أفقي لقوالب SlidesCarnival
-- شاشة لودينج مع progress bar ونصوص متغيرة
-- FLUX.2 Klein لتوليد الصور عبر deapi.ai
-- python-pptx لتجميع العرض (Edge Function)
-- عرض الشرائح مع أزرار تنقل + تنزيل PPTX/PDF
-- حفظ في sidebar: `slides: اسم`
-- 1 كريدت/10 شرائح
+**Header**: `X` للإغلاق + `...` للخيارات + عنوان "AI Slides"
 
-### 3.2 Meeting Notes
-- أول دخول: طلب ربط Google Calendar/Outlook
-- كارد الاجتماع القادم بارز
-- قائمة الاجتماعات (أسبوعية) مع toggle البوت
-- الاجتماعات السابقة مع زر عرض الملخص
-- Recall.ai للانضمام + Deepgram للتفريغ
-- 5 كريدت/ساعة
+**القسم العلوي**:
+- عنوان "Ready to create your slides?"
+- زرين: "Guided Mode" (نشط) + "Auto" dropdown لعدد الشرائح
+- مربع إدخال كبير بـ placeholder متحرك + أزرار:
+  - زر Enter (إرسال)
+  - زر Mic
+  - زر Style dropdown يعرض الأسلوب الحالي (احترافي/إبداعي) مع أيقونة
+  - زر +
 
-### 3.3 Spreadsheets
-- مربع إدخال + رفع ملف Excel/CSV
-- أمثلة جاهزة (Budget, Tracker...)
-- جدول تفاعلي بعد التوليد
-- تعديلات بالنص الطبيعي
-- openpyxl في Edge Function
-- تنزيل XLSX/CSV
-- حفظ: `sheet: اسم`
-- 1 كريدت
+**القسم السفلي - Tabs**: "Explore" | "My Templates"
+- **Explore**: فلاتر (Most Popular, All Topics, All Styles) + شبكة 2 أعمدة من القوالب
+  - أول كارد "Create Blank Slides" مع أيقونة +
+  - باقي الكروت: صور preview حقيقية لقوالب + زر "Apply"
+- **My Templates**: قوالب المستخدم المحفوظة
 
-### 3.4 Image Genius
-- رفع صورة → 55% من ارتفاع الشاشة
-- رسالة AI ترحيبية مع 3 أزرار (قوالب/تحسين/تعديل)
-- شريط أدوات سفلي ثابت قابل للسكرول
-- كاروسيل قوالب/تحسينات فوق الشريط
-- أدوات: قص، تدوير، فلاتر (client-side Canvas)
-- تحسين جودة: Real-ESRGAN عبر fal.ai
-- مسح خلفية: BRIA RMBG عبر fal.ai
-- شاشة تحميل بأنيميشن
-- حفظ → استوديو الصور
-- 1 كريدت لكل عملية AI
+**تفاصيل القالب**: عند الضغط على قالب يفتح صفحة تفاصيل تعرض:
+  - معاينة slides من القالب
+  - وصف القالب + tags (تكنولوجيا، تسويق، أعمال)
+  - الأبعاد + لون الثيم
+  - زر "Use This Template"
 
-### 3.5 YouTube Summary
-- مربع URL كبير مع أيقونة YouTube
-- عرض thumbnail بعد لصق الرابط
-- ملخص منظم (Key Points, Timestamps)
-- شات متابعة
-- حفظ: `you: اسم`
-- 0.5 كريدت
+### البيانات
+- القوالب تُجلب من جدول Supabase `slide_templates` (جديد)
+- كل قالب: `id, name, description, thumbnail_url, preview_images, tags[], style, color, dimensions, prompt_template, display_order`
+- حاليا نضيف 10-15 قالب placeholder ببيانات ثابتة (hardcoded) حتى يتم إضافة القوالب الحقيقية من بوت تليجرام
 
-### 3.6 Ad Designer
-- خيارين: رفع صورة / لصق URL
-- اختيار المنصة + نوع الإعلان
-- AI يجلب معلومات المنتج
-- توليد سكريبت + صورة/فيديو
-- نقل للاستوديو المناسب
+### Flow التوليد الحقيقي
+1. المستخدم يكتب الموضوع + يختار الأسلوب + عدد الشرائح + (اختياريا) قالب
+2. Edge Function `generate-slides` (جديد):
+   - يرسل للـ AI (عبر Lovable AI Gateway) طلب توليد محتوى الشرائح كـ structured JSON
+   - لكل slide: يولد image prompt ويرسله لـ `generate-image` endpoint (FLUX.2 Klein عبر deapi.ai)
+   - يجمع كل شيء ويرسل النتيجة
+3. **Preview**: عرض الشرائح واحدة واحدة مع أزرار تنقل (يمين/يسار)
+4. **Download**: زر تنزيل PPTX (يستخدم pptxgenjs client-side)
 
-### 3.7 Podcast
-- اختيار اللغة + عدد المتحدثين + الأصوات
-- عرض السكريبت مع أزرار موافق/تعديل
-- توليد الصوت عبر Deepgram
-- مشغل صوت نظيف
-- حفظ: `podcast: اسم`
-- 4 كريدت
+### Edge Function: `supabase/functions/generate-slides/index.ts`
+- يستقبل: `{ topic, style, slideCount, templateId? }`
+- يستخدم Lovable AI Gateway لتوليد المحتوى
+- يستخدم deapi.ai لتوليد صور كل slide
+- يُرجع: `{ slides: [{ title, content, imageUrl, speakerNotes }] }`
 
-### 3.8 Book Creator
-- اختيار النوع + اللغة + عدد الصفحات
-- عرض الهيكل/الفهرس للموافقة
-- كتابة فصل بفصل مع progress
-- غلاف بـ NanoBanana Pro
-- تجميع PDF عبر jsPDF
-- كاروسيل معاينة الصفحات
-- حفظ: `book: اسم`
-- 5 كريدت (20 صفحة)
-
-### 3.9 Social Analyzer
-- مربع URL مع دعم كل المنصات
-- كشف المنصة تلقائيا مع أيقونة
-- تقرير منظم (نظرة عامة/تفاعل/محتوى/توصيات)
-- شات تفاعلي
-- حفظ: `social: اسم`
-- مجاني
-
-### 3.10 News Agent
-- شريط أزرار الفئات
-- أخبار كبطاقات (عنوان/مصدر/ملخص)
-- بحث مخصص
-
-### 3.11 Deep Search
-- مربع كبير + اختيار مستوى (سريع/عميق/شامل)
-- كارد خطة البحث
-- شاشة بحث حي مع تفاصيل كل خطوة
-- تقرير منظم مع مصادر
-- زر تصدير PDF
-- حفظ: `research: موضوع`
-- 1 كريدت
+### المفاتيح المطلوبة
+- `DEAPI_KEY` - مطلوب لتوليد الصور عبر FLUX.2 Klein (سأطلبه من المستخدم)
+- `OPENROUTER_API_KEY` - موجود بالفعل
+- `LOVABLE_API_KEY` - موجود بالفعل
 
 ---
 
-## الجزء 4: Routing + Sidebar
+## الجزء 3: إضافة Lovable AI feedback
 
-### App.tsx
-إضافة 3 routes جديدة:
-- `/agents/assistant` → PersonalAssistantPage
-- `/agents/store` → StoreManagerPage  
-- `/agents/market-analyzer` → MarketAnalyzerPage
-
-### All Agents Dialog في ChatPage
-شبكة 3 أعمدة بكل الوكلاء الـ 17:
-1. Meetings 2. Slides 3. Sheets 4. Image Genius 5. Ad Designer
-6. YouTube Summary 7. Podcast 8. Books 9. Social Analyzer 10. News
-11. Deep Search 12. Personal Assistant 13. Store Manager 14. Market Analyzer
-15. Images 16. Videos 17. Code
+### في `supabase/functions/chat/index.ts`
+- إضافة error handling واضح لـ 429/402 من Lovable AI Gateway
+- عرض toast مناسب للمستخدم
 
 ---
 
@@ -177,52 +93,16 @@
 
 | ملف | التغيير |
 |-----|---------|
-| `src/pages/ChatPage.tsx` | إزالة border، 5 وكلاء + All Agents dialog، مربع أكبر، blur أقوى |
-| `src/pages/agents/PersonalAssistantPage.tsx` | **جديد** |
-| `src/pages/agents/StoreManagerPage.tsx` | **جديد** |
-| `src/pages/agents/MarketAnalyzerPage.tsx` | **جديد** |
-| `src/pages/agents/SlidesAgentPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/MeetingNotesPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/SpreadsheetAgentPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/ImageGeniusPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/YoutubeSummaryPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/AdDesignerPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/PodcastAgentPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/BookCreatorPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/SocialAnalyzerPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/NewsAgentPage.tsx` | إعادة كتابة كاملة |
-| `src/pages/agents/DeepSearchPage.tsx` | إعادة كتابة كاملة |
-| `src/App.tsx` | 3 routes جديدة |
-
----
-
-## المفاتيح المطلوبة
-
-| المفتاح | الاستخدام |
-|---------|----------|
-| `RECALL_AI_API_KEY` | Meeting Notes - انضمام البوت للاجتماعات |
-| `GOOGLE_CALENDAR_CLIENT_ID` | Meeting Notes + Personal Assistant - تقويم جوجل |
-| `GOOGLE_CALENDAR_CLIENT_SECRET` | نفسه |
-| `MICROSOFT_GRAPH_CLIENT_ID` | Outlook Calendar/Mail |
-| `MICROSOFT_GRAPH_CLIENT_SECRET` | نفسه |
-| `GMAIL_CLIENT_ID` | Personal Assistant - إدارة الإيميل |
-| `GMAIL_CLIENT_SECRET` | نفسه |
-| `TODOIST_API_KEY` | Personal Assistant - المهام |
-| `SHOPIFY_API_KEY` | Store Manager |
-| `SALLA_API_KEY` | Store Manager |
-| `ZID_API_KEY` | Store Manager |
-| `WOOCOMMERCE_API_KEY` | Store Manager |
-| `VAPID_PUBLIC_KEY` | Web Push notifications |
-| `VAPID_PRIVATE_KEY` | Web Push notifications |
-
-**ملاحظة**: `DEEPGRAM_APIKEY` و `CANVA_CLIENT_ID/SECRET` موجودين بالفعل.
+| `src/pages/ChatPage.tsx` | شبكة 4×2 + Drawer بدل Dialog |
+| `src/pages/agents/SlidesAgentPage.tsx` | إعادة كتابة كاملة - Genspark style |
+| `supabase/functions/generate-slides/index.ts` | **جديد** - Edge Function |
+| `src/App.tsx` | لا تغيير (route موجود) |
 
 ---
 
 ## ترتيب التنفيذ
-
-1. ChatPage (إزالة border + 5 وكلاء + All Agents dialog)
-2. الوكلاء الـ 3 الجدد (Personal Assistant, Store, Market)
-3. إعادة كتابة الوكلاء الـ 11 الموجودين
-4. إضافة Routes في App.tsx
+1. ChatPage: شبكة 4×2 أيقونات دائرية + Drawer من الأسفل
+2. SlidesAgentPage: إعادة بناء UI كامل مع tabs + قوالب + معاينة
+3. Edge Function generate-slides
+4. طلب مفتاح DEAPI من المستخدم
 
