@@ -662,7 +662,7 @@ const ChatPage = () => {
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
                 <div className="flex items-center justify-center gap-3 mb-6">
                   <PegtopIcon className="text-primary" />
-                  <h2 className="font-display text-xl font-bold text-foreground">Megsy AI Workspace</h2>
+                  <h2 className="font-display text-xl font-bold text-foreground">Megsy Workspace</h2>
                 </div>
 
                 {/* Centered input - borderless, larger square */}
