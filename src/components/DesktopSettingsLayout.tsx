@@ -18,6 +18,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: "billing", label: "Billing", icon: CreditCard, path: "/settings/billing" },
   { id: "customization", label: "Customization", icon: Paintbrush, path: "/settings/customization" },
+  { id: "ai-personalization", label: "AI Personalization", icon: User, path: "/settings/ai-personalization" },
   { id: "referrals", label: "Referrals", icon: Gift, path: "/settings/referrals" },
 ];
 
