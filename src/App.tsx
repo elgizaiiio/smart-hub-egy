@@ -60,6 +60,7 @@ import AboutPage from "./pages/AboutPage";
 import AuthDocsPage from "./pages/AuthDocsPage";
 import VoicePage from "./pages/VoicePage";
 import VideoToTextPage from "./pages/tools/VideoToTextPage";
+import AIPersonalizationPage from "./pages/AIPersonalizationPage";
 
 // Image tool pages
 import InpaintPage from "./pages/tools/InpaintPage";
