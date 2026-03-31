@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_personalization: {
+        Row: {
+          about: string | null
+          ai_traits: string | null
+          call_name: string | null
+          created_at: string | null
+          custom_instructions: string | null
+          id: string
+          profession: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          about?: string | null
+          ai_traits?: string | null
+          call_name?: string | null
+          created_at?: string | null
+          custom_instructions?: string | null
+          id?: string
+          profession?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          about?: string | null
+          ai_traits?: string | null
+          call_name?: string | null
+          created_at?: string | null
+          custom_instructions?: string | null
+          id?: string
+          profession?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      calendar_connections: {
+        Row: {
+          access_token: string | null
+          calendar_email: string | null
+          created_at: string
+          id: string
+          provider: string
+          refresh_token: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          calendar_email?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          calendar_email?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           ai_reply: string | null
@@ -306,6 +381,149 @@ export type Database = {
           to_email?: string
           type?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      image_templates: {
+        Row: {
+          created_at: string
+          display_order: number
+          example_image_url: string | null
+          id: string
+          is_active: boolean
+          name: string
+          name_ar: string | null
+          prompt: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          example_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          name_ar?: string | null
+          prompt: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          example_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_ar?: string | null
+          prompt?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      meeting_recordings: {
+        Row: {
+          action_items: Json | null
+          audio_url: string | null
+          created_at: string
+          credits_used: number | null
+          decisions: Json | null
+          duration_minutes: number | null
+          id: string
+          key_points: Json | null
+          meeting_id: string
+          status: string
+          summary: string | null
+          transcript: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_items?: Json | null
+          audio_url?: string | null
+          created_at?: string
+          credits_used?: number | null
+          decisions?: Json | null
+          duration_minutes?: number | null
+          id?: string
+          key_points?: Json | null
+          meeting_id: string
+          status?: string
+          summary?: string | null
+          transcript?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_items?: Json | null
+          audio_url?: string | null
+          created_at?: string
+          credits_used?: number | null
+          decisions?: Json | null
+          duration_minutes?: number | null
+          id?: string
+          key_points?: Json | null
+          meeting_id?: string
+          status?: string
+          summary?: string | null
+          transcript?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_recordings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          bot_enabled: boolean
+          bot_id: string | null
+          calendar_event_id: string | null
+          created_at: string
+          end_time: string
+          id: string
+          meeting_url: string | null
+          platform: string | null
+          start_time: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bot_enabled?: boolean
+          bot_id?: string | null
+          calendar_event_id?: string | null
+          created_at?: string
+          end_time: string
+          id?: string
+          meeting_url?: string | null
+          platform?: string | null
+          start_time: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bot_enabled?: boolean
+          bot_id?: string | null
+          calendar_event_id?: string | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          meeting_url?: string | null
+          platform?: string | null
+          start_time?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -931,6 +1149,87 @@ export type Database = {
         }
         Relationships: []
       }
+      slide_projects: {
+        Row: {
+          created_at: string
+          id: string
+          pptx_url: string | null
+          slide_count: number
+          slides_data: Json | null
+          status: string
+          style: string
+          template_id: string | null
+          title: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pptx_url?: string | null
+          slide_count?: number
+          slides_data?: Json | null
+          status?: string
+          style?: string
+          template_id?: string | null
+          title?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pptx_url?: string | null
+          slide_count?: number
+          slides_data?: Json | null
+          status?: string
+          style?: string
+          template_id?: string | null
+          title?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      spreadsheet_projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_url: string | null
+          id: string
+          sheet_data: Json | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          sheet_data?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          sheet_data?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       status_subscribers: {
         Row: {
           channel: string
@@ -951,6 +1250,41 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      user_gallery: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          source_type: string
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          source_type?: string
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          source_type?: string
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_gallery_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "image_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_memory_entries: {
         Row: {
@@ -1087,6 +1421,154 @@ export type Database = {
         }
         Relationships: []
       }
+      youtube_conversations: {
+        Row: {
+          channel_name: string | null
+          created_at: string
+          duration: string | null
+          id: string
+          thumbnail_url: string | null
+          transcript: string | null
+          updated_at: string
+          user_id: string
+          video_id: string
+          video_title: string | null
+          video_url: string
+        }
+        Insert: {
+          channel_name?: string | null
+          created_at?: string
+          duration?: string | null
+          id?: string
+          thumbnail_url?: string | null
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+          video_id: string
+          video_title?: string | null
+          video_url: string
+        }
+        Update: {
+          channel_name?: string | null
+          created_at?: string
+          duration?: string | null
+          id?: string
+          thumbnail_url?: string | null
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+          video_title?: string | null
+          video_url?: string
+        }
+        Relationships: []
+      }
+      youtube_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yt_video_chat_messages: {
+        Row: {
+          chat_id: string
+          content: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          chat_id: string
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          chat_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yt_video_chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "yt_video_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yt_video_chats: {
+        Row: {
+          channel_name: string | null
+          created_at: string
+          id: string
+          session_id: string
+          thumbnail_url: string | null
+          transcript: string | null
+          updated_at: string
+          user_id: string | null
+          video_id: string
+          video_title: string | null
+          video_url: string
+        }
+        Insert: {
+          channel_name?: string | null
+          created_at?: string
+          id?: string
+          session_id: string
+          thumbnail_url?: string | null
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string | null
+          video_id?: string
+          video_title?: string | null
+          video_url: string
+        }
+        Update: {
+          channel_name?: string | null
+          created_at?: string
+          id?: string
+          session_id?: string
+          thumbnail_url?: string | null
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string | null
+          video_id?: string
+          video_title?: string | null
+          video_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       service_status_public: {
@@ -1112,6 +1594,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_credits: {
+        Args: { p_amount: number; p_description?: string; p_user_id: string }
+        Returns: Json
+      }
       check_profile_update_safe_policy: {
         Args: { profile_row: Database["public"]["Tables"]["profiles"]["Row"] }
         Returns: boolean

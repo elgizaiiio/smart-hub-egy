@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, ArrowUp, Settings2, Wand2, X, Download } from "lucide-react";
+import { Menu, ArrowUp, Settings2, Sparkles, X, Download, Copy, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
@@ -29,7 +29,6 @@ const ImagesPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { models: dynamicModels } = useDynamicModels();
 
-  // Settings state
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [imageCount, setImageCount] = useState(1);
   const [quality, setQuality] = useState("standard");
@@ -48,7 +47,6 @@ const ImagesPage = () => {
   const loadStudioImages = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    // Get only images from conversations with mode='images'
     const { data: convs } = await supabase.from("conversations").select("id").eq("user_id", user.id).eq("mode", "images");
     if (!convs || convs.length === 0) { setStudioImages([]); return; }
     const convIds = convs.map(c => c.id);
@@ -113,15 +111,26 @@ const ImagesPage = () => {
         <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} currentMode="images" />
 
         {/* Header */}
-        <div className="sticky top-0 z-10 px-4 py-3 bg-background/80 backdrop-blur-xl">
+        <div className="sticky top-0 z-10 px-4 pt-3 pb-2 bg-background/80 backdrop-blur-xl">
           <div className="flex items-center justify-between mb-3">
             <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground"><Menu className="w-5 h-5" /></button>
             <h1 className="text-base font-bold text-foreground">Images</h1>
             <div className="w-9" />
           </div>
-          <div className="flex bg-accent/50 rounded-2xl p-1">
+          {/* Pill tabs */}
+          <div className="flex gap-1.5">
             {TABS.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>{tab.label}</button>
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  activeTab === tab.id
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground hover:bg-accent/50"
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
         </div>
@@ -129,15 +138,27 @@ const ImagesPage = () => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 pb-36">
           {activeTab === "home" && (
-            <div className="space-y-4 pt-4">
-              <h2 className="text-sm font-semibold text-foreground">Tools</h2>
+            <div className="pt-4">
               <div className="grid grid-cols-2 gap-3">
                 {IMAGE_TOOLS.map(tool => (
-                  <motion.button key={tool.id} whileTap={{ scale: 0.97 }} onClick={() => navigate(tool.route)} className="rounded-2xl overflow-hidden border border-border/30 bg-card text-left relative">
-                    {tool.previewVideo ? <video src={tool.previewVideo} autoPlay loop muted playsInline className="w-full h-28 object-cover" /> : <div className="w-full h-28 bg-accent/30" />}
-                    {tool.badge && <span className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${tool.badge === "NEW" ? "bg-green-500/90 text-white" : "bg-amber-500/90 text-white"}`}>{tool.badge}</span>}
-                    <div className="p-2.5">
-                      <p className="text-sm font-medium text-foreground">{tool.name}</p>
+                  <motion.button
+                    key={tool.id}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => navigate(tool.route)}
+                    className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left relative group"
+                  >
+                    {tool.previewVideo ? (
+                      <video src={tool.previewVideo} autoPlay loop muted playsInline className="w-full h-32 object-cover" />
+                    ) : (
+                      <div className="w-full h-32 bg-gradient-to-br from-accent/40 to-accent/10" />
+                    )}
+                    {tool.badge && (
+                      <span className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                        tool.badge === "NEW" ? "bg-green-500/90 text-white" : "bg-amber-500/90 text-white"
+                      }`}>{tool.badge}</span>
+                    )}
+                    <div className="p-3">
+                      <p className="text-sm font-semibold text-foreground">{tool.name}</p>
                       <span className="text-xs text-muted-foreground">{tool.cost} MC</span>
                     </div>
                   </motion.button>
@@ -154,10 +175,11 @@ const ImagesPage = () => {
                   <button onClick={() => setActiveTab("home")} className="mt-3 text-sm text-primary font-medium">Start creating</button>
                 </div>
               ) : (
-                <div className="columns-2 gap-2">
+                <div className="columns-2 gap-2.5">
                   {studioImages.map((img, i) => (
-                    <motion.div key={i} whileTap={{ scale: 0.98 }} className="break-inside-avoid mb-2 rounded-2xl overflow-hidden cursor-pointer" onClick={() => setPreviewImg(img)}>
+                    <motion.div key={i} whileTap={{ scale: 0.98 }} className="break-inside-avoid mb-2.5 rounded-2xl overflow-hidden cursor-pointer group relative" onClick={() => setPreviewImg(img)}>
                       <img src={img.url} alt="" className="w-full object-cover" loading="lazy" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </motion.div>
                   ))}
                 </div>
@@ -170,15 +192,25 @@ const ImagesPage = () => {
               {communityItems.length === 0 ? (
                 <p className="text-center py-20 text-muted-foreground text-sm">Community gallery coming soon</p>
               ) : (
-                <div className="columns-2 gap-2">
+                <div className="columns-2 gap-2.5">
                   {communityItems.map(item => (
                     <div key={item.id} className="break-inside-avoid mb-3">
                       <div className="rounded-2xl overflow-hidden">
                         <img src={item.media_url} alt="" className="w-full object-cover" loading="lazy" />
                       </div>
-                      <div className="flex gap-2 mt-1.5">
-                        <button onClick={() => { navigator.clipboard.writeText(item.prompt || ""); toast.success("Copied"); }} className="flex-1 py-2 rounded-xl text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors">Copy</button>
-                        <button onClick={() => { setPrompt(item.prompt || ""); setActiveTab("home"); }} className="flex-1 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">Reuse</button>
+                      <div className="flex gap-1.5 mt-2">
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(item.prompt || ""); toast.success("Copied"); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium bg-accent/60 text-foreground hover:bg-accent transition-colors"
+                        >
+                          <Copy className="w-3 h-3" /> Copy
+                        </button>
+                        <button
+                          onClick={() => { setPrompt(item.prompt || ""); setActiveTab("home"); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Reuse
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -195,12 +227,12 @@ const ImagesPage = () => {
             <AnimatePresence>
               {modelPickerOpen && (
                 <>
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/20" onClick={() => setModelPickerOpen(false)} />
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-full mb-2 left-0 right-0 z-50 bg-card/95 backdrop-blur-2xl border border-border/50 rounded-2xl p-3 max-h-80 overflow-y-auto shadow-xl">
-                    <p className="text-xs font-semibold text-muted-foreground mb-3">Image Models</p>
-                    <div className="space-y-1">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/30" onClick={() => setModelPickerOpen(false)} />
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-full mb-2 left-0 right-0 z-50 bg-card/95 backdrop-blur-2xl border border-border/30 rounded-2xl p-3 max-h-80 overflow-y-auto shadow-2xl">
+                    <p className="text-xs font-semibold text-muted-foreground mb-3 px-1">Image Models</p>
+                    <div className="space-y-0.5">
                       {imageModels.map(model => (
-                        <button key={model.id} onClick={() => handleModelSelect(model)} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors ${selectedModel?.id === model.id ? "bg-primary/10 border border-primary/20" : "hover:bg-accent/50"}`}>
+                        <button key={model.id} onClick={() => handleModelSelect(model)} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors ${selectedModel?.id === model.id ? "bg-primary/10 ring-1 ring-primary/20" : "hover:bg-accent/50"}`}>
                           {model.iconUrl && <img src={model.iconUrl} alt="" className="w-7 h-7 rounded-lg object-contain" />}
                           <span className="flex-1 text-sm text-foreground truncate">{model.name}</span>
                           {model.badge && <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${model.badge === "NEW" ? "bg-green-500/90 text-white" : "bg-amber-500/90 text-white"}`}>{model.badge}</span>}
@@ -217,26 +249,26 @@ const ImagesPage = () => {
             <AnimatePresence>
               {settingsOpen && (
                 <>
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/20" onClick={() => setSettingsOpen(false)} />
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-full mb-2 left-0 right-0 z-50 bg-card/95 backdrop-blur-2xl border border-border/50 rounded-2xl p-4 shadow-xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm font-semibold text-foreground">Settings</p>
-                      <button onClick={() => setSettingsOpen(false)} className="text-muted-foreground"><X className="w-4 h-4" /></button>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/30" onClick={() => setSettingsOpen(false)} />
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-full mb-2 left-0 right-0 z-50 bg-card/95 backdrop-blur-2xl border border-border/30 rounded-2xl p-4 shadow-2xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm font-semibold text-foreground">Generation Settings</p>
+                      <button onClick={() => setSettingsOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
                     </div>
                     <div className="space-y-4">
                       <div>
                         <p className="text-xs text-muted-foreground mb-2">Aspect Ratio</p>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5">
                           {["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"].map(r => (
-                            <button key={r} onClick={() => setAspectRatio(r)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspectRatio === r ? "bg-primary text-primary-foreground" : "bg-accent/50 text-muted-foreground hover:bg-accent"}`}>{r}</button>
+                            <button key={r} onClick={() => setAspectRatio(r)} className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${aspectRatio === r ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground hover:bg-accent"}`}>{r}</button>
                           ))}
                         </div>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground mb-2">Quality</p>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5">
                           {["standard", "hd", "4k"].map(q => (
-                            <button key={q} onClick={() => setQuality(q)} className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${quality === q ? "bg-primary text-primary-foreground" : "bg-accent/50 text-muted-foreground hover:bg-accent"}`}>{q}</button>
+                            <button key={q} onClick={() => setQuality(q)} className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-all ${quality === q ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground hover:bg-accent"}`}>{q}</button>
                           ))}
                         </div>
                       </div>
@@ -246,7 +278,7 @@ const ImagesPage = () => {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground mb-2">Negative Prompt</p>
-                        <input value={negativePrompt} onChange={e => setNegativePrompt(e.target.value)} placeholder="What to avoid..." className="w-full bg-accent/30 border border-border/30 rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none" />
+                        <input value={negativePrompt} onChange={e => setNegativePrompt(e.target.value)} placeholder="What to avoid..." className="w-full bg-accent/30 border border-border/30 rounded-xl px-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none" />
                       </div>
                     </div>
                   </motion.div>
@@ -254,18 +286,27 @@ const ImagesPage = () => {
               )}
             </AnimatePresence>
 
-            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-background/80 backdrop-blur-xl px-4 py-4 shadow-lg">
+            <div className="flex items-end gap-2 rounded-2xl border border-border/30 bg-background/90 backdrop-blur-xl px-3 py-3 shadow-lg">
               <button onClick={() => { setModelPickerOpen(!modelPickerOpen); setSettingsOpen(false); }} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-accent/50 transition-colors" title={selectedModel?.name || "Select model"}>
-                <img src={currentIcon} alt="" className="w-7 h-7 rounded-md object-contain" />
+                <img src={currentIcon} alt="" className="w-7 h-7 rounded-lg object-contain" />
               </button>
-              <textarea ref={textareaRef} value={prompt} onChange={handleTextareaChange} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Describe what you want to create..." rows={1} className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-3 max-h-[150px]" style={{ minHeight: "48px" }} />
-              <button onClick={handleEnhancePrompt} disabled={!prompt.trim() || enhancing} className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 ${enhancing ? "animate-spin" : ""}`} title="Enhance prompt">
-                <Wand2 className="w-4 h-4" />
+              <textarea
+                ref={textareaRef}
+                value={prompt}
+                onChange={handleTextareaChange}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Describe what you want to create..."
+                rows={1}
+                className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50 py-2.5 max-h-[150px]"
+                style={{ minHeight: "44px" }}
+              />
+              <button onClick={handleEnhancePrompt} disabled={!prompt.trim() || enhancing} className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 ${enhancing ? "animate-spin" : ""}`} title="Enhance prompt">
+                <Sparkles className="w-4 h-4" />
               </button>
-              <button onClick={() => { setSettingsOpen(!settingsOpen); setModelPickerOpen(false); }} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+              <button onClick={() => { setSettingsOpen(!settingsOpen); setModelPickerOpen(false); }} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
                 <Settings2 className="w-4 h-4" />
               </button>
-              <button onClick={handleSend} disabled={!prompt.trim()} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20 transition-colors">
+              <button onClick={handleSend} disabled={!prompt.trim()} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20 transition-all">
                 <ArrowUp className="w-4 h-4" />
               </button>
             </div>
@@ -278,14 +319,10 @@ const ImagesPage = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
               <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
                 <img src={previewImg.url} alt="" className="w-full rounded-2xl object-contain max-h-[70vh]" />
-                {previewImg.prompt && <p className="text-white/60 text-xs mt-3 text-center line-clamp-2">{previewImg.prompt}</p>}
+                {previewImg.prompt && <p className="text-white/50 text-xs mt-3 text-center line-clamp-2">{previewImg.prompt}</p>}
                 <div className="flex justify-center mt-3">
-                  <a href={previewImg.url} download className="fancy-btn">
-                    <span className="fold" />
-                    <div className="points_wrapper">{Array.from({ length: 8 }).map((_, i) => <span key={i} className="point" />)}</div>
-                    <span className="inner flex items-center gap-2 text-sm">
-                      <Download className="w-4 h-4" /> Download
-                    </span>
+                  <a href={previewImg.url} download className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                    <Download className="w-4 h-4" /> Download
                   </a>
                 </div>
                 <button onClick={() => setPreviewImg(null)} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center"><X className="w-4 h-4" /></button>

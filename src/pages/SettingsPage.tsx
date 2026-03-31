@@ -63,9 +63,12 @@ const SettingsPage = () => {
     { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
   ];
 
+  const aiPersonalizationItem = { icon: Brush, label: "AI Personalization", desc: "Customize AI behavior", path: "/settings/ai-personalization" };
+
   const menuItems = [
     { icon: UserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
+    { icon: Brush, label: "AI Personalization", desc: "Customize AI behavior", path: "/settings/ai-personalization" },
     { icon: Globe2, label: "Language", desc: "Auto-translate UI", path: "/settings/language" },
     { icon: Bell, label: "Notifications", desc: "Alerts & email prefs", path: "/settings/notifications" },
     { icon: SquareCode, label: "APIs", desc: "Developer access", path: "https://api.megsyai.com", external: true },
