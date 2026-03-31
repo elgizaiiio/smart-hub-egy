@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Pin, CreditCard, Plus } from "lucide-react";
+import { Pin, Wallet, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface Conversation {
   id: string;
@@ -22,7 +22,7 @@ interface AppSidebarProps {
 }
 
 const serviceItems = [
-  { path: "/", label: "Chat" },
+  { path: "/chat", label: "Chat" },
   { path: "/images", label: "Images" },
   { path: "/videos", label: "Videos" },
   { path: "/voice", label: "Voice" },
@@ -30,13 +30,13 @@ const serviceItems = [
   { path: "/files", label: "Files" },
 ];
 
-const COLOR_PALETTES = [
-  { from: "hsl(230, 60%, 15%)", to: "hsl(250, 50%, 25%)", accent: "hsl(240, 70%, 40%)" },
-  { from: "hsl(270, 50%, 18%)", to: "hsl(290, 45%, 28%)", accent: "hsl(280, 60%, 40%)" },
-  { from: "hsl(170, 50%, 14%)", to: "hsl(160, 45%, 24%)", accent: "hsl(165, 60%, 35%)" },
-  { from: "hsl(340, 45%, 18%)", to: "hsl(350, 40%, 28%)", accent: "hsl(345, 55%, 40%)" },
-  { from: "hsl(25, 50%, 16%)", to: "hsl(35, 45%, 26%)", accent: "hsl(30, 60%, 38%)" },
-  { from: "hsl(210, 20%, 14%)", to: "hsl(220, 18%, 24%)", accent: "hsl(215, 25%, 35%)" },
+const THEME_PALETTES = [
+  { bg: "hsl(230, 25%, 12%)", surface: "hsl(230, 20%, 16%)" },
+  { bg: "hsl(270, 20%, 12%)", surface: "hsl(270, 18%, 16%)" },
+  { bg: "hsl(170, 20%, 10%)", surface: "hsl(170, 18%, 14%)" },
+  { bg: "hsl(340, 18%, 12%)", surface: "hsl(340, 16%, 16%)" },
+  { bg: "hsl(25, 18%, 11%)", surface: "hsl(25, 16%, 15%)" },
+  { bg: "hsl(210, 15%, 11%)", surface: "hsl(210, 13%, 15%)" },
 ];
 
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
@@ -49,8 +49,8 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const [credits, setCredits] = useState(0);
 
   const palette = useMemo(() => {
-    if (!open) return COLOR_PALETTES[0];
-    return COLOR_PALETTES[Math.floor(Math.random() * COLOR_PALETTES.length)];
+    if (!open) return THEME_PALETTES[0];
+    return THEME_PALETTES[Math.floor(Math.random() * THEME_PALETTES.length)];
   }, [open]);
 
   const showRecent = ["chat", "code", "images", "videos", "files"].includes(currentMode);
@@ -102,40 +102,31 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             initial={{ x: -280 }}
             animate={{ x: 0 }}
             exit={{ x: -280 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: "spring", damping: 28, stiffness: 350 }}
             className="fixed left-0 top-0 bottom-0 z-50 w-[280px] flex flex-col overflow-hidden rounded-r-2xl"
-            style={{
-              background: `linear-gradient(180deg, ${palette.from} 0%, ${palette.to} 100%)`,
-            }}
+            style={{ background: palette.bg }}
           >
-            {/* Animated particles overlay */}
-            <div className="sidebar-points-wrapper">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <span key={i} className="sidebar-point" />
-              ))}
-            </div>
-
-            <div className="relative z-10 flex flex-col h-full">
-              {/* New Chat - fancy animated button */}
-              <div className="p-3">
-                <button
-                  onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
-                  className="fancy-btn w-full"
-                >
-                  <span className="fold" />
-                  <div className="points_wrapper">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <span key={i} className="point" />
-                    ))}
-                  </div>
-                  <span className="inner flex items-center justify-center gap-2 w-full text-sm font-medium">
-                    <Plus className="w-4 h-4" />
-                    New chat
-                  </span>
+            <div className="flex flex-col h-full">
+              {/* Close button */}
+              <div className="flex items-center justify-end p-3">
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/70 transition-colors">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Services - no label */}
+              {/* New Chat button */}
+              <div className="px-3 mb-2">
+                <button
+                  onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-colors"
+                  style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
+                >
+                  <Plus className="w-4 h-4" />
+                  New chat
+                </button>
+              </div>
+
+              {/* Services */}
               <div className="px-3">
                 <div className="space-y-0.5">
                   {serviceItems.map((item) => (
@@ -145,7 +136,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                       className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
                         location.pathname === item.path
                           ? "bg-white/10 text-white"
-                          : "text-white/70 hover:bg-white/5 hover:text-white/90"
+                          : "text-white/60 hover:bg-white/5 hover:text-white/80"
                       }`}
                     >
                       {item.label}
@@ -158,18 +149,18 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                 <div className="px-3 mt-2 mb-1">
                   <button
                     onClick={() => { navigate(currentMode === "images" ? "/images/studio" : "/videos/studio"); onClose(); }}
-                    className="w-full py-2.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    className="w-full py-2.5 text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                   >
                     Open Studio
                   </button>
                 </div>
               )}
 
-              {/* Recent - no label */}
+              {/* Recent conversations */}
               {showRecent && (
                 <div className="flex-1 overflow-y-auto px-3 pt-2">
                   {conversations.length === 0 ? (
-                    <p className="text-xs text-white/30 px-3 py-4">No conversations yet</p>
+                    <p className="text-xs text-white/25 px-3 py-4">No conversations yet</p>
                   ) : (
                     <div className="space-y-0.5">
                       {conversations.map((conv) => (
@@ -178,11 +169,11 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                           onClick={() => { onSelectConversation?.(conv.id); onClose(); }}
                           className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
                             activeConversationId === conv.id
-                              ? "bg-white/15 text-white"
-                              : "text-white/60 hover:bg-white/5 hover:text-white/80"
+                              ? "bg-white/12 text-white"
+                              : "text-white/50 hover:bg-white/5 hover:text-white/70"
                           }`}
                         >
-                          {conv.is_pinned && <Pin className="w-3 h-3 shrink-0 text-white/50" />}
+                          {conv.is_pinned && <Pin className="w-3 h-3 shrink-0 text-white/40" />}
                           <span className="truncate">{conv.title}</span>
                         </button>
                       ))}
@@ -193,20 +184,20 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
 
               {!showRecent && <div className="flex-1" />}
 
-              {/* Bottom: credits bar + merged user/credits button */}
+              {/* Bottom: credits + user */}
               <div className="p-3 space-y-2">
                 <div className="px-2 py-2">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-medium text-white/80">MC Balance</span>
-                    <span className="text-xs text-white/50">{credits.toFixed(0)}</span>
+                    <span className="text-sm font-medium text-white/70">MC Balance</span>
+                    <span className="text-xs text-white/40">{credits.toFixed(0)}</span>
                   </div>
-                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-white/40 rounded-full transition-all" style={{ width: `${Math.min((credits / 100) * 100, 100)}%` }} />
+                  <div className="w-full h-2 bg-white/8 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${Math.min((credits / 100) * 100, 100)}%`, background: "hsl(var(--primary))" }} />
                   </div>
                 </div>
 
-                {/* Merged user + credits as one bar with divider */}
-                <div className="flex items-center rounded-xl overflow-hidden fancy-btn-bg">
+                {/* User + billing merged bar */}
+                <div className="flex items-center rounded-xl overflow-hidden" style={{ background: palette.surface }}>
                   <button
                     onClick={() => { navigate("/settings"); onClose(); }}
                     className="flex-1 flex items-center gap-3 px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
@@ -214,22 +205,22 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-sm font-medium text-white">
+                      <div className="w-8 h-8 rounded-full bg-white/12 flex items-center justify-center text-sm font-medium text-white">
                         {initial}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white/90 truncate">{userName}</p>
-                      <p className="text-[11px] text-white/40 truncate">{userEmail || "Free Plan"}</p>
+                      <p className="text-sm text-white/85 truncate">{userName}</p>
+                      <p className="text-[11px] text-white/35 truncate">{userEmail || "Free Plan"}</p>
                     </div>
                   </button>
-                  <div className="w-px h-8 bg-white/15" />
+                  <div className="w-px h-8 bg-white/10" />
                   <button
                     onClick={() => { navigate("/pricing"); onClose(); }}
                     className="w-12 h-full flex items-center justify-center hover:bg-white/5 transition-colors shrink-0"
                     title="Credits & Plans"
                   >
-                    <CreditCard className="w-4 h-4 text-white/70" />
+                    <Wallet className="w-4 h-4 text-white/60" />
                   </button>
                 </div>
               </div>
