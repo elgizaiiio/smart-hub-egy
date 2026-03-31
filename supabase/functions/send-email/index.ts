@@ -109,6 +109,10 @@ serve(async (req) => {
       emailHtml = tpl.html;
     }
 
+    if (!emailHtml || emailHtml.trim().length === 0) {
+      emailHtml = `<p>${emailSubject}</p>`;
+    }
+
     const client = new SMTPClient({
       connection: {
         hostname: smtpHost,
@@ -122,6 +126,7 @@ serve(async (req) => {
       from: `${fromName} <${fromEmail}>`,
       to,
       subject: emailSubject,
+      content: emailSubject,
       html: emailHtml,
     });
 
