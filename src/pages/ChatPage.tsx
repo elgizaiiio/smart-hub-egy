@@ -454,21 +454,94 @@ const ChatPage = () => {
     if (inviteLink) { await navigator.clipboard.writeText(inviteLink); toast.success("Invite link copied!"); }
   };
 
-  // Accept invite on page load
+  // Accept invite on page load + demo conversation on first visit
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const inviteToken = params.get("invite");
-    if (!inviteToken) return;
+    if (inviteToken) {
+      (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { toast.error("Please sign in to accept invite"); return; }
+        const { data: invite } = await supabase.from("conversation_invites").select("*").eq("invite_token", inviteToken).eq("status", "pending").single();
+        if (!invite) { toast.error("Invalid or expired invite"); return; }
+        await supabase.from("conversation_members").insert({ conversation_id: (invite as any).conversation_id, user_id: user.id, role: "member" } as any);
+        await supabase.from("conversation_invites").update({ status: "accepted", accepted_by: user.id } as any).eq("id", (invite as any).id);
+        loadConversation((invite as any).conversation_id);
+        window.history.replaceState({}, "", "/chat");
+        toast.success("You joined the conversation!");
+      })();
+      return;
+    }
+
+    // Demo conversation on first visit
+    const demoKey = "megsy_demo_shown";
+    if (localStorage.getItem(demoKey)) return;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Please sign in to accept invite"); return; }
-      const { data: invite } = await supabase.from("conversation_invites").select("*").eq("invite_token", inviteToken).eq("status", "pending").single();
-      if (!invite) { toast.error("Invalid or expired invite"); return; }
-      await supabase.from("conversation_members").insert({ conversation_id: (invite as any).conversation_id, user_id: user.id, role: "member" } as any);
-      await supabase.from("conversation_invites").update({ status: "accepted", accepted_by: user.id } as any).eq("id", (invite as any).id);
-      loadConversation((invite as any).conversation_id);
-      window.history.replaceState({}, "", "/chat");
-      toast.success("You joined the conversation!");
+      if (!user) return;
+      // Check if user has any conversations already
+      const { count } = await supabase.from("conversations").select("id", { count: "exact", head: true }).eq("user_id", user.id);
+      if (count && count > 0) { localStorage.setItem(demoKey, "1"); return; }
+      localStorage.setItem(demoKey, "1");
+
+      const demoUserMsg = "What is Megsy AI? Tell me everything about what you can do.";
+      const demoAssistantMsg = `# Welcome to Megsy AI
+
+Megsy is your all-in-one AI platform. Here's everything I can help you with:
+
+## Chat
+- **Smart conversations** powered by Google Gemini, with web search, deep research, learning mode, and shopping mode
+- **Smart Questions** — I ask you clarifying questions to give better answers
+- **File analysis** — upload images, PDFs, documents and I'll analyze them
+- **Integrations** — connect Telegram, Discord, Slack, Notion, Zoom, TikTok, Twitter, Shopify, Meta, and more
+
+## Images
+- **AI Image Generation** — create stunning images using multiple models (Flux, DALL-E, Midjourney-style, and more)
+- **15+ Image Tools** — Face Swap, Background Remover, Clothes Changer, Hair Changer, Inpainting, Retouch, Colorize, Sketch to Image, and more
+- **Studio** — your personal gallery of all generated images
+
+## Videos
+- **AI Video Generation** — create videos from text or images
+- **Video Tools** — Swap Characters, Upscale, Talking Photo, Video Extender, Auto Caption, Lip Sync, Video to Text
+- **Community** — browse and reuse prompts from other creators
+
+## Voice
+- **Text-to-Speech** — generate natural voices with multiple AI models
+- **Voice Cloning** — clone your own voice
+
+## Programming
+- **Megsy Workspace** — describe an app and I build it with live preview
+- **Full-stack generation** — React, HTML, CSS, JavaScript projects
+- **Download** your generated code
+
+## Files
+- **Document creation** — generate PDFs, spreadsheets, presentations
+- **Smart file analysis** — upload any document for AI analysis
+
+## Settings
+- **AI Personalization** — tell me your name, profession, and how you want me to behave
+- **Theme customization** — multiple themes and accent colors
+- **Language** — auto-translate the entire UI
+
+---
+
+**MC Credits** power everything. You start with free credits and can earn more through referrals (20% commission).
+
+Ask me anything to get started!`;
+
+      // Create conversation
+      const { data: conv } = await supabase.from("conversations").insert({ title: "Welcome to Megsy AI", mode: "chat", model: MEGSY_MODEL, user_id: user.id } as any).select("id").single();
+      if (!conv) return;
+      await supabase.from("messages").insert([
+        { conversation_id: conv.id, role: "user", content: demoUserMsg },
+        { conversation_id: conv.id, role: "assistant", content: demoAssistantMsg },
+      ]);
+      setConversationId(conv.id);
+      setConversationTitle("Welcome to Megsy AI");
+      setMessages([
+        { role: "user", content: demoUserMsg },
+        { role: "assistant", content: demoAssistantMsg },
+      ]);
     })();
   }, []);
 
