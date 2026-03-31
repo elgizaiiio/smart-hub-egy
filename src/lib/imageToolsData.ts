@@ -22,7 +22,7 @@ export interface ImageModel {
 }
 
 export const IMAGE_TOOLS: ImageTool[] = [
-  { id: 'inpaint', name: 'Inpaint', description: 'Edit parts of an image with AI', model: 'fal-ai/qwen-image-edit/inpaint', cost: 1, inputType: 'two-images', previewVideo: 'https://e.top4top.io/m_37367n7oz1.mp4', route: '/images/tools/inpaint', badge: 'NEW' },
+  { id: 'inpaint', name: 'Inpaint', description: 'Edit parts of an image with AI', model: 'fal-ai/qwen-image-edit/inpaint', cost: 1, inputType: 'two-images', previewImage: '/tool-previews/inpaint.png', route: '/images/tools/inpaint', badge: 'NEW' },
   { id: 'clothes-changer', name: 'Clothes Changer', description: 'Change outfits with AI styles', model: 'fal-ai/nano-banana-pro/edit', cost: 4, inputType: 'image', route: '/images/tools/clothes-changer', badge: 'PRO' },
   { id: 'headshot', name: 'Headshot', description: 'Professional headshot photos', model: 'fal-ai/image-apps-v2/headshot-photo', cost: 1, inputType: 'image', route: '/images/tools/headshot' },
   { id: 'bg-remover', name: 'Background Remover', description: 'Remove image backgrounds', model: 'fal-ai/bria/background/remove', cost: 0.5, inputType: 'image', route: '/images/tools/bg-remover' },
