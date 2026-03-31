@@ -14,42 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_personalization: {
-        Row: {
-          about: string | null
-          ai_traits: string | null
-          call_name: string | null
-          created_at: string | null
-          custom_instructions: string | null
-          id: string
-          profession: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          about?: string | null
-          ai_traits?: string | null
-          call_name?: string | null
-          created_at?: string | null
-          custom_instructions?: string | null
-          id?: string
-          profession?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          about?: string | null
-          ai_traits?: string | null
-          call_name?: string | null
-          created_at?: string | null
-          custom_instructions?: string | null
-          id?: string
-          profession?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       contact_submissions: {
         Row: {
           ai_reply: string | null

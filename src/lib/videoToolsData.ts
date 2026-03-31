@@ -87,17 +87,4 @@ export const VIDEO_TOOLS: VideoTool[] = [
     route: '/videos/tools/lip-sync',
     badge: 'PRO',
   },
-  {
-    id: 'avatar-video',
-    name: 'Avatar Video',
-    description: 'Create videos with AI avatars',
-    model: 'veed/avatars/text-to-video',
-    costType: 'per-minute',
-    baseCost: 5,
-    inputType: 'image-audio-text',
-    previewVideo: 'https://d.top4top.io/m_373603i1h1.mp4',
-    route: '/videos/tools/talking-photo',
-    badge: 'NEW',
-    pricingDetails: '5 MC per minute',
-  },
 ];

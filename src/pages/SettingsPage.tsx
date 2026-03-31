@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ChevronRight, Globe2, Brush, Cable, UserRound, CreditCard,
-  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown, Bell, Cloud,
+  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown, Bell,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,13 +61,11 @@ const SettingsPage = () => {
     { icon: Brush, label: "Theme", desc: "Colors & style", path: "/settings/customization" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
     { icon: Cable, label: "Connect", desc: "Integrations", path: "/settings/integrations" },
-    { icon: UserRound, label: "AI", desc: "Personalize AI", path: "/settings/ai-personalization" },
   ];
 
   const menuItems = [
     { icon: UserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
-    { icon: Cloud, label: "Cloud", desc: "All your content", path: "/cloud" },
     { icon: Globe2, label: "Language", desc: "Auto-translate UI", path: "/settings/language" },
     { icon: Bell, label: "Notifications", desc: "Alerts & email prefs", path: "/settings/notifications" },
     { icon: SquareCode, label: "APIs", desc: "Developer access", path: "https://api.megsyai.com", external: true },
@@ -126,7 +124,7 @@ const SettingsPage = () => {
           </button>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-2 gap-2.5 mb-8">
+          <div className="grid grid-cols-3 gap-2.5 mb-8">
             {quickActions.map((action, i) => {
               const Icon = action.icon;
               return (

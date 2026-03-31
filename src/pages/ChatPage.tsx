@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, CalendarCheck, Presentation, Table2, Sparkles, Megaphone, Youtube, Podcast, BookOpen, BarChart3, Newspaper, SearchCheck, Grid3X3, Store, TrendingUp, Bot, Code } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,12 +28,6 @@ import {
   DialogDescription } from
 "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 
 interface Message {
   role: "user" | "assistant";
@@ -97,7 +91,6 @@ const ChatPage = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [allAgentsOpen, setAllAgentsOpen] = useState(false);
   const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
 
   const handleScroll = useCallback(() => {
@@ -660,123 +653,26 @@ const ChatPage = () => {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
-                <div className="flex items-center justify-center gap-3 mb-6">
+                <div className="flex items-center justify-center gap-2 mb-4">
                   <PegtopIcon className="text-primary" />
-                  <h2 className="font-display text-xl font-bold text-foreground">Megsy Workspace</h2>
+                  <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
                 </div>
 
-                {/* Centered input - borderless, larger square */}
-                <div className="mb-8 max-w-md mx-auto">
-                  <div className="relative rounded-2xl bg-secondary/20 p-1">
-                    <AnimatePresence>
-                      {plusMenuOpen && (
-                        <>
-                          <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-                          <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} className="absolute top-full mt-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/80 backdrop-blur-3xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
-                            <div className="grid grid-cols-3 gap-2 mb-3">
-                              <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                                <Camera className="w-5 h-5 text-white/60" />
-                                <span className="text-[11px] text-white/80">Camera</span>
-                              </button>
-                              <button onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                                <Image className="w-5 h-5 text-white/60" />
-                                <span className="text-[11px] text-white/80">Photos</span>
-                              </button>
-                              <button onClick={() => {fileInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                                <FileUp className="w-5 h-5 text-white/60" />
-                                <span className="text-[11px] text-white/80">Files</span>
-                              </button>
-                            </div>
-                            <div className="border-t border-white/10 pt-2 space-y-1">
-                              <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
-                                <span className="text-sm text-white/80">Web search</span>
-                                <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-white/20 justify-start"}`}>
-                                  <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
-                                </div>
-                              </button>
-                              <div className="border-t border-white/10 mt-1 pt-1">
-                                <p className="text-[10px] text-white/30 uppercase px-3 py-1.5">Modes</p>
-                                {(["learning","shopping","deep-research"] as ChatMode[]).map(mode => (
-                                  <button key={mode} onClick={() => handleModeChange(mode)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === mode ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
-                                    <span className="text-sm">{mode === "learning" ? "Learning Mode" : mode === "shopping" ? "Shopping Mode" : "Deep Research"}</span>
-                                    {chatMode === mode && <span className="ml-auto text-xs text-primary">On</span>}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
-                    <div className="min-h-[130px]">
-                      <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4 agent icons: 3 agents + All button */}
-                <div className="flex items-center justify-center gap-6 max-w-xs mx-auto mb-4">
-                  {[
-                    { label: "Images", path: "/images", icon: Camera, bg: "bg-purple-600" },
-                    { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-600" },
-                    { label: "Search", path: "/agents/deep-search", icon: SearchCheck, bg: "bg-indigo-600" },
-                  ].map(a => (
-                    <button key={a.path} onClick={() => navigate(a.path)} className="flex flex-col items-center gap-1.5 group">
-                      <div className={`w-14 h-14 rounded-full ${a.bg} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                        <a.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">{a.label}</span>
-                    </button>
-                  ))}
-                  <button onClick={() => setAllAgentsOpen(true)} className="flex flex-col items-center gap-1.5 group">
-                    <div className="w-14 h-14 rounded-full bg-muted/80 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform border border-border/30">
-                      <Grid3X3 className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                    <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight">All</span>
+                <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+                  <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                    Photos
+                  </button>
+                  <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                    Files
+                  </button>
+                  <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                    Videos
+                  </button>
+                  <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                    Code
                   </button>
                 </div>
-
-                <p className="text-[10px] text-muted-foreground/40 mt-2">Powered by Lovable AI</p>
               </motion.div>
-
-              {/* All Agents Drawer from bottom */}
-              <Drawer open={allAgentsOpen} onOpenChange={setAllAgentsOpen}>
-                <DrawerContent className="max-h-[85vh]">
-                  <DrawerHeader className="text-center pb-2">
-                    <DrawerTitle className="text-base font-semibold">All Agents & Tools</DrawerTitle>
-                  </DrawerHeader>
-                  <div className="px-4 pb-6 overflow-y-auto">
-                    <div className="grid grid-cols-3 gap-4">
-                      {[
-                        { label: "Meetings", path: "/agents/meetings", icon: CalendarCheck, bg: "bg-teal-600" },
-                        { label: "Slides", path: "/agents/slides", icon: Presentation, bg: "bg-amber-600" },
-                        { label: "Sheets", path: "/agents/spreadsheets", icon: Table2, bg: "bg-green-600" },
-                        { label: "Image Genius", path: "/agents/image-genius", icon: Sparkles, bg: "bg-violet-600" },
-                        { label: "Ad Designer", path: "/agents/ad-designer", icon: Megaphone, bg: "bg-pink-700" },
-                        { label: "YouTube", path: "/agents/youtube-summary", icon: Youtube, bg: "bg-red-600" },
-                        { label: "Podcast", path: "/agents/podcast", icon: Podcast, bg: "bg-pink-600" },
-                        { label: "Books", path: "/agents/book-creator", icon: BookOpen, bg: "bg-orange-600" },
-                        { label: "Social", path: "/agents/social-analyzer", icon: BarChart3, bg: "bg-cyan-600" },
-                        { label: "News", path: "/agents/news", icon: Newspaper, bg: "bg-slate-600" },
-                        { label: "Deep Search", path: "/agents/deep-search", icon: SearchCheck, bg: "bg-indigo-600" },
-                        { label: "Assistant", path: "/agents/assistant", icon: Bot, bg: "bg-sky-600" },
-                        { label: "Store", path: "/agents/store", icon: Store, bg: "bg-lime-700" },
-                        { label: "Market", path: "/agents/market-analyzer", icon: TrendingUp, bg: "bg-fuchsia-700" },
-                        { label: "Images", path: "/images", icon: Camera, bg: "bg-purple-600" },
-                        { label: "Videos", path: "/videos", icon: Youtube, bg: "bg-rose-600" },
-                        { label: "Code", path: "/code", icon: Code, bg: "bg-emerald-600" },
-                      ].map(a => (
-                        <button key={a.path} onClick={() => { navigate(a.path); setAllAgentsOpen(false); }} className="flex flex-col items-center gap-2 py-3 rounded-2xl hover:bg-secondary/50 transition-colors group">
-                          <div className={`w-14 h-14 rounded-full ${a.bg} flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}>
-                            <a.icon className="w-5 h-5 text-white" />
-                          </div>
-                          <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors leading-tight text-center">{a.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </DrawerContent>
-              </Drawer>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-44 md:pb-52">
@@ -819,9 +715,8 @@ const ChatPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Bottom input - only show when messages exist (centered input handles empty state) */}
-        {messages.length > 0 && (
-          <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
+        {/* Bottom input - floating with blur */}
+        <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
               <AnimatePresence>
                 {chatMode !== "normal" &&
@@ -851,7 +746,6 @@ const ChatPage = () => {
               </div>
             </div>
           </div>
-        )}
 
         {/* Hidden file inputs */}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.doc,.docx" multiple />
