@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, ArrowUp, Settings2, Sparkles, X, Download, Copy, RefreshCw } from "lucide-react";
+import { Menu, Send, SlidersHorizontal, Wand2, X, Download, Copy, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
@@ -149,6 +149,8 @@ const ImagesPage = () => {
                   >
                     {tool.previewVideo ? (
                       <video src={tool.previewVideo} autoPlay loop muted playsInline className="w-full h-32 object-cover" />
+                    ) : tool.previewImage ? (
+                      <img src={tool.previewImage} alt={tool.name} className="w-full h-32 object-cover" />
                     ) : (
                       <div className="w-full h-32 bg-gradient-to-br from-accent/40 to-accent/10" />
                     )}
@@ -301,13 +303,13 @@ const ImagesPage = () => {
                 style={{ minHeight: "44px" }}
               />
               <button onClick={handleEnhancePrompt} disabled={!prompt.trim() || enhancing} className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 ${enhancing ? "animate-spin" : ""}`} title="Enhance prompt">
-                <Sparkles className="w-4 h-4" />
+                <Wand2 className="w-4 h-4" />
               </button>
               <button onClick={() => { setSettingsOpen(!settingsOpen); setModelPickerOpen(false); }} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-                <Settings2 className="w-4 h-4" />
+                <SlidersHorizontal className="w-4 h-4" />
               </button>
               <button onClick={handleSend} disabled={!prompt.trim()} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20 transition-all">
-                <ArrowUp className="w-4 h-4" />
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </div>
