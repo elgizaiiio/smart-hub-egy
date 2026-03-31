@@ -301,13 +301,13 @@ const ImagesPage = () => {
                 style={{ minHeight: "44px" }}
               />
               <button onClick={handleEnhancePrompt} disabled={!prompt.trim() || enhancing} className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 ${enhancing ? "animate-spin" : ""}`} title="Enhance prompt">
-                <Sparkles className="w-4 h-4" />
+                <Wand2 className="w-4 h-4" />
               </button>
               <button onClick={() => { setSettingsOpen(!settingsOpen); setModelPickerOpen(false); }} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-                <Settings2 className="w-4 h-4" />
+                <SlidersHorizontal className="w-4 h-4" />
               </button>
               <button onClick={handleSend} disabled={!prompt.trim()} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20 transition-all">
-                <ArrowUp className="w-4 h-4" />
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </div>
