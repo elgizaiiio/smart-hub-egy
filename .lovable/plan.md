@@ -1,63 +1,115 @@
 
 
-# خطة إصلاح صفحة البرمجة: بريفيو داخلي + توليد مباشر
+# خطة شاملة: إعادة تصميم مربع الإدخال + حذف X من السايدبار + صفحة Inpaint احترافية
 
 ---
 
-## المشكلة الحالية (الصورة)
-خطأ JSON parsing: `Expected ',' or '}' after property value in JSON at position 5774`. السبب: Claude يولد JSON كبير جدا مع نصوص عربية وأحيانا يقطع الـ stream قبل الانتهاء، أو يضيف أحرف غير صالحة داخل الـ JSON.
+## 1. إعادة تصميم مربع الإدخال في صفحتي الصور والفيديوهات
+
+**الملفات:** `ImagesPage.tsx`, `VideosPage.tsx`
+
+تغيير الأيقونات الحالية إلى أيقونات أحدث:
+- زر الإرسال: `ArrowUp` → `Send` (أيقونة أوضح)
+- زر تحسين البرومبت: `Sparkles` → `Wand2` (عصا سحرية)
+- زر الإعدادات: `Settings2` → `SlidersHorizontal` (أحدث)
+- تكبير مربع الإدخال قليلا وتحسين الـ padding
+- إضافة تأثير خفيف عند الـ focus
 
 ---
 
-## التغييرات
+## 2. حذف زر X من القائمة الجانبية
 
-### 1. إصلاح JSON Parsing (Edge Function)
-**ملف:** `supabase/functions/code-generate/index.ts`
+**الملف:** `AppSidebar.tsx`
 
-- تغيير prompt البناء ليولد الملفات واحد تلو الآخر بدل JSON واحد ضخم
-- استخدام format أبسط: كل ملف يبدأ بـ `===FILE: path===` وينتهي بـ `===END===`
-- هذا يمنع أخطاء JSON تماما لأننا لا نعتمد على JSON بعد الآن
+- حذف زر X (close) بالكامل من أعلى القائمة الجانبية
+- الإغلاق يتم فقط بالضغط على الـ overlay خلف القائمة (موجود بالفعل)
 
-### 2. حذف Sprites/E2B Sandbox بالكامل + بريفيو داخلي
-**ملف:** `src/pages/CodeWorkspace.tsx`
+---
 
-- حذف كل كود `callSandbox`, `provisionSandbox`, `writeFilesToSandbox`, `waitForPreviewReady`
-- حذف كود retry sandbox
-- **بناء نظام بريفيو داخلي** يعمل بـ iframe + blob URL:
-  - تجميع كل ملفات React/JSX في HTML واحد
-  - تحميل React + ReactDOM + Babel standalone من CDN
-  - تحويل JSX إلى JS في المتصفح عبر Babel
-  - تحميل Tailwind CSS من CDN
-  - عرض في iframe بـ `sandbox="allow-scripts"`
-- هذا يعني: **لا حاجة لسيرفر خارجي** - كل شيء يعمل محليا في المتصفح
+## 3. استخدام الصورة المرفوعة كصورة Inpaint
 
-### 3. حذف نظام الخطة - توليد مباشر
-**ملف:** `src/pages/CodeWorkspace.tsx`
+**الملف:** `src/lib/imageToolsData.ts`
 
-- حذف `mode` state و "Approve Plan" button
-- عند إرسال المستخدم prompt → يبدأ التوليد مباشرة (action: "build")
-- حذف `handleApprove` كوظيفة منفصلة - دمجها مع `handleSend`
-- تبسيط الـ flow: **prompt → AI generates → parse → preview**
+- تغيير `previewVideo` لأداة inpaint إلى `previewImage` باستخدام الصورة المرفوعة (نسخها إلى `public/tool-previews/inpaint.png`)
 
-### 4. تبسيط Build Steps
+---
+
+## 4. إعادة بناء صفحة Inpaint بالكامل
+
+**الملف:** `src/pages/tools/InpaintPage.tsx` (إعادة كتابة كاملة)
+
+### التجربة الجديدة:
+
 ```text
-AI Generation → Parsing files → Rendering preview
+┌─────────────────────────────────┐
+│  ← Inpaint          1 MC       │  Header
+├─────────────────────────────────┤
+│                                 │
+│   ┌───────────────────────┐     │
+│   │                       │     │
+│   │  Upload Your Photo    │     │  مرحلة 1: رفع الصورة
+│   │  [خطوط متحركة زرقاء]  │     │  (animated dashed border)
+│   │                       │     │
+│   └───────────────────────┘     │
+│                                 │
+├─────────────────────────────────┤  بعد الرفع:
+│  [🖌️ Brush] [◻️ Eraser]        │  أزرار الأدوات
+├─────────────────────────────────┤
+│                                 │
+│   ┌───────────────────────┐     │
+│   │                       │     │
+│   │   الصورة + Canvas     │     │  مرحلة 2: الرسم
+│   │   (mask overlay)      │     │  Canvas فوق الصورة
+│   │                       │     │
+│   └───────────────────────┘     │
+│                                 │
+│  [Upload reference image]       │  رفع صورة مرجعية (اختياري)
+│                                 │
+│  ┌───────────────────────────┐  │
+│  │ Describe what to change   │  │  مربع إدخال كبير
+│  └───────────────────────────┘  │
+│                                 │
+│  [======= Generate =======]    │  زر التوليد
+│                                 │
+├─────────────────────────────────┤  بعد التوليد:
+│   النتيجة تظهر مكان الصورة    │
+│   [Download] زر بارز           │
+└─────────────────────────────────┘
 ```
-(3 خطوات فقط بدل 6)
 
-### 5. ميزات داخلية (لا تظهر للمستخدم)
-- **Auto-retry**: إذا فشل الـ parsing، يعيد الطلب تلقائيا مرة واحدة
-- **Streaming file parser**: يبدأ عرض الملفات أثناء التوليد بدل الانتظار حتى النهاية
-- **Error recovery**: إذا فشل ملف واحد، يتخطاه ويكمل الباقي
-- **Console capture**: يلتقط أخطاء الـ iframe console ويعرضها للمستخدم كرسالة
-- **Cache templates**: يحفظ VITE_TEMPLATE محليا بدل إعادة بنائه كل مرة
+### التفاصيل التقنية:
 
----
+**نظام الرسم (Canvas):**
+- استخدام `<canvas>` فوق الصورة بـ `position: absolute`
+- أداة **الفرشاة**: ترسم mask شفاف (لون أزرق شفاف 40%) فوق المناطق المراد تعديلها
+- أداة **الممحاة**: تمسح الـ mask
+- حجم الفرشاة قابل للتعديل عبر slider
+- عند التوليد: يتم تحويل Canvas إلى صورة mask (أبيض للمناطق المحددة، أسود للباقي) وإرسالها مع الصورة الأصلية
 
-## الملفات المتأثرة
+**مرحلة الرفع:**
+- مربع بخطوط متقطعة متحركة (animated dashed border) باللون الأزرق
+- نص "Upload Your Photo" مع أيقونة رفع
+- دعم السحب والإفلات (drag & drop)
+- دعم الضغط لاختيار ملف
+
+**صورة مرجعية (اختياري):**
+- زر صغير أسفل Canvas لرفع صورة ثانية
+- مثال: "استبدل هذا الكوب بهذه الكرة" → يرسم mask على الكوب + يرفع صورة الكرة + يكتب الوصف
+
+**بعد التوليد:**
+- النتيجة تظهر في نفس مكان الصورة الأصلية
+- زر Download واضح وكبير
+- زر "Edit Again" للعودة للتحرير
+- زر "Start Over" لرفع صورة جديدة
+
+### الملفات المتأثرة:
 
 | ملف | التغيير |
 |-----|---------|
-| `supabase/functions/code-generate/index.ts` | تغيير format الخرج من JSON إلى file markers |
-| `src/pages/CodeWorkspace.tsx` | إعادة كتابة شاملة: حذف sandbox، بريفيو داخلي، توليد مباشر |
+| `src/pages/tools/InpaintPage.tsx` | إعادة كتابة كاملة مع Canvas painting |
+| `src/pages/ImagesPage.tsx` | تغيير أيقونات مربع الإدخال |
+| `src/pages/VideosPage.tsx` | نفس تغيير الأيقونات |
+| `src/components/AppSidebar.tsx` | حذف زر X |
+| `src/lib/imageToolsData.ts` | تغيير preview لأداة inpaint |
+| `public/tool-previews/inpaint.png` | نسخ الصورة المرفوعة |
 
