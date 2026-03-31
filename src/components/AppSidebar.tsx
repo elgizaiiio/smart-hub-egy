@@ -107,12 +107,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             style={{ background: palette.bg }}
           >
             <div className="flex flex-col h-full">
-              {/* Close button */}
-              <div className="flex items-center justify-end p-3">
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/70 transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              <div className="h-3" />
 
               {/* New Chat button */}
               <div className="px-3 mb-2">
