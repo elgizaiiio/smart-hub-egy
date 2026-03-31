@@ -149,6 +149,8 @@ const ImagesPage = () => {
                   >
                     {tool.previewVideo ? (
                       <video src={tool.previewVideo} autoPlay loop muted playsInline className="w-full h-32 object-cover" />
+                    ) : tool.previewImage ? (
+                      <img src={tool.previewImage} alt={tool.name} className="w-full h-32 object-cover" />
                     ) : (
                       <div className="w-full h-32 bg-gradient-to-br from-accent/40 to-accent/10" />
                     )}
