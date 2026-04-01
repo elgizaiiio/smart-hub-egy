@@ -317,10 +317,10 @@ You can mix text with structured blocks. Add explanatory text before or after JS
           continue;
         }
       }
-      // If rate limited on LemonData, try another key
+      // If rate limited on LemonData, try another key immediately
       if (response.status === 429 && apiUrl === LEMONDATA_URL && usedKeyId && retryCount < MAX_RETRIES) {
-        const newKey = await getLemonDataKey(sb);
-        if (newKey && newKey.id !== usedKeyId) {
+        const newKey = await getLemonDataKey(sb, usedKeyId);
+        if (newKey) {
           apiKey = newKey.api_key;
           usedKeyId = newKey.id;
           retryCount++;
