@@ -50,6 +50,57 @@ export type Database = {
         }
         Relationships: []
       }
+      books: {
+        Row: {
+          content: Json | null
+          cover_url: string | null
+          created_at: string
+          credits_used: number | null
+          id: string
+          language: string
+          outline: Json | null
+          pages_count: number
+          pdf_url: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json | null
+          cover_url?: string | null
+          created_at?: string
+          credits_used?: number | null
+          id?: string
+          language?: string
+          outline?: Json | null
+          pages_count?: number
+          pdf_url?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json | null
+          cover_url?: string | null
+          created_at?: string
+          credits_used?: number | null
+          id?: string
+          language?: string
+          outline?: Json | null
+          pages_count?: number
+          pdf_url?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_connections: {
         Row: {
           access_token: string | null
@@ -320,6 +371,30 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_free_usage: {
+        Row: {
+          created_at: string
+          id: string
+          usage_count: number
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          usage_count?: number
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          usage_count?: number
+          usage_date?: string
           user_id?: string
         }
         Relationships: []
@@ -977,6 +1052,121 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      research_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "research_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_sessions: {
+        Row: {
+          created_at: string
+          depth: string
+          id: string
+          plan: Json | null
+          query: string
+          report: string | null
+          sources_count: number | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          depth?: string
+          id?: string
+          plan?: Json | null
+          query: string
+          report?: string | null
+          sources_count?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          depth?: string
+          id?: string
+          plan?: Json | null
+          query?: string
+          report?: string | null
+          sources_count?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      research_sources: {
+        Row: {
+          created_at: string
+          id: string
+          reliability: string | null
+          session_id: string
+          snippet: string | null
+          source_type: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reliability?: string | null
+          session_id: string
+          snippet?: string | null
+          source_type?: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reliability?: string | null
+          session_id?: string
+          snippet?: string | null
+          source_type?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_sources_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "research_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rp_portal_settings: {
         Row: {
