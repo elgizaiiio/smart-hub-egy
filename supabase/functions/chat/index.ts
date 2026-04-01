@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,6 +7,43 @@ const corsHeaders = {
 };
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
+const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
+
+// Helper: get a random active LemonData key from DB
+async function getLemonDataKey(sb: ReturnType<typeof createClient>): Promise<{ id: string; api_key: string } | null> {
+  const { data } = await sb.from("lemondata_keys")
+    .select("id, api_key")
+    .eq("is_active", true)
+    .eq("is_blocked", false)
+    .limit(50);
+  if (!data || data.length === 0) return null;
+  const pick = data[Math.floor(Math.random() * data.length)];
+  return pick;
+}
+
+// Helper: block a key after failure
+async function blockLemonKey(sb: ReturnType<typeof createClient>, keyId: string, reason: string) {
+  await sb.from("lemondata_keys").update({
+    is_blocked: true,
+    block_reason: reason,
+    last_error_at: new Date().toISOString(),
+    error_count: undefined, // will use raw SQL below
+  }).eq("id", keyId);
+  // Increment error_count via RPC-like approach
+  const { data } = await sb.from("lemondata_keys").select("error_count").eq("id", keyId).single();
+  if (data) {
+    await sb.from("lemondata_keys").update({ error_count: (data.error_count || 0) + 1 }).eq("id", keyId);
+  }
+}
+
+// Helper: mark key as used
+async function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
+  const { data } = await sb.from("lemondata_keys").select("usage_count").eq("id", keyId).single();
+  await sb.from("lemondata_keys").update({
+    last_used_at: new Date().toISOString(),
+    usage_count: ((data?.usage_count) || 0) + 1,
+  }).eq("id", keyId);
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -19,14 +57,16 @@ serve(async (req) => {
       ? latestUserMessage.content.map((part: any) => part?.text || "").join(" ")
       : String(latestUserMessage?.content || "");
     const wantsHamzaProfile = /(hamza|hassan el-gizaery|elgiza|حمزه|حمزة|حمزة حسن)/i.test(latestUserText);
-    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
     const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
 
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
     let apiUrl: string;
     let apiKey: string;
     let modelId: string;
+    let usedKeyId: string | null = null;
 
     const lovableModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3-flash-preview"];
     const requestedModel = model || "openai/gpt-5";
@@ -37,12 +77,37 @@ serve(async (req) => {
       apiKey = LOVABLE_API_KEY;
       modelId = requestedModel.startsWith("google/") ? requestedModel : `google/${requestedModel}`;
     } else {
-      if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
-      apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-      apiKey = OPENROUTER_API_KEY;
+      // Use LemonData with key rotation
+      let lemonKey: { id: string; api_key: string } | null = null;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 3;
+
+      while (attempts < MAX_ATTEMPTS) {
+        lemonKey = await getLemonDataKey(sb);
+        if (!lemonKey) break;
+        attempts++;
+
+        // Test the key with a quick non-streaming check isn't needed; we'll handle errors in the streaming response
+        break;
+      }
+
+      if (!lemonKey) {
+        // Fallback: try OpenRouter if no LemonData keys available
+        const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+        if (!OPENROUTER_API_KEY) {
+          return new Response(JSON.stringify({ error: "No API keys available" }), {
+            status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+        apiKey = OPENROUTER_API_KEY;
+      } else {
+        apiUrl = LEMONDATA_URL;
+        apiKey = lemonKey.api_key;
+        usedKeyId = lemonKey.id;
+      }
       modelId = requestedModel;
     }
-
     // Build Composio tools for function calling
     const composioTools = COMPOSIO_API_KEY ? [
       { type: "function", function: { name: "GMAIL_SEND_EMAIL", description: "Send an email using Gmail", parameters: { type: "object", properties: { to: { type: "string" }, subject: { type: "string" }, body: { type: "string" } }, required: ["to", "subject", "body"] } } },
