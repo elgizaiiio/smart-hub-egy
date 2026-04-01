@@ -69,7 +69,7 @@ serve(async (req) => {
     let usedKeyId: string | null = null;
 
     const lovableModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3-flash-preview"];
-    const requestedModel = model || "openai/gpt-5";
+    const requestedModel = model || "gemini-3.1-flash-lite-preview";
 
     if (lovableModels.some(m => requestedModel.includes(m))) {
       if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
