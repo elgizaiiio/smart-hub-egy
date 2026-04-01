@@ -56,33 +56,47 @@ const MODEL_MAP: Record<string, ModelMapping> = {
   "qwen-image-edit-plus":{ t2i: "", provider: "deapi", deapiEndpoint: "img2img", deapiModel: "Qwen-Image-Edit-Plus" },
 };
 
-// ── LemonData key rotation ──
-async function getLemonKey(sb: ReturnType<typeof createClient>): Promise<{ id: string; api_key: string } | null> {
+// ── Smart Key Cache for LemonData ──
+let cachedLemonKey: { id: string; api_key: string } | null = null;
+let cachedLemonKeyExpiry = 0;
+const LEMON_CACHE_TTL = 5 * 60 * 1000;
+
+async function getLemonKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
+  if (cachedLemonKey && Date.now() < cachedLemonKeyExpiry && cachedLemonKey.id !== excludeId) {
+    return cachedLemonKey;
+  }
   const { data } = await sb.from("lemondata_keys")
     .select("id, api_key")
     .eq("is_active", true)
     .eq("is_blocked", false)
     .limit(50);
-  if (!data || data.length === 0) return null;
-  return data[Math.floor(Math.random() * data.length)];
+  if (!data || data.length === 0) { cachedLemonKey = null; return null; }
+  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
+  if (pool.length === 0) { cachedLemonKey = null; return null; }
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  cachedLemonKey = pick;
+  cachedLemonKeyExpiry = Date.now() + LEMON_CACHE_TTL;
+  return pick;
 }
 
-async function blockLemonKey(sb: ReturnType<typeof createClient>, keyId: string, reason: string) {
-  await sb.from("lemondata_keys").update({
-    is_blocked: true,
-    block_reason: reason,
-    last_error_at: new Date().toISOString(),
-  }).eq("id", keyId);
-  const { data } = await sb.from("lemondata_keys").select("error_count").eq("id", keyId).single();
-  if (data) await sb.from("lemondata_keys").update({ error_count: (data.error_count || 0) + 1 }).eq("id", keyId);
+function blockLemonKey(sb: ReturnType<typeof createClient>, keyId: string, reason: string) {
+  if (cachedLemonKey?.id === keyId) { cachedLemonKey = null; }
+  sb.from("lemondata_keys").update({
+    is_blocked: true, block_reason: reason, last_error_at: new Date().toISOString(),
+  }).eq("id", keyId).then(() => {
+    sb.from("lemondata_keys").select("error_count").eq("id", keyId).single().then(({ data }) => {
+      if (data) sb.from("lemondata_keys").update({ error_count: (data.error_count || 0) + 1 }).eq("id", keyId);
+    });
+  });
 }
 
-async function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
-  const { data } = await sb.from("lemondata_keys").select("usage_count").eq("id", keyId).single();
-  await sb.from("lemondata_keys").update({
-    last_used_at: new Date().toISOString(),
-    usage_count: ((data?.usage_count) || 0) + 1,
-  }).eq("id", keyId);
+function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
+  sb.from("lemondata_keys").select("usage_count").eq("id", keyId).single().then(({ data }) => {
+    sb.from("lemondata_keys").update({
+      last_used_at: new Date().toISOString(),
+      usage_count: ((data?.usage_count) || 0) + 1,
+    }).eq("id", keyId);
+  });
 }
 
 // ── deAPI key rotation (for free models) ──
@@ -175,11 +189,10 @@ async function callLemonImage(
       });
 
       if (resp.status === 401 || resp.status === 403) {
-        await blockLemonKey(sb, keyData.id, `HTTP ${resp.status}`);
+        blockLemonKey(sb, keyData.id, `HTTP ${resp.status}`); // fire-and-forget
         continue;
       }
       if (resp.status === 429) {
-        // Rate limited, try another key
         continue;
       }
       if (!resp.ok) {
@@ -188,7 +201,7 @@ async function callLemonImage(
         throw new Error(`LemonData error: ${resp.status} - ${errText.slice(0, 200)}`);
       }
 
-      await markKeyUsed(sb, keyData.id);
+      markKeyUsed(sb, keyData.id); // fire-and-forget
       const result = await resp.json();
 
       // Extract URLs from OpenAI-compatible response
