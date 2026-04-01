@@ -104,9 +104,16 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  // Only auto-scroll on user's own new message, not during streaming
+  const lastMsgCountRef = useRef(0);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const prevCount = lastMsgCountRef.current;
+    lastMsgCountRef.current = messages.length;
+    // Scroll only when user sends a new message (count increased and last is user)
+    if (messages.length > prevCount && messages.length > 0 && messages[messages.length - 1].role === "user") {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages.length]);
 
   const createOrUpdateConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
