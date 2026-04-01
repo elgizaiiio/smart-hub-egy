@@ -295,11 +295,11 @@ You can mix text with structured blocks. Add explanatory text before or after JS
         body: JSON.stringify(body),
       });
 
-      // If LemonData key failed with auth error, block and retry
+      // If LemonData key failed with auth error, block and retry with new key
       if ((response.status === 401 || response.status === 403) && apiUrl === LEMONDATA_URL && usedKeyId && retryCount < MAX_RETRIES) {
         console.error(`LemonData key ${usedKeyId} failed with ${response.status}, blocking...`);
-        await blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
-        const newKey = await getLemonDataKey(sb);
+        blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`); // fire-and-forget
+        const newKey = await getLemonDataKey(sb, usedKeyId);
         if (newKey) {
           apiKey = newKey.api_key;
           usedKeyId = newKey.id;
