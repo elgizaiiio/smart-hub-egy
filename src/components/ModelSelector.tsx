@@ -41,7 +41,7 @@ const MODELS: Record<ModelMode, ModelOption[]> = {
 
 // Real brand icons for chat models
 export const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
-  if (modelId.includes("gemini-3-flash")) {
+  if (modelId.includes("gemini-3-flash") || modelId.includes("gemini-3.1-flash-lite")) {
     return (
       <span className="text-sm font-black leading-none" style={{ background: "linear-gradient(135deg, #C0C0C0, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
     );
