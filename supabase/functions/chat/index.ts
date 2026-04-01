@@ -9,40 +9,54 @@ const corsHeaders = {
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
 
-// Helper: get a random active LemonData key from DB
-async function getLemonDataKey(sb: ReturnType<typeof createClient>): Promise<{ id: string; api_key: string } | null> {
+// ── Smart Key Cache: in-memory sticky key to avoid DB queries on every request ──
+let cachedKey: { id: string; api_key: string } | null = null;
+let cachedKeyExpiry = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+async function getLemonDataKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
+  // Return cached key if still valid and not excluded
+  if (cachedKey && Date.now() < cachedKeyExpiry && cachedKey.id !== excludeId) {
+    return cachedKey;
+  }
   const { data } = await sb.from("lemondata_keys")
     .select("id, api_key")
     .eq("is_active", true)
     .eq("is_blocked", false)
     .limit(50);
-  if (!data || data.length === 0) return null;
-  const pick = data[Math.floor(Math.random() * data.length)];
+  if (!data || data.length === 0) { cachedKey = null; return null; }
+  // Filter out excluded key
+  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
+  if (pool.length === 0) { cachedKey = null; return null; }
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  cachedKey = pick;
+  cachedKeyExpiry = Date.now() + CACHE_TTL_MS;
   return pick;
 }
 
-// Helper: block a key after failure
-async function blockLemonKey(sb: ReturnType<typeof createClient>, keyId: string, reason: string) {
-  await sb.from("lemondata_keys").update({
+// Block key - fire and forget, also invalidate cache
+function blockLemonKey(sb: ReturnType<typeof createClient>, keyId: string, reason: string) {
+  if (cachedKey?.id === keyId) { cachedKey = null; }
+  // Fire and forget - don't await
+  sb.from("lemondata_keys").update({
     is_blocked: true,
     block_reason: reason,
     last_error_at: new Date().toISOString(),
-    error_count: undefined, // will use raw SQL below
-  }).eq("id", keyId);
-  // Increment error_count via RPC-like approach
-  const { data } = await sb.from("lemondata_keys").select("error_count").eq("id", keyId).single();
-  if (data) {
-    await sb.from("lemondata_keys").update({ error_count: (data.error_count || 0) + 1 }).eq("id", keyId);
-  }
+  }).eq("id", keyId).then(() => {
+    sb.from("lemondata_keys").select("error_count").eq("id", keyId).single().then(({ data }) => {
+      if (data) sb.from("lemondata_keys").update({ error_count: (data.error_count || 0) + 1 }).eq("id", keyId);
+    });
+  });
 }
 
-// Helper: mark key as used
-async function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
-  const { data } = await sb.from("lemondata_keys").select("usage_count").eq("id", keyId).single();
-  await sb.from("lemondata_keys").update({
-    last_used_at: new Date().toISOString(),
-    usage_count: ((data?.usage_count) || 0) + 1,
-  }).eq("id", keyId);
+// Mark key as used - fire and forget
+function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
+  sb.from("lemondata_keys").select("usage_count").eq("id", keyId).single().then(({ data }) => {
+    sb.from("lemondata_keys").update({
+      last_used_at: new Date().toISOString(),
+      usage_count: ((data?.usage_count) || 0) + 1,
+    }).eq("id", keyId);
+  });
 }
 
 serve(async (req) => {
