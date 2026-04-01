@@ -44,7 +44,7 @@ export const ALL_MODEL_DETAILS: ModelDetail[] = [
   // CHAT MODELS (hardcoded)
   // ═══════════════════════════════════════════
   {
-    id: "google/gemini-3-flash-preview", name: "Megsy V1", type: "chat", credits: 0,
+    id: "gemini-3.1-flash-lite-preview", name: "Megsy V1", type: "chat", credits: 0,
     description: "Fast, versatile AI assistant for everyday tasks.",
     longDescription: "Megsy V1 is a high-speed general-purpose AI model optimized for conversational interactions, reasoning, coding, and creative writing.",
     icon: "MessageSquare", modes: ["text-to-text", "multimodal"], acceptsImages: false, requiresImage: false, maxImages: 0, acceptedMimeTypes: [],

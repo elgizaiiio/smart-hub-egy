@@ -18,7 +18,7 @@ export interface ModelOption {
 type ModelMode = "chat" | "images" | "videos" | "files" | "code";
 
 const CHAT_MODELS: ModelOption[] = [
-  { id: "google/gemini-3-flash-preview", name: "Megsy V1", credits: "" },
+  { id: "gemini-3.1-flash-lite-preview", name: "Megsy V1", credits: "" },
   { id: "google/gemini-2.5-pro", name: "Gemini 2.5 Pro", credits: "" },
   { id: "openai/gpt-5", name: "GPT-5", credits: "" },
   { id: "x-ai/grok-3", name: "Grok 3", credits: "" },
