@@ -101,6 +101,27 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_admins: {
+        Row: {
+          added_by: number | null
+          created_at: string | null
+          id: string
+          telegram_chat_id: number
+        }
+        Insert: {
+          added_by?: number | null
+          created_at?: string | null
+          id?: string
+          telegram_chat_id: number
+        }
+        Update: {
+          added_by?: number | null
+          created_at?: string | null
+          id?: string
+          telegram_chat_id?: number
+        }
+        Relationships: []
+      }
       calendar_connections: {
         Row: {
           access_token: string | null
@@ -492,6 +513,48 @@ export type Database = {
           name_ar?: string | null
           prompt?: string
           type?: string
+        }
+        Relationships: []
+      }
+      lemondata_keys: {
+        Row: {
+          api_key: string
+          block_reason: string | null
+          created_at: string | null
+          error_count: number | null
+          id: string
+          is_active: boolean | null
+          is_blocked: boolean | null
+          label: string | null
+          last_error_at: string | null
+          last_used_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          api_key: string
+          block_reason?: string | null
+          created_at?: string | null
+          error_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          label?: string | null
+          last_error_at?: string | null
+          last_used_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          api_key?: string
+          block_reason?: string | null
+          created_at?: string | null
+          error_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          label?: string | null
+          last_error_at?: string | null
+          last_used_at?: string | null
+          usage_count?: number | null
         }
         Relationships: []
       }
