@@ -346,6 +346,160 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ==================== LemonData (Unlimited) ====================
+      if (d === "lemon_menu") {
+        const { data: keys } = await sb.from("lemondata_keys").select("id, label, is_active, is_blocked, usage_count, error_count");
+        const total = keys?.length || 0;
+        const active = keys?.filter((k: any) => k.is_active && !k.is_blocked).length || 0;
+        const blocked = keys?.filter((k: any) => k.is_blocked).length || 0;
+        const totalUsage = keys?.reduce((sum: number, k: any) => sum + (k.usage_count || 0), 0) || 0;
+        await send(BOT_TOKEN, chatId, msgId,
+          `♾️ *Unlimited — LemonData Keys*\n\n` +
+          `📊 إجمالي المفاتيح: *${total}*\n` +
+          `✅ نشط: *${active}*\n` +
+          `🚫 محظور: *${blocked}*\n` +
+          `📈 إجمالي الاستخدام: *${totalUsage}*`,
+          [
+            [{ text: "➕ إضافة مفتاح", callback_data: "lemon_add" }],
+            [{ text: "📋 قائمة المفاتيح", callback_data: "lemon_list_0" }],
+            [{ text: "🔓 فك حظر الكل", callback_data: "lemon_unblock_all" }],
+            [{ text: "🌐 النماذج المتاحة", callback_data: "lemon_models" }],
+            [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "lemon_add") {
+        await saveSession(sb, chatId, { adminAction: "lemon_awaiting_key" } as any);
+        await send(BOT_TOKEN, chatId, msgId,
+          "➕ *إضافة مفتاح LemonData*\n\nأرسل المفتاح الآن:\n(يمكنك إرسال عدة مفاتيح، كل مفتاح في سطر)",
+          [[{ text: "❌ إلغاء", callback_data: "lemon_menu" }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("lemon_list_")) {
+        const page = parseInt(d.split("_")[2]) || 0;
+        const PAGE_SIZE = 8;
+        const { data: keys } = await sb.from("lemondata_keys")
+          .select("id, label, api_key, is_active, is_blocked, usage_count")
+          .order("created_at", { ascending: false })
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        const { count } = await sb.from("lemondata_keys").select("id", { count: "exact", head: true });
+        const totalPages = Math.ceil((count || 0) / PAGE_SIZE) || 1;
+
+        if (!keys || keys.length === 0) {
+          await send(BOT_TOKEN, chatId, msgId, "لا توجد مفاتيح.", [[{ text: "➕ إضافة", callback_data: "lemon_add" }, { text: "🔙 رجوع", callback_data: "lemon_menu" }]]);
+          return new Response("OK");
+        }
+
+        const rows: { text: string; callback_data: string }[][] = keys.map((k: any) => [{
+          text: `${k.is_blocked ? "🚫" : "✅"} ...${k.api_key.slice(-6)} (${k.usage_count || 0})`,
+          callback_data: `lemon_key_${k.id}`,
+        }]);
+
+        const nav: { text: string; callback_data: string }[] = [];
+        if (page > 0) nav.push({ text: "◀️", callback_data: `lemon_list_${page - 1}` });
+        nav.push({ text: `${page + 1}/${totalPages}`, callback_data: "noop" });
+        if (page < totalPages - 1) nav.push({ text: "▶️", callback_data: `lemon_list_${page + 1}` });
+        rows.push(nav);
+        rows.push([{ text: "🔙 رجوع", callback_data: "lemon_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `📋 *المفاتيح* (${count || 0}):`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("lemon_key_")) {
+        const keyId = d.replace("lemon_key_", "");
+        const { data: key } = await sb.from("lemondata_keys").select("*").eq("id", keyId).single();
+        if (!key) { await send(BOT_TOKEN, chatId, msgId, "❌ مفتاح غير موجود", [[{ text: "🔙 رجوع", callback_data: "lemon_menu" }]]); return new Response("OK"); }
+        await send(BOT_TOKEN, chatId, msgId,
+          `🔑 *تفاصيل المفتاح*\n\n` +
+          `المفتاح: \`...${key.api_key.slice(-8)}\`\n` +
+          `الحالة: ${key.is_blocked ? "🚫 محظور" : key.is_active ? "✅ نشط" : "⏸ معطل"}\n` +
+          `${key.block_reason ? `السبب: ${key.block_reason}\n` : ""}` +
+          `الاستخدام: ${key.usage_count || 0}\n` +
+          `الأخطاء: ${key.error_count || 0}\n` +
+          `${key.label ? `التسمية: ${key.label}\n` : ""}`,
+          [
+            [
+              key.is_blocked
+                ? { text: "🔓 فك الحظر", callback_data: `lemon_unblock_${keyId}` }
+                : { text: "🚫 حظر", callback_data: `lemon_block_${keyId}` },
+              { text: "🗑 حذف", callback_data: `lemon_del_${keyId}` },
+            ],
+            [{ text: "🔙 رجوع", callback_data: "lemon_list_0" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("lemon_block_")) {
+        const keyId = d.replace("lemon_block_", "");
+        await sb.from("lemondata_keys").update({ is_blocked: true, block_reason: "Manual block" }).eq("id", keyId);
+        await send(BOT_TOKEN, chatId, msgId, "🚫 تم حظر المفتاح", [[{ text: "🔙 رجوع", callback_data: "lemon_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("lemon_unblock_")) {
+        const keyId = d.replace("lemon_unblock_", "");
+        await sb.from("lemondata_keys").update({ is_blocked: false, block_reason: null, error_count: 0 }).eq("id", keyId);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم فك حظر المفتاح", [[{ text: "🔙 رجوع", callback_data: "lemon_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d === "lemon_unblock_all") {
+        await sb.from("lemondata_keys").update({ is_blocked: false, block_reason: null, error_count: 0 }).eq("is_blocked", true);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم فك حظر جميع المفاتيح", [[{ text: "🔙 رجوع", callback_data: "lemon_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("lemon_del_")) {
+        const keyId = d.replace("lemon_del_", "");
+        await sb.from("lemondata_keys").delete().eq("id", keyId);
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم حذف المفتاح", [[{ text: "🔙 رجوع", callback_data: "lemon_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d === "lemon_models") {
+        // Try to fetch models from LemonData API using first active key
+        const { data: keys } = await sb.from("lemondata_keys").select("api_key").eq("is_active", true).eq("is_blocked", false).limit(1);
+        if (!keys || keys.length === 0) {
+          await send(BOT_TOKEN, chatId, msgId, "❌ لا توجد مفاتيح نشطة لجلب النماذج", [[{ text: "🔙 رجوع", callback_data: "lemon_menu" }]]);
+          return new Response("OK");
+        }
+        try {
+          const modelsResp = await fetch("https://api.lemondata.cc/v1/models", {
+            headers: { Authorization: `Bearer ${keys[0].api_key}` },
+          });
+          const modelsData = await modelsResp.json();
+          const models = modelsData.data || [];
+
+          // Categorize
+          const chat = models.filter((m: any) => m.id?.includes("gpt") || m.id?.includes("claude") || m.id?.includes("gemini") || m.id?.includes("grok") || m.id?.includes("qwen") || m.id?.includes("llama") || m.id?.includes("mistral"));
+          const image = models.filter((m: any) => m.id?.includes("flux") || m.id?.includes("dall") || m.id?.includes("ideogram") || m.id?.includes("recraft") || m.id?.includes("imagen") || m.id?.includes("stable"));
+          const video = models.filter((m: any) => m.id?.includes("kling") || m.id?.includes("veo") || m.id?.includes("sora") || m.id?.includes("wan") || m.id?.includes("luma") || m.id?.includes("pika"));
+          const audio = models.filter((m: any) => m.id?.includes("tts") || m.id?.includes("whisper") || m.id?.includes("voice") || m.id?.includes("audio"));
+
+          const text = `🌐 *النماذج المتاحة في LemonData*\n\n` +
+            `💬 شات: *${chat.length}*\n` +
+            (chat.slice(0, 10).map((m: any) => `  • \`${m.id}\``).join("\n")) +
+            (chat.length > 10 ? `\n  ... و ${chat.length - 10} آخرين` : "") +
+            `\n\n🖼 صور: *${image.length}*\n` +
+            (image.slice(0, 8).map((m: any) => `  • \`${m.id}\``).join("\n")) +
+            `\n\n🎬 فيديو: *${video.length}*\n` +
+            (video.slice(0, 8).map((m: any) => `  • \`${m.id}\``).join("\n")) +
+            `\n\n🔊 صوت: *${audio.length}*\n` +
+            (audio.slice(0, 5).map((m: any) => `  • \`${m.id}\``).join("\n")) +
+            `\n\n📊 الإجمالي: *${models.length}* نموذج`;
+
+          await send(BOT_TOKEN, chatId, msgId, text, [[{ text: "🔙 رجوع", callback_data: "lemon_menu" }]]);
+        } catch (e) {
+          await send(BOT_TOKEN, chatId, msgId, `❌ خطأ: ${e}`, [[{ text: "🔙 رجوع", callback_data: "lemon_menu" }]]);
+        }
+        return new Response("OK");
+      }
+
       // ==================== رفع الوسائط ====================
       if (d === "upload_menu") {
         await send(BOT_TOKEN, chatId, msgId, "📤 *رفع الوسائط*\n\nاختر القسم:", [
