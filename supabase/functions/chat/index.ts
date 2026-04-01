@@ -294,11 +294,22 @@ You can mix text with structured blocks. Add explanatory text before or after JS
 
       // If LemonData key failed with auth error, block and retry
       if ((response.status === 401 || response.status === 403) && apiUrl === LEMONDATA_URL && usedKeyId && retryCount < MAX_RETRIES) {
+        console.error(`LemonData key ${usedKeyId} failed with ${response.status}, blocking...`);
         await blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
         const newKey = await getLemonDataKey(sb);
         if (newKey) {
           apiKey = newKey.api_key;
           usedKeyId = newKey.id;
+          retryCount++;
+          continue;
+        }
+        // No more LemonData keys — fallback to OpenRouter
+        const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+        if (OPENROUTER_API_KEY) {
+          console.log("All LemonData keys exhausted, falling back to OpenRouter");
+          apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+          apiKey = OPENROUTER_API_KEY;
+          usedKeyId = null;
           retryCount++;
           continue;
         }
