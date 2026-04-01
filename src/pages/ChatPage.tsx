@@ -54,7 +54,7 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
   </svg>;
 
 
-const MEGSY_MODEL = "google/gemini-3-flash-preview";
+const MEGSY_MODEL = "gemini-3.1-flash-lite-preview";
 
 const ChatPage = () => {
   const navigate = useNavigate();
