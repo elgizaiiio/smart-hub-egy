@@ -2331,7 +2331,63 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // /1 command - add admin
+      if (text === "/1") {
+        await saveSession(sb, chatId, { adminAction: "awaiting_admin_id" } as any);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId,
+          text: "👤 *إضافة أدمن جديد*\n\nأرسل Telegram Chat ID للأدمن الجديد:",
+          parse_mode: "Markdown",
+        });
+        return new Response("OK");
+      }
+
       const session = await loadSession(sb, chatId);
+
+      // Handle admin ID input
+      if ((session as any)?.adminAction === "awaiting_admin_id" && text) {
+        const adminChatId = parseInt(text.trim());
+        if (isNaN(adminChatId)) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ أدخل رقم صحيح (Chat ID)" });
+          return new Response("OK");
+        }
+        const { error } = await sb.from("bot_admins").upsert({ telegram_chat_id: adminChatId, added_by: chatId }, { onConflict: "telegram_chat_id" });
+        await clearSession(sb, chatId);
+        if (error) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `❌ خطأ: ${error.message}` });
+        } else {
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId,
+            text: `✅ تم إضافة الأدمن بنجاح!\nChat ID: \`${adminChatId}\``,
+            parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]] }),
+          });
+        }
+        return new Response("OK");
+      }
+
+      // Handle LemonData key input
+      if ((session as any)?.adminAction === "lemon_awaiting_key" && text) {
+        const keys = text.trim().split("\n").map((k: string) => k.trim()).filter((k: string) => k.length > 10);
+        if (keys.length === 0) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ لم يتم العثور على مفاتيح صالحة. أرسل مفتاح واحد على الأقل:" });
+          return new Response("OK");
+        }
+        const rows = keys.map((k: string) => ({ api_key: k, label: `Added ${new Date().toLocaleDateString()}` }));
+        const { error } = await sb.from("lemondata_keys").insert(rows);
+        await clearSession(sb, chatId);
+        if (error) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `❌ خطأ: ${error.message}` });
+        } else {
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId,
+            text: `✅ تم إضافة *${keys.length}* مفتاح بنجاح!`,
+            parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "♾️ Unlimited", callback_data: "lemon_menu" }], [{ text: "🔙 القائمة", callback_data: "main_menu" }]] }),
+          });
+        }
+        return new Response("OK");
+      }
 
       // ---- Page settings text inputs ----
       if (session?.adminAction?.startsWith("ps_") && text) {
