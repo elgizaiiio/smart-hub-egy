@@ -189,11 +189,10 @@ async function callLemonImage(
       });
 
       if (resp.status === 401 || resp.status === 403) {
-        await blockLemonKey(sb, keyData.id, `HTTP ${resp.status}`);
+        blockLemonKey(sb, keyData.id, `HTTP ${resp.status}`); // fire-and-forget
         continue;
       }
       if (resp.status === 429) {
-        // Rate limited, try another key
         continue;
       }
       if (!resp.ok) {
