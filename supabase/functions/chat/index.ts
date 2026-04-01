@@ -91,19 +91,8 @@ serve(async (req) => {
       apiKey = LOVABLE_API_KEY;
       modelId = requestedModel.startsWith("google/") ? requestedModel : `google/${requestedModel}`;
     } else {
-      // Use LemonData with key rotation
-      let lemonKey: { id: string; api_key: string } | null = null;
-      let attempts = 0;
-      const MAX_ATTEMPTS = 3;
-
-      while (attempts < MAX_ATTEMPTS) {
-        lemonKey = await getLemonDataKey(sb);
-        if (!lemonKey) break;
-        attempts++;
-
-        // Test the key with a quick non-streaming check isn't needed; we'll handle errors in the streaming response
-        break;
-      }
+      // Use LemonData with smart cached key
+      const lemonKey = await getLemonDataKey(sb);
 
       if (!lemonKey) {
         // Fallback: try OpenRouter if no LemonData keys available
