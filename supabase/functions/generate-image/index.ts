@@ -201,7 +201,7 @@ async function callLemonImage(
         throw new Error(`LemonData error: ${resp.status} - ${errText.slice(0, 200)}`);
       }
 
-      await markKeyUsed(sb, keyData.id);
+      markKeyUsed(sb, keyData.id); // fire-and-forget
       const result = await resp.json();
 
       // Extract URLs from OpenAI-compatible response
