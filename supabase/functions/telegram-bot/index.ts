@@ -283,6 +283,7 @@ function mainMenuKB() {
     [{ text: "🔑 OAuth Apps", callback_data: "oauth_menu" }],
     [{ text: "🎨 معرض العرض (Showcase)", callback_data: "showcase_menu" }],
     [{ text: "⚙️ إعدادات الصفحات", callback_data: "pagesettings_menu" }],
+    [{ text: "♾️ Unlimited (LemonData)", callback_data: "lemon_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
 }
