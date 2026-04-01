@@ -461,6 +461,16 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      if (d === "lemon_done_adding") {
+        await clearSession(sb, chatId);
+        const { count } = await sb.from("lemondata_keys").select("id", { count: "exact", head: true });
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم الانتهاء من إضافة المفاتيح\n📊 إجمالي المفاتيح: *${count || 0}*`, [
+          [{ text: "♾️ Unlimited", callback_data: "lemon_menu" }],
+          [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
       if (d === "lemon_models") {
         // Try to fetch models from LemonData API using first active key
         const { data: keys } = await sb.from("lemondata_keys").select("api_key").eq("is_active", true).eq("is_blocked", false).limit(1);
