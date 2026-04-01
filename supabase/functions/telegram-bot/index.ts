@@ -2375,15 +2375,18 @@ serve(async (req) => {
         }
         const rows = keys.map((k: string) => ({ api_key: k, label: `Added ${new Date().toLocaleDateString()}` }));
         const { error } = await sb.from("lemondata_keys").insert(rows);
-        await clearSession(sb, chatId);
+        // DON'T clear session - keep accepting more keys
         if (error) {
           await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `❌ خطأ: ${error.message}` });
         } else {
+          const { count } = await sb.from("lemondata_keys").select("id", { count: "exact", head: true }).eq("is_active", true).eq("is_blocked", false);
           await tg(BOT_TOKEN, "sendMessage", {
             chat_id: chatId,
-            text: `✅ تم إضافة *${keys.length}* مفتاح بنجاح!`,
+            text: `✅ تم إضافة *${keys.length}* مفتاح بنجاح!\n\n📊 إجمالي المفاتيح النشطة: *${count || 0}*\n\n📩 أرسل المزيد من المفاتيح أو اضغط "لقد انتهيت"`,
             parse_mode: "Markdown",
-            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "♾️ Unlimited", callback_data: "lemon_menu" }], [{ text: "🔙 القائمة", callback_data: "main_menu" }]] }),
+            reply_markup: JSON.stringify({ inline_keyboard: [
+              [{ text: "✅ لقد انتهيت", callback_data: "lemon_done_adding" }],
+            ] }),
           });
         }
         return new Response("OK");
