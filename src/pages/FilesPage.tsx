@@ -228,7 +228,7 @@ const FilesPage = () => {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ messages: allMessages, model: "google/gemini-3-flash-preview", mode: "files", searchEnabled }),
+        body: JSON.stringify({ messages: allMessages, model: "gemini-3.1-flash-lite-preview", mode: "files", searchEnabled }),
       });
 
       if (!resp.ok || !resp.body) {
