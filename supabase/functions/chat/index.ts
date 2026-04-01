@@ -276,15 +276,50 @@ You can mix text with structured blocks. Add explanatory text before or after JS
       body.tool_choice = "auto";
     }
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://megsyai.com", "X-Title": "Megsy" } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+    // LemonData key rotation: retry with different keys on auth failures
+    let response: Response;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+
+    while (true) {
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://megsyai.com", "X-Title": "Megsy" } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+
+      // If LemonData key failed with auth error, block and retry
+      if ((response.status === 401 || response.status === 403) && apiUrl === LEMONDATA_URL && usedKeyId && retryCount < MAX_RETRIES) {
+        await blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
+        const newKey = await getLemonDataKey(sb);
+        if (newKey) {
+          apiKey = newKey.api_key;
+          usedKeyId = newKey.id;
+          retryCount++;
+          continue;
+        }
+      }
+      // If rate limited on LemonData, try another key
+      if (response.status === 429 && apiUrl === LEMONDATA_URL && usedKeyId && retryCount < MAX_RETRIES) {
+        const newKey = await getLemonDataKey(sb);
+        if (newKey && newKey.id !== usedKeyId) {
+          apiKey = newKey.api_key;
+          usedKeyId = newKey.id;
+          retryCount++;
+          continue;
+        }
+      }
+      break;
+    }
+
+    // Mark key as used on success
+    if (usedKeyId && response.ok) {
+      markKeyUsed(sb, usedKeyId).catch(() => {}); // fire and forget
+    }
 
     if (!response.ok) {
       const status = response.status;
