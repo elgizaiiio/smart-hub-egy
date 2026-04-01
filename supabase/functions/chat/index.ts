@@ -332,7 +332,7 @@ You can mix text with structured blocks. Add explanatory text before or after JS
 
     // Mark key as used on success
     if (usedKeyId && response.ok) {
-      markKeyUsed(sb, usedKeyId).catch(() => {}); // fire and forget
+      markKeyUsed(sb, usedKeyId); // fire and forget
     }
 
     if (!response.ok) {
