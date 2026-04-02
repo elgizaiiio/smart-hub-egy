@@ -512,6 +512,104 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ==================== Tools (صور الأدوات) ====================
+      if (d === "tools_menu") {
+        const allTools = [
+          { id: "inpaint", name: "Inpaint" }, { id: "clothes-changer", name: "Clothes Changer" },
+          { id: "headshot", name: "Headshot" }, { id: "bg-remover", name: "BG Remover" },
+          { id: "face-swap", name: "Face Swap" }, { id: "relight", name: "Relight" },
+          { id: "colorizer", name: "Colorizer" }, { id: "character-swap", name: "Character Swap" },
+          { id: "storyboard", name: "Storyboard" }, { id: "sketch-to-image", name: "Sketch to Image" },
+          { id: "retouching", name: "Retouching" }, { id: "remover", name: "Object Remover" },
+          { id: "hair-changer", name: "Hair Changer" }, { id: "cartoon", name: "Cartoon" },
+          { id: "swap-characters", name: "Swap Characters (Video)" },
+          { id: "talking-photo", name: "Talking Photo (Video)" },
+          { id: "video-upscale", name: "Video Upscale" },
+          { id: "auto-caption", name: "Auto Caption" },
+        ];
+        const rows = allTools.map(t => [{ text: `🛠 ${t.name}`, callback_data: `tool_preview_${t.id}` }]);
+        rows.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, "🛠 *إدارة صور الأدوات*\n\nاختر أداة لتغيير صورتها:", rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tool_preview_")) {
+        const toolId = d.replace("tool_preview_", "");
+        await saveSession(sb, chatId, { adminAction: "tool_awaiting_image", adminModelId: toolId } as any);
+        await send(BOT_TOKEN, chatId, msgId,
+          `📸 *تغيير صورة الأداة*\n\nالأداة: \`${toolId}\`\n\nأرسل الصورة الجديدة:`,
+          [[{ text: "❌ إلغاء", callback_data: "tools_menu" }]]
+        );
+        return new Response("OK");
+      }
+
+      // ==================== Headshot Templates ====================
+      if (d === "headshot_menu") {
+        const { data: templates, count } = await sb.from("headshot_templates").select("id, name, gender, is_active", { count: "exact" });
+        const total = count || 0;
+        const rows: { text: string; callback_data: string }[][] = [
+          [{ text: "➕ إضافة قالب", callback_data: "hs_add" }],
+        ];
+        if (templates && templates.length > 0) {
+          templates.forEach((t: any) => {
+            rows.push([{ text: `${t.is_active ? "✅" : "⏸"} ${t.name} (${t.gender})`, callback_data: `hs_view_${t.id}` }]);
+          });
+        }
+        rows.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `📷 *قوالب Headshot* (${total})`, rows);
+        return new Response("OK");
+      }
+
+      if (d === "hs_add") {
+        await saveSession(sb, chatId, { adminAction: "hs_awaiting_name" } as any);
+        await send(BOT_TOKEN, chatId, msgId, "📷 *إضافة قالب Headshot*\n\nأرسل اسم القالب:", [[{ text: "❌ إلغاء", callback_data: "headshot_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("hs_view_")) {
+        const templateId = d.replace("hs_view_", "");
+        const { data: t } = await sb.from("headshot_templates").select("*").eq("id", templateId).single();
+        if (!t) { await send(BOT_TOKEN, chatId, msgId, "❌ قالب غير موجود", [[{ text: "🔙 رجوع", callback_data: "headshot_menu" }]]); return new Response("OK"); }
+        await send(BOT_TOKEN, chatId, msgId,
+          `📷 *${t.name}*\n\nالجنس: ${t.gender}\nالحالة: ${t.is_active ? "✅ نشط" : "⏸ معطل"}\nالبرومبت: ${(t.prompt || "").slice(0, 100)}...`,
+          [
+            [
+              { text: t.is_active ? "⏸ تعطيل" : "✅ تفعيل", callback_data: `hs_toggle_${templateId}` },
+              { text: "🗑 حذف", callback_data: `hs_del_${templateId}` },
+            ],
+            [{ text: "🔙 رجوع", callback_data: "headshot_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("hs_toggle_")) {
+        const templateId = d.replace("hs_toggle_", "");
+        const { data: t } = await sb.from("headshot_templates").select("is_active").eq("id", templateId).single();
+        if (t) await sb.from("headshot_templates").update({ is_active: !t.is_active }).eq("id", templateId);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم تحديث الحالة", [[{ text: "🔙 رجوع", callback_data: "headshot_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("hs_del_")) {
+        const templateId = d.replace("hs_del_", "");
+        await sb.from("headshot_templates").delete().eq("id", templateId);
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم حذف القالب", [[{ text: "🔙 رجوع", callback_data: "headshot_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("hs_gender_")) {
+        const gender = d.replace("hs_gender_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        (session as any).hsGender = gender;
+        await saveSession(sb, chatId, session);
+        await send(BOT_TOKEN, chatId, msgId, `✅ الجنس: ${gender}\n\nأرسل البرومبت (prompt) للقالب:`, [[{ text: "❌ إلغاء", callback_data: "headshot_menu" }]]);
+        (session as any).adminAction = "hs_awaiting_prompt";
+        await saveSession(sb, chatId, session);
+        return new Response("OK");
+      }
+
       // ==================== رفع الوسائط ====================
       if (d === "upload_menu") {
         await send(BOT_TOKEN, chatId, msgId, "📤 *رفع الوسائط*\n\nاختر القسم:", [
