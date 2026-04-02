@@ -49,8 +49,7 @@ const UnifiedInputBar = ({
   }, [placeholders.length]);
 
   return (
-    <div className={`rounded-2xl bg-gradient-to-r from-rose-400/15 via-purple-400/15 to-blue-400/15 border border-border/20 p-4 ${className}`}>
-      {/* Attached image preview */}
+    <div className={`rounded-2xl bg-gradient-to-r from-rose-400/15 via-purple-400/15 to-blue-400/15 border border-border/20 p-3 ${className}`}>
       {attachedImage && (
         <div className="mb-3 relative inline-block">
           <img src={attachedImage} alt="" className="w-16 h-16 object-cover rounded-xl" />
@@ -65,47 +64,43 @@ const UnifiedInputBar = ({
         </div>
       )}
 
-      {/* Input row */}
-      <div className="flex items-center gap-2.5">
-        {/* + button for attachments */}
+      <div className="flex items-center gap-2">
         {onAttach && (
           <button
             onClick={onAttach}
-            className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
           >
             <Plus className="w-5 h-5" />
           </button>
         )}
 
-        {/* Model picker button (hub pages only) */}
         {showModelPicker && onModelPick && (
           <button
             onClick={onModelPick}
-            className="shrink-0 w-10 h-10 rounded-full overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-primary/30 transition-all"
+            className="shrink-0 w-9 h-9 rounded-full overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-primary/30 transition-all border border-border/30"
           >
             {modelIcon ? (
-              <img src={modelIcon} alt="" className="w-8 h-8 rounded-full object-cover" />
+              <img src={modelIcon} alt="" className="w-full h-full rounded-full object-cover" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">M</div>
+              <div className="w-full h-full rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">M</div>
             )}
           </button>
         )}
 
-        {/* Text input */}
-        <input
+        <textarea
           value={prompt}
           onChange={e => onPromptChange(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
           placeholder={placeholders[placeholderIdx]}
-          className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2.5"
+          rows={2}
+          className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2 resize-none min-h-[52px]"
         />
 
-        {/* Generate button - inside the border */}
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onGenerate}
           disabled={disabled || isGenerating}
-          className="shrink-0 px-5 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold disabled:opacity-30 transition-all"
+          className="shrink-0 px-5 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold disabled:opacity-30 transition-all self-end"
         >
           {isGenerating ? (
             <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
