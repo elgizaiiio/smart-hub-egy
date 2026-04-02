@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Download, RefreshCw, ArrowLeft, Sparkles, Images, Compass } from "lucide-react";
+import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
@@ -19,24 +19,25 @@ const NANO_BANANA_DEFAULT: ModelOption = {
   id: "nano-banana",
   name: "Nano Banana",
   credits: "1",
-  iconUrl: "/model-logos/google.ico",
+  iconUrl: "/model-logos/bytedance.ico",
 };
 
 const ALL_TOOLS = [
-  { id: "inpaint", name: "Inpaint", route: "/images/tools/inpaint" },
-  { id: "clothes-changer", name: "Clothes Changer", route: "/images/tools/clothes-changer" },
-  { id: "headshot", name: "AI Headshot", route: "/images/tools/headshot" },
-  { id: "face-swap", name: "Face Swap", route: "/images/tools/face-swap" },
-  { id: "bg-remover", name: "BG Remover", route: "/images/tools/bg-remover" },
-  { id: "cartoon", name: "Cartoon", route: "/images/tools/cartoon" },
-  { id: "colorizer", name: "Colorizer", route: "/images/tools/colorizer" },
-  { id: "retouching", name: "Retouch", route: "/images/tools/retouching" },
-  { id: "remover", name: "Object Remover", route: "/images/tools/remover" },
-  { id: "sketch-to-image", name: "Sketch to Image", route: "/images/tools/sketch-to-image" },
-  { id: "relight", name: "Relight", route: "/images/tools/relight" },
-  { id: "character-swap", name: "Character Swap", route: "/images/tools/character-swap" },
-  { id: "storyboard", name: "Storyboard", route: "/images/tools/storyboard" },
-  { id: "hair-changer", name: "Hair Changer", route: "/images/tools/hair-changer" },
+  { id: "inpaint", name: "Inpaint", desc: "Edit parts of an image", route: "/images/tools/inpaint" },
+  { id: "clothes-changer", name: "Clothes Changer", desc: "Change outfits", route: "/images/tools/clothes-changer" },
+  { id: "headshot", name: "AI Headshot", desc: "Professional photos", route: "/images/tools/headshot" },
+  { id: "face-swap", name: "Face Swap", desc: "Swap faces", route: "/images/tools/face-swap" },
+  { id: "bg-remover", name: "BG Remover", desc: "Remove backgrounds", route: "/images/tools/bg-remover" },
+  { id: "cartoon", name: "Cartoon", desc: "Cartoonify photos", route: "/images/tools/cartoon" },
+  { id: "colorizer", name: "Colorizer", desc: "Colorize B&W", route: "/images/tools/colorizer" },
+  { id: "retouching", name: "Retouch", desc: "Enhance photos", route: "/images/tools/retouching" },
+  { id: "remover", name: "Object Remover", desc: "Remove objects", route: "/images/tools/remover" },
+  { id: "sketch-to-image", name: "Sketch to Image", desc: "Convert sketches", route: "/images/tools/sketch-to-image" },
+  { id: "relight", name: "Relight", desc: "Change lighting", route: "/images/tools/relight" },
+  { id: "character-swap", name: "Character Swap", desc: "Swap characters", route: "/images/tools/character-swap" },
+  { id: "storyboard", name: "Storyboard", desc: "Create panels", route: "/images/tools/storyboard" },
+  { id: "hair-changer", name: "Hair Changer", desc: "Change hairstyles", route: "/images/tools/hair-changer" },
+  { id: "avatar-maker", name: "Avatar Maker 3D", desc: "3D avatars", route: "/images/tools/avatar-maker" },
 ];
 
 const TOOL_ROWS = [
@@ -83,7 +84,9 @@ const ImagesPage = () => {
     if (s === "studio") setActiveTab("studio");
   }, [location.state]);
 
-  useEffect(() => { loadToolLandingImages(); }, []);
+  useEffect(() => {
+    loadToolLandingImages();
+  }, []);
 
   const loadStudioImages = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -104,12 +107,19 @@ const ImagesPage = () => {
   };
 
   const loadToolLandingImages = async () => {
-    const { data } = await supabase.from("tool_landing_images").select("tool_id, image_url").in("tool_id", ALL_TOOLS.map(t => t.id));
+    const { data } = await supabase
+      .from("tool_landing_images")
+      .select("tool_id, image_url")
+      .in("tool_id", ALL_TOOLS.map((tool) => tool.id));
+
     if (!data) return;
-    setToolLandingImages(data.reduce<Record<string, string>>((acc, item) => {
-      if (item.image_url) acc[item.tool_id] = item.image_url;
-      return acc;
-    }, {}));
+
+    setToolLandingImages(
+      data.reduce<Record<string, string>>((acc, item) => {
+        if (item.image_url) acc[item.tool_id] = item.image_url;
+        return acc;
+      }, {})
+    );
   };
 
   const getToolImage = (toolId: string) => {
@@ -190,20 +200,20 @@ const ImagesPage = () => {
                 placeholders={IMAGE_PLACEHOLDERS}
                 attachedImage={attachedImage}
                 onClearAttachment={() => setAttachedImage(null)}
+                className="mx-1"
               />
 
-              {/* Tool rows - 2 horizontal scrolling rows */}
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {TOOL_ROWS.map((row, rowIndex) => (
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                    <div className="flex min-w-max gap-2.5">
+                    <div className="flex min-w-max gap-3">
                       {row.map((tool, i) => {
                         const img = getToolImage(tool.id);
                         const gradient = GRADIENTS[(rowIndex * 8 + i) % GRADIENTS.length];
-                        const isVideo = img.endsWith?.(".mp4") || img.includes?.("video");
+                        const isVideo = img.endsWith(".mp4") || img.includes("video");
 
                         return (
-                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-28 w-24 flex-shrink-0 overflow-hidden rounded-2xl">
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
                             {img ? (
                               isVideo ? (
                                 <video src={img} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
@@ -213,9 +223,10 @@ const ImagesPage = () => {
                             ) : (
                               <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-2">
-                              <p className="text-[11px] font-semibold text-white leading-tight">{tool.name}</p>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                              <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
+                              <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
                             </div>
                           </motion.button>
                         );
@@ -225,25 +236,24 @@ const ImagesPage = () => {
                 ))}
               </div>
 
-              {/* Create & Edit cards */}
-              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/studio")} className="relative flex h-28 w-full items-center overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/20 to-primary/5">
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/studio")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/20 to-primary/5">
                 <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
-                  <img src={createImageCard} alt="" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-l from-transparent to-background/80" />
+                  <img src={createImageCard} alt="Create your image" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />
                 </div>
                 <div className="relative flex-1 text-left px-5 pr-[38%]">
-                  <p className="text-lg font-bold text-foreground whitespace-nowrap">Create Your Image</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Generate with AI</p>
+                  <p className="text-lg font-bold text-foreground">Create Your Image</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Generate images with AI</p>
                 </div>
               </motion.button>
 
-              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/agent")} className="relative flex h-28 w-full items-center overflow-hidden rounded-2xl border border-border/20 bg-gradient-to-r from-accent/30 to-accent/5">
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/agent")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-border/20 bg-gradient-to-r from-accent/30 to-accent/5">
                 <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
-                  <img src={editImageCard} alt="" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-l from-transparent to-background/80" />
+                  <img src={editImageCard} alt="Edit your image" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />
                 </div>
                 <div className="relative flex-1 text-left px-5 pr-[38%]">
-                  <p className="text-lg font-bold text-foreground whitespace-nowrap">Edit Your Image</p>
+                  <p className="text-lg font-bold text-foreground">Edit Your Image</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Transform existing images</p>
                 </div>
               </motion.button>
@@ -290,13 +300,13 @@ const ImagesPage = () => {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-8 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
             <button onClick={() => setActiveTab("home")} className="flex flex-col items-center gap-0.5">
-              <svg className={`w-5 h-5 ${activeTab === "home" ? "text-primary" : "text-muted-foreground"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === "home" ? 2.2 : 1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+              <LayoutGrid className={`w-5 h-5 ${activeTab === "home" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "home" ? 2.5 : 1.8} />
             </button>
             <button onClick={() => setActiveTab("studio")} className="flex flex-col items-center gap-0.5">
-              <Images className={`w-5 h-5 ${activeTab === "studio" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "studio" ? 2.2 : 1.5} />
+              <Wand2 className={`w-5 h-5 ${activeTab === "studio" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "studio" ? 2.5 : 1.8} />
             </button>
             <button onClick={() => setActiveTab("community")} className="flex flex-col items-center gap-0.5">
-              <Compass className={`w-5 h-5 ${activeTab === "community" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "community" ? 2.2 : 1.5} />
+              <Compass className={`w-5 h-5 ${activeTab === "community" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "community" ? 2.5 : 1.8} />
             </button>
           </div>
         </div>

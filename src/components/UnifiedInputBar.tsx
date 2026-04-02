@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Image } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface UnifiedInputBarProps {
   prompt: string;
@@ -45,6 +45,10 @@ const UnifiedInputBar = ({
   const [iconFailed, setIconFailed] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const resolvedModelIcon = !iconFailed && (modelIcon || "/model-logos/bytedance.ico")
+    ? (modelIcon || "/model-logos/bytedance.ico")
+    : null;
+
   useEffect(() => {
     const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % placeholders.length), 3000);
     return () => clearInterval(interval);
@@ -61,69 +65,60 @@ const UnifiedInputBar = ({
     textarea.style.height = `${Math.min(textarea.scrollHeight, 140)}px`;
   }, [prompt]);
 
-  const resolvedIcon = !iconFailed && modelIcon ? modelIcon : null;
-
   return (
-    <div className={`rounded-2xl border border-border/20 bg-card/80 backdrop-blur-sm shadow-sm ${className}`}>
+    <div className={`rounded-[1.75rem] border border-border/30 bg-gradient-to-br from-card via-card to-accent/40 p-3 shadow-sm ${className}`}>
       {attachedImage && (
-        <div className="px-3.5 pt-3 relative inline-block">
-          <img src={attachedImage} alt="Attached" className="h-16 w-16 rounded-xl object-cover border border-border/30" />
+        <div className="mb-3 relative inline-block">
+          <img src={attachedImage} alt="Attached reference" className="h-20 w-20 rounded-2xl object-cover border border-border/30" />
           <button
             onClick={onClearAttachment}
-            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]"
+            className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
           >
-            ✕
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
           </button>
         </div>
       )}
 
-      <div className="flex items-end gap-2 px-3 py-3">
-        {/* Media attach button */}
+      <div className="flex items-end gap-2.5 rounded-[1.4rem] border border-border/20 bg-background/75 px-2.5 py-2.5">
         {onAttach && (
           <button
             onClick={onAttach}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <Image className="w-[18px] h-[18px]" />
+            <Plus className="w-5 h-5" />
           </button>
         )}
 
-        {/* Model picker button */}
         {showModelPicker && onModelPick && (
           <button
             onClick={onModelPick}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 transition-all"
+            className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/30 bg-card transition-all hover:border-primary/30 hover:bg-accent"
           >
-            {resolvedIcon ? (
-              <img
-                src={resolvedIcon}
-                alt="Model"
-                className="h-6 w-6 rounded-lg object-contain"
-                onError={() => setIconFailed(true)}
-              />
+            {resolvedModelIcon ? (
+              <img src={resolvedModelIcon} alt="Model" className="h-9 w-9 rounded-xl bg-background/80 object-contain p-1" onError={() => setIconFailed(true)} />
             ) : (
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/15 text-[10px] font-bold text-primary">AI</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-xs font-bold text-primary">M</div>
             )}
           </button>
         )}
 
-        {/* Textarea */}
         <textarea
           ref={textareaRef}
-          rows={1}
+          rows={2}
           value={prompt}
           onChange={e => onPromptChange(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
           placeholder={placeholders[placeholderIdx]}
-          className="min-h-[36px] max-h-[140px] flex-1 resize-none bg-transparent px-1 py-2 text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground/50"
+          className="min-h-[64px] flex-1 resize-none bg-transparent px-1 py-3 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/55"
         />
 
-        {/* Generate button */}
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onGenerate}
           disabled={disabled || isGenerating}
-          className="shrink-0 rounded-xl bg-foreground px-4 py-2 text-sm font-semibold text-background transition-all disabled:opacity-30"
+          className="shrink-0 self-stretch rounded-[1.15rem] bg-foreground px-5 text-sm font-semibold text-background transition-all disabled:opacity-30 min-w-[92px]"
         >
           {isGenerating ? (
             <div className="mx-auto h-4 w-4 rounded-full border-2 border-background/30 border-t-background animate-spin" />

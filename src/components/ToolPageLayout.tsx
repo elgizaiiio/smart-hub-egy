@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus, Camera } from "lucide-react";
+import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
@@ -28,7 +28,6 @@ interface ToolPageLayoutProps {
   resultType?: "image" | "video";
   autoProcess?: boolean;
   hideHeaderCost?: boolean;
-  backTo?: string; // "/images" or "/videos"
 }
 
 // ==================== Star Loading Animation ====================
@@ -50,54 +49,36 @@ const StarLoader = () => (
   </div>
 );
 
-// ==================== Landing Page with Upload ====================
+// ==================== Landing Page ====================
 const ToolLanding = ({
   title,
   description,
   landingImage,
-  onUpload,
+  onStart,
 }: {
   title: string;
   description?: string;
   landingImage?: string | null;
-  onUpload: (dataUrl: string) => void;
-}) => {
-  const ref = useRef<HTMLInputElement>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onUpload(reader.result as string);
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
-  return (
-    <div className="relative min-h-[75vh] flex flex-col items-center justify-center">
-      {landingImage && (
-        <img src={landingImage} alt={title} className="absolute inset-0 w-full h-full object-cover" />
-      )}
-      {!landingImage && (
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
-      <div className="relative z-10 text-center px-6 space-y-5">
-        <h2 className="text-2xl font-bold text-foreground">{title}</h2>
-        {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto">{description}</p>}
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          onClick={() => ref.current?.click()}
-          className="mx-auto flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg"
-        >
-          <Camera className="w-4 h-4" />
-          Upload Your Photo
-        </motion.button>
-      </div>
-      <input ref={ref} type="file" className="hidden" accept="image/*" onChange={handleChange} />
+  onStart: () => void;
+}) => (
+  <div className="relative min-h-[70vh] flex flex-col items-center justify-end pb-12">
+    {landingImage && (
+      <img src={landingImage} alt={title} className="absolute inset-0 w-full h-full object-cover" />
+    )}
+    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+    <div className="relative z-10 text-center px-6 space-y-4">
+      <h2 className="text-3xl font-bold text-foreground">{title}</h2>
+      {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto">{description}</p>}
+      <motion.button
+        whileTap={{ scale: 0.96 }}
+        onClick={onStart}
+        className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm"
+      >
+        Upload Your Photo
+      </motion.button>
     </div>
-  );
-};
+  </div>
+);
 
 // ==================== Yellow Generate Button ====================
 const YellowGenerateButton = ({
@@ -260,14 +241,12 @@ const ToolPageLayout = ({
   resultType = "image",
   autoProcess,
   hideHeaderCost,
-  backTo = "/images",
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
   const { credits, hasEnoughCredits } = useCredits();
   const [landingImage, setLandingImage] = useState<string | null>(null);
   const [landingDesc, setLandingDesc] = useState<string | null>(null);
   const [showLanding, setShowLanding] = useState(true);
-  const [uploadedFromLanding, setUploadedFromLanding] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from("tool_landing_images").select("image_url, description").eq("tool_id", toolId).maybeSingle()
@@ -285,31 +264,29 @@ const ToolPageLayout = ({
     await onGenerate();
   };
 
-  const handleLandingUpload = (dataUrl: string) => {
-    setUploadedFromLanding(dataUrl);
-    setShowLanding(false);
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - just service name */}
+      {/* Header */}
       <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <button onClick={() => navigate(backTo)} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-base font-semibold text-foreground flex-1">{title}</h1>
+        <div className="flex-1">
+          <h1 className="text-base font-semibold text-foreground">{title}</h1>
+          {!hideHeaderCost && <p className="text-xs text-muted-foreground">{costLabel || `${cost} MC per generation`}</p>}
+        </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {showLanding && !resultUrl && (
+          {showLanding && landingImage && !resultUrl && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ToolLanding
                 title={title}
                 description={landingDesc || undefined}
                 landingImage={landingImage}
-                onUpload={handleLandingUpload}
+                onStart={() => setShowLanding(false)}
               />
             </motion.div>
           )}

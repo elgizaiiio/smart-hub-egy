@@ -77,7 +77,7 @@ import RetouchingPage from "./pages/tools/RetouchingPage";
 import RemoverPage from "./pages/tools/RemoverPage";
 import HairChangerPage from "./pages/tools/HairChangerPage";
 import CartoonPage from "./pages/tools/CartoonPage";
-// Avatar Maker removed
+import AvatarMakerPage from "./pages/tools/AvatarMakerPage";
 
 // Video tool pages
 import VideoSwapPage from "./pages/tools/VideoSwapPage";
@@ -199,7 +199,7 @@ const App = () => {
                 <Route path="/images/tools/remover" element={<ProtectedRoute><RemoverPage /></ProtectedRoute>} />
                 <Route path="/images/tools/hair-changer" element={<ProtectedRoute><HairChangerPage /></ProtectedRoute>} />
                 <Route path="/images/tools/cartoon" element={<ProtectedRoute><CartoonPage /></ProtectedRoute>} />
-                {/* Avatar Maker removed */}
+                <Route path="/images/tools/avatar-maker" element={<ProtectedRoute><AvatarMakerPage /></ProtectedRoute>} />
                 {/* Video tool routes */}
                 <Route path="/videos/tools/swap-characters" element={<ProtectedRoute><VideoSwapPage /></ProtectedRoute>} />
                 <Route path="/videos/tools/upscale" element={<ProtectedRoute><VideoUpscalePage /></ProtectedRoute>} />
