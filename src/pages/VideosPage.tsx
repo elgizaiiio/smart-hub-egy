@@ -1,17 +1,31 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Send, SlidersHorizontal, Wand2, X, Copy, RefreshCw } from "lucide-react";
+import { Menu, Send, SlidersHorizontal, Wand2, X, Copy, RefreshCw, Home, Layers, Users, ArrowUp, Captions, Mic, Scissors, Film, UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import { VIDEO_TOOLS } from "@/lib/videoToolsData";
 import { useDynamicModels } from "@/hooks/useModels";
+import OrbLoader from "@/components/OrbLoader";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 
 type Tab = "home" | "studio" | "community";
 const FALLBACK_ICON = "/model-logos/megsy.png";
+
+const QUICK_TOOLS = [
+  { id: "upscale", name: "Upscale", icon: ArrowUp, route: "/videos/tools/upscale" },
+  { id: "auto-caption", name: "Caption", icon: Captions, route: "/videos/tools/auto-caption" },
+  { id: "lip-sync", name: "Lip Sync", icon: Mic, route: "/videos/tools/lip-sync" },
+  { id: "video-extender", name: "Extend", icon: Film, route: "/videos/tools/video-extender" },
+  { id: "video-to-text", name: "To Text", icon: Captions, route: "/videos/tools/video-to-text" },
+];
+
+const FEATURED_TOOLS = [
+  { id: "swap-characters", name: "Swap Characters", desc: "Swap faces in any video", route: "/videos/tools/swap-characters" },
+  { id: "talking-photo", name: "Talking Photo", desc: "Animate photos with speech", route: "/videos/tools/talking-photo" },
+];
 
 const VideosPage = () => {
   const navigate = useNavigate();
@@ -25,6 +39,8 @@ const VideosPage = () => {
   const [prompt, setPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState<{ id: string; name: string; iconUrl: string } | null>(null);
   const [enhancing, setEnhancing] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [resultMedia, setResultMedia] = useState<{ url: string; prompt: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { models: dynamicModels } = useDynamicModels();
 
@@ -73,6 +89,7 @@ const VideosPage = () => {
 
   const handleSend = () => {
     if (!prompt.trim()) return;
+    setGenerating(true);
     navigate("/videos/studio", { state: { prompt: prompt.trim(), selectedModelId: selectedModel?.id, settings: { aspectRatio, duration, quality } } });
   };
 
@@ -94,75 +111,89 @@ const VideosPage = () => {
     ta.style.height = Math.min(ta.scrollHeight, 150) + "px";
   };
 
-  const allTools = [
-    ...VIDEO_TOOLS,
-    { id: "video-to-text", name: "Video to Text", description: "Transcribe video/audio to text", model: "fal-ai/whisper", costType: "per-minute" as const, baseCost: 1, inputType: "video" as const, route: "/videos/tools/video-to-text", badge: "NEW" as const, pricingDetails: "1 MC/min" },
-  ];
-
-  const TABS: { id: Tab; label: string }[] = [
-    { id: "home", label: "Home" },
-    { id: "studio", label: "Studio" },
-    { id: "community", label: "Community" },
-  ];
+  const getToolPreview = (toolId: string) => {
+    const tool = VIDEO_TOOLS.find(t => t.id === toolId);
+    return tool?.previewVideo;
+  };
 
   return (
     <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
       <div className="h-full flex flex-col bg-background">
         <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} currentMode="videos" />
+        <OrbLoader visible={generating} />
 
         {/* Header */}
         <div className="sticky top-0 z-10 px-4 pt-3 pb-2 bg-background/80 backdrop-blur-xl">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between">
             <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground"><Menu className="w-5 h-5" /></button>
             <h1 className="text-base font-bold text-foreground">Videos</h1>
             <div className="w-9" />
           </div>
-          {/* Pill tabs */}
-          <div className="flex gap-1.5">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? "bg-foreground text-background shadow-sm"
-                    : "text-muted-foreground hover:bg-accent/50"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pb-36">
+        <div className="flex-1 overflow-y-auto px-4 pb-44">
           {activeTab === "home" && (
-            <div className="pt-4">
-              <div className="grid grid-cols-2 gap-3">
-                {allTools.map(tool => (
-                  <motion.button
-                    key={tool.id}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => navigate(tool.route)}
-                    className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left relative group"
-                  >
-                    {tool.previewVideo ? (
-                      <video src={tool.previewVideo} autoPlay loop muted playsInline className="w-full h-32 object-cover" />
-                    ) : (
-                      <div className="w-full h-32 bg-gradient-to-br from-accent/40 to-accent/10 flex items-center justify-center text-muted-foreground/20 text-xs">Preview</div>
-                    )}
-                    {tool.badge && (
-                      <span className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                        tool.badge === "NEW" ? "bg-green-500/90 text-white" : "bg-amber-500/90 text-white"
-                      }`}>{tool.badge}</span>
-                    )}
-                    <div className="p-3">
-                      <p className="text-sm font-semibold text-foreground">{tool.name}</p>
-                      <span className="text-xs text-muted-foreground">{tool.pricingDetails || `${tool.baseCost} MC`}</span>
-                    </div>
-                  </motion.button>
-                ))}
+            <div className="pt-3 space-y-5">
+              {/* Community Card */}
+              <button
+                onClick={() => setActiveTab("community")}
+                className="w-full rounded-2xl overflow-hidden relative h-28 bg-gradient-to-r from-primary/80 to-primary/40"
+              >
+                <div className="absolute inset-0 flex items-center px-5">
+                  <div className="flex-1 text-left">
+                    <p className="text-lg font-bold text-primary-foreground">Community</p>
+                    <p className="text-xs text-primary-foreground/70 mt-0.5">Watch amazing videos</p>
+                  </div>
+                  <Users className="w-10 h-10 text-primary-foreground/30" />
+                </div>
+              </button>
+
+              {/* Quick Tools */}
+              <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                <div className="flex gap-4 min-w-max">
+                  {QUICK_TOOLS.map(tool => {
+                    const Icon = tool.icon;
+                    return (
+                      <button key={tool.id} onClick={() => navigate(tool.route)} className="flex flex-col items-center gap-1.5 min-w-[60px]">
+                        <div className="w-14 h-14 rounded-full bg-accent/60 flex items-center justify-center border border-border/20 hover:bg-accent transition-colors">
+                          <Icon className="w-5 h-5 text-foreground" />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-medium">{tool.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Featured Tools */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-foreground">Featured Tools</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {FEATURED_TOOLS.map(tool => {
+                    const preview = getToolPreview(tool.id);
+                    return (
+                      <motion.button
+                        key={tool.id}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => navigate(tool.route)}
+                        className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left"
+                      >
+                        {preview ? (
+                          <video src={preview} autoPlay loop muted playsInline className="w-full h-28 object-cover" />
+                        ) : (
+                          <div className="w-full h-28 bg-gradient-to-br from-primary/20 to-accent/30 flex items-center justify-center">
+                            <Film className="w-8 h-8 text-muted-foreground/30" />
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <p className="text-sm font-semibold text-foreground">{tool.name}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{tool.desc}</p>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -196,16 +227,10 @@ const VideosPage = () => {
                     <div key={item.id} className="rounded-2xl overflow-hidden bg-card border border-border/20">
                       <video src={item.media_url} autoPlay muted loop playsInline className="w-full" />
                       <div className="p-2.5 flex gap-1.5">
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(item.prompt || ""); toast.success("Copied"); }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium bg-accent/60 text-foreground hover:bg-accent transition-colors"
-                        >
+                        <button onClick={() => { navigator.clipboard.writeText(item.prompt || ""); toast.success("Copied"); }} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-medium bg-accent/60 text-foreground">
                           <Copy className="w-3 h-3" /> Copy
                         </button>
-                        <button
-                          onClick={() => { setPrompt(item.prompt || ""); setActiveTab("home"); }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                        >
+                        <button onClick={() => { setPrompt(item.prompt || ""); setActiveTab("home"); }} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-medium bg-primary text-primary-foreground">
                           <RefreshCw className="w-3 h-3" /> Reuse
                         </button>
                       </div>
@@ -219,7 +244,7 @@ const VideosPage = () => {
 
         {/* Floating Input Bar */}
         <div className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-1 pointer-events-none">
-          <div className="max-w-3xl mx-auto relative pointer-events-auto">
+          <div className="max-w-3xl mx-auto pointer-events-auto">
             <AnimatePresence>
               {modelPickerOpen && (
                 <>
@@ -247,15 +272,15 @@ const VideosPage = () => {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/30" onClick={() => setSettingsOpen(false)} />
                   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-full mb-2 left-0 right-0 z-50 bg-card/95 backdrop-blur-2xl border border-border/30 rounded-2xl p-4 shadow-2xl">
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-sm font-semibold text-foreground">Generation Settings</p>
-                      <button onClick={() => setSettingsOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+                      <p className="text-sm font-semibold text-foreground">Settings</p>
+                      <button onClick={() => setSettingsOpen(false)} className="text-muted-foreground"><X className="w-4 h-4" /></button>
                     </div>
                     <div className="space-y-4">
                       <div>
                         <p className="text-xs text-muted-foreground mb-2">Aspect Ratio</p>
                         <div className="flex flex-wrap gap-1.5">
                           {["16:9", "9:16", "1:1", "4:3"].map(r => (
-                            <button key={r} onClick={() => setAspectRatio(r)} className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${aspectRatio === r ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground hover:bg-accent"}`}>{r}</button>
+                            <button key={r} onClick={() => setAspectRatio(r)} className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${aspectRatio === r ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>{r}</button>
                           ))}
                         </div>
                       </div>
@@ -263,15 +288,7 @@ const VideosPage = () => {
                         <p className="text-xs text-muted-foreground mb-2">Duration</p>
                         <div className="flex gap-1.5">
                           {["5s", "10s", "15s"].map(d => (
-                            <button key={d} onClick={() => setDuration(d)} className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${duration === d ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground hover:bg-accent"}`}>{d}</button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Quality</p>
-                        <div className="flex gap-1.5">
-                          {["standard", "hd"].map(q => (
-                            <button key={q} onClick={() => setQuality(q)} className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-all ${quality === q ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground hover:bg-accent"}`}>{q}</button>
+                            <button key={d} onClick={() => setDuration(d)} className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${duration === d ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>{d}</button>
                           ))}
                         </div>
                       </div>
@@ -281,28 +298,48 @@ const VideosPage = () => {
               )}
             </AnimatePresence>
 
-            <div className="flex items-end gap-2 rounded-2xl border border-border/30 bg-background/90 backdrop-blur-xl px-3 py-3 shadow-lg">
-              <button onClick={() => { setModelPickerOpen(!modelPickerOpen); setSettingsOpen(false); }} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-accent/50 transition-colors" title={selectedModel?.name || "Select model"}>
-                <img src={currentIcon} alt="" className="w-7 h-7 rounded-lg object-contain" />
+            {/* Input */}
+            <div className="rounded-2xl border border-border/30 bg-background/90 backdrop-blur-xl px-3 py-2.5 shadow-lg">
+              <div className="flex items-end gap-2">
+                <button onClick={() => { setModelPickerOpen(!modelPickerOpen); setSettingsOpen(false); }} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent/50 transition-colors">
+                  <img src={currentIcon} alt="" className="w-6 h-6 rounded-lg object-contain" />
+                </button>
+                <textarea
+                  ref={textareaRef}
+                  value={prompt}
+                  onChange={handleTextareaChange}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  placeholder="Describe your video..."
+                  rows={1}
+                  className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50 py-2 max-h-[120px]"
+                  style={{ minHeight: "36px" }}
+                />
+                <button onClick={handleEnhancePrompt} disabled={!prompt.trim() || enhancing} className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-primary disabled:opacity-30 ${enhancing ? "animate-spin" : ""}`}>
+                  <Wand2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => { setSettingsOpen(!settingsOpen); setModelPickerOpen(false); }} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
+                  <SlidersHorizontal className="w-4 h-4" />
+                </button>
+                <button onClick={handleSend} disabled={!prompt.trim()} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20">
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground/50 mt-1 pl-11">{selectedModel?.name || "Select model"} • 1 MC</p>
+            </div>
+
+            {/* Bottom Nav */}
+            <div className="flex items-center justify-around mt-2 py-2">
+              <button onClick={() => setActiveTab("home")} className={`flex flex-col items-center gap-0.5 ${activeTab === "home" ? "text-primary" : "text-muted-foreground/50"}`}>
+                <Home className="w-5 h-5" />
+                <span className="text-[10px]">Home</span>
               </button>
-              <textarea
-                ref={textareaRef}
-                value={prompt}
-                onChange={handleTextareaChange}
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Describe your video..."
-                rows={1}
-                className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50 py-2.5 max-h-[150px]"
-                style={{ minHeight: "44px" }}
-              />
-              <button onClick={handleEnhancePrompt} disabled={!prompt.trim() || enhancing} className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 ${enhancing ? "animate-spin" : ""}`} title="Enhance prompt">
-                <Wand2 className="w-4 h-4" />
+              <button onClick={() => setActiveTab("studio")} className={`flex flex-col items-center gap-0.5 ${activeTab === "studio" ? "text-primary" : "text-muted-foreground/50"}`}>
+                <Layers className="w-5 h-5" />
+                <span className="text-[10px]">Studio</span>
               </button>
-              <button onClick={() => { setSettingsOpen(!settingsOpen); setModelPickerOpen(false); }} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-                <SlidersHorizontal className="w-4 h-4" />
-              </button>
-              <button onClick={handleSend} disabled={!prompt.trim()} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-20 transition-all">
-                <Send className="w-4 h-4" />
+              <button onClick={() => setActiveTab("community")} className={`flex flex-col items-center gap-0.5 ${activeTab === "community" ? "text-primary" : "text-muted-foreground/50"}`}>
+                <Users className="w-5 h-5" />
+                <span className="text-[10px]">Community</span>
               </button>
             </div>
           </div>
