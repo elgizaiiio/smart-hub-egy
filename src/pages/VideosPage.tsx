@@ -22,12 +22,12 @@ const NANO_BANANA_DEFAULT: ModelOption = {
 };
 
 const ALL_TOOLS = [
-  { id: "swap-characters", name: "Swap Characters", desc: "Swap faces in video", route: "/videos/tools/swap-characters" },
-  { id: "talking-photo", name: "Talking Photo", desc: "Animate with speech", route: "/videos/tools/talking-photo" },
-  { id: "upscale", name: "Video Upscale", desc: "Upscale resolution", route: "/videos/tools/upscale" },
-  { id: "auto-caption", name: "Auto Caption", desc: "Add captions", route: "/videos/tools/auto-caption" },
-  { id: "lip-sync", name: "Lip Sync", desc: "Sync lips to audio", route: "/videos/tools/lip-sync" },
-  { id: "video-extender", name: "Video Extender", desc: "Extend duration", route: "/videos/tools/video-extender" },
+  { id: "swap-characters", name: "Swap Characters", route: "/videos/tools/swap-characters" },
+  { id: "talking-photo", name: "Talking Photo", route: "/videos/tools/talking-photo" },
+  { id: "upscale", name: "Video Upscale", route: "/videos/tools/upscale" },
+  { id: "auto-caption", name: "Auto Caption", route: "/videos/tools/auto-caption" },
+  { id: "lip-sync", name: "Lip Sync", route: "/videos/tools/lip-sync" },
+  { id: "video-extender", name: "Video Extender", route: "/videos/tools/video-extender" },
 ];
 
 const TOOL_ROWS = [
@@ -202,8 +202,7 @@ const VideosPage = () => {
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                             <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <p className="text-[10px] font-medium uppercase tracking-wider text-white/60">{tool.desc}</p>
-                              <p className="mt-0.5 text-base font-bold text-white">{tool.name}</p>
+                              <p className="text-sm font-bold text-white">{tool.name}</p>
                             </div>
                           </motion.button>
                         );

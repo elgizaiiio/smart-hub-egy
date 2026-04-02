@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { Paperclip } from "lucide-react";
 
 interface UnifiedInputBarProps {
   prompt: string;
@@ -42,89 +42,71 @@ const UnifiedInputBar = ({
   className = "",
 }: UnifiedInputBarProps) => {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const [iconFailed, setIconFailed] = useState(false);
+  const [iconError, setIconError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const resolvedModelIcon = !iconFailed && (modelIcon || "/model-logos/bytedance.ico")
-    ? (modelIcon || "/model-logos/bytedance.ico")
-    : null;
+  const resolvedIcon = modelIcon && !iconError ? modelIcon : "/model-logos/bytedance.ico";
 
   useEffect(() => {
     const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % placeholders.length), 3000);
     return () => clearInterval(interval);
   }, [placeholders.length]);
 
-  useEffect(() => {
-    setIconFailed(false);
-  }, [modelIcon]);
+  useEffect(() => { setIconError(false); }, [modelIcon]);
 
   useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.style.height = "0px";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 140)}px`;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "0px";
+    ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
   }, [prompt]);
 
   return (
-    <div className={`rounded-[1.75rem] border border-border/30 bg-gradient-to-br from-card via-card to-accent/40 p-3 shadow-sm ${className}`}>
+    <div className={`rounded-2xl border border-border/20 bg-gradient-to-br from-card via-card to-accent/30 p-2.5 shadow-sm ${className}`}>
       {attachedImage && (
-        <div className="mb-3 relative inline-block">
-          <img src={attachedImage} alt="Attached reference" className="h-20 w-20 rounded-2xl object-cover border border-border/30" />
-          <button
-            onClick={onClearAttachment}
-            className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+        <div className="mb-2 relative inline-block">
+          <img src={attachedImage} alt="" className="h-16 w-16 rounded-xl object-cover border border-border/30" />
+          <button onClick={onClearAttachment} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]">✕</button>
         </div>
       )}
 
-      <div className="flex items-end gap-2.5 rounded-[1.4rem] border border-border/20 bg-background/75 px-2.5 py-2.5">
+      <div className="flex items-end gap-2 rounded-xl bg-background/60 px-2 py-2">
         {onAttach && (
-          <button
-            onClick={onAttach}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <Plus className="w-5 h-5" />
+          <button onClick={onAttach} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+            <Paperclip className="w-4 h-4" />
           </button>
         )}
 
         {showModelPicker && onModelPick && (
-          <button
-            onClick={onModelPick}
-            className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/30 bg-card transition-all hover:border-primary/30 hover:bg-accent"
-          >
-            {resolvedModelIcon ? (
-              <img src={resolvedModelIcon} alt="Model" className="h-9 w-9 rounded-xl bg-background/80 object-contain p-1" onError={() => setIconFailed(true)} />
-            ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-xs font-bold text-primary">M</div>
-            )}
+          <button onClick={onModelPick} className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/30 hover:border-primary/30 transition-all">
+            <img
+              src={resolvedIcon}
+              alt="Model"
+              className="h-6 w-6 rounded-md object-contain"
+              onError={() => setIconError(true)}
+            />
           </button>
         )}
 
         <textarea
           ref={textareaRef}
-          rows={2}
+          rows={1}
           value={prompt}
           onChange={e => onPromptChange(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
           placeholder={placeholders[placeholderIdx]}
-          className="min-h-[64px] flex-1 resize-none bg-transparent px-1 py-3 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/55"
+          className="min-h-[40px] flex-1 resize-none bg-transparent px-1 py-1.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/50"
         />
 
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onGenerate}
           disabled={disabled || isGenerating}
-          className="shrink-0 self-stretch rounded-[1.15rem] bg-foreground px-5 text-sm font-semibold text-background transition-all disabled:opacity-30 min-w-[92px]"
+          className="shrink-0 rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background transition-all disabled:opacity-30"
         >
           {isGenerating ? (
-            <div className="mx-auto h-4 w-4 rounded-full border-2 border-background/30 border-t-background animate-spin" />
-          ) : (
-            generateLabel
-          )}
+            <div className="mx-auto h-3.5 w-3.5 rounded-full border-2 border-background/30 border-t-background animate-spin" />
+          ) : generateLabel}
         </motion.button>
       </div>
     </div>
