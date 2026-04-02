@@ -21,8 +21,8 @@ const SketchToImagePage = () => {
   };
 
   return (
-    <ToolPageLayout title="Sketch to Image" cost={1} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
-      <ImageUploadBox label="Upload your sketch" image={image} onUpload={setImage} onClear={() => setImage(null)} />
+    <ToolPageLayout title="Sketch to Image" cost={1} toolId="sketch-to-image" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} autoProcess>
+      <ImageUploadBox label="Upload your sketch" image={image} onUpload={(img) => { setImage(img); setTimeout(() => handleGenerate(), 100); }} onClear={() => setImage(null)} />
     </ToolPageLayout>
   );
 };

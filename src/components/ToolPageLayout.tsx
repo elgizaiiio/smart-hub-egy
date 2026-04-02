@@ -1,37 +1,262 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Upload, Download, Loader2, X } from "lucide-react";
+import { ArrowLeft, Upload, Download, X, Share2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
+import { supabase } from "@/integrations/supabase/client";
+
+// ==================== Types ====================
+export interface ToolTemplate {
+  id: string;
+  tool_id: string;
+  name: string;
+  prompt: string | null;
+  preview_url: string | null;
+  gender: string;
+}
 
 interface ToolPageLayoutProps {
   title: string;
   cost: number;
   costLabel?: string;
-  children: React.ReactNode;
+  toolId: string;
+  children?: React.ReactNode;
   onGenerate: () => Promise<void>;
   isGenerating: boolean;
   resultUrl?: string | null;
-  resultType?: 'image' | 'video' | '3d';
-  previewVideo?: string;
-  redirectTo?: string;
+  resultType?: "image" | "video";
+  /** Pattern 1: auto-process after upload (no generate button) */
+  autoProcess?: boolean;
 }
 
+// ==================== Star Loading Animation ====================
+const StarLoader = () => (
+  <div className="flex flex-col items-center justify-center py-16 gap-4">
+    <motion.div
+      animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+      transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }}
+      className="relative"
+    >
+      <Sparkles className="w-12 h-12 text-yellow-400" />
+      <motion.div
+        animate={{ opacity: [0.3, 1, 0.3] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+        className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full"
+      />
+    </motion.div>
+    <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
+  </div>
+);
+
+// ==================== Landing Page ====================
+const ToolLanding = ({
+  title,
+  description,
+  landingImage,
+  onStart,
+}: {
+  title: string;
+  description?: string;
+  landingImage?: string | null;
+  onStart: () => void;
+}) => (
+  <div className="relative min-h-[70vh] flex flex-col items-center justify-end pb-12">
+    {landingImage && (
+      <img src={landingImage} alt={title} className="absolute inset-0 w-full h-full object-cover" />
+    )}
+    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+    <div className="relative z-10 text-center px-6 space-y-4">
+      <h2 className="text-3xl font-bold text-foreground">{title}</h2>
+      {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto">{description}</p>}
+      <motion.button
+        whileTap={{ scale: 0.96 }}
+        onClick={onStart}
+        className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm"
+      >
+        Upload Your Photo
+      </motion.button>
+    </div>
+  </div>
+);
+
+// ==================== Yellow Generate Button ====================
+const YellowGenerateButton = ({
+  cost,
+  costLabel,
+  onClick,
+  disabled,
+  isGenerating,
+}: {
+  cost: number;
+  costLabel?: string;
+  onClick: () => void;
+  disabled?: boolean;
+  isGenerating: boolean;
+}) => (
+  <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      disabled={disabled || isGenerating}
+      className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all shadow-lg shadow-yellow-500/20"
+    >
+      {isGenerating ? (
+        <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+      ) : (
+        <>
+          <Sparkles className="w-4 h-4" />
+          Generate · {costLabel || `${cost} MC`}
+        </>
+      )}
+    </motion.button>
+  </div>
+);
+
+// ==================== Result View ====================
+const ResultView = ({
+  resultUrl,
+  resultType = "image",
+  title,
+  onBack,
+}: {
+  resultUrl: string;
+  resultType?: "image" | "video";
+  title: string;
+  onBack: () => void;
+}) => {
+  const handleDownload = () => {
+    const a = document.createElement("a");
+    a.href = resultUrl;
+    a.download = `${title.toLowerCase().replace(/\s+/g, "-")}-result.${resultType === "video" ? "mp4" : "png"}`;
+    a.target = "_blank";
+    a.click();
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ url: resultUrl }); } catch {}
+    } else {
+      navigator.clipboard.writeText(resultUrl);
+      toast.success("Link copied!");
+    }
+  };
+
+  return (
+    <div className="px-4 py-4 space-y-4">
+      <div className="rounded-2xl overflow-hidden border border-border/20">
+        {resultType === "video" ? (
+          <video src={resultUrl} controls autoPlay className="w-full" />
+        ) : (
+          <img src={resultUrl} alt="Result" className="w-full" />
+        )}
+      </div>
+      <div className="flex gap-3">
+        <button onClick={handleDownload} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm">
+          <Download className="w-4 h-4" /> Download
+        </button>
+        <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
+          <Share2 className="w-4 h-4" /> Share
+        </button>
+      </div>
+      <button onClick={onBack} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">
+        Try Again
+      </button>
+    </div>
+  );
+};
+
+// ==================== Template Grid ====================
+export const TemplateGrid = ({
+  templates,
+  onSelect,
+  onCustom,
+  customLabel = "Custom",
+  gender,
+  onGenderChange,
+}: {
+  templates: ToolTemplate[];
+  onSelect: (template: ToolTemplate) => void;
+  onCustom?: () => void;
+  customLabel?: string;
+  gender?: "male" | "female";
+  onGenderChange?: (g: "male" | "female") => void;
+}) => {
+  const filtered = gender ? templates.filter(t => t.gender === "both" || t.gender === gender) : templates;
+
+  return (
+    <div className="space-y-4">
+      {onGenderChange && (
+        <div className="flex gap-2">
+          <button onClick={() => onGenderChange("female")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${gender === "female" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>
+            Female
+          </button>
+          <button onClick={() => onGenderChange("male")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${gender === "male" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>
+            Male
+          </button>
+        </div>
+      )}
+      {onCustom && (
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={onCustom}
+          className="w-full rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-center hover:border-primary/50 transition-colors"
+        >
+          <p className="text-sm font-semibold text-primary">{customLabel}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Create your own style</p>
+        </motion.button>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        {filtered.map(t => (
+          <motion.button
+            key={t.id}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => onSelect(t)}
+            className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left"
+          >
+            {t.preview_url ? (
+              <img src={t.preview_url} alt={t.name} className="w-full h-36 object-cover" />
+            ) : (
+              <div className="w-full h-36 bg-gradient-to-br from-primary/10 to-accent/20 flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-muted-foreground/20" />
+              </div>
+            )}
+            <div className="p-2.5">
+              <p className="text-sm font-medium text-foreground">{t.name}</p>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ==================== Main Layout ====================
 const ToolPageLayout = ({
   title,
   cost,
   costLabel,
+  toolId,
   children,
   onGenerate,
   isGenerating,
   resultUrl,
-  resultType = 'image',
-  previewVideo,
-  redirectTo,
+  resultType = "image",
+  autoProcess,
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
   const { credits, hasEnoughCredits } = useCredits();
+  const [landingImage, setLandingImage] = useState<string | null>(null);
+  const [landingDesc, setLandingDesc] = useState<string | null>(null);
+  const [showLanding, setShowLanding] = useState(true);
+
+  useEffect(() => {
+    supabase.from("tool_landing_images").select("image_url, description").eq("tool_id", toolId).maybeSingle()
+      .then(({ data }) => {
+        if (data?.image_url) { setLandingImage(data.image_url); setLandingDesc(data.description); }
+        else setShowLanding(false);
+      });
+  }, [toolId]);
 
   const handleGenerate = async () => {
     if (!hasEnoughCredits(cost)) {
@@ -39,15 +264,6 @@ const ToolPageLayout = ({
       return;
     }
     await onGenerate();
-  };
-
-  const handleDownload = () => {
-    if (!resultUrl) return;
-    const a = document.createElement("a");
-    a.href = resultUrl;
-    a.download = `${title.toLowerCase().replace(/\s+/g, '-')}-result.${resultType === 'video' ? 'mp4' : 'png'}`;
-    a.target = "_blank";
-    a.click();
   };
 
   return (
@@ -63,65 +279,48 @@ const ToolPageLayout = ({
         </div>
       </div>
 
-      {/* Preview video */}
-      {previewVideo && !resultUrl && (
-        <div className="px-4 pt-4">
-          <video src={previewVideo} autoPlay loop muted playsInline className="w-full max-h-48 rounded-2xl object-cover" />
-        </div>
-      )}
-
       {/* Content */}
-      <div className="flex-1 px-4 py-4 space-y-4 overflow-y-auto pb-32">
-        {children}
+      <div className="flex-1 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          {/* Landing */}
+          {showLanding && landingImage && !resultUrl && (
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ToolLanding
+                title={title}
+                description={landingDesc || undefined}
+                landingImage={landingImage}
+                onStart={() => setShowLanding(false)}
+              />
+            </motion.div>
+          )}
 
-        {/* Result */}
-        <AnimatePresence>
+          {/* Result */}
           {resultUrl && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl overflow-hidden border border-border/50 bg-card"
-            >
-              {resultType === 'video' ? (
-                <video src={resultUrl} controls className="w-full rounded-2xl" />
-              ) : (
-                <img src={resultUrl} alt="Result" className="w-full rounded-2xl" />
-              )}
-              <div className="p-3 flex justify-end">
-                <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                  <Download className="w-4 h-4" />
-                  Download
-                </button>
-              </div>
+            <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <ResultView resultUrl={resultUrl} resultType={resultType} title={title} onBack={() => navigate(0)} />
+            </motion.div>
+          )}
+
+          {/* Working area */}
+          {!showLanding && !resultUrl && (
+            <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4 space-y-4 pb-32">
+              {isGenerating ? <StarLoader /> : children}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Generate button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20">
-        <button
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          className="w-full py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:bg-primary/90"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>Generate · {cost} MC</>
-          )}
-        </button>
-      </div>
+      {/* Yellow Generate Button - only shown when not landing, not result, not auto-process */}
+      {!showLanding && !resultUrl && !autoProcess && !isGenerating && (
+        <YellowGenerateButton cost={cost} costLabel={costLabel} onClick={handleGenerate} isGenerating={isGenerating} />
+      )}
     </div>
   );
 };
 
 export default ToolPageLayout;
 
-// Reusable upload box component
+// ==================== Upload Boxes ====================
 export const ImageUploadBox = ({
   label,
   image,
@@ -214,6 +413,47 @@ export const VideoUploadBox = ({
         <span className="text-sm">{label}</span>
       </button>
       <input ref={ref} type="file" className="hidden" accept="video/*" onChange={handleChange} />
+    </>
+  );
+};
+
+export const AudioUploadBox = ({
+  label,
+  audioName,
+  onUpload,
+  onClear,
+}: {
+  label: string;
+  audioName: string | null;
+  onUpload: (dataUrl: string, name: string) => void;
+  onClear: () => void;
+}) => {
+  const ref = useRef<HTMLInputElement>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onUpload(reader.result as string, file.name);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  if (audioName) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-3 rounded-2xl bg-accent border border-border/30">
+        <span className="text-sm text-foreground flex-1 truncate">{audioName}</span>
+        <button onClick={onClear} className="text-muted-foreground"><X className="w-4 h-4" /></button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <button onClick={() => ref.current?.click()} className="w-full py-3 rounded-2xl border-2 border-dashed border-border/50 text-sm text-muted-foreground flex items-center justify-center gap-2 hover:border-primary/50 transition-colors">
+        <Upload className="w-4 h-4" /> {label}
+      </button>
+      <input ref={ref} type="file" className="hidden" accept="audio/*" onChange={handleChange} />
     </>
   );
 };

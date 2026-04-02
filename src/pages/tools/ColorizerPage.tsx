@@ -21,8 +21,8 @@ const ColorizerPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Image Colorizer" cost={1} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
-      <ImageUploadBox label="Upload B&W image" image={image} onUpload={setImage} onClear={() => setImage(null)} />
+    <ToolPageLayout title="Image Colorizer" cost={1} toolId="colorizer" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} autoProcess>
+      <ImageUploadBox label="Upload B&W image" image={image} onUpload={(img) => { setImage(img); setTimeout(() => handleGenerate(), 100); }} onClear={() => setImage(null)} />
     </ToolPageLayout>
   );
 };

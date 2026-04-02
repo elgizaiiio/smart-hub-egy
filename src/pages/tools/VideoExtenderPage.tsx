@@ -28,7 +28,7 @@ const VideoExtenderPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Video Extender" cost={totalCost} costLabel={`${costPerSec} MC/sec × ${extraSeconds}s = ${totalCost} MC`} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="video" previewVideo="https://l.top4top.io/m_3736vpf581.mp4">
+    <ToolPageLayout title="Video Extender" cost={totalCost} costLabel={`${costPerSec} MC/sec × ${extraSeconds}s = ${totalCost} MC`} toolId="video-extender" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="video">
       <VideoUploadBox label="Upload video" video={video} onUpload={setVideo} onClear={() => setVideo(null)} />
       <div>
         <p className="text-sm font-medium text-foreground mb-2">Extra seconds: {extraSeconds}s</p>

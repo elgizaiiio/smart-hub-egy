@@ -25,7 +25,7 @@ const RemoverPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Object Remover" cost={1} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
+    <ToolPageLayout title="Object Remover" cost={1} toolId="remover" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
       <ImageUploadBox label="Upload image" image={image} onUpload={setImage} onClear={() => setImage(null)} />
       <textarea
         value={prompt}

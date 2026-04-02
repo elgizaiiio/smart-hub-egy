@@ -21,7 +21,7 @@ const AutoCaptionPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Auto Caption" cost={2} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="video" previewVideo="https://i.top4top.io/m_3736uqhii1.mp4">
+    <ToolPageLayout title="Auto Caption" cost={2} toolId="auto-caption" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="video">
       <VideoUploadBox label="Upload video" video={video} onUpload={setVideo} onClear={() => setVideo(null)} />
     </ToolPageLayout>
   );

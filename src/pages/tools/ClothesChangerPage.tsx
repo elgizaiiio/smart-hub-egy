@@ -1,67 +1,76 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Upload, X, Loader2, Sparkles, Download } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, Sparkles, Download, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 import { CLOTHES_STYLES, FOOTBALL_CLUBS, getFootballPrompt } from "@/lib/imageToolsData";
 import { ImageUploadBox } from "@/components/ToolPageLayout";
+import { useToolTemplates } from "@/hooks/useToolTemplates";
+import type { ToolTemplate } from "@/components/ToolPageLayout";
 
-type Step = 'styles' | 'clubs' | 'upload' | 'result';
+type Step = 'upload' | 'styles' | 'clubs' | 'generating' | 'result';
 
 const ClothesChangerPage = () => {
   const navigate = useNavigate();
   const { hasEnoughCredits } = useCredits();
-  const [step, setStep] = useState<Step>('styles');
+  const [step, setStep] = useState<Step>('upload');
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [selectedClub, setSelectedClub] = useState<typeof FOOTBALL_CLUBS[0] | null>(null);
   const [customPrompt, setCustomPrompt] = useState("");
   const [image, setImage] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const { templates } = useToolTemplates("clothes-changer");
+
+  const handleImageUpload = (img: string) => {
+    setImage(img);
+    setStep('styles');
+  };
 
   const handleStyleSelect = (styleId: string) => {
     setSelectedStyle(styleId);
-    const style = CLOTHES_STYLES.find(s => s.id === styleId);
     if (styleId === 'football') setStep('clubs');
-    else if (styleId === 'blank') { setCustomPrompt(""); setStep('upload'); }
-    else setStep('upload');
+    else if (styleId === 'blank') { setCustomPrompt(""); }
+    else handleGenerate(CLOTHES_STYLES.find(s => s.id === styleId)?.prompt || '');
   };
 
   const handleClubSelect = (club: typeof FOOTBALL_CLUBS[0]) => {
     setSelectedClub(club);
-    setStep('upload');
+    handleGenerate(getFootballPrompt(club));
   };
 
-  const getPrompt = () => {
-    if (selectedStyle === 'football' && selectedClub) return getFootballPrompt(selectedClub);
-    if (selectedStyle === 'blank') return customPrompt;
-    return CLOTHES_STYLES.find(s => s.id === selectedStyle)?.prompt || '';
+  const handleTemplateSelect = (t: ToolTemplate) => {
+    if (t.prompt) handleGenerate(t.prompt);
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (prompt?: string) => {
+    const finalPrompt = prompt || customPrompt;
     if (!image) { toast.error("Please upload your photo"); return; }
-    const prompt = getPrompt();
-    if (!prompt) { toast.error("Please enter a description"); return; }
+    if (!finalPrompt) { toast.error("Please enter a description"); return; }
     if (!hasEnoughCredits(4)) { toast.error("Insufficient MC"); navigate("/pricing"); return; }
 
-    setIsGenerating(true);
+    setStep('generating');
     try {
       const { data, error } = await supabase.functions.invoke("image-tools", {
-        body: { tool: "clothes-changer", image, prompt },
+        body: { tool: "clothes-changer", image, prompt: finalPrompt },
       });
       if (error) throw error;
       if (data?.url) { setResultUrl(data.url); setStep('result'); }
       else throw new Error(data?.error || "Failed");
-    } catch (e: any) { toast.error(e.message || "Failed"); }
-    finally { setIsGenerating(false); }
+    } catch (e: any) { toast.error(e.message || "Failed"); setStep('styles'); }
+  };
+
+  const getBackStep = (): Step => {
+    if (step === 'styles') return 'upload';
+    if (step === 'clubs') return 'styles';
+    return 'upload';
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <button onClick={() => step === 'styles' ? navigate(-1) : setStep(step === 'clubs' ? 'styles' : step === 'upload' ? (selectedStyle === 'football' ? 'clubs' : 'styles') : 'upload')} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
+        <button onClick={() => step === 'upload' ? navigate(-1) : setStep(getBackStep())} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
@@ -71,27 +80,49 @@ const ClothesChangerPage = () => {
       </div>
 
       <div className="flex-1 px-4 py-4 overflow-y-auto pb-32">
+        {step === 'upload' && (
+          <ImageUploadBox label="Upload your photo" image={image} onUpload={handleImageUpload} onClear={() => setImage(null)} />
+        )}
+
         {step === 'styles' && (
-          <div className="grid grid-cols-2 gap-3">
-            {CLOTHES_STYLES.map((style) => (
-              <motion.button
-                key={style.id}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => handleStyleSelect(style.id)}
-                className="rounded-2xl overflow-hidden border border-border/50 bg-card text-left"
-              >
-                {style.previewUrl ? (
-                  <img src={style.previewUrl} alt={style.name} className="w-full h-32 object-cover" />
-                ) : (
-                  <div className="w-full h-32 bg-accent flex items-center justify-center">
-                    <Upload className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="p-2.5">
-                  <p className="text-sm font-medium text-foreground">{style.name}</p>
-                </div>
-              </motion.button>
-            ))}
+          <div className="space-y-4">
+            <div className="relative rounded-2xl overflow-hidden border border-border/30">
+              <img src={image!} alt="" className="w-full h-32 object-cover" />
+            </div>
+
+            {/* Custom option */}
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleStyleSelect('blank')} className="w-full rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-center hover:border-primary/50 transition-colors">
+              <p className="text-sm font-semibold text-primary">Custom Style</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Create your own look</p>
+            </motion.button>
+
+            {selectedStyle === 'blank' && (
+              <div className="space-y-3">
+                <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the outfit you want..." className="w-full rounded-2xl border border-border/50 bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+            )}
+
+            {/* DB templates */}
+            {templates.length > 0 && (
+              <div className="grid grid-cols-2 gap-3">
+                {templates.map(t => (
+                  <motion.button key={t.id} whileTap={{ scale: 0.97 }} onClick={() => handleTemplateSelect(t)} className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left">
+                    {t.preview_url ? <img src={t.preview_url} alt={t.name} className="w-full h-32 object-cover" /> : <div className="w-full h-32 bg-gradient-to-br from-primary/10 to-accent/20 flex items-center justify-center"><Sparkles className="w-8 h-8 text-muted-foreground/20" /></div>}
+                    <div className="p-2.5"><p className="text-sm font-medium text-foreground">{t.name}</p></div>
+                  </motion.button>
+                ))}
+              </div>
+            )}
+
+            {/* Hardcoded styles */}
+            <div className="grid grid-cols-2 gap-3">
+              {CLOTHES_STYLES.filter(s => s.id !== 'blank').map((style) => (
+                <motion.button key={style.id} whileTap={{ scale: 0.97 }} onClick={() => handleStyleSelect(style.id)} className="rounded-2xl overflow-hidden border border-border/50 bg-card text-left">
+                  {style.previewUrl ? <img src={style.previewUrl} alt={style.name} className="w-full h-32 object-cover" /> : <div className="w-full h-32 bg-accent flex items-center justify-center"><Upload className="w-8 h-8 text-muted-foreground" /></div>}
+                  <div className="p-2.5"><p className="text-sm font-medium text-foreground">{style.name}</p></div>
+                </motion.button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -100,11 +131,7 @@ const ClothesChangerPage = () => {
             <p className="text-sm font-medium text-foreground mb-3">Select a club</p>
             <div className="grid grid-cols-2 gap-2">
               {FOOTBALL_CLUBS.map((club) => (
-                <button
-                  key={club.name}
-                  onClick={() => handleClubSelect(club)}
-                  className="px-3 py-2.5 rounded-xl text-left text-sm bg-card border border-border/50 hover:border-primary/50 transition-colors"
-                >
+                <button key={club.name} onClick={() => handleClubSelect(club)} className="px-3 py-2.5 rounded-xl text-left text-sm bg-card border border-border/50 hover:border-primary/50 transition-colors">
                   <p className="font-medium text-foreground">{club.name}</p>
                   <p className="text-xs text-muted-foreground">{club.colors}</p>
                 </button>
@@ -113,48 +140,40 @@ const ClothesChangerPage = () => {
           </div>
         )}
 
-        {step === 'upload' && (
-          <div className="space-y-4">
-            <ImageUploadBox label="Upload your photo" image={image} onUpload={setImage} onClear={() => setImage(null)} />
-            {selectedStyle === 'blank' && (
-              <textarea
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="Describe the outfit you want..."
-                className="w-full rounded-2xl border border-border/50 bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            )}
-            {selectedStyle === 'football' && selectedClub && (
-              <div className="rounded-xl bg-accent/50 px-3 py-2">
-                <p className="text-xs text-muted-foreground">Selected: <span className="text-foreground font-medium">{selectedClub.name}</span> ({selectedClub.colors})</p>
-              </div>
-            )}
-            {selectedStyle && selectedStyle !== 'football' && selectedStyle !== 'blank' && (
-              <div className="rounded-xl bg-accent/50 px-3 py-2">
-                <p className="text-xs text-muted-foreground">Style: <span className="text-foreground font-medium">{CLOTHES_STYLES.find(s => s.id === selectedStyle)?.name}</span></p>
-              </div>
-            )}
+        {step === 'generating' && (
+          <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+            <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }} className="relative">
+              <Sparkles className="w-12 h-12 text-yellow-400" />
+              <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full" />
+            </motion.div>
+            <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
           </div>
         )}
 
         {step === 'result' && resultUrl && (
           <div className="space-y-4">
-            <img src={resultUrl} alt="Result" className="w-full rounded-2xl" />
+            <div className="rounded-2xl overflow-hidden border border-border/20">
+              <img src={resultUrl} alt="Result" className="w-full" />
+            </div>
             <div className="flex gap-3">
-              <button onClick={() => { setResultUrl(null); setStep('upload'); }} className="flex-1 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">Try Again</button>
-              <button onClick={() => { const a = document.createElement("a"); a.href = resultUrl; a.download = "clothes-result.png"; a.click(); }} className="flex-1 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2">
+              <button onClick={() => { const a = document.createElement("a"); a.href = resultUrl; a.download = "clothes-result.png"; a.click(); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm">
                 <Download className="w-4 h-4" /> Download
               </button>
+              <button onClick={() => { navigator.share?.({ url: resultUrl }).catch(() => { navigator.clipboard.writeText(resultUrl); toast.success("Copied!"); }); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
+                <Share2 className="w-4 h-4" /> Share
+              </button>
             </div>
+            <button onClick={() => { setResultUrl(null); setStep('styles'); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
           </div>
         )}
       </div>
 
-      {step === 'upload' && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20">
-          <button onClick={handleGenerate} disabled={isGenerating || !image} className="w-full py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-            {isGenerating ? <><Loader2 className="w-4 h-4 animate-spin" />Generating...</> : <><Sparkles className="w-4 h-4" />Generate · 4 MC</>}
-          </button>
+      {/* Yellow Generate Button for custom prompt */}
+      {step === 'styles' && selectedStyle === 'blank' && customPrompt.trim() && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleGenerate(customPrompt)} className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20">
+            <Sparkles className="w-4 h-4" /> Generate · 4 MC
+          </motion.button>
         </div>
       )}
     </div>

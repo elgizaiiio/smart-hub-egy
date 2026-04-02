@@ -1537,6 +1537,63 @@ export type Database = {
         }
         Relationships: []
       }
+      tool_landing_images: {
+        Row: {
+          description: string | null
+          image_url: string | null
+          tool_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          description?: string | null
+          image_url?: string | null
+          tool_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          description?: string | null
+          image_url?: string | null
+          tool_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tool_templates: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          gender: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          preview_url: string | null
+          prompt: string | null
+          tool_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          preview_url?: string | null
+          prompt?: string | null
+          tool_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          preview_url?: string | null
+          prompt?: string | null
+          tool_id?: string
+        }
+        Relationships: []
+      }
       user_gallery: {
         Row: {
           created_at: string

@@ -23,7 +23,7 @@ const StoryboardPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Storyboard" cost={1} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
+    <ToolPageLayout title="Storyboard" cost={1} toolId="storyboard" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}

@@ -21,8 +21,8 @@ const RetouchingPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Retouching" cost={1} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
-      <ImageUploadBox label="Upload photo to retouch" image={image} onUpload={setImage} onClear={() => setImage(null)} />
+    <ToolPageLayout title="Retouching" cost={1} toolId="retouching" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} autoProcess>
+      <ImageUploadBox label="Upload photo to retouch" image={image} onUpload={(img) => { setImage(img); setTimeout(() => handleGenerate(), 100); }} onClear={() => setImage(null)} />
     </ToolPageLayout>
   );
 };
