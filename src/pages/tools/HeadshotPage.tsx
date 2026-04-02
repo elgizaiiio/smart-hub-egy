@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppLayout from "@/layouts/AppLayout";
 import { useCredits } from "@/hooks/useCredits";
+import { ImageUploadBox } from "@/components/ToolPageLayout";
 
 interface HeadshotTemplate {
   id: string;
@@ -35,7 +36,6 @@ const HeadshotPage = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("browse");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadTemplates(); }, []);
 
@@ -49,19 +49,10 @@ const HeadshotPage = () => {
   const handleTemplateSelect = (template: HeadshotTemplate) => {
     setSelectedTemplate(template);
     setStep("upload");
-    fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) { setStep("browse"); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setUploadedImage(ev.target?.result as string);
-      setStep("upload");
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
+  const handleImageUpload = (img: string) => {
+    setUploadedImage(img);
   };
 
   const generateHeadshot = async () => {
@@ -78,7 +69,6 @@ const HeadshotPage = () => {
       const url = data?.images?.[0] || data?.url;
       if (!url) throw new Error("No image generated");
 
-      // Save to conversations
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: conv } = await supabase.from("conversations").insert({ user_id: user.id, title: `Headshot - ${selectedTemplate.name}`, mode: "images" }).select().single();
@@ -102,8 +92,6 @@ const HeadshotPage = () => {
   return (
     <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
       <div className="h-full flex flex-col bg-background">
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-
         {/* Header */}
         <div className="sticky top-0 z-10 px-4 py-3 bg-background/80 backdrop-blur-xl flex items-center gap-3">
           <button onClick={() => step === "browse" ? navigate(-1) : setStep("browse")} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-accent/50">
@@ -125,7 +113,6 @@ const HeadshotPage = () => {
                 <p className="text-sm text-muted-foreground mt-2">Choose a style and upload your photo</p>
               </div>
 
-              {/* Gender Toggle */}
               <div className="flex gap-2 mb-6">
                 <button onClick={() => setGender("female")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all ${gender === "female" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>
                   <UserRound className="w-4 h-4" /> Female
@@ -135,7 +122,6 @@ const HeadshotPage = () => {
                 </button>
               </div>
 
-              {/* Templates Grid */}
               <div className="grid grid-cols-2 gap-3">
                 {filteredTemplates.map(template => (
                   <motion.button key={template.id} whileTap={{ scale: 0.97 }} onClick={() => handleTemplateSelect(template)} className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left">
@@ -153,14 +139,12 @@ const HeadshotPage = () => {
             </>
           )}
 
-          {step === "upload" && uploadedImage && (
+          {step === "upload" && (
             <div className="pt-4 space-y-4">
-              <div className="rounded-2xl overflow-hidden border border-border/20">
-                <img src={uploadedImage} alt="" className="w-full max-h-60 object-cover" />
-              </div>
               <div className="rounded-xl bg-accent/50 px-3 py-2">
                 <p className="text-xs text-muted-foreground">Style: <span className="text-foreground font-medium">{selectedTemplate?.name}</span></p>
               </div>
+              <ImageUploadBox label="Upload your photo" image={uploadedImage} onUpload={handleImageUpload} onClear={() => setUploadedImage(null)} />
             </div>
           )}
 
@@ -192,11 +176,11 @@ const HeadshotPage = () => {
           )}
         </div>
 
-        {/* Yellow Generate Button - only in upload step */}
+        {/* Yellow Generate Button - only in upload step with image */}
         {step === "upload" && uploadedImage && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             <motion.button whileTap={{ scale: 0.97 }} onClick={generateHeadshot} className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20">
-              <Sparkles className="w-4 h-4" /> Generate · 1 MC
+              Generate · 1 MC
             </motion.button>
           </div>
         )}
