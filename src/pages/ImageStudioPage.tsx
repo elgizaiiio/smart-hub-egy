@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, X, Image as ImageIcon, Sparkles, Grid3X3 } from "lucide-react";
+import { ArrowUp, Download, ThumbsUp, Share2, Send, X, Loader2, ImageIcon, Paperclip, ChevronDown } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,29 +8,16 @@ import { useCredits } from "@/hooks/useCredits";
 import AppLayout from "@/layouts/AppLayout";
 import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
-import { DEFAULT_SETTINGS, type ImageSettings } from "@/components/ImageSettingsPanel";
-import BottomInputBar from "@/components/BottomInputBar";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
-import StudioLoader from "@/components/StudioLoader";
-import { getImageModelCapability } from "@/lib/imageModelCapabilities";
+import OrbLoader from "@/components/OrbLoader";
+import ReactMarkdown from "react-markdown";
 
-// Style suffixes removed — styles are now per-model via admin bot customization
-
-interface GeneratedImage {
+interface ChatMessage {
   id: string;
-  url: string;
-  prompt: string;
-  model: string;
-  modelId: string;
-  dimensions: string;
-  createdAt: Date;
-}
-
-interface PreviewImage {
-  url: string;
-  prompt: string;
-  model: string;
-  dimensions: string;
+  role: "user" | "assistant";
+  content: string;
+  images?: string[];
+  attachedImage?: string;
 }
 
 const ImageStudioPage = () => {
@@ -40,210 +27,239 @@ const ImageStudioPage = () => {
   const [selectedModel, setSelectedModel] = useState<ModelOption>(() =>
     location.state?.model || getDefaultModel("images")
   );
-  const [settings, setSettings] = useState<ImageSettings>(() =>
-    location.state?.settings || DEFAULT_SETTINGS
-  );
   const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
-  const [preview, setPreview] = useState<PreviewImage | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const capability = useMemo(() => getImageModelCapability(selectedModel.id), [selectedModel.id]);
-  const creditCost = (Number(selectedModel.credits) || 1) * settings.numImages;
-
-  useEffect(() => { loadHistory(); }, []);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     if (location.state?.prompt) {
       setInput(location.state.prompt);
-      handleGenerate(location.state.prompt, location.state.model, location.state.settings);
+      setTimeout(() => handleSend(location.state.prompt), 100);
       window.history.replaceState({}, "");
     }
   }, []);
 
-  const loadHistory = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: convos } = await supabase.from("conversations").select("id").eq("user_id", user.id).eq("mode", "images").order("updated_at", { ascending: false }).limit(20);
-    if (!convos?.length) return;
-    const { data: msgs } = await supabase.from("messages").select("*").in("conversation_id", convos.map(c => c.id)).eq("role", "assistant").order("created_at", { ascending: false }).limit(50);
-    if (msgs) {
-      const images: GeneratedImage[] = [];
-      msgs.forEach(m => {
-        if (m.images) {
-          (m.images as string[]).forEach(url => {
-            images.push({ id: crypto.randomUUID(), url, prompt: m.content, model: "", modelId: "", dimensions: "1024×1024", createdAt: new Date(m.created_at) });
-          });
-        }
-      });
-      setGeneratedImages(images);
-    }
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setAttachedImage(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
-  const handleGenerate = async (promptOverride?: string, modelOverride?: ModelOption, settingsOverride?: ImageSettings) => {
+  const handleSend = async (promptOverride?: string) => {
     const prompt = promptOverride || input.trim();
-    const model = modelOverride || selectedModel;
-    const s = settingsOverride || settings;
-    if (!prompt) return;
-    const cost = (Number(model.credits) || 1) * s.numImages;
-    if (userId && !hasEnoughCredits(cost)) { toast.error("Insufficient MC credits."); return; }
-    const finalPrompt = prompt;
+    if (!prompt || isGenerating) return;
+
+    const cost = Number(selectedModel.credits) || 1;
+    if (userId && !hasEnoughCredits(cost)) { toast.error("Insufficient credits"); return; }
+
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: prompt,
+      attachedImage: attachedImage || undefined,
+    };
+    const assistantMsg: ChatMessage = { id: crypto.randomUUID(), role: "assistant", content: "" };
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
     setInput("");
+    const currentAttachedImage = attachedImage;
+    setAttachedImage(null);
     setIsGenerating(true);
-    setProgress(0);
-    setShowGrid(false);
-    const interval = setInterval(() => setProgress(p => Math.min(p + Math.random() * 15, 90)), 500);
+
     const { data: { user } } = await supabase.auth.getUser();
     let convId: string | null = null;
     if (user) {
-      const { data } = await supabase.from("conversations").insert({ title: prompt.slice(0, 50), mode: "images", model: model.id, user_id: user.id } as any).select("id").single();
+      const { data } = await supabase.from("conversations").insert({ title: prompt.slice(0, 50), mode: "images", model: selectedModel.id, user_id: user.id } as any).select("id").single();
       convId = data?.id || null;
       if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt });
     }
+
     try {
+      const body: any = {
+        prompt,
+        model: selectedModel.id,
+        user_id: userId,
+        credits_cost: cost,
+        num_images: 1,
+        image_size: { width: 1024, height: 1024 },
+      };
+      if (currentAttachedImage) body.image_url = currentAttachedImage;
+
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ prompt: finalPrompt, model: model.id, user_id: userId, credits_cost: cost, num_images: s.numImages, image_size: { width: s.dimensions.width, height: s.dimensions.height } }),
+        body: JSON.stringify(body),
       });
       const data = await resp.json();
-      clearInterval(interval);
-      setProgress(100);
-      if (data.error) { toast.error(data.error); }
-      else {
+
+      if (data.error) {
+        setMessages(prev => {
+          const copy = [...prev];
+          copy[copy.length - 1].content = `Error: ${data.error}`;
+          return copy;
+        });
+      } else {
         const urls: string[] = data.image_urls || (data.image_url ? [data.image_url] : []);
-        const newImages: GeneratedImage[] = urls.map(url => ({ id: crypto.randomUUID(), url, prompt, model: model.name, modelId: model.id, dimensions: `${s.dimensions.width}×${s.dimensions.height}`, createdAt: new Date() }));
-        setGeneratedImages(prev => [...newImages, ...prev]);
-        setActiveIndex(0);
+        setMessages(prev => {
+          const copy = [...prev];
+          copy[copy.length - 1].content = "Here's your generated image";
+          copy[copy.length - 1].images = urls;
+          return copy;
+        });
         if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "assistant", content: prompt, images: urls });
       }
-    } catch { clearInterval(interval); toast.error("Generation failed."); }
+    } catch {
+      setMessages(prev => {
+        const copy = [...prev];
+        copy[copy.length - 1].content = "Generation failed. Please try again.";
+        return copy;
+      });
+    }
+
     setIsGenerating(false);
-    setTimeout(() => setProgress(0), 1000);
     refreshCredits();
   };
 
-  const handleDownload = (url: string, prompt: string) => {
-    const a = document.createElement("a"); a.href = url; a.download = `${prompt.slice(0, 30).replace(/\s+/g, "_")}.png`; a.target = "_blank"; a.click();
+  const handleDownload = (url: string) => {
+    const a = document.createElement("a"); a.href = url; a.download = "generated.png"; a.target = "_blank"; a.click();
   };
-
-  const currentImage = generatedImages[activeIndex];
 
   return (
     <AppLayout>
-      <div className="h-full flex flex-col bg-background relative">
+      <div className="h-full flex flex-col bg-background relative overflow-hidden">
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-rose-950/30 via-background to-background pointer-events-none" />
+
         <ModelPickerSheet open={modelPickerOpen} onClose={() => setModelPickerOpen(false)} onSelect={m => { setSelectedModel(m); setModelPickerOpen(false); }} mode="images" selectedModelId={selectedModel.id} />
 
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left sidebar - history thumbnails */}
-          {generatedImages.length > 0 && (
-            <div className="w-14 border-r border-border flex flex-col items-center gap-2 py-3 overflow-y-auto scrollbar-hide">
-              <button onClick={() => setShowGrid(!showGrid)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${showGrid ? 'bg-primary/20 text-primary' : 'hover:bg-accent text-muted-foreground'}`}>
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-              <div className="w-6 border-t border-border my-1" />
-              {generatedImages.slice(0, 20).map((img, i) => (
-                <button
-                  key={img.id}
-                  onClick={() => { setActiveIndex(i); setShowGrid(false); }}
-                  className={`w-10 h-10 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${activeIndex === i && !showGrid ? 'border-primary ring-1 ring-primary/30' : 'border-transparent hover:border-border'}`}
-                >
-                  <img src={img.url} alt="" className="w-full h-full object-cover pointer-events-auto" />
-                </button>
-              ))}
+        {/* Header */}
+        <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-background/50 backdrop-blur-xl border-b border-border/20">
+          <button onClick={() => navigate("/images")} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent transition-colors"><X className="w-4 h-4" /></button>
+          <h1 className="text-sm font-bold text-foreground">Image Studio</h1>
+          <div className="w-8" />
+        </div>
+
+        {/* Messages Area */}
+        <div ref={scrollRef} className="relative z-10 flex-1 overflow-y-auto px-4 py-4">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+              <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
+                <ImageIcon className="w-10 h-10 text-primary/40" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground mb-1">Create something amazing</h2>
+              <p className="text-sm text-muted-foreground">Describe your image or attach a photo to edit</p>
             </div>
           )}
 
-          {/* Main canvas area */}
-          <div className="flex-1 flex flex-col">
-            {/* Canvas */}
-            <div className="flex-1 flex items-center justify-center bg-card/30 relative overflow-hidden">
-              <AnimatePresence mode="wait">
-                {isGenerating ? (
-                  <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center">
-                    <StudioLoader progress={progress} message="Your image is on its way..." />
-                  </motion.div>
-                ) : showGrid ? (
-                  <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full overflow-y-auto p-6 pb-32">
-                    <div className="columns-2 lg:columns-3 xl:columns-4 gap-3">
-                      {generatedImages.map((img, i) => (
-                        <motion.div key={img.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                          className="break-inside-avoid mb-3 group relative rounded-2xl overflow-hidden cursor-pointer"
-                          onClick={() => { setActiveIndex(i); setShowGrid(false); }}
-                        >
-                          <img src={img.url} alt={img.prompt} className="w-full rounded-2xl object-cover pointer-events-auto" loading="lazy" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end p-3">
-                            <p className="text-white text-xs line-clamp-2">{img.prompt}</p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                ) : currentImage ? (
-                  <motion.div key={currentImage.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }}
-                    className="relative max-w-[80%] max-h-[80%] group cursor-pointer"
-                    onClick={() => setPreview({ url: currentImage.url, prompt: currentImage.prompt, model: currentImage.model, dimensions: currentImage.dimensions })}
-                  >
-                    <img src={currentImage.url} alt={currentImage.prompt} className="max-w-full max-h-[70vh] rounded-2xl object-contain shadow-2xl pointer-events-auto" />
-                    {/* Floating download button */}
-                    <button onClick={e => { e.stopPropagation(); handleDownload(currentImage.url, currentImage.prompt); }}
-                      className="absolute top-3 right-3 w-10 h-10 rounded-xl bg-black/50 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70">
-                      <Download className="w-4 h-4" />
-                    </button>
-                  </motion.div>
-                ) : (
-                  <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center text-center">
-                    <div className="w-20 h-20 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-4">
-                      <ImageIcon className="w-10 h-10 text-primary/30" />
-                    </div>
-                    <h2 className="text-lg font-bold text-foreground mb-1">Create something amazing</h2>
-                    <p className="text-sm text-muted-foreground">Describe your image below to get started</p>
-                  </motion.div>
+          {messages.map((msg) => (
+            <div key={msg.id} className={`mb-4 ${msg.role === "user" ? "flex justify-end" : "flex justify-start"}`}>
+              <div className={`max-w-[85%] ${msg.role === "user" ? "bg-primary/15 rounded-2xl rounded-br-md" : "bg-card/60 backdrop-blur-sm rounded-2xl rounded-bl-md border border-border/20"} p-3`}>
+                {/* User attached image */}
+                {msg.attachedImage && (
+                  <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />
                 )}
-              </AnimatePresence>
+                {/* Text */}
+                {msg.content && (
+                  <div className="text-sm text-foreground">
+                    {msg.role === "assistant" ? (
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
+                )}
+                {/* Loading */}
+                {msg.role === "assistant" && !msg.content && isGenerating && (
+                  <div className="flex items-center justify-center py-8">
+                    <OrbLoader />
+                  </div>
+                )}
+                {/* Generated images */}
+                {msg.images && msg.images.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    {msg.images.map((url, i) => (
+                      <div key={i} className="relative">
+                        <img src={url} alt="" className="w-full rounded-xl" />
+                        <div className="flex items-center gap-2 mt-2">
+                          <button onClick={() => handleDownload(url)} className="p-2 rounded-xl bg-foreground/10 hover:bg-foreground/20 transition-colors">
+                            <Download className="w-4 h-4 text-foreground" />
+                          </button>
+                          <button className="p-2 rounded-xl bg-foreground/10 hover:bg-foreground/20 transition-colors">
+                            <ThumbsUp className="w-4 h-4 text-foreground" />
+                          </button>
+                          <button className="p-2 rounded-xl bg-foreground/10 hover:bg-foreground/20 transition-colors">
+                            <Share2 className="w-4 h-4 text-foreground" />
+                          </button>
+                          <button onClick={() => navigator.clipboard.writeText(url).then(() => toast.success("Link copied"))} className="p-2 rounded-xl bg-primary hover:bg-primary/90 transition-colors">
+                            <Send className="w-4 h-4 text-primary-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+          ))}
+        </div>
+
+        {/* Bottom Input Bar */}
+        <div className="relative z-10 p-3 bg-background/80 backdrop-blur-xl border-t border-border/20">
+          {/* Attached image preview */}
+          {attachedImage && (
+            <div className="mb-2 relative inline-block">
+              <img src={attachedImage} alt="" className="w-16 h-16 object-cover rounded-xl" />
+              <button onClick={() => setAttachedImage(null)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          <div className="flex items-end gap-2 bg-card/80 rounded-2xl border border-border/30 p-2">
+            {/* Model picker button */}
+            <button onClick={() => setModelPickerOpen(true)} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors">
+              {selectedModel.iconUrl ? (
+                <img src={selectedModel.iconUrl} alt="" className="w-5 h-5 rounded-full" />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">M</div>
+              )}
+            </button>
+            {/* Attach button */}
+            <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground">
+              <Paperclip className="w-4 h-4" />
+            </button>
+            {/* Text input */}
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="Ask me anything"
+              rows={1}
+              className="flex-1 bg-transparent text-sm text-foreground outline-none resize-none placeholder:text-muted-foreground/50 max-h-24 py-2"
+            />
+            {/* Send button */}
+            <button
+              onClick={() => handleSend()}
+              disabled={(!input.trim() && !attachedImage) || isGenerating}
+              className="shrink-0 w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 hover:bg-primary/90 transition-colors"
+            >
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
-        {/* Preview modal */}
-        <AnimatePresence>
-          {preview && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPreview(null)}>
-              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
-                <img src={preview.url} alt={preview.prompt} className="max-w-full max-h-[75vh] rounded-2xl object-contain pointer-events-auto" />
-                <div className="mt-4 flex items-center gap-3">
-                  <p className="text-white/80 text-sm max-w-md truncate">{preview.prompt}</p>
-                  <button onClick={() => handleDownload(preview.url, preview.prompt)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                    <Download className="w-4 h-4" /> Download
-                  </button>
-                </div>
-                <button onClick={() => setPreview(null)} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30"><X className="w-4 h-4" /></button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Bottom input */}
-        <BottomInputBar
-          input={input}
-          onInputChange={setInput}
-          onGenerate={() => handleGenerate()}
-          isGenerating={isGenerating}
-          selectedModel={selectedModel}
-          onModelSelect={setSelectedModel}
-          onOpenModelPicker={() => setModelPickerOpen(true)}
-          settings={settings}
-          onSettingsChange={setSettings}
-          creditCost={creditCost}
-          canAttach={capability.acceptsImages}
-          onAttach={() => fileInputRef.current?.click()}
-        />
-        <input ref={fileInputRef} type="file" className="hidden" accept="image/*" />
+        <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
       </div>
     </AppLayout>
   );

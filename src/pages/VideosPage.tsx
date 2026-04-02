@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Copy, RefreshCw, X, Download, Plus, User, Pencil, Square } from "lucide-react";
+import { Menu, Copy, RefreshCw, X, Download, Plus, Users, Home, Film, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
@@ -76,7 +76,6 @@ const VideosPage = () => {
       <div className="h-full flex flex-col bg-background">
         <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} currentMode="videos" />
 
-        {/* Header */}
         <div className="sticky top-0 z-10 px-4 pt-3 pb-2 bg-background/80 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground"><Menu className="w-5 h-5" /></button>
@@ -85,11 +84,10 @@ const VideosPage = () => {
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
             <div className="pt-3 space-y-4">
-              {/* Tool Cards - Horizontal Scroll */}
+              {/* Tool Cards - Bigger */}
               <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                 <div className="flex gap-3 min-w-max">
                   {ALL_TOOLS.map((tool, i) => {
@@ -100,7 +98,7 @@ const VideosPage = () => {
                         key={tool.id}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => navigate(tool.route)}
-                        className="relative w-40 h-52 rounded-2xl overflow-hidden flex-shrink-0"
+                        className="relative w-48 h-64 rounded-2xl overflow-hidden flex-shrink-0"
                       >
                         {preview ? (
                           <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
@@ -108,9 +106,9 @@ const VideosPage = () => {
                           <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <div className="absolute bottom-0 left-0 right-0 p-3.5">
                           <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
-                          <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
+                          <p className="text-lg font-bold text-white mt-0.5">{tool.name}</p>
                         </div>
                       </motion.button>
                     );
@@ -122,29 +120,29 @@ const VideosPage = () => {
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate("/videos/studio")}
-                className="w-full rounded-2xl overflow-hidden relative h-20 bg-card border border-border/30 flex items-center px-5 gap-4"
+                className="w-full rounded-2xl overflow-hidden relative h-24 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 flex items-center px-5 gap-4"
               >
                 <div className="flex-1 text-left">
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">CREATE</p>
-                  <p className="text-lg font-bold text-foreground">Your Video</p>
+                  <p className="text-lg font-bold text-foreground">Create Your Video</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Generate videos with AI</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-foreground/10 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-foreground" />
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center -mr-1">
+                  <Video className="w-8 h-8 text-primary" />
                 </div>
               </motion.button>
 
-              {/* Community Card */}
+              {/* Edit Your Video Card */}
               <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setActiveTab("community")}
-                className="w-full rounded-2xl overflow-hidden relative h-20 bg-card border border-border/30 flex items-center px-5 gap-4"
+                onClick={() => navigate("/videos/studio", { state: { editMode: true } })}
+                className="w-full rounded-2xl overflow-hidden relative h-24 bg-gradient-to-r from-violet-500/20 to-violet-500/5 border border-violet-500/20 flex items-center px-5 gap-4"
               >
                 <div className="flex-1 text-left">
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">EXPLORE</p>
-                  <p className="text-lg font-bold text-foreground">Community</p>
+                  <p className="text-lg font-bold text-foreground">Edit Your Video</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Transform existing videos</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-foreground/10 flex items-center justify-center">
-                  <User className="w-5 h-5 text-foreground" />
+                <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center -mr-1">
+                  <Film className="w-8 h-8 text-violet-500" />
                 </div>
               </motion.button>
             </div>
@@ -201,21 +199,21 @@ const VideosPage = () => {
           <div className="flex items-center gap-6 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
             <button
               onClick={() => setActiveTab("home")}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${activeTab === "home" ? "bg-primary" : "bg-transparent"}`}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${activeTab === "home" ? "bg-primary" : "bg-transparent"}`}
             >
-              <Square className={`w-3.5 h-3.5 ${activeTab === "home" ? "text-primary-foreground" : "text-muted-foreground"}`} fill={activeTab === "home" ? "currentColor" : "none"} />
+              <Home className={`w-4.5 h-4.5 ${activeTab === "home" ? "text-primary-foreground" : "text-muted-foreground"}`} />
             </button>
             <button
               onClick={() => setActiveTab("studio")}
-              className="w-8 h-8 flex items-center justify-center"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${activeTab === "studio" ? "bg-primary" : "bg-transparent"}`}
             >
-              <Pencil className={`w-5 h-5 ${activeTab === "studio" ? "text-foreground" : "text-muted-foreground"}`} />
+              <Film className={`w-4.5 h-4.5 ${activeTab === "studio" ? "text-primary-foreground" : "text-muted-foreground"}`} />
             </button>
             <button
               onClick={() => setActiveTab("community")}
-              className="w-8 h-8 flex items-center justify-center"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${activeTab === "community" ? "bg-primary" : "bg-transparent"}`}
             >
-              <User className={`w-5 h-5 ${activeTab === "community" ? "text-foreground" : "text-muted-foreground"}`} />
+              <Users className={`w-4.5 h-4.5 ${activeTab === "community" ? "text-primary-foreground" : "text-muted-foreground"}`} />
             </button>
           </div>
         </div>
