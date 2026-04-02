@@ -285,6 +285,7 @@ function mainMenuKB() {
     [{ text: "⚙️ إعدادات الصفحات", callback_data: "pagesettings_menu" }],
     [{ text: "♾️ Unlimited (LemonData)", callback_data: "lemon_menu" }],
     [{ text: "🛠 Tools (صور الأدوات)", callback_data: "tools_menu" }],
+    [{ text: "📋 Tool Templates (قوالب)", callback_data: "tool_templates_menu" }],
     [{ text: "📷 Headshot (قوالب)", callback_data: "headshot_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
