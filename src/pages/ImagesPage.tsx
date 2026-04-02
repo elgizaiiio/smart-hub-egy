@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Download, Copy, RefreshCw, Home, Layers, Users, Eraser, Palette, Pencil, Scissors, Sparkles, Camera, X, Plus } from "lucide-react";
+import { Menu, Download, Copy, RefreshCw, X, Plus, User, Pencil, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
@@ -11,20 +11,34 @@ import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 
 type Tab = "home" | "studio" | "community";
 
-const QUICK_TOOLS = [
-  { id: "bg-remover", name: "BG Remove", icon: Eraser, route: "/images/tools/bg-remover" },
-  { id: "retouching", name: "Retouch", icon: Sparkles, route: "/images/tools/retouching" },
-  { id: "colorizer", name: "Colorize", icon: Palette, route: "/images/tools/colorizer" },
-  { id: "cartoon", name: "Cartoon", icon: Pencil, route: "/images/tools/cartoon" },
-  { id: "sketch-to-image", name: "Sketch", icon: Pencil, route: "/images/tools/sketch-to-image" },
-  { id: "remover", name: "Remove", icon: Scissors, route: "/images/tools/remover" },
+const ALL_TOOLS = [
+  { id: "inpaint", name: "Inpaint", desc: "Edit parts of an image", route: "/images/tools/inpaint", image: "/tool-previews/inpaint.png" },
+  { id: "clothes-changer", name: "Clothes Changer", desc: "Change outfits", route: "/images/tools/clothes-changer", image: "https://j.top4top.io/p_3736n4ua61.jpeg" },
+  { id: "headshot", name: "AI Headshot", desc: "Professional photos", route: "/images/tools/headshot", image: "https://freeimage.host/i/qiy3W3x" },
+  { id: "face-swap", name: "Face Swap", desc: "Swap faces", route: "/images/tools/face-swap", image: "" },
+  { id: "bg-remover", name: "BG Remover", desc: "Remove backgrounds", route: "/images/tools/bg-remover", image: "" },
+  { id: "cartoon", name: "Cartoon", desc: "Cartoonify photos", route: "/images/tools/cartoon", image: "" },
+  { id: "colorizer", name: "Colorizer", desc: "Colorize B&W", route: "/images/tools/colorizer", image: "" },
+  { id: "retouching", name: "Retouch", desc: "Enhance photos", route: "/images/tools/retouching", image: "" },
+  { id: "remover", name: "Object Remover", desc: "Remove objects", route: "/images/tools/remover", image: "" },
+  { id: "sketch-to-image", name: "Sketch to Image", desc: "Convert sketches", route: "/images/tools/sketch-to-image", image: "" },
+  { id: "relight", name: "Relight", desc: "Change lighting", route: "/images/tools/relight", image: "" },
+  { id: "character-swap", name: "Character Swap", desc: "Swap characters", route: "/images/tools/character-swap", image: "" },
+  { id: "storyboard", name: "Storyboard", desc: "Create panels", route: "/images/tools/storyboard", image: "" },
+  { id: "hair-changer", name: "Hair Changer", desc: "Change hairstyles", route: "/images/tools/hair-changer", image: "" },
+  { id: "avatar-maker", name: "Avatar Maker 3D", desc: "3D avatars", route: "/images/tools/avatar-maker", image: "" },
 ];
 
-const FEATURED_TOOLS = [
-  { id: "inpaint", name: "Inpaint", desc: "Edit parts of an image with AI", route: "/images/tools/inpaint" },
-  { id: "clothes-changer", name: "Clothes Changer", desc: "Change outfits with AI styles", route: "/images/tools/clothes-changer" },
-  { id: "headshot", name: "AI Headshot", desc: "Professional headshot photos", route: "/images/tools/headshot" },
-  { id: "face-swap", name: "Face Swap", desc: "Swap faces between photos", route: "/images/tools/face-swap" },
+// Gradient colors for tools without images
+const GRADIENTS = [
+  "from-emerald-600/80 to-emerald-900/90",
+  "from-rose-600/80 to-rose-900/90",
+  "from-violet-600/80 to-violet-900/90",
+  "from-amber-600/80 to-amber-900/90",
+  "from-cyan-600/80 to-cyan-900/90",
+  "from-pink-600/80 to-pink-900/90",
+  "from-indigo-600/80 to-indigo-900/90",
+  "from-teal-600/80 to-teal-900/90",
 ];
 
 const ImagesPage = () => {
@@ -64,9 +78,9 @@ const ImagesPage = () => {
     if (data) setCommunityItems(data as any);
   };
 
-  const getToolPreview = (toolId: string) => {
+  const getToolImage = (toolId: string) => {
     const tool = IMAGE_TOOLS.find(t => t.id === toolId);
-    return tool?.previewImage || tool?.previewVideo;
+    return tool?.previewImage || tool?.previewVideo || "";
   };
 
   return (
@@ -81,100 +95,70 @@ const ImagesPage = () => {
             <h1 className="text-base font-bold text-foreground">Images</h1>
             <div className="w-9" />
           </div>
-          {/* Tabs */}
-          <div className="flex gap-1 mt-2">
-            {(["home", "studio", "community"] as Tab[]).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold capitalize transition-colors ${activeTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
-              >
-                {tab === "home" ? "Home" : tab === "studio" ? "Studio" : "Community"}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6">
+        <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
-            <div className="pt-3 space-y-5">
-              {/* Create Button */}
-              <button
-                onClick={() => navigate("/images/agent")}
-                className="w-full rounded-2xl overflow-hidden relative h-24 bg-gradient-to-r from-primary to-primary/60 flex items-center px-5 gap-4"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <div className="text-left">
-                  <p className="text-lg font-bold text-primary-foreground">Create Image</p>
-                  <p className="text-xs text-primary-foreground/70">Generate with AI models</p>
-                </div>
-              </button>
-
-              {/* Community Card */}
-              <button
-                onClick={() => setActiveTab("community")}
-                className="w-full rounded-2xl overflow-hidden relative h-20 bg-gradient-to-r from-accent to-accent/40 flex items-center px-5"
-              >
-                <div className="flex-1 text-left">
-                  <p className="text-base font-bold text-foreground">Community</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Explore amazing creations</p>
-                </div>
-                <Users className="w-8 h-8 text-muted-foreground/30" />
-              </button>
-
-              {/* Quick Tools */}
+            <div className="pt-3 space-y-4">
+              {/* Tool Cards - Horizontal Scroll */}
               <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                <div className="flex gap-4 min-w-max">
-                  {QUICK_TOOLS.map(tool => {
-                    const Icon = tool.icon;
-                    return (
-                      <button key={tool.id} onClick={() => navigate(tool.route)} className="flex flex-col items-center gap-1.5 min-w-[60px]">
-                        <div className="w-14 h-14 rounded-full bg-accent/60 flex items-center justify-center border border-border/20 hover:bg-accent transition-colors">
-                          <Icon className="w-5 h-5 text-foreground" />
-                        </div>
-                        <span className="text-[10px] text-muted-foreground font-medium">{tool.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Featured Tools */}
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-foreground">Featured Tools</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {FEATURED_TOOLS.map(tool => {
-                    const preview = getToolPreview(tool.id);
+                <div className="flex gap-3 min-w-max">
+                  {ALL_TOOLS.map((tool, i) => {
+                    const img = tool.image || getToolImage(tool.id);
+                    const gradient = GRADIENTS[i % GRADIENTS.length];
                     return (
                       <motion.button
                         key={tool.id}
-                        whileTap={{ scale: 0.97 }}
+                        whileTap={{ scale: 0.96 }}
                         onClick={() => navigate(tool.route)}
-                        className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left"
+                        className="relative w-40 h-52 rounded-2xl overflow-hidden flex-shrink-0"
                       >
-                        {preview ? (
-                          preview.includes(".mp4") ? (
-                            <video src={preview} autoPlay loop muted playsInline className="w-full h-28 object-cover" />
-                          ) : (
-                            <img src={preview} alt={tool.name} className="w-full h-28 object-cover" />
-                          )
+                        {img ? (
+                          <img src={img} alt={tool.name} className="absolute inset-0 w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-28 bg-gradient-to-br from-primary/20 to-accent/30 flex items-center justify-center">
-                            <Camera className="w-8 h-8 text-muted-foreground/30" />
-                          </div>
+                          <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
                         )}
-                        <div className="p-3">
-                          <p className="text-sm font-semibold text-foreground">{tool.name}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{tool.desc}</p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
+                          <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
                         </div>
                       </motion.button>
                     );
                   })}
                 </div>
               </div>
+
+              {/* Create Your Image Card */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate("/images/agent")}
+                className="w-full rounded-2xl overflow-hidden relative h-20 bg-card border border-border/30 flex items-center px-5 gap-4"
+              >
+                <div className="flex-1 text-left">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">CREATE</p>
+                  <p className="text-lg font-bold text-foreground">Your Image</p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-foreground/10 flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-foreground" />
+                </div>
+              </motion.button>
+
+              {/* Community Card */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setActiveTab("community")}
+                className="w-full rounded-2xl overflow-hidden relative h-20 bg-card border border-border/30 flex items-center px-5 gap-4"
+              >
+                <div className="flex-1 text-left">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">EXPLORE</p>
+                  <p className="text-lg font-bold text-foreground">Community</p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-foreground/10 flex items-center justify-center">
+                  <User className="w-5 h-5 text-foreground" />
+                </div>
+              </motion.button>
             </div>
           )}
 
@@ -222,6 +206,30 @@ const ImagesPage = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Bottom Navigation Bar */}
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20">
+          <div className="flex items-center gap-6 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
+            <button
+              onClick={() => setActiveTab("home")}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${activeTab === "home" ? "bg-primary" : "bg-transparent"}`}
+            >
+              <Square className={`w-3.5 h-3.5 ${activeTab === "home" ? "text-primary-foreground" : "text-muted-foreground"}`} fill={activeTab === "home" ? "currentColor" : "none"} />
+            </button>
+            <button
+              onClick={() => setActiveTab("studio")}
+              className="w-8 h-8 flex items-center justify-center"
+            >
+              <Pencil className={`w-5 h-5 ${activeTab === "studio" ? "text-foreground" : "text-muted-foreground"}`} />
+            </button>
+            <button
+              onClick={() => setActiveTab("community")}
+              className="w-8 h-8 flex items-center justify-center"
+            >
+              <User className={`w-5 h-5 ${activeTab === "community" ? "text-foreground" : "text-muted-foreground"}`} />
+            </button>
+          </div>
         </div>
 
         {/* Image Preview Modal */}

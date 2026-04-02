@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Copy, RefreshCw, Users, ArrowUp, Captions, Mic, Film, X, Download, Plus } from "lucide-react";
+import { Menu, Copy, RefreshCw, X, Download, Plus, User, Pencil, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
@@ -11,17 +11,22 @@ import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 
 type Tab = "home" | "studio" | "community";
 
-const QUICK_TOOLS = [
-  { id: "upscale", name: "Upscale", icon: ArrowUp, route: "/videos/tools/upscale" },
-  { id: "auto-caption", name: "Caption", icon: Captions, route: "/videos/tools/auto-caption" },
-  { id: "lip-sync", name: "Lip Sync", icon: Mic, route: "/videos/tools/lip-sync" },
-  { id: "video-extender", name: "Extend", icon: Film, route: "/videos/tools/video-extender" },
-  { id: "video-to-text", name: "To Text", icon: Captions, route: "/videos/tools/video-to-text" },
+const ALL_TOOLS = [
+  { id: "swap-characters", name: "Swap Characters", desc: "Swap faces in video", route: "/videos/tools/swap-characters" },
+  { id: "talking-photo", name: "Talking Photo", desc: "Animate with speech", route: "/videos/tools/talking-photo" },
+  { id: "upscale", name: "Video Upscale", desc: "Upscale resolution", route: "/videos/tools/upscale" },
+  { id: "auto-caption", name: "Auto Caption", desc: "Add captions", route: "/videos/tools/auto-caption" },
+  { id: "lip-sync", name: "Lip Sync", desc: "Sync lips to audio", route: "/videos/tools/lip-sync" },
+  { id: "video-extender", name: "Video Extender", desc: "Extend duration", route: "/videos/tools/video-extender" },
 ];
 
-const FEATURED_TOOLS = [
-  { id: "swap-characters", name: "Swap Characters", desc: "Swap faces in any video", route: "/videos/tools/swap-characters" },
-  { id: "talking-photo", name: "Talking Photo", desc: "Animate photos with speech", route: "/videos/tools/talking-photo" },
+const GRADIENTS = [
+  "from-emerald-600/80 to-emerald-900/90",
+  "from-rose-600/80 to-rose-900/90",
+  "from-violet-600/80 to-violet-900/90",
+  "from-amber-600/80 to-amber-900/90",
+  "from-cyan-600/80 to-cyan-900/90",
+  "from-pink-600/80 to-pink-900/90",
 ];
 
 const VideosPage = () => {
@@ -63,7 +68,7 @@ const VideosPage = () => {
 
   const getToolPreview = (toolId: string) => {
     const tool = VIDEO_TOOLS.find(t => t.id === toolId);
-    return tool?.previewVideo;
+    return tool?.previewVideo || "";
   };
 
   return (
@@ -78,96 +83,70 @@ const VideosPage = () => {
             <h1 className="text-base font-bold text-foreground">Videos</h1>
             <div className="w-9" />
           </div>
-          {/* Tabs */}
-          <div className="flex gap-1 mt-2">
-            {(["home", "studio", "community"] as Tab[]).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold capitalize transition-colors ${activeTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
-              >
-                {tab === "home" ? "Home" : tab === "studio" ? "Studio" : "Community"}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6">
+        <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
-            <div className="pt-3 space-y-5">
-              {/* Create Button */}
-              <button
-                onClick={() => navigate("/videos/studio")}
-                className="w-full rounded-2xl overflow-hidden relative h-24 bg-gradient-to-r from-primary to-primary/60 flex items-center px-5 gap-4"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <div className="text-left">
-                  <p className="text-lg font-bold text-primary-foreground">Create Video</p>
-                  <p className="text-xs text-primary-foreground/70">Generate with AI models</p>
-                </div>
-              </button>
-
-              {/* Community Card */}
-              <button
-                onClick={() => setActiveTab("community")}
-                className="w-full rounded-2xl overflow-hidden relative h-20 bg-gradient-to-r from-accent to-accent/40 flex items-center px-5"
-              >
-                <div className="flex-1 text-left">
-                  <p className="text-base font-bold text-foreground">Community</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Watch amazing videos</p>
-                </div>
-                <Users className="w-8 h-8 text-muted-foreground/30" />
-              </button>
-
-              {/* Quick Tools */}
+            <div className="pt-3 space-y-4">
+              {/* Tool Cards - Horizontal Scroll */}
               <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                <div className="flex gap-4 min-w-max">
-                  {QUICK_TOOLS.map(tool => {
-                    const Icon = tool.icon;
-                    return (
-                      <button key={tool.id} onClick={() => navigate(tool.route)} className="flex flex-col items-center gap-1.5 min-w-[60px]">
-                        <div className="w-14 h-14 rounded-full bg-accent/60 flex items-center justify-center border border-border/20 hover:bg-accent transition-colors">
-                          <Icon className="w-5 h-5 text-foreground" />
-                        </div>
-                        <span className="text-[10px] text-muted-foreground font-medium">{tool.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Featured Tools */}
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-foreground">Featured Tools</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {FEATURED_TOOLS.map(tool => {
+                <div className="flex gap-3 min-w-max">
+                  {ALL_TOOLS.map((tool, i) => {
                     const preview = getToolPreview(tool.id);
+                    const gradient = GRADIENTS[i % GRADIENTS.length];
                     return (
                       <motion.button
                         key={tool.id}
-                        whileTap={{ scale: 0.97 }}
+                        whileTap={{ scale: 0.96 }}
                         onClick={() => navigate(tool.route)}
-                        className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left"
+                        className="relative w-40 h-52 rounded-2xl overflow-hidden flex-shrink-0"
                       >
                         {preview ? (
-                          <video src={preview} autoPlay loop muted playsInline className="w-full h-28 object-cover" />
+                          <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-28 bg-gradient-to-br from-primary/20 to-accent/30 flex items-center justify-center">
-                            <Film className="w-8 h-8 text-muted-foreground/30" />
-                          </div>
+                          <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
                         )}
-                        <div className="p-3">
-                          <p className="text-sm font-semibold text-foreground">{tool.name}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{tool.desc}</p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
+                          <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
                         </div>
                       </motion.button>
                     );
                   })}
                 </div>
               </div>
+
+              {/* Create Your Video Card */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate("/videos/studio")}
+                className="w-full rounded-2xl overflow-hidden relative h-20 bg-card border border-border/30 flex items-center px-5 gap-4"
+              >
+                <div className="flex-1 text-left">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">CREATE</p>
+                  <p className="text-lg font-bold text-foreground">Your Video</p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-foreground/10 flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-foreground" />
+                </div>
+              </motion.button>
+
+              {/* Community Card */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setActiveTab("community")}
+                className="w-full rounded-2xl overflow-hidden relative h-20 bg-card border border-border/30 flex items-center px-5 gap-4"
+              >
+                <div className="flex-1 text-left">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">EXPLORE</p>
+                  <p className="text-lg font-bold text-foreground">Community</p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-foreground/10 flex items-center justify-center">
+                  <User className="w-5 h-5 text-foreground" />
+                </div>
+              </motion.button>
             </div>
           )}
 
@@ -215,6 +194,30 @@ const VideosPage = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Bottom Navigation Bar */}
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20">
+          <div className="flex items-center gap-6 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
+            <button
+              onClick={() => setActiveTab("home")}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${activeTab === "home" ? "bg-primary" : "bg-transparent"}`}
+            >
+              <Square className={`w-3.5 h-3.5 ${activeTab === "home" ? "text-primary-foreground" : "text-muted-foreground"}`} fill={activeTab === "home" ? "currentColor" : "none"} />
+            </button>
+            <button
+              onClick={() => setActiveTab("studio")}
+              className="w-8 h-8 flex items-center justify-center"
+            >
+              <Pencil className={`w-5 h-5 ${activeTab === "studio" ? "text-foreground" : "text-muted-foreground"}`} />
+            </button>
+            <button
+              onClick={() => setActiveTab("community")}
+              className="w-8 h-8 flex items-center justify-center"
+            >
+              <User className={`w-5 h-5 ${activeTab === "community" ? "text-foreground" : "text-muted-foreground"}`} />
+            </button>
+          </div>
         </div>
 
         {/* Preview Modal */}
