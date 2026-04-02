@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2, ImagePlus } from "lucide-react";
+import { ArrowLeft, Sparkles, Download, Share2, Plus, ImagePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,10 +108,12 @@ const ClothesChangerPage = () => {
 
             {selectedStyle === 'blank' && (
               <div className="space-y-3">
-                <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-card px-3 py-2">
-                  <input ref={refInputRef as any} type="file" accept="image/*" className="hidden" onChange={handleRefUpload} />
-                  <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-accent/50"><ImagePlus className="w-4 h-4" /></button>
-                  <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the outfit you want..." className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none min-h-[80px] focus:outline-none py-2" />
+                <div className="rounded-2xl bg-gradient-to-r from-rose-400/15 via-purple-400/15 to-blue-400/15 border border-border/20 p-3">
+                  <div className="flex items-center gap-2">
+                    <input ref={refInputRef as any} type="file" accept="image/*" className="hidden" onChange={handleRefUpload} />
+                    <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50"><Plus className="w-5 h-5" /></button>
+                    <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the outfit you want..." className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 resize-none min-h-[80px] focus:outline-none py-2" />
+                  </div>
                 </div>
                 {refImage && (
                   <div className="flex items-center gap-2">
