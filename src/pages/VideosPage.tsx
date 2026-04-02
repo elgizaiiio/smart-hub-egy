@@ -10,6 +10,7 @@ import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import type { ModelOption } from "@/components/ModelSelector";
 import UnifiedInputBar from "@/components/UnifiedInputBar";
+import createVideoCard from "@/assets/create-video-card.jpg";
 
 type Tab = "home" | "studio" | "community";
 
@@ -27,6 +28,11 @@ const ALL_TOOLS = [
   { id: "auto-caption", name: "Auto Caption", desc: "Add captions", route: "/videos/tools/auto-caption" },
   { id: "lip-sync", name: "Lip Sync", desc: "Sync lips to audio", route: "/videos/tools/lip-sync" },
   { id: "video-extender", name: "Video Extender", desc: "Extend duration", route: "/videos/tools/video-extender" },
+];
+
+const TOOL_ROWS = [
+  ALL_TOOLS.slice(0, Math.ceil(ALL_TOOLS.length / 2)),
+  ALL_TOOLS.slice(Math.ceil(ALL_TOOLS.length / 2)),
 ];
 
 const GRADIENTS = [
@@ -52,6 +58,7 @@ const VideosPage = () => {
   const [prompt, setPrompt] = useState("");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(NANO_BANANA_DEFAULT);
+  const [toolLandingImages, setToolLandingImages] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedVideo, setAttachedVideo] = useState<string | null>(null);
 
@@ -64,6 +71,10 @@ const VideosPage = () => {
     const s = (location.state as any)?.tab;
     if (s === "studio") setActiveTab("studio");
   }, [location.state]);
+
+  useEffect(() => {
+    loadToolLandingImages();
+  }, []);
 
   const loadStudioVideos = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -83,7 +94,24 @@ const VideosPage = () => {
     if (data) setCommunityItems(data as any);
   };
 
+  const loadToolLandingImages = async () => {
+    const { data } = await supabase
+      .from("tool_landing_images")
+      .select("tool_id, image_url")
+      .in("tool_id", ALL_TOOLS.map((tool) => tool.id));
+
+    if (!data) return;
+
+    setToolLandingImages(
+      data.reduce<Record<string, string>>((acc, item) => {
+        if (item.image_url) acc[item.tool_id] = item.image_url;
+        return acc;
+      }, {})
+    );
+  };
+
   const getToolPreview = (toolId: string) => {
+    if (toolLandingImages[toolId]) return toolLandingImages[toolId];
     const tool = VIDEO_TOOLS.find(t => t.id === toolId);
     return tool?.previewVideo || "";
   };
@@ -149,34 +177,50 @@ const VideosPage = () => {
                 modelIcon={selectedModel.iconUrl}
                 showModelPicker
                 placeholders={VIDEO_PLACEHOLDERS}
+                className="mx-1"
               />
 
-              <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                <div className="flex gap-3 min-w-max">
-                  {ALL_TOOLS.map((tool, i) => {
-                    const preview = getToolPreview(tool.id);
-                    const gradient = GRADIENTS[i % GRADIENTS.length];
-                    return (
-                      <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative w-44 h-56 rounded-2xl overflow-hidden flex-shrink-0">
-                        {preview ? <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" /> : <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-3">
-                          <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
-                          <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
-                        </div>
-                      </motion.button>
-                    );
-                  })}
-                </div>
+              <div className="space-y-3">
+                {TOOL_ROWS.map((row, rowIndex) => (
+                  <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                    <div className="flex min-w-max gap-3">
+                      {row.map((tool, i) => {
+                        const preview = getToolPreview(tool.id);
+                        const gradient = GRADIENTS[(rowIndex * 4 + i) % GRADIENTS.length];
+                        const isVideo = preview.endsWith(".mp4") || preview.includes("video");
+
+                        return (
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
+                            {preview ? (
+                              isVideo ? (
+                                <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
+                              ) : (
+                                <img src={preview} alt={tool.name} className="absolute inset-0 h-full w-full object-cover" />
+                              )
+                            ) : (
+                              <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                              <p className="text-[10px] font-medium uppercase tracking-wider text-white/60">{tool.desc}</p>
+                              <p className="mt-0.5 text-base font-bold text-white">{tool.name}</p>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="w-full rounded-2xl overflow-hidden relative h-28 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 flex items-center">
-                <div className="flex-1 text-left px-5">
-                  <p className="text-lg font-bold text-foreground">Create Your Video</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Generate videos with AI</p>
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/20 to-primary/5">
+                <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
+                  <img src={createVideoCard} alt="Create your video" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />
                 </div>
-                <div className="w-28 h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
-                  <Wand2 className="w-10 h-10 text-primary/40" />
+                <div className="relative flex-1 px-5 pr-[38%] text-left">
+                  <p className="text-lg font-bold text-foreground">Create Your Video</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Generate videos with AI</p>
                 </div>
               </motion.button>
             </div>
