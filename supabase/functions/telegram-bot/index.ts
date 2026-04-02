@@ -284,6 +284,8 @@ function mainMenuKB() {
     [{ text: "🎨 معرض العرض (Showcase)", callback_data: "showcase_menu" }],
     [{ text: "⚙️ إعدادات الصفحات", callback_data: "pagesettings_menu" }],
     [{ text: "♾️ Unlimited (LemonData)", callback_data: "lemon_menu" }],
+    [{ text: "🛠 Tools (صور الأدوات)", callback_data: "tools_menu" }],
+    [{ text: "📷 Headshot (قوالب)", callback_data: "headshot_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
 }
