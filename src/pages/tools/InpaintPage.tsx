@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Paintbrush, Eraser, Upload, ImagePlus, Download, RotateCcw, Paperclip } from "lucide-react";
+import { ArrowLeft, Paintbrush, Eraser, Upload, Download, RotateCcw, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
