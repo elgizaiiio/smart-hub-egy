@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2, ImagePlus } from "lucide-react";
+import { ArrowLeft, Sparkles, Download, Share2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
