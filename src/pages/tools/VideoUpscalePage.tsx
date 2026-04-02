@@ -31,7 +31,7 @@ const VideoUpscalePage = () => {
   };
 
   return (
-    <ToolPageLayout title="Video Upscale" cost={costPerSec} costLabel={`${costPerSec} MC per second`} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="video" previewVideo="https://g.top4top.io/m_3736jvh701.mp4">
+    <ToolPageLayout title="Video Upscale" cost={costPerSec} costLabel={`${costPerSec} MC per second`} toolId="video-upscale" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="video">
       <VideoUploadBox label="Upload video" video={video} onUpload={setVideo} onClear={() => setVideo(null)} />
       <div>
         <p className="text-sm font-medium text-foreground mb-2">Quality Tier</p>

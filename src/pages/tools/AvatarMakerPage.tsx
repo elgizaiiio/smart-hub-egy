@@ -21,7 +21,7 @@ const AvatarMakerPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Avatar Maker 3D" cost={4} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="3d">
+    <ToolPageLayout title="Avatar Maker 3D" cost={4} toolId="avatar-maker" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
       <ImageUploadBox label="Upload photo for 3D avatar" image={image} onUpload={setImage} onClear={() => setImage(null)} />
     </ToolPageLayout>
   );

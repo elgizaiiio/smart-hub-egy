@@ -28,7 +28,7 @@ const RelightPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Relight" cost={1} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
+    <ToolPageLayout title="Relight" cost={1} toolId="relight" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
       <ImageUploadBox label="Upload image" image={image} onUpload={setImage} onClear={() => setImage(null)} />
       <div>
         <p className="text-sm font-medium text-foreground mb-2">Light Color</p>

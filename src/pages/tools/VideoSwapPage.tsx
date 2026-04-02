@@ -27,7 +27,7 @@ const VideoSwapPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Swap Characters" cost={cost} costLabel={`720p: 4 MC | 1080p: 5.5 MC (×2 if >5s)`} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="video" previewVideo="https://i.top4top.io/m_3736q2d581.mp4">
+    <ToolPageLayout title="Swap Characters" cost={cost} costLabel="720p: 4 MC | 1080p: 5.5 MC" toolId="swap-characters" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} resultType="video">
       <VideoUploadBox label="Upload video" video={video} onUpload={setVideo} onClear={() => setVideo(null)} />
       <ImageUploadBox label="Upload face image" image={faceImage} onUpload={setFaceImage} onClear={() => setFaceImage(null)} />
       <div>

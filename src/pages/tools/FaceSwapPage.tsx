@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import ToolPageLayout, { ImageUploadBox } from "@/components/ToolPageLayout";
+import ToolPageLayout, { ImageUploadBox, TemplateGrid } from "@/components/ToolPageLayout";
+import { useToolTemplates } from "@/hooks/useToolTemplates";
+import type { ToolTemplate } from "@/components/ToolPageLayout";
 
 const FaceSwapPage = () => {
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [targetImage, setTargetImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const { templates } = useToolTemplates("face-swap");
 
   const handleGenerate = async () => {
     if (!sourceImage || !targetImage) { toast.error("Please upload both images"); return; }
@@ -24,11 +28,25 @@ const FaceSwapPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Face Swap" cost={0.5} onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
-      <div className="grid grid-cols-2 gap-3">
-        <ImageUploadBox label="Your photo" image={sourceImage} onUpload={setSourceImage} onClear={() => setSourceImage(null)} />
-        <ImageUploadBox label="Target face" image={targetImage} onUpload={setTargetImage} onClear={() => setTargetImage(null)} />
-      </div>
+    <ToolPageLayout title="Face Swap" cost={0.5} toolId="face-swap" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
+      {!showTemplates ? (
+        <ImageUploadBox label="Upload your photo" image={sourceImage} onUpload={(img) => { setSourceImage(img); setShowTemplates(true); }} onClear={() => setSourceImage(null)} />
+      ) : (
+        <div className="space-y-4">
+          <div className="relative rounded-2xl overflow-hidden border border-border/30">
+            <img src={sourceImage!} alt="" className="w-full h-32 object-cover" />
+          </div>
+          {templates.length > 0 ? (
+            <TemplateGrid
+              templates={templates}
+              onSelect={(t) => { if (t.preview_url) { setTargetImage(t.preview_url); } }}
+              onCustom={() => {}}
+              customLabel="Upload Target Face"
+            />
+          ) : null}
+          <ImageUploadBox label="Upload target face" image={targetImage} onUpload={setTargetImage} onClear={() => setTargetImage(null)} />
+        </div>
+      )}
     </ToolPageLayout>
   );
 };
