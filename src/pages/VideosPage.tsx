@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass, LayoutGrid } from "lucide-react";
+import { Menu, Download, RefreshCw, ArrowLeft, Clapperboard, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
@@ -15,19 +15,19 @@ import createVideoCard from "@/assets/create-video-card.jpg";
 type Tab = "home" | "studio" | "community";
 
 const NANO_BANANA_DEFAULT: ModelOption = {
-  id: "nano-banana",
-  name: "Nano Banana",
-  credits: "1",
-  iconUrl: "/model-logos/bytedance.ico",
+  id: "veo-3.1-fast",
+  name: "Veo 3.1 Fast",
+  credits: "5",
+  iconUrl: "/model-logos/google.ico",
 };
 
 const ALL_TOOLS = [
-  { id: "swap-characters", name: "Swap Characters", desc: "Swap faces in video", route: "/videos/tools/swap-characters" },
-  { id: "talking-photo", name: "Talking Photo", desc: "Animate with speech", route: "/videos/tools/talking-photo" },
-  { id: "upscale", name: "Video Upscale", desc: "Upscale resolution", route: "/videos/tools/upscale" },
-  { id: "auto-caption", name: "Auto Caption", desc: "Add captions", route: "/videos/tools/auto-caption" },
-  { id: "lip-sync", name: "Lip Sync", desc: "Sync lips to audio", route: "/videos/tools/lip-sync" },
-  { id: "video-extender", name: "Video Extender", desc: "Extend duration", route: "/videos/tools/video-extender" },
+  { id: "swap-characters", name: "Swap Characters", route: "/videos/tools/swap-characters" },
+  { id: "talking-photo", name: "Talking Photo", route: "/videos/tools/talking-photo" },
+  { id: "upscale", name: "Video Upscale", route: "/videos/tools/upscale" },
+  { id: "auto-caption", name: "Auto Caption", route: "/videos/tools/auto-caption" },
+  { id: "lip-sync", name: "Lip Sync", route: "/videos/tools/lip-sync" },
+  { id: "video-extender", name: "Video Extender", route: "/videos/tools/video-extender" },
 ];
 
 const TOOL_ROWS = [
@@ -72,9 +72,7 @@ const VideosPage = () => {
     if (s === "studio") setActiveTab("studio");
   }, [location.state]);
 
-  useEffect(() => {
-    loadToolLandingImages();
-  }, []);
+  useEffect(() => { loadToolLandingImages(); }, []);
 
   const loadStudioVideos = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -95,19 +93,12 @@ const VideosPage = () => {
   };
 
   const loadToolLandingImages = async () => {
-    const { data } = await supabase
-      .from("tool_landing_images")
-      .select("tool_id, image_url")
-      .in("tool_id", ALL_TOOLS.map((tool) => tool.id));
-
+    const { data } = await supabase.from("tool_landing_images").select("tool_id, image_url").in("tool_id", ALL_TOOLS.map(t => t.id));
     if (!data) return;
-
-    setToolLandingImages(
-      data.reduce<Record<string, string>>((acc, item) => {
-        if (item.image_url) acc[item.tool_id] = item.image_url;
-        return acc;
-      }, {})
-    );
+    setToolLandingImages(data.reduce<Record<string, string>>((acc, item) => {
+      if (item.image_url) acc[item.tool_id] = item.image_url;
+      return acc;
+    }, {}));
   };
 
   const getToolPreview = (toolId: string) => {
@@ -177,20 +168,19 @@ const VideosPage = () => {
                 modelIcon={selectedModel.iconUrl}
                 showModelPicker
                 placeholders={VIDEO_PLACEHOLDERS}
-                className="mx-1"
               />
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {TOOL_ROWS.map((row, rowIndex) => (
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                    <div className="flex min-w-max gap-3">
+                    <div className="flex min-w-max gap-2.5">
                       {row.map((tool, i) => {
                         const preview = getToolPreview(tool.id);
                         const gradient = GRADIENTS[(rowIndex * 4 + i) % GRADIENTS.length];
-                        const isVideo = preview.endsWith(".mp4") || preview.includes("video");
+                        const isVideo = preview.endsWith?.(".mp4") || preview.includes?.("video");
 
                         return (
-                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-28 w-24 flex-shrink-0 overflow-hidden rounded-2xl">
                             {preview ? (
                               isVideo ? (
                                 <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
@@ -200,10 +190,9 @@ const VideosPage = () => {
                             ) : (
                               <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <p className="text-[10px] font-medium uppercase tracking-wider text-white/60">{tool.desc}</p>
-                              <p className="mt-0.5 text-base font-bold text-white">{tool.name}</p>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-2">
+                              <p className="text-[11px] font-semibold text-white leading-tight">{tool.name}</p>
                             </div>
                           </motion.button>
                         );
@@ -213,14 +202,14 @@ const VideosPage = () => {
                 ))}
               </div>
 
-              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/20 to-primary/5">
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="relative flex h-28 w-full items-center overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/20 to-primary/5">
                 <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
-                  <img src={createVideoCard} alt="Create your video" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />
+                  <img src={createVideoCard} alt="" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-l from-transparent to-background/80" />
                 </div>
                 <div className="relative flex-1 px-5 pr-[38%] text-left">
-                  <p className="text-lg font-bold text-foreground">Create Your Video</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">Generate videos with AI</p>
+                  <p className="text-lg font-bold text-foreground whitespace-nowrap">Create Your Video</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Generate with AI</p>
                 </div>
               </motion.button>
             </div>
@@ -265,13 +254,13 @@ const VideosPage = () => {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-8 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
             <button onClick={() => setActiveTab("home")} className="flex flex-col items-center gap-0.5">
-              <LayoutGrid className={`w-5 h-5 ${activeTab === "home" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "home" ? 2.5 : 1.8} />
+              <svg className={`w-5 h-5 ${activeTab === "home" ? "text-primary" : "text-muted-foreground"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === "home" ? 2.2 : 1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
             </button>
             <button onClick={() => setActiveTab("studio")} className="flex flex-col items-center gap-0.5">
-              <Wand2 className={`w-5 h-5 ${activeTab === "studio" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "studio" ? 2.5 : 1.8} />
+              <Clapperboard className={`w-5 h-5 ${activeTab === "studio" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "studio" ? 2.2 : 1.5} />
             </button>
             <button onClick={() => setActiveTab("community")} className="flex flex-col items-center gap-0.5">
-              <Compass className={`w-5 h-5 ${activeTab === "community" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "community" ? 2.5 : 1.8} />
+              <Compass className={`w-5 h-5 ${activeTab === "community" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "community" ? 2.2 : 1.5} />
             </button>
           </div>
         </div>
