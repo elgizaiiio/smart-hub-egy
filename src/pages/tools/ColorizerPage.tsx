@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ToolPageLayout, { ImageUploadBox } from "@/components/ToolPageLayout";
@@ -20,9 +20,23 @@ const ColorizerPage = () => {
     finally { setIsGenerating(false); }
   };
 
+  const handleUpload = (img: string) => {
+    setImage(img);
+    setTimeout(() => {
+      setIsGenerating(true);
+      supabase.functions.invoke("image-tools", { body: { tool: "colorizer", image: img } })
+        .then(({ data, error }) => {
+          if (error) { toast.error("Failed"); setIsGenerating(false); return; }
+          if (data?.url) setResultUrl(data.url);
+          else toast.error(data?.error || "Failed");
+          setIsGenerating(false);
+        });
+    }, 100);
+  };
+
   return (
     <ToolPageLayout title="Image Colorizer" cost={1} toolId="colorizer" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} autoProcess>
-      <ImageUploadBox label="Upload B&W image" image={image} onUpload={(img) => { setImage(img); setTimeout(() => handleGenerate(), 100); }} onClear={() => setImage(null)} />
+      <ImageUploadBox label="Upload B&W image to colorize" image={image} onUpload={handleUpload} onClear={() => setImage(null)} />
     </ToolPageLayout>
   );
 };

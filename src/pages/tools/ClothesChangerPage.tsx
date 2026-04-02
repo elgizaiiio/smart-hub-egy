@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Upload, X, Loader2, Sparkles, Download, Share2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Download, Share2, ImagePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,8 @@ const ClothesChangerPage = () => {
   const [customPrompt, setCustomPrompt] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [refImage, setRefImage] = useState<string | null>(null);
+  const refInputRef = useRef<HTMLInputElement>(null);
   const { templates } = useToolTemplates("clothes-changer");
 
   const handleImageUpload = (img: string) => {
@@ -42,6 +44,15 @@ const ClothesChangerPage = () => {
 
   const handleTemplateSelect = (t: ToolTemplate) => {
     if (t.prompt) handleGenerate(t.prompt);
+  };
+
+  const handleRefUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setRefImage(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const handleGenerate = async (prompt?: string) => {
@@ -75,7 +86,6 @@ const ClothesChangerPage = () => {
         </button>
         <div className="flex-1">
           <h1 className="text-base font-semibold text-foreground">Clothes Changer</h1>
-          <p className="text-xs text-muted-foreground">4 MC per generation</p>
         </div>
       </div>
 
@@ -87,7 +97,7 @@ const ClothesChangerPage = () => {
         {step === 'styles' && (
           <div className="space-y-4">
             <div className="relative rounded-2xl overflow-hidden border border-border/30">
-              <img src={image!} alt="" className="w-full h-32 object-cover" />
+              <img src={image!} alt="" className="w-full h-40 object-cover" />
             </div>
 
             {/* Custom option */}
@@ -98,7 +108,18 @@ const ClothesChangerPage = () => {
 
             {selectedStyle === 'blank' && (
               <div className="space-y-3">
-                <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the outfit you want..." className="w-full rounded-2xl border border-border/50 bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-card px-3 py-2">
+                  <input ref={refInputRef as any} type="file" accept="image/*" className="hidden" onChange={handleRefUpload} />
+                  <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-accent/50"><ImagePlus className="w-4 h-4" /></button>
+                  <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the outfit you want..." className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none min-h-[80px] focus:outline-none py-2" />
+                </div>
+                {refImage && (
+                  <div className="flex items-center gap-2">
+                    <img src={refImage} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                    <span className="text-xs text-muted-foreground flex-1">Reference attached</span>
+                    <button onClick={() => setRefImage(null)} className="text-xs text-destructive">Remove</button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -107,7 +128,7 @@ const ClothesChangerPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 {templates.map(t => (
                   <motion.button key={t.id} whileTap={{ scale: 0.97 }} onClick={() => handleTemplateSelect(t)} className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left">
-                    {t.preview_url ? <img src={t.preview_url} alt={t.name} className="w-full h-32 object-cover" /> : <div className="w-full h-32 bg-gradient-to-br from-primary/10 to-accent/20 flex items-center justify-center"><Sparkles className="w-8 h-8 text-muted-foreground/20" /></div>}
+                    {t.preview_url ? <img src={t.preview_url} alt={t.name} className="w-full h-36 object-cover" /> : <div className="w-full h-36 bg-gradient-to-br from-primary/10 to-accent/20 flex items-center justify-center"><Sparkles className="w-8 h-8 text-muted-foreground/20" /></div>}
                     <div className="p-2.5"><p className="text-sm font-medium text-foreground">{t.name}</p></div>
                   </motion.button>
                 ))}
@@ -118,7 +139,7 @@ const ClothesChangerPage = () => {
             <div className="grid grid-cols-2 gap-3">
               {CLOTHES_STYLES.filter(s => s.id !== 'blank').map((style) => (
                 <motion.button key={style.id} whileTap={{ scale: 0.97 }} onClick={() => handleStyleSelect(style.id)} className="rounded-2xl overflow-hidden border border-border/50 bg-card text-left">
-                  {style.previewUrl ? <img src={style.previewUrl} alt={style.name} className="w-full h-32 object-cover" /> : <div className="w-full h-32 bg-accent flex items-center justify-center"><Upload className="w-8 h-8 text-muted-foreground" /></div>}
+                  {style.previewUrl ? <img src={style.previewUrl} alt={style.name} className="w-full h-36 object-cover" /> : <div className="w-full h-36 bg-accent flex items-center justify-center"><ImagePlus className="w-8 h-8 text-muted-foreground" /></div>}
                   <div className="p-2.5"><p className="text-sm font-medium text-foreground">{style.name}</p></div>
                 </motion.button>
               ))}
@@ -172,7 +193,7 @@ const ClothesChangerPage = () => {
       {step === 'styles' && selectedStyle === 'blank' && customPrompt.trim() && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
           <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleGenerate(customPrompt)} className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20">
-            <Sparkles className="w-4 h-4" /> Generate · 4 MC
+            Generate · 4 MC
           </motion.button>
         </div>
       )}
