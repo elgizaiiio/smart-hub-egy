@@ -283,34 +283,32 @@ const InpaintPage = () => {
       {stage === "edit" && (
         <div className="shrink-0 border-t border-border/10 bg-background/90 backdrop-blur-xl px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
           <p className="text-xs text-center text-muted-foreground mb-2">or</p>
-          <div className="flex items-end gap-2 rounded-2xl border border-border/30 bg-card/50 px-3 py-2.5">
-            <input ref={refInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleRefUpload(e.target.files[0]); }} />
-            <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors" title="Attach reference image">
-              <Paperclip className="w-4 h-4" />
-            </button>
-
-            <textarea
-              ref={textareaRef}
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-              placeholder="Describe what to change..."
-              rows={1}
-              className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50 py-2 max-h-[120px]"
-              style={{ minHeight: "40px" }}
-            />
-
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim()}
-              className="shrink-0 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold disabled:opacity-20 transition-all"
-            >
-              {isGenerating ? (
-                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              ) : (
-                "Generate · 1 MC"
-              )}
-            </button>
+          <div className="rounded-2xl bg-gradient-to-r from-rose-400/15 via-purple-400/15 to-blue-400/15 border border-border/20 p-3">
+            <div className="flex items-center gap-2">
+              <input ref={refInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleRefUpload(e.target.files[0]); }} />
+              <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors" title="Attach reference image">
+                <Plus className="w-5 h-5" />
+              </button>
+              <input
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                placeholder="Describe what to change..."
+                className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2"
+              />
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleGenerate}
+                disabled={isGenerating || !prompt.trim()}
+                className="shrink-0 px-5 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold disabled:opacity-30 transition-all"
+              >
+                {isGenerating ? (
+                  <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                ) : (
+                  "Generate"
+                )}
+              </motion.button>
+            </div>
           </div>
         </div>
       )}
