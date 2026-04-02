@@ -1,18 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Copy, RefreshCw, X, Download, Plus, LayoutGrid, Sparkles, Globe } from "lucide-react";
+import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import { VIDEO_TOOLS } from "@/lib/videoToolsData";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
-import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 
 type Tab = "home" | "studio" | "community";
+
+const NANO_BANANA_DEFAULT: ModelOption = {
+  id: "nano-banana",
+  name: "Nano Banana",
+  credits: "1",
+  iconUrl: "/model-logos/bytedance.ico",
+};
 
 const ALL_TOOLS = [
   { id: "swap-characters", name: "Swap Characters", desc: "Swap faces in video", route: "/videos/tools/swap-characters" },
@@ -46,7 +51,7 @@ const VideosPage = () => {
   const [prompt, setPrompt] = useState("");
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<ModelOption>(() => getDefaultModel("videos"));
+  const [selectedModel, setSelectedModel] = useState<ModelOption>(NANO_BANANA_DEFAULT);
 
   useEffect(() => {
     const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % PLACEHOLDERS.length), 3000);
@@ -88,8 +93,39 @@ const VideosPage = () => {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    navigate("/videos/studio", { state: { prompt: prompt.trim() } });
+    navigate("/videos/studio", { state: { prompt: prompt.trim(), model: selectedModel } });
   };
+
+  // Full-page detail view
+  if (previewVid) {
+    return (
+      <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
+        <div className="h-full flex flex-col bg-background">
+          <div className="sticky top-0 z-10 px-4 py-3 bg-background/80 backdrop-blur-xl flex items-center gap-3 border-b border-border/30">
+            <button onClick={() => setPreviewVid(null)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-accent/50">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-base font-bold text-foreground flex-1">Preview</h1>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            <div className="rounded-2xl overflow-hidden border border-border/20">
+              <video src={previewVid.url} controls autoPlay className="w-full" />
+            </div>
+            <div className="flex gap-3">
+              <a href={previewVid.url} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm">
+                <Download className="w-4 h-4" /> Download
+              </a>
+              {previewVid.prompt && (
+                <button onClick={() => { navigate("/videos/studio", { state: { prompt: previewVid.prompt } }); setPreviewVid(null); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
+                  <RefreshCw className="w-4 h-4" /> Reuse
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
@@ -110,21 +146,21 @@ const VideosPage = () => {
             <div className="pt-3 space-y-4">
               {/* Input Bar */}
               <div className="rounded-2xl bg-gradient-to-r from-blue-500/10 via-cyan-500/10 to-emerald-500/10 border border-border/30 p-3">
-                <div className="flex items-end gap-2">
+                <div className="flex items-center gap-2">
                   <button onClick={() => setModelPickerOpen(true)} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent/50 transition-colors">
-                    {selectedModel.iconUrl ? <img src={selectedModel.iconUrl} alt="" className="w-5 h-5 rounded-full" /> : <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">M</div>}
+                    {selectedModel.iconUrl ? <img src={selectedModel.iconUrl} alt="" className="w-6 h-6 rounded-full" /> : <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">M</div>}
                   </button>
                   <input
                     value={prompt}
                     onChange={e => setPrompt(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter") handleGenerate(); }}
                     placeholder={PLACEHOLDERS[placeholderIdx]}
-                    className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2"
+                    className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2.5 min-h-[44px]"
                   />
-                  <motion.button whileTap={{ scale: 0.95 }} onClick={handleGenerate} className="shrink-0 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">
-                    Generate
-                  </motion.button>
                 </div>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleGenerate} className="w-full mt-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold">
+                  Generate
+                </motion.button>
               </div>
 
               {/* Tool Cards */}
@@ -134,12 +170,12 @@ const VideosPage = () => {
                     const preview = getToolPreview(tool.id);
                     const gradient = GRADIENTS[i % GRADIENTS.length];
                     return (
-                      <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative w-48 h-64 rounded-2xl overflow-hidden flex-shrink-0">
+                      <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative w-44 h-56 rounded-2xl overflow-hidden flex-shrink-0">
                         {preview ? <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" /> : <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
                           <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
-                          <p className="text-lg font-bold text-white mt-0.5">{tool.name}</p>
+                          <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
                         </div>
                       </motion.button>
                     );
@@ -148,13 +184,13 @@ const VideosPage = () => {
               </div>
 
               {/* Create Card */}
-              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="w-full rounded-2xl overflow-hidden relative h-24 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 flex items-center px-5 gap-4">
-                <div className="flex-1 text-left">
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="w-full rounded-2xl overflow-hidden relative h-28 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 flex items-center">
+                <div className="flex-1 text-left px-5">
                   <p className="text-lg font-bold text-foreground">Create Your Video</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Generate videos with AI</p>
                 </div>
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center -mr-1">
-                  <Sparkles className="w-8 h-8 text-primary" />
+                <div className="w-28 h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+                  <Wand2 className="w-10 h-10 text-primary/40" />
                 </div>
               </motion.button>
             </div>
@@ -200,35 +236,16 @@ const VideosPage = () => {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-8 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
             <button onClick={() => setActiveTab("home")} className="flex flex-col items-center gap-0.5">
-              <LayoutGrid className={`w-5 h-5 ${activeTab === "home" ? "text-primary" : "text-muted-foreground"}`} />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === "home" ? 2.5 : 1.8} className={activeTab === "home" ? "text-primary" : "text-muted-foreground"}><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
             </button>
             <button onClick={() => setActiveTab("studio")} className="flex flex-col items-center gap-0.5">
-              <Sparkles className={`w-5 h-5 ${activeTab === "studio" ? "text-primary" : "text-muted-foreground"}`} />
+              <Wand2 className={`w-5 h-5 ${activeTab === "studio" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "studio" ? 2.5 : 1.8} />
             </button>
             <button onClick={() => setActiveTab("community")} className="flex flex-col items-center gap-0.5">
-              <Globe className={`w-5 h-5 ${activeTab === "community" ? "text-primary" : "text-muted-foreground"}`} />
+              <Compass className={`w-5 h-5 ${activeTab === "community" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "community" ? 2.5 : 1.8} />
             </button>
           </div>
         </div>
-
-        {/* Preview Modal */}
-        <AnimatePresence>
-          {previewVid && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4" onClick={() => setPreviewVid(null)}>
-              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
-                <video src={previewVid.url} controls autoPlay className="w-full rounded-2xl max-h-[70vh]" />
-                {previewVid.prompt && <p className="text-white/50 text-xs mt-3 text-center line-clamp-2">{previewVid.prompt}</p>}
-                <div className="flex justify-center gap-3 mt-3">
-                  <a href={previewVid.url} download className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground"><Download className="w-4 h-4" /> Download</a>
-                  {previewVid.prompt && (
-                    <button onClick={() => { navigate("/videos/studio", { state: { prompt: previewVid.prompt } }); setPreviewVid(null); }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-accent text-foreground"><RefreshCw className="w-4 h-4" /> Reuse</button>
-                  )}
-                </div>
-                <button onClick={() => setPreviewVid(null)} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center"><X className="w-4 h-4" /></button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </AppLayout>
   );

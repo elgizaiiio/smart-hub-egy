@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Upload, Download, X, Share2, Sparkles } from "lucide-react";
+import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
@@ -26,8 +26,8 @@ interface ToolPageLayoutProps {
   isGenerating: boolean;
   resultUrl?: string | null;
   resultType?: "image" | "video";
-  /** Pattern 1: auto-process after upload (no generate button) */
   autoProcess?: boolean;
+  hideHeaderCost?: boolean;
 }
 
 // ==================== Star Loading Animation ====================
@@ -104,10 +104,7 @@ const YellowGenerateButton = ({
       {isGenerating ? (
         <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
       ) : (
-        <>
-          <Sparkles className="w-4 h-4" />
-          Generate · {costLabel || `${cost} MC`}
-        </>
+        <>Generate · {costLabel || `${cost} MC`}</>
       )}
     </motion.button>
   </div>
@@ -243,6 +240,7 @@ const ToolPageLayout = ({
   resultUrl,
   resultType = "image",
   autoProcess,
+  hideHeaderCost,
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
   const { credits, hasEnoughCredits } = useCredits();
@@ -275,14 +273,13 @@ const ToolPageLayout = ({
         </button>
         <div className="flex-1">
           <h1 className="text-base font-semibold text-foreground">{title}</h1>
-          <p className="text-xs text-muted-foreground">{costLabel || `${cost} MC per generation`}</p>
+          {!hideHeaderCost && <p className="text-xs text-muted-foreground">{costLabel || `${cost} MC per generation`}</p>}
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {/* Landing */}
           {showLanding && landingImage && !resultUrl && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ToolLanding
@@ -294,14 +291,12 @@ const ToolPageLayout = ({
             </motion.div>
           )}
 
-          {/* Result */}
           {resultUrl && (
             <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <ResultView resultUrl={resultUrl} resultType={resultType} title={title} onBack={() => navigate(0)} />
             </motion.div>
           )}
 
-          {/* Working area */}
           {!showLanding && !resultUrl && (
             <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4 space-y-4 pb-32">
               {isGenerating ? <StarLoader /> : children}
@@ -310,7 +305,6 @@ const ToolPageLayout = ({
         </AnimatePresence>
       </div>
 
-      {/* Yellow Generate Button - only shown when not landing, not result, not auto-process */}
       {!showLanding && !resultUrl && !autoProcess && !isGenerating && (
         <YellowGenerateButton cost={cost} costLabel={costLabel} onClick={handleGenerate} isGenerating={isGenerating} />
       )}
@@ -348,7 +342,7 @@ export const ImageUploadBox = ({
   if (image) {
     return (
       <div className="relative rounded-2xl overflow-hidden border border-border/50">
-        <img src={image} alt={label} className="w-full h-40 object-cover" />
+        <img src={image} alt={label} className="w-full h-48 object-cover" />
         <button onClick={onClear} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center">
           <X className="w-4 h-4" />
         </button>
@@ -360,10 +354,12 @@ export const ImageUploadBox = ({
     <>
       <button
         onClick={() => ref.current?.click()}
-        className="w-full h-40 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+        className="w-full h-48 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors bg-gradient-to-br from-accent/20 to-accent/5"
       >
-        <Upload className="w-6 h-6" />
-        <span className="text-sm">{label}</span>
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <ImagePlus className="w-7 h-7 text-primary/60" />
+        </div>
+        <span className="text-sm font-medium">{label}</span>
       </button>
       <input ref={ref} type="file" className="hidden" accept={accept} onChange={handleChange} />
     </>
@@ -395,7 +391,7 @@ export const VideoUploadBox = ({
   if (video) {
     return (
       <div className="relative rounded-2xl overflow-hidden border border-border/50">
-        <video src={video} controls className="w-full h-40 object-cover" />
+        <video src={video} controls className="w-full h-48 object-cover" />
         <button onClick={onClear} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center">
           <X className="w-4 h-4" />
         </button>
@@ -407,10 +403,12 @@ export const VideoUploadBox = ({
     <>
       <button
         onClick={() => ref.current?.click()}
-        className="w-full h-40 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+        className="w-full h-48 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors bg-gradient-to-br from-accent/20 to-accent/5"
       >
-        <Upload className="w-6 h-6" />
-        <span className="text-sm">{label}</span>
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Upload className="w-7 h-7 text-primary/60" />
+        </div>
+        <span className="text-sm font-medium">{label}</span>
       </button>
       <input ref={ref} type="file" className="hidden" accept="video/*" onChange={handleChange} />
     </>
@@ -441,7 +439,10 @@ export const AudioUploadBox = ({
 
   if (audioName) {
     return (
-      <div className="flex items-center gap-2 px-3 py-3 rounded-2xl bg-accent border border-border/30">
+      <div className="flex items-center gap-2 px-4 py-3.5 rounded-2xl bg-accent border border-border/30">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Upload className="w-5 h-5 text-primary/60" />
+        </div>
         <span className="text-sm text-foreground flex-1 truncate">{audioName}</span>
         <button onClick={onClear} className="text-muted-foreground"><X className="w-4 h-4" /></button>
       </div>
@@ -450,8 +451,11 @@ export const AudioUploadBox = ({
 
   return (
     <>
-      <button onClick={() => ref.current?.click()} className="w-full py-3 rounded-2xl border-2 border-dashed border-border/50 text-sm text-muted-foreground flex items-center justify-center gap-2 hover:border-primary/50 transition-colors">
-        <Upload className="w-4 h-4" /> {label}
+      <button onClick={() => ref.current?.click()} className="w-full py-4 rounded-2xl border-2 border-dashed border-border/50 text-sm text-muted-foreground flex items-center justify-center gap-3 hover:border-primary/50 transition-colors bg-gradient-to-br from-accent/20 to-accent/5">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Upload className="w-5 h-5 text-primary/60" />
+        </div>
+        {label}
       </button>
       <input ref={ref} type="file" className="hidden" accept="audio/*" onChange={handleChange} />
     </>

@@ -20,9 +20,23 @@ const SketchToImagePage = () => {
     finally { setIsGenerating(false); }
   };
 
+  const handleUpload = (img: string) => {
+    setImage(img);
+    setTimeout(() => {
+      setIsGenerating(true);
+      supabase.functions.invoke("image-tools", { body: { tool: "sketch-to-image", image: img } })
+        .then(({ data, error }) => {
+          if (error) { toast.error("Failed"); setIsGenerating(false); return; }
+          if (data?.url) setResultUrl(data.url);
+          else toast.error(data?.error || "Failed");
+          setIsGenerating(false);
+        });
+    }, 100);
+  };
+
   return (
     <ToolPageLayout title="Sketch to Image" cost={1} toolId="sketch-to-image" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} autoProcess>
-      <ImageUploadBox label="Upload your sketch" image={image} onUpload={(img) => { setImage(img); setTimeout(() => handleGenerate(), 100); }} onClear={() => setImage(null)} />
+      <ImageUploadBox label="Upload your sketch" image={image} onUpload={handleUpload} onClear={() => setImage(null)} />
     </ToolPageLayout>
   );
 };
