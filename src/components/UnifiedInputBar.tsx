@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 
@@ -42,7 +42,6 @@ const UnifiedInputBar = ({
   className = "",
 }: UnifiedInputBarProps) => {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % placeholders.length), 3000);
@@ -50,11 +49,11 @@ const UnifiedInputBar = ({
   }, [placeholders.length]);
 
   return (
-    <div className={`rounded-2xl bg-gradient-to-r from-rose-400/15 via-purple-400/15 to-blue-400/15 border border-border/20 p-3 ${className}`}>
+    <div className={`rounded-2xl bg-gradient-to-r from-rose-400/15 via-purple-400/15 to-blue-400/15 border border-border/20 p-4 ${className}`}>
       {/* Attached image preview */}
       {attachedImage && (
-        <div className="mb-2 relative inline-block">
-          <img src={attachedImage} alt="" className="w-14 h-14 object-cover rounded-xl" />
+        <div className="mb-3 relative inline-block">
+          <img src={attachedImage} alt="" className="w-16 h-16 object-cover rounded-xl" />
           <button
             onClick={onClearAttachment}
             className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
@@ -67,12 +66,12 @@ const UnifiedInputBar = ({
       )}
 
       {/* Input row */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         {/* + button for attachments */}
         {onAttach && (
           <button
             onClick={onAttach}
-            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -82,12 +81,12 @@ const UnifiedInputBar = ({
         {showModelPicker && onModelPick && (
           <button
             onClick={onModelPick}
-            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center hover:bg-accent/50 transition-colors"
+            className="shrink-0 w-10 h-10 rounded-full overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-primary/30 transition-all"
           >
             {modelIcon ? (
-              <img src={modelIcon} alt="" className="w-6 h-6 rounded-full" />
+              <img src={modelIcon} alt="" className="w-8 h-8 rounded-full object-cover" />
             ) : (
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">M</div>
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">M</div>
             )}
           </button>
         )}
@@ -98,10 +97,10 @@ const UnifiedInputBar = ({
           onChange={e => onPromptChange(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
           placeholder={placeholders[placeholderIdx]}
-          className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2"
+          className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2.5"
         />
 
-        {/* Generate button */}
+        {/* Generate button - inside the border */}
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onGenerate}
