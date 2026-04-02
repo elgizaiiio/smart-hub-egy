@@ -43,14 +43,16 @@ const GRADIENTS = [
 
 const VIDEO_PLACEHOLDERS = [
   "A cinematic drone shot over mountains...",
-  "A cat playing piano in 4K...",
+  "A cat playing piano in slow motion...",
   "Create your next viral video...",
+  "Anime fight scene with epic effects...",
 ];
 
 const HERO_TEXTS = [
   { main: "Bring stories to", accent: "life" },
-  { main: "Your ideas,", accent: "in motion" },
+  { main: "Your ideas", accent: "in motion" },
   { main: "AI-powered", accent: "video creation" },
+  { main: "Dream it", accent: "film it" },
 ];
 
 const VideosPage = () => {
@@ -152,20 +154,18 @@ const VideosPage = () => {
         <div className="sticky top-0 z-10 px-4 pt-3 pb-2 bg-background/80 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground"><Menu className="w-5 h-5" /></button>
-            <h1 className="text-base font-bold text-foreground">Videos</h1>
             <div className="w-9" />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
-            <div className="pt-3 space-y-4">
-              {/* Hero text */}
-              <div className="text-center py-2">
+            <div className="pt-2 space-y-5">
+              <div className="text-center py-3">
                 <AnimatePresence mode="wait">
-                  <motion.div key={heroIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4 }}>
-                    <p className="text-xl font-bold text-foreground">{HERO_TEXTS[heroIdx].main}</p>
-                    <p className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">{HERO_TEXTS[heroIdx].accent}</p>
+                  <motion.div key={heroIdx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.5 }}>
+                    <p className="text-2xl font-extrabold text-foreground leading-tight">{HERO_TEXTS[heroIdx].main}</p>
+                    <p className="text-2xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent leading-tight">{HERO_TEXTS[heroIdx].accent}</p>
                   </motion.div>
                 </AnimatePresence>
               </div>
@@ -179,6 +179,7 @@ const VideosPage = () => {
                 modelIcon={selectedModel.iconUrl}
                 showModelPicker
                 placeholders={VIDEO_PLACEHOLDERS}
+                className="min-h-[72px]"
               />
 
               <div className="space-y-3">
@@ -208,7 +209,7 @@ const VideosPage = () => {
 
               <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/20 to-primary/5">
                 <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
-                  <img src={createVideoCard} alt="Create your video" className="h-full w-full object-cover" />
+                  <img src={createVideoCard} alt="Create" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />
                 </div>
                 <div className="relative flex-1 px-5 pr-[38%] text-left">

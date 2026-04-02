@@ -1,16 +1,16 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Paintbrush, Eraser, Upload, Download, RotateCcw, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-type Stage = "upload" | "edit" | "result";
+type Stage = "landing" | "upload" | "edit" | "result";
 type Tool = "brush" | "eraser";
 
 const InpaintPage = () => {
   const navigate = useNavigate();
-  const [stage, setStage] = useState<Stage>("upload");
+  const [stage, setStage] = useState<Stage>("landing");
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [refImage, setRefImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -18,7 +18,7 @@ const InpaintPage = () => {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<Tool>("brush");
   const [brushSize, setBrushSize] = useState(30);
-  const [isDragging, setIsDragging] = useState(false);
+  const [landingImage, setLandingImage] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -27,7 +27,11 @@ const InpaintPage = () => {
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "inpaint").maybeSingle()
+      .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
+  }, []);
 
   const setupCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -172,14 +176,6 @@ const InpaintPage = () => {
     finally { setIsGenerating(false); }
   };
 
-  const handleStartOver = () => {
-    setStage("upload");
-    setSourceImage(null);
-    setRefImage(null);
-    setPrompt("");
-    setResultUrl(null);
-  };
-
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
@@ -193,15 +189,34 @@ const InpaintPage = () => {
 
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">
+          {/* Landing */}
+          {stage === "landing" && (
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+              <div className="relative h-full flex flex-col items-center justify-end pb-20">
+                {landingImage ? (
+                  <img src={landingImage} alt="Inpaint" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-500/10 to-background" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+                <div className="relative z-10 text-center px-6 space-y-5">
+                  <h2 className="text-3xl font-bold text-foreground tracking-tight">Inpaint</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">Paint over areas and describe what to change</p>
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStage("upload")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
+                    <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Upload */}
           {stage === "upload" && (
             <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); }} />
-              <div
+              <button
                 onClick={() => fileInputRef.current?.click()}
-                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={e => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files[0]) handleFileUpload(e.dataTransfer.files[0]); }}
-                className={`w-full max-w-md rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-6 cursor-pointer transition-all duration-500 py-20 ${isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-primary/30 hover:border-primary/60 hover:bg-primary/5"}`}
+                className="w-full max-w-md rounded-3xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-6 cursor-pointer transition-all duration-300 py-20 hover:border-primary/60 hover:bg-primary/5"
               >
                 <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                   <Upload className="w-9 h-9 text-primary" />
@@ -211,12 +226,12 @@ const InpaintPage = () => {
                     UPLOAD YOUR <span className="text-primary">PHOTO</span>
                   </h2>
                   <p className="text-sm text-muted-foreground">Drag & drop or tap to select</p>
-                  <p className="text-xs text-muted-foreground/60">Paint over areas you want to edit</p>
                 </div>
-              </div>
+              </button>
             </motion.div>
           )}
 
+          {/* Edit */}
           {stage === "edit" && sourceImage && (
             <motion.div key="edit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col">
               <div className="shrink-0 flex items-center justify-between px-4 py-2">
@@ -247,7 +262,6 @@ const InpaintPage = () => {
                     onTouchStart={startDraw} onTouchMove={moveDraw} onTouchEnd={endDraw}
                   />
                 </div>
-
                 {refImage && (
                   <div className="flex items-center gap-3 mt-2 px-1">
                     <img src={refImage} alt="" className="w-12 h-12 rounded-lg object-cover" />
@@ -259,6 +273,7 @@ const InpaintPage = () => {
             </motion.div>
           )}
 
+          {/* Result */}
           {stage === "result" && resultUrl && (
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col">
               <div className="flex-1 overflow-auto px-4 py-4 flex flex-col gap-3">
@@ -266,12 +281,12 @@ const InpaintPage = () => {
                   <img src={resultUrl} alt="Result" className="w-full block" />
                 </div>
                 <a href={resultUrl} download="inpaint-result.png" target="_blank" rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all">
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm">
                   <Download className="w-4 h-4" /> Download
                 </a>
                 <div className="flex gap-2">
-                  <button onClick={() => { setStage("edit"); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium hover:bg-accent transition-colors">Edit Again</button>
-                  <button onClick={handleStartOver} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium hover:bg-accent transition-colors">Start Over</button>
+                  <button onClick={() => { setStage("edit"); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium">Edit Again</button>
+                  <button onClick={() => { setStage("landing"); setSourceImage(null); setRefImage(null); setPrompt(""); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium">Start Over</button>
                 </div>
               </div>
             </motion.div>
@@ -279,14 +294,14 @@ const InpaintPage = () => {
         </AnimatePresence>
       </div>
 
-      {/* Fixed bottom input bar */}
+      {/* Bottom input bar for edit stage */}
       {stage === "edit" && (
         <div className="shrink-0 border-t border-border/10 bg-background/90 backdrop-blur-xl px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
           <p className="text-xs text-center text-muted-foreground mb-2">or</p>
-          <div className="rounded-2xl bg-gradient-to-r from-rose-400/15 via-purple-400/15 to-blue-400/15 border border-border/20 p-3">
+          <div className="rounded-2xl bg-card/80 border border-border/20 p-3">
             <div className="flex items-center gap-2">
               <input ref={refInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleRefUpload(e.target.files[0]); }} />
-              <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors" title="Attach reference image">
+              <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
                 <Plus className="w-5 h-5" />
               </button>
               <input
@@ -304,9 +319,7 @@ const InpaintPage = () => {
               >
                 {isGenerating ? (
                   <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                ) : (
-                  "Generate"
-                )}
+                ) : "Generate"}
               </motion.button>
             </div>
           </div>

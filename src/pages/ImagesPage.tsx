@@ -52,16 +52,17 @@ const GRADIENTS = [
 ];
 
 const IMAGE_PLACEHOLDERS = [
-  "Turn your ideas into art...",
-  "A futuristic city at sunset...",
-  "Create stunning portraits...",
-  "Anime girl in a garden...",
+  "A futuristic city at sunset in cyberpunk style...",
+  "Portrait of a woman in golden light...",
+  "Anime character in a magical forest...",
+  "Abstract art with vibrant colors...",
 ];
 
 const HERO_TEXTS = [
   { main: "Create something", accent: "extraordinary" },
-  { main: "Imagine it,", accent: "generate it" },
-  { main: "Your vision,", accent: "AI-powered" },
+  { main: "Imagine it", accent: "generate it" },
+  { main: "Your vision", accent: "AI-powered" },
+  { main: "Dream big", accent: "create bigger" },
 ];
 
 const ImagesPage = () => {
@@ -172,24 +173,24 @@ const ImagesPage = () => {
         <div className="sticky top-0 z-10 px-4 pt-3 pb-2 bg-background/80 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground"><Menu className="w-5 h-5" /></button>
-            <h1 className="text-base font-bold text-foreground">Images</h1>
             <div className="w-9" />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
-            <div className="pt-3 space-y-4">
-              {/* Hero text */}
-              <div className="text-center py-2">
+            <div className="pt-2 space-y-5">
+              {/* Hero text - bigger, no commas */}
+              <div className="text-center py-3">
                 <AnimatePresence mode="wait">
-                  <motion.div key={heroIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4 }}>
-                    <p className="text-xl font-bold text-foreground">{HERO_TEXTS[heroIdx].main}</p>
-                    <p className="text-xl font-bold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">{HERO_TEXTS[heroIdx].accent}</p>
+                  <motion.div key={heroIdx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.5 }}>
+                    <p className="text-2xl font-extrabold text-foreground leading-tight">{HERO_TEXTS[heroIdx].main}</p>
+                    <p className="text-2xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent leading-tight">{HERO_TEXTS[heroIdx].accent}</p>
                   </motion.div>
                 </AnimatePresence>
               </div>
 
+              {/* Input bar - bigger, no borders, rectangular */}
               <UnifiedInputBar
                 prompt={prompt}
                 onPromptChange={setPrompt}
@@ -201,6 +202,7 @@ const ImagesPage = () => {
                 placeholders={IMAGE_PLACEHOLDERS}
                 attachedImage={attachedImage}
                 onClearAttachment={() => setAttachedImage(null)}
+                className="min-h-[72px]"
               />
 
               <div className="space-y-3">
@@ -230,7 +232,7 @@ const ImagesPage = () => {
 
               <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/studio")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/20 to-primary/5">
                 <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
-                  <img src={createImageCard} alt="Create your image" className="h-full w-full object-cover" />
+                  <img src={createImageCard} alt="Create" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />
                 </div>
                 <div className="relative flex-1 text-left px-5 pr-[38%]">
@@ -241,7 +243,7 @@ const ImagesPage = () => {
 
               <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/agent")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-border/20 bg-gradient-to-r from-accent/30 to-accent/5">
                 <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
-                  <img src={editImageCard} alt="Edit your image" className="h-full w-full object-cover" />
+                  <img src={editImageCard} alt="Edit" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />
                 </div>
                 <div className="relative flex-1 text-left px-5 pr-[38%]">
