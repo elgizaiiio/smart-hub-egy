@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Download, Copy, RefreshCw, X, Plus, User, Pencil, Square } from "lucide-react";
+import { Menu, Download, Copy, RefreshCw, X, Plus, Users, Home, Brush, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
@@ -12,24 +12,23 @@ import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 type Tab = "home" | "studio" | "community";
 
 const ALL_TOOLS = [
-  { id: "inpaint", name: "Inpaint", desc: "Edit parts of an image", route: "/images/tools/inpaint", image: "/tool-previews/inpaint.png" },
-  { id: "clothes-changer", name: "Clothes Changer", desc: "Change outfits", route: "/images/tools/clothes-changer", image: "https://j.top4top.io/p_3736n4ua61.jpeg" },
-  { id: "headshot", name: "AI Headshot", desc: "Professional photos", route: "/images/tools/headshot", image: "https://freeimage.host/i/qiy3W3x" },
-  { id: "face-swap", name: "Face Swap", desc: "Swap faces", route: "/images/tools/face-swap", image: "" },
-  { id: "bg-remover", name: "BG Remover", desc: "Remove backgrounds", route: "/images/tools/bg-remover", image: "" },
-  { id: "cartoon", name: "Cartoon", desc: "Cartoonify photos", route: "/images/tools/cartoon", image: "" },
-  { id: "colorizer", name: "Colorizer", desc: "Colorize B&W", route: "/images/tools/colorizer", image: "" },
-  { id: "retouching", name: "Retouch", desc: "Enhance photos", route: "/images/tools/retouching", image: "" },
-  { id: "remover", name: "Object Remover", desc: "Remove objects", route: "/images/tools/remover", image: "" },
-  { id: "sketch-to-image", name: "Sketch to Image", desc: "Convert sketches", route: "/images/tools/sketch-to-image", image: "" },
-  { id: "relight", name: "Relight", desc: "Change lighting", route: "/images/tools/relight", image: "" },
-  { id: "character-swap", name: "Character Swap", desc: "Swap characters", route: "/images/tools/character-swap", image: "" },
-  { id: "storyboard", name: "Storyboard", desc: "Create panels", route: "/images/tools/storyboard", image: "" },
-  { id: "hair-changer", name: "Hair Changer", desc: "Change hairstyles", route: "/images/tools/hair-changer", image: "" },
-  { id: "avatar-maker", name: "Avatar Maker 3D", desc: "3D avatars", route: "/images/tools/avatar-maker", image: "" },
+  { id: "inpaint", name: "Inpaint", desc: "Edit parts of an image", route: "/images/tools/inpaint" },
+  { id: "clothes-changer", name: "Clothes Changer", desc: "Change outfits", route: "/images/tools/clothes-changer" },
+  { id: "headshot", name: "AI Headshot", desc: "Professional photos", route: "/images/tools/headshot" },
+  { id: "face-swap", name: "Face Swap", desc: "Swap faces", route: "/images/tools/face-swap" },
+  { id: "bg-remover", name: "BG Remover", desc: "Remove backgrounds", route: "/images/tools/bg-remover" },
+  { id: "cartoon", name: "Cartoon", desc: "Cartoonify photos", route: "/images/tools/cartoon" },
+  { id: "colorizer", name: "Colorizer", desc: "Colorize B&W", route: "/images/tools/colorizer" },
+  { id: "retouching", name: "Retouch", desc: "Enhance photos", route: "/images/tools/retouching" },
+  { id: "remover", name: "Object Remover", desc: "Remove objects", route: "/images/tools/remover" },
+  { id: "sketch-to-image", name: "Sketch to Image", desc: "Convert sketches", route: "/images/tools/sketch-to-image" },
+  { id: "relight", name: "Relight", desc: "Change lighting", route: "/images/tools/relight" },
+  { id: "character-swap", name: "Character Swap", desc: "Swap characters", route: "/images/tools/character-swap" },
+  { id: "storyboard", name: "Storyboard", desc: "Create panels", route: "/images/tools/storyboard" },
+  { id: "hair-changer", name: "Hair Changer", desc: "Change hairstyles", route: "/images/tools/hair-changer" },
+  { id: "avatar-maker", name: "Avatar Maker 3D", desc: "3D avatars", route: "/images/tools/avatar-maker" },
 ];
 
-// Gradient colors for tools without images
 const GRADIENTS = [
   "from-emerald-600/80 to-emerald-900/90",
   "from-rose-600/80 to-rose-900/90",
@@ -101,18 +100,18 @@ const ImagesPage = () => {
         <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
             <div className="pt-3 space-y-4">
-              {/* Tool Cards - Horizontal Scroll */}
+              {/* Tool Cards - Horizontal Scroll - BIGGER */}
               <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                 <div className="flex gap-3 min-w-max">
                   {ALL_TOOLS.map((tool, i) => {
-                    const img = tool.image || getToolImage(tool.id);
+                    const img = getToolImage(tool.id);
                     const gradient = GRADIENTS[i % GRADIENTS.length];
                     return (
                       <motion.button
                         key={tool.id}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => navigate(tool.route)}
-                        className="relative w-40 h-52 rounded-2xl overflow-hidden flex-shrink-0"
+                        className="relative w-48 h-64 rounded-2xl overflow-hidden flex-shrink-0"
                       >
                         {img ? (
                           <img src={img} alt={tool.name} className="absolute inset-0 w-full h-full object-cover" />
@@ -120,9 +119,9 @@ const ImagesPage = () => {
                           <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <div className="absolute bottom-0 left-0 right-0 p-3.5">
                           <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
-                          <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
+                          <p className="text-lg font-bold text-white mt-0.5">{tool.name}</p>
                         </div>
                       </motion.button>
                     );
@@ -133,30 +132,30 @@ const ImagesPage = () => {
               {/* Create Your Image Card */}
               <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => navigate("/images/agent")}
-                className="w-full rounded-2xl overflow-hidden relative h-20 bg-card border border-border/30 flex items-center px-5 gap-4"
+                onClick={() => navigate("/images/studio")}
+                className="w-full rounded-2xl overflow-hidden relative h-24 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 flex items-center px-5 gap-4"
               >
                 <div className="flex-1 text-left">
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">CREATE</p>
-                  <p className="text-lg font-bold text-foreground">Your Image</p>
+                  <p className="text-lg font-bold text-foreground">Create Your Image</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Generate images with AI</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-foreground/10 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-foreground" />
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center -mr-1">
+                  <ImageIcon className="w-8 h-8 text-primary" />
                 </div>
               </motion.button>
 
-              {/* Community Card */}
+              {/* Edit Your Image Card */}
               <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setActiveTab("community")}
-                className="w-full rounded-2xl overflow-hidden relative h-20 bg-card border border-border/30 flex items-center px-5 gap-4"
+                onClick={() => navigate("/images/studio", { state: { editMode: true } })}
+                className="w-full rounded-2xl overflow-hidden relative h-24 bg-gradient-to-r from-violet-500/20 to-violet-500/5 border border-violet-500/20 flex items-center px-5 gap-4"
               >
                 <div className="flex-1 text-left">
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">EXPLORE</p>
-                  <p className="text-lg font-bold text-foreground">Community</p>
+                  <p className="text-lg font-bold text-foreground">Edit Your Image</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Transform existing images</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-foreground/10 flex items-center justify-center">
-                  <User className="w-5 h-5 text-foreground" />
+                <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center -mr-1">
+                  <Brush className="w-8 h-8 text-violet-500" />
                 </div>
               </motion.button>
             </div>
@@ -167,7 +166,7 @@ const ImagesPage = () => {
               {studioImages.length === 0 ? (
                 <div className="text-center py-20">
                   <p className="text-muted-foreground text-sm">No images generated yet</p>
-                  <button onClick={() => navigate("/images/agent")} className="mt-3 text-sm text-primary font-medium">Start creating</button>
+                  <button onClick={() => navigate("/images/studio")} className="mt-3 text-sm text-primary font-medium">Start creating</button>
                 </div>
               ) : (
                 <div className="columns-2 gap-2.5">
@@ -196,7 +195,7 @@ const ImagesPage = () => {
                         <button onClick={() => { navigator.clipboard.writeText(item.prompt || ""); toast.success("Copied"); }} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-medium bg-accent/60 text-foreground">
                           <Copy className="w-3 h-3" /> Copy
                         </button>
-                        <button onClick={() => navigate("/images/agent", { state: { prompt: item.prompt } })} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-medium bg-primary text-primary-foreground">
+                        <button onClick={() => navigate("/images/studio", { state: { prompt: item.prompt } })} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-medium bg-primary text-primary-foreground">
                           <RefreshCw className="w-3 h-3" /> Reuse
                         </button>
                       </div>
@@ -213,21 +212,21 @@ const ImagesPage = () => {
           <div className="flex items-center gap-6 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
             <button
               onClick={() => setActiveTab("home")}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${activeTab === "home" ? "bg-primary" : "bg-transparent"}`}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${activeTab === "home" ? "bg-primary" : "bg-transparent"}`}
             >
-              <Square className={`w-3.5 h-3.5 ${activeTab === "home" ? "text-primary-foreground" : "text-muted-foreground"}`} fill={activeTab === "home" ? "currentColor" : "none"} />
+              <Home className={`w-4.5 h-4.5 ${activeTab === "home" ? "text-primary-foreground" : "text-muted-foreground"}`} />
             </button>
             <button
               onClick={() => setActiveTab("studio")}
-              className="w-8 h-8 flex items-center justify-center"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${activeTab === "studio" ? "bg-primary" : "bg-transparent"}`}
             >
-              <Pencil className={`w-5 h-5 ${activeTab === "studio" ? "text-foreground" : "text-muted-foreground"}`} />
+              <ImageIcon className={`w-4.5 h-4.5 ${activeTab === "studio" ? "text-primary-foreground" : "text-muted-foreground"}`} />
             </button>
             <button
               onClick={() => setActiveTab("community")}
-              className="w-8 h-8 flex items-center justify-center"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${activeTab === "community" ? "bg-primary" : "bg-transparent"}`}
             >
-              <User className={`w-5 h-5 ${activeTab === "community" ? "text-foreground" : "text-muted-foreground"}`} />
+              <Users className={`w-4.5 h-4.5 ${activeTab === "community" ? "text-primary-foreground" : "text-muted-foreground"}`} />
             </button>
           </div>
         </div>
@@ -239,7 +238,7 @@ const ImagesPage = () => {
               <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
                 <img src={previewImg.url} alt="" className="w-full rounded-2xl object-contain max-h-[70vh]" />
                 {previewImg.prompt && <p className="text-white/50 text-xs mt-3 text-center line-clamp-2">{previewImg.prompt}</p>}
-                <div className="flex justify-center mt-3">
+                <div className="flex justify-center gap-3 mt-3">
                   <a href={previewImg.url} download className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground">
                     <Download className="w-4 h-4" /> Download
                   </a>
