@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +58,12 @@ const IMAGE_PLACEHOLDERS = [
   "Anime girl in a garden...",
 ];
 
+const HERO_TEXTS = [
+  { main: "Create something", accent: "extraordinary" },
+  { main: "Imagine it,", accent: "generate it" },
+  { main: "Your vision,", accent: "AI-powered" },
+];
+
 const ImagesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,6 +77,7 @@ const ImagesPage = () => {
   const [selectedModel, setSelectedModel] = useState<ModelOption>(NANO_BANANA_DEFAULT);
   const [toolLandingImages, setToolLandingImages] = useState<Record<string, string>>({});
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [heroIdx, setHeroIdx] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -83,8 +90,11 @@ const ImagesPage = () => {
     if (s === "studio") setActiveTab("studio");
   }, [location.state]);
 
+  useEffect(() => { loadToolLandingImages(); }, []);
+
   useEffect(() => {
-    loadToolLandingImages();
+    const interval = setInterval(() => setHeroIdx(i => (i + 1) % HERO_TEXTS.length), 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadStudioImages = async () => {
@@ -106,19 +116,9 @@ const ImagesPage = () => {
   };
 
   const loadToolLandingImages = async () => {
-    const { data } = await supabase
-      .from("tool_landing_images")
-      .select("tool_id, image_url")
-      .in("tool_id", ALL_TOOLS.map((tool) => tool.id));
-
+    const { data } = await supabase.from("tool_landing_images").select("tool_id, image_url").in("tool_id", ALL_TOOLS.map(t => t.id));
     if (!data) return;
-
-    setToolLandingImages(
-      data.reduce<Record<string, string>>((acc, item) => {
-        if (item.image_url) acc[item.tool_id] = item.image_url;
-        return acc;
-      }, {})
-    );
+    setToolLandingImages(data.reduce<Record<string, string>>((acc, item) => { if (item.image_url) acc[item.tool_id] = item.image_url; return acc; }, {}));
   };
 
   const getToolImage = (toolId: string) => {
@@ -146,23 +146,15 @@ const ImagesPage = () => {
       <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
         <div className="h-full flex flex-col bg-background">
           <div className="sticky top-0 z-10 px-4 py-3 bg-background/80 backdrop-blur-xl flex items-center gap-3 border-b border-border/30">
-            <button onClick={() => setPreviewImg(null)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-accent/50">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+            <button onClick={() => setPreviewImg(null)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-accent/50"><ArrowLeft className="w-5 h-5" /></button>
             <h1 className="text-base font-bold text-foreground flex-1">Preview</h1>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-            <div className="rounded-2xl overflow-hidden border border-border/20">
-              <img src={previewImg.url} alt="" className="w-full object-contain" />
-            </div>
+            <div className="rounded-2xl overflow-hidden border border-border/20"><img src={previewImg.url} alt="" className="w-full object-contain" /></div>
             <div className="flex gap-3">
-              <a href={previewImg.url} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm">
-                <Download className="w-4 h-4" /> Download
-              </a>
+              <a href={previewImg.url} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</a>
               {previewImg.prompt && (
-                <button onClick={() => { navigate("/images/studio", { state: { prompt: previewImg.prompt } }); setPreviewImg(null); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
-                  <RefreshCw className="w-4 h-4" /> Reuse
-                </button>
+                <button onClick={() => { navigate("/images/studio", { state: { prompt: previewImg.prompt } }); setPreviewImg(null); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><RefreshCw className="w-4 h-4" /> Reuse</button>
               )}
             </div>
           </div>
@@ -188,6 +180,16 @@ const ImagesPage = () => {
         <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
             <div className="pt-3 space-y-4">
+              {/* Hero text */}
+              <div className="text-center py-2">
+                <AnimatePresence mode="wait">
+                  <motion.div key={heroIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4 }}>
+                    <p className="text-xl font-bold text-foreground">{HERO_TEXTS[heroIdx].main}</p>
+                    <p className="text-xl font-bold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">{HERO_TEXTS[heroIdx].accent}</p>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
               <UnifiedInputBar
                 prompt={prompt}
                 onPromptChange={setPrompt}
@@ -199,7 +201,6 @@ const ImagesPage = () => {
                 placeholders={IMAGE_PLACEHOLDERS}
                 attachedImage={attachedImage}
                 onClearAttachment={() => setAttachedImage(null)}
-                className="mx-1"
               />
 
               <div className="space-y-3">
@@ -210,22 +211,15 @@ const ImagesPage = () => {
                         const img = getToolImage(tool.id);
                         const gradient = GRADIENTS[(rowIndex * 8 + i) % GRADIENTS.length];
                         const isVideo = img.endsWith(".mp4") || img.includes("video");
-
                         return (
                           <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
                             {img ? (
-                              isVideo ? (
-                                <video src={img} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
-                              ) : (
-                                <img src={img} alt={tool.name} className="absolute inset-0 h-full w-full object-cover" />
-                              )
+                              isVideo ? <video src={img} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" /> : <img src={img} alt={tool.name} className="absolute inset-0 h-full w-full object-cover" />
                             ) : (
                               <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <p className="text-sm font-bold text-white">{tool.name}</p>
-                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 p-3"><p className="text-sm font-bold text-white">{tool.name}</p></div>
                           </motion.button>
                         );
                       })}
@@ -294,7 +288,6 @@ const ImagesPage = () => {
           )}
         </div>
 
-        {/* Bottom Navigation */}
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-8 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
             <button onClick={() => setActiveTab("home")} className="flex flex-col items-center gap-0.5">
