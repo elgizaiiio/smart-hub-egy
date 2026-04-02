@@ -224,8 +224,7 @@ const ImagesPage = () => {
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                             <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
-                              <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
+                              <p className="text-sm font-bold text-white">{tool.name}</p>
                             </div>
                           </motion.button>
                         );
