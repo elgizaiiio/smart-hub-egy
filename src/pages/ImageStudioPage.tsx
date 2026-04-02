@@ -182,7 +182,7 @@ const ImageStudioPage = () => {
                 {/* Loading */}
                 {msg.role === "assistant" && !msg.content && isGenerating && (
                   <div className="flex items-center justify-center py-8">
-                    <OrbLoader />
+                    <OrbLoader visible={true} />
                   </div>
                 )}
                 {/* Generated images */}

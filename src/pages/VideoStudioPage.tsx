@@ -161,7 +161,7 @@ const VideoStudioPage = () => {
                 )}
                 {msg.role === "assistant" && !msg.content && isGenerating && (
                   <div className="flex items-center justify-center py-8">
-                    <OrbLoader />
+                    <OrbLoader visible={true} />
                   </div>
                 )}
                 {msg.videos && msg.videos.length > 0 && (
