@@ -480,6 +480,39 @@ export type Database = {
         }
         Relationships: []
       }
+      headshot_templates: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          gender: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          preview_url: string | null
+          prompt: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          preview_url?: string | null
+          prompt: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          preview_url?: string | null
+          prompt?: string
+        }
+        Relationships: []
+      }
       image_templates: {
         Row: {
           created_at: string
