@@ -28,6 +28,7 @@ interface ToolPageLayoutProps {
   resultType?: "image" | "video";
   autoProcess?: boolean;
   hideHeaderCost?: boolean;
+  backTo?: string;
 }
 
 // ==================== Star Loading Animation ====================
@@ -39,11 +40,7 @@ const StarLoader = () => (
       className="relative"
     >
       <Sparkles className="w-12 h-12 text-yellow-400" />
-      <motion.div
-        animate={{ opacity: [0.3, 1, 0.3] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-        className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full"
-      />
+      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full" />
     </motion.div>
     <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
   </div>
@@ -55,26 +52,30 @@ const ToolLanding = ({
   description,
   landingImage,
   onStart,
+  uploadLabel = "Upload Your Photo",
 }: {
   title: string;
   description?: string;
   landingImage?: string | null;
   onStart: () => void;
+  uploadLabel?: string;
 }) => (
-  <div className="relative min-h-[70vh] flex flex-col items-center justify-end pb-12">
-    {landingImage && (
+  <div className="relative min-h-[75vh] flex flex-col items-center justify-end pb-16">
+    {landingImage ? (
       <img src={landingImage} alt={title} className="absolute inset-0 w-full h-full object-cover" />
+    ) : (
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
     )}
-    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-    <div className="relative z-10 text-center px-6 space-y-4">
-      <h2 className="text-3xl font-bold text-foreground">{title}</h2>
-      {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto">{description}</p>}
+    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+    <div className="relative z-10 text-center px-6 space-y-5">
+      <h2 className="text-3xl font-bold text-foreground tracking-tight">{title}</h2>
+      {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">{description}</p>}
       <motion.button
         whileTap={{ scale: 0.96 }}
         onClick={onStart}
-        className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm"
+        className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20"
       >
-        Upload Your Photo
+        {uploadLabel}
       </motion.button>
     </div>
   </div>
@@ -82,24 +83,16 @@ const ToolLanding = ({
 
 // ==================== Yellow Generate Button ====================
 const YellowGenerateButton = ({
-  cost,
-  costLabel,
-  onClick,
-  disabled,
-  isGenerating,
+  cost, costLabel, onClick, disabled, isGenerating,
 }: {
-  cost: number;
-  costLabel?: string;
-  onClick: () => void;
-  disabled?: boolean;
-  isGenerating: boolean;
+  cost: number; costLabel?: string; onClick: () => void; disabled?: boolean; isGenerating: boolean;
 }) => (
   <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
     <motion.button
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
       disabled={disabled || isGenerating}
-      className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all shadow-lg shadow-yellow-500/20"
+      className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 shadow-lg shadow-yellow-500/20"
     >
       {isGenerating ? (
         <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
@@ -112,15 +105,9 @@ const YellowGenerateButton = ({
 
 // ==================== Result View ====================
 const ResultView = ({
-  resultUrl,
-  resultType = "image",
-  title,
-  onBack,
+  resultUrl, resultType = "image", title, onBack,
 }: {
-  resultUrl: string;
-  resultType?: "image" | "video";
-  title: string;
-  onBack: () => void;
+  resultUrl: string; resultType?: "image" | "video"; title: string; onBack: () => void;
 }) => {
   const handleDownload = () => {
     const a = document.createElement("a");
@@ -165,12 +152,7 @@ const ResultView = ({
 
 // ==================== Template Grid ====================
 export const TemplateGrid = ({
-  templates,
-  onSelect,
-  onCustom,
-  customLabel = "Custom",
-  gender,
-  onGenderChange,
+  templates, onSelect, onCustom, customLabel = "Custom", gender, onGenderChange,
 }: {
   templates: ToolTemplate[];
   onSelect: (template: ToolTemplate) => void;
@@ -185,32 +167,19 @@ export const TemplateGrid = ({
     <div className="space-y-4">
       {onGenderChange && (
         <div className="flex gap-2">
-          <button onClick={() => onGenderChange("female")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${gender === "female" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>
-            Female
-          </button>
-          <button onClick={() => onGenderChange("male")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${gender === "male" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>
-            Male
-          </button>
+          <button onClick={() => onGenderChange("female")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${gender === "female" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>Female</button>
+          <button onClick={() => onGenderChange("male")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${gender === "male" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}>Male</button>
         </div>
       )}
       {onCustom && (
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={onCustom}
-          className="w-full rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-center hover:border-primary/50 transition-colors"
-        >
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onCustom} className="w-full rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-center hover:border-primary/50 transition-colors">
           <p className="text-sm font-semibold text-primary">{customLabel}</p>
           <p className="text-xs text-muted-foreground mt-0.5">Create your own style</p>
         </motion.button>
       )}
       <div className="grid grid-cols-2 gap-3">
         {filtered.map(t => (
-          <motion.button
-            key={t.id}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onSelect(t)}
-            className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left"
-          >
+          <motion.button key={t.id} whileTap={{ scale: 0.97 }} onClick={() => onSelect(t)} className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left">
             {t.preview_url ? (
               <img src={t.preview_url} alt={t.name} className="w-full h-36 object-cover" />
             ) : (
@@ -218,9 +187,7 @@ export const TemplateGrid = ({
                 <Sparkles className="w-8 h-8 text-muted-foreground/20" />
               </div>
             )}
-            <div className="p-2.5">
-              <p className="text-sm font-medium text-foreground">{t.name}</p>
-            </div>
+            <div className="p-2.5"><p className="text-sm font-medium text-foreground">{t.name}</p></div>
           </motion.button>
         ))}
       </div>
@@ -230,29 +197,25 @@ export const TemplateGrid = ({
 
 // ==================== Main Layout ====================
 const ToolPageLayout = ({
-  title,
-  cost,
-  costLabel,
-  toolId,
-  children,
-  onGenerate,
-  isGenerating,
-  resultUrl,
-  resultType = "image",
-  autoProcess,
-  hideHeaderCost,
+  title, cost, costLabel, toolId, children, onGenerate, isGenerating, resultUrl, resultType = "image", autoProcess, hideHeaderCost = true, backTo,
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
-  const { credits, hasEnoughCredits } = useCredits();
+  const { hasEnoughCredits } = useCredits();
   const [landingImage, setLandingImage] = useState<string | null>(null);
   const [landingDesc, setLandingDesc] = useState<string | null>(null);
   const [showLanding, setShowLanding] = useState(true);
+
+  // Determine back destination
+  const defaultBack = toolId && (
+    ["swap-characters", "talking-photo", "upscale", "video-upscale", "auto-caption", "lip-sync", "video-extender", "video-to-text"].includes(toolId)
+  ) ? "/videos" : "/images";
+  const goBack = backTo || defaultBack;
 
   useEffect(() => {
     supabase.from("tool_landing_images").select("image_url, description").eq("tool_id", toolId).maybeSingle()
       .then(({ data }) => {
         if (data?.image_url) { setLandingImage(data.image_url); setLandingDesc(data.description); }
-        else setShowLanding(false);
+        // Always show landing even without image (gradient fallback)
       });
   }, [toolId]);
 
@@ -264,29 +227,29 @@ const ToolPageLayout = ({
     await onGenerate();
   };
 
+  const uploadLabel = resultType === "video" ? "Upload Your Video" : "Upload Your Photo";
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
+      {/* Header - name only */}
       <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
+        <button onClick={() => navigate(goBack)} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="flex-1">
-          <h1 className="text-base font-semibold text-foreground">{title}</h1>
-          {!hideHeaderCost && <p className="text-xs text-muted-foreground">{costLabel || `${cost} MC per generation`}</p>}
-        </div>
+        <h1 className="text-base font-semibold text-foreground flex-1">{title}</h1>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {showLanding && landingImage && !resultUrl && (
+          {showLanding && !resultUrl && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ToolLanding
                 title={title}
                 description={landingDesc || undefined}
                 landingImage={landingImage}
                 onStart={() => setShowLanding(false)}
+                uploadLabel={uploadLabel}
               />
             </motion.div>
           )}
@@ -316,21 +279,13 @@ export default ToolPageLayout;
 
 // ==================== Upload Boxes ====================
 export const ImageUploadBox = ({
-  label,
-  image,
-  onUpload,
-  onClear,
-  accept = "image/*",
+  label, image, onUpload, onClear, accept = "image/*",
 }: {
-  label: string;
-  image: string | null;
-  onUpload: (dataUrl: string) => void;
-  onClear: () => void;
-  accept?: string;
+  label: string; image: string | null; onUpload: (dataUrl: string) => void; onClear: () => void; accept?: string;
 }) => {
   const ref = useRef<HTMLInputElement>(null);
 
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -352,10 +307,7 @@ export const ImageUploadBox = ({
 
   return (
     <>
-      <button
-        onClick={() => ref.current?.click()}
-        className="w-full h-48 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors bg-gradient-to-br from-accent/20 to-accent/5"
-      >
+      <button onClick={() => ref.current?.click()} className="w-full h-48 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors bg-gradient-to-br from-accent/20 to-accent/5">
         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
           <ImagePlus className="w-7 h-7 text-primary/60" />
         </div>
@@ -367,19 +319,13 @@ export const ImageUploadBox = ({
 };
 
 export const VideoUploadBox = ({
-  label,
-  video,
-  onUpload,
-  onClear,
+  label, video, onUpload, onClear,
 }: {
-  label: string;
-  video: string | null;
-  onUpload: (dataUrl: string) => void;
-  onClear: () => void;
+  label: string; video: string | null; onUpload: (dataUrl: string) => void; onClear: () => void;
 }) => {
   const ref = useRef<HTMLInputElement>(null);
 
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -401,10 +347,7 @@ export const VideoUploadBox = ({
 
   return (
     <>
-      <button
-        onClick={() => ref.current?.click()}
-        className="w-full h-48 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors bg-gradient-to-br from-accent/20 to-accent/5"
-      >
+      <button onClick={() => ref.current?.click()} className="w-full h-48 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors bg-gradient-to-br from-accent/20 to-accent/5">
         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Upload className="w-7 h-7 text-primary/60" />
         </div>
@@ -416,15 +359,9 @@ export const VideoUploadBox = ({
 };
 
 export const AudioUploadBox = ({
-  label,
-  audioName,
-  onUpload,
-  onClear,
+  label, audioName, onUpload, onClear,
 }: {
-  label: string;
-  audioName: string | null;
-  onUpload: (dataUrl: string, name: string) => void;
-  onClear: () => void;
+  label: string; audioName: string | null; onUpload: (dataUrl: string, name: string) => void; onClear: () => void;
 }) => {
   const ref = useRef<HTMLInputElement>(null);
 
