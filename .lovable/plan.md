@@ -1,107 +1,131 @@
-# خطة: نظام LemonData للمفاتيح + إدارة من Telegram
+
+
+# خطة شاملة: إعادة تصميم صفحتي الصور والفيديوهات + Headshot جديدة + لودر جديد + أزرار Telegram
 
 ---
 
-## الفكرة
+## 1. إعادة تصميم صفحتي الصور والفيديوهات (تصميم موحد)
 
-استبدال/إضافة LemonData (`api.lemondata.cc/v1`) كمزود رئيسي للشات والصور والملفات، مع نظام إدارة 500+ مفتاح ذكي يعمل بنفس منطق `deapi_keys` الموجود حاليا.
+**الملفات:** `ImagesPage.tsx`, `VideosPage.tsx`
 
-## LemonData API
+### التخطيط الجديد (من الأعلى للأسفل):
 
-- OpenAI-compatible: `https://api.lemondata.cc/v1/chat/completions`
-- يدعم 300+ نموذج (GPT-5, Claude 4.5, Gemini 3, Grok, Qwen3, FLUX, Kling, Veo 3, Sora 2...)
-- Categories: Chat, Image, Video, Audio, Vision, Code, Embedding
-- Streaming SSE مدعوم
+**A. بطاقة Community علوية**
+- بطاقة بارزة بخلفية gradient وصورة تؤدي لتاب Community
+- نص مثل "Explore Community Creations" مع زر Explore
+
+**B. أيقونات دائرية قابلة للسكرول (Scrollable Circle Icons)**
+- صف أفقي من الأيقونات الدائرية يعرض الخدمات البسيطة
+- للصور: BG Remove, Upscale, Retouch, Colorize, Cartoon, Sketch
+- للفيديوهات: Upscale, Auto Caption, Lip Sync, Extender
+- كل أيقونة: صورة دائرية + اسم تحتها، عند الضغط ينقل للأداة
+
+**C. بطاقات كبيرة للخدمات المهمة**
+- بطاقات كبيرة (مثل الصورة المرجعية) للأدوات المهمة
+- للصور: Inpaint, Clothes Changer, Headshot, Face Swap
+- للفيديوهات: Swap Characters, Talking Photo
+- كل بطاقة: صورة كبيرة + اسم + وصف قصير
+
+**D. مربع الإدخال (ثابت في الأسفل)**
+- تصميم مثل الصورة المرجعية: sparkles icon + placeholder "Describe your new idea..."
+- بدل أيقونة sparkles: صورة النموذج المختار (عند الضغط يفتح Model Picker)
+- داخل المربع: الكريدتات تظهر تحت الـ textarea
+- أزرار: Wand2 للتحسين + Settings + Send (بدون أيقونة في زر Send)
+
+**E. أزرار تنقل سفلية**
+- 3 أيقونات: Home (الرئيسية) + Studio (الاستوديو) + Community (المجتمع)
+- تحت مربع الإدخال مباشرة
+
+### حذف التابات العلوية الحالية (Home/Studio/Community pills) واستبدالها بالأزرار السفلية
 
 ---
 
-## التغييرات
+## 2. لودر التوليد الجديد (بدل الانتقال للاستوديو)
 
-### 1. جدول جديد: `lemondata_keys`
+**الملف الجديد:** `src/components/OrbLoader.tsx`
 
+عند التوليد، بدلا من نقل المستخدم للاستوديو:
+- يظهر overlay كامل الشاشة بخلفية داكنة
+- الكرة المتوهجة (CSS المقدم من المستخدم) في المنتصف
+- نصوص متغيرة تحت الكرة: "Creating your masterpiece...", "Bringing ideas to life...", "Almost there...", "Generating creativity..."
+- النقاط ".... IN PROGRESS" كما في الصورة المرجعية
+
+عند الانتهاء:
+- يختفي اللودر ويظهر صفحة النتيجة:
+  - هيدر علوي مع زر رجوع فقط
+  - الصورة/الفيديو الناتجة
+  - مربع الإدخال تحتها (لتوليد جديد مباشرة)
+
+**الملف:** `src/index.css` (إضافة CSS الـ loader)
+
+---
+
+## 3. إعادة تصميم صفحة Headshot
+
+**الملف:** `src/pages/tools/HeadshotPage.tsx` (إعادة كتابة كاملة)
+
+### التصميم:
+- **هيدر علوي:** اسم "AI Headshot" مع زر يفتح الاستوديو (أيقونة history/clock)
+- **نص كبير:** "Generate your perfect headshots"
+- **زرين:** Female / Male (toggle)
+- **بطاقات القوالب:** grid 2 أعمدة، كل بطاقة تعرض صورة القالب + اسمه فقط
+  - القوالب الافتراضية: Business, Black & White, Wedding, Studio, Casual, Vintage
+  - كل قالب له prompt مخفي
+- **عند اختيار قالب:** يطلب رفع صورة الوجه
+- **عند الرفع:** يبدأ التوليد باستخدام Nano Banana مع prompt القالب المخفي + الصورة
+- **عند الانتهاء:** ينقل المستخدم للاستوديو
+
+### جدول Supabase (Migration):
 ```sql
-CREATE TABLE public.lemondata_keys (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  api_key text NOT NULL,
-  label text,
-  is_active boolean DEFAULT true,
-  is_blocked boolean DEFAULT false,
-  block_reason text,
-  usage_count integer DEFAULT 0,
-  error_count integer DEFAULT 0,
-  last_used_at timestamptz,
-  last_error_at timestamptz,
-  created_at timestamptz DEFAULT now()
+CREATE TABLE headshot_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  gender TEXT DEFAULT 'both', -- male, female, both
+  prompt TEXT NOT NULL,
+  preview_url TEXT,
+  display_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
-ALTER TABLE public.lemondata_keys ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role only" ON public.lemondata_keys FOR ALL TO service_role USING (true) WITH CHECK (true);
 ```
 
-### 2. جدول: `bot_admins`
+---
 
-```sql
-CREATE TABLE public.bot_admins (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  telegram_chat_id bigint UNIQUE NOT NULL,
-  added_by bigint,
-  created_at timestamptz DEFAULT now()
-);
--- مع RLS service_role only
-```
+## 4. أزرار Telegram Bot الجديدة
 
-### 3. تحديث `supabase/functions/chat/index.ts`
+**الملف:** `supabase/functions/telegram-bot/index.ts`
 
-**التغيير الرئيسي:** بدلا من OpenRouter كمزود رئيسي، نستخدم LemonData مع key rotation:
+### A. زر "Tools" في القائمة الرئيسية
+- يعرض قائمة الأدوات (IMAGE_TOOLS + VIDEO_TOOLS)
+- عند اختيار أداة: يطلب رفع صورة preview جديدة
+- يحفظ في جدول موجود أو `tool_previews` في memories
 
-```text
-المنطق الجديد:
-1. جلب مفتاح نشط من lemondata_keys (random, غير محظور)
-2. إرسال الطلب إلى api.lemondata.cc/v1/chat/completions
-3. إذا فشل (401/403) → حظر المفتاح + إعادة المحاولة بمفتاح آخر
-4. إذا فشل (429) → تأخير + مفتاح آخر
-5. بعد 3 محاولات فاشلة → رسالة خطأ
-```
+### B. زر "Headshot" في القائمة الرئيسية
+- إضافة/تعديل/حذف قوالب headshot
+- عند الإضافة: يطلب الاسم ← الجنس ← البرومبت ← صورة preview
+- يحفظ في جدول `headshot_templates`
 
-- كل النماذج الأخرى تذهب عبر LemonData بدل OpenRouter
-- الـ model ID يُرسل كما هو (LemonData يدعم نفس الأسماء)
+---
 
-### 4. تحديث `supabase/functions/telegram-bot/index.ts`
+## الملفات المتأثرة
 
-**إضافات:**
-
-**A. زر "unlimited" في القائمة الرئيسية:**
-
-- عرض عدد المفاتيح النشطة / المحظورة / الكلي
-- إضافة مفتاح جديد (إرسال نص المفتاح)
-- عرض قائمة المفاتيح مع حالتها (Active ✅ / Blocked 🚫)
-- تبديل حالة مفتاح (block/unblock)
-- حذف مفتاح
-- عرض النماذج المتاحة (جلبها من `api.lemondata.cc/v1/models`)
-
-**B. أمر `/1` لإضافة أدمن:**
-
-- عند كتابة `/1` يطلب البوت Telegram Chat ID للأدمن الجديد
-- يضيفه في جدول `bot_admins`
-- التحقق من الأدمن قبل السماح بأي أوامر
-
-**C. عرض النماذج المتاحة:**
-
-- زر يعرض كل النماذج من LemonData مقسمة حسب الفئة (Chat, Image, Video, Audio)
-
-### 5. الملفات المتأثرة
-
-
-| ملف                                        | التغيير                                        |
-| ------------------------------------------ | ---------------------------------------------- |
-| Migration SQL                              | جدول `lemondata_keys` + `bot_admins`           |
-| `supabase/functions/chat/index.ts`         | استبدال OpenRouter بـ LemonData + key rotation |
-| `supabase/functions/telegram-bot/index.ts` | إضافة زر unlimited + أمر /1 + إدارة المفاتيح   |
-
+| ملف | التغيير |
+|-----|---------|
+| `src/pages/ImagesPage.tsx` | إعادة تصميم كاملة |
+| `src/pages/VideosPage.tsx` | إعادة تصميم كاملة |
+| `src/components/OrbLoader.tsx` | **جديد** - لودر الكرة المتوهجة |
+| `src/components/OrbLoader.css` | **جديد** - CSS الأنيميشن |
+| `src/pages/tools/HeadshotPage.tsx` | إعادة كتابة كاملة |
+| `supabase/functions/telegram-bot/index.ts` | إضافة أزرار Tools + Headshot |
+| Migration SQL | جدول `headshot_templates` |
 
 ---
 
 ## ترتيب التنفيذ
 
-1. إنشاء الجداول (migration)
-2. تحديث chat edge function للـ LemonData
-3. إضافة إدارة المفاتيح في Telegram bot
+1. Migration (جدول headshot_templates)
+2. OrbLoader component + CSS
+3. إعادة تصميم ImagesPage + VideosPage
+4. إعادة تصميم HeadshotPage
+5. أزرار Telegram Bot
+
