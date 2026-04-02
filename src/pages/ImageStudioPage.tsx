@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Download, ThumbsUp, Share2, Send, X, Loader2, ImageIcon, Paperclip, ChevronDown } from "lucide-react";
+import { ArrowUp, Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Paperclip } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,7 @@ import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import OrbLoader from "@/components/OrbLoader";
-import ReactMarkdown from "react-markdown";
+import studioHero from "@/assets/studio-images-hero.jpg";
 
 interface ChatMessage {
   id: string;
@@ -19,6 +19,19 @@ interface ChatMessage {
   images?: string[];
   attachedImage?: string;
 }
+
+const STUDIO_PLACEHOLDERS = [
+  "A dreamy landscape at golden hour...",
+  "Portrait with cinematic lighting...",
+  "Surreal artwork with bold colors...",
+  "Describe your next masterpiece...",
+];
+
+const HERO_TEXTS = [
+  { main: "Create", accent: "masterpieces" },
+  { main: "Imagine", accent: "anything" },
+  { main: "Your art", accent: "your rules" },
+];
 
 const ImageStudioPage = () => {
   const location = useLocation();
@@ -32,9 +45,17 @@ const ImageStudioPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [heroIdx, setHeroIdx] = useState(0);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load existing conversation
+  useEffect(() => {
+    loadExistingConversation();
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -42,11 +63,43 @@ const ImageStudioPage = () => {
 
   useEffect(() => {
     if (location.state?.prompt) {
-      setInput(location.state.prompt);
-      setTimeout(() => handleSend(location.state.prompt), 100);
+      const p = location.state.prompt;
+      const img = location.state?.attachedImage || null;
+      setInput(p);
+      if (img) setAttachedImage(img);
+      setTimeout(() => handleSend(p, img), 200);
       window.history.replaceState({}, "");
     }
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % STUDIO_PLACEHOLDERS.length), 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => setHeroIdx(i => (i + 1) % HERO_TEXTS.length), 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadExistingConversation = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: convs } = await supabase.from("conversations").select("id").eq("user_id", user.id).eq("mode", "images").order("updated_at", { ascending: false }).limit(1);
+    if (convs && convs.length > 0) {
+      const convId = convs[0].id;
+      setConversationId(convId);
+      const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", convId).order("created_at", { ascending: true });
+      if (msgs && msgs.length > 0) {
+        setMessages(msgs.map(m => ({
+          id: m.id,
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          images: m.images || undefined,
+        })));
+      }
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,33 +110,34 @@ const ImageStudioPage = () => {
     e.target.value = "";
   };
 
-  const handleSend = async (promptOverride?: string) => {
+  const handleSend = async (promptOverride?: string, imageOverride?: string | null) => {
     const prompt = promptOverride || input.trim();
     if (!prompt || isGenerating) return;
 
     const cost = Number(selectedModel.credits) || 1;
     if (userId && !hasEnoughCredits(cost)) { toast.error("Insufficient credits"); return; }
 
+    const currentAttachedImage = imageOverride !== undefined ? imageOverride : attachedImage;
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
       content: prompt,
-      attachedImage: attachedImage || undefined,
+      attachedImage: currentAttachedImage || undefined,
     };
     const assistantMsg: ChatMessage = { id: crypto.randomUUID(), role: "assistant", content: "" };
     setMessages(prev => [...prev, userMsg, assistantMsg]);
     setInput("");
-    const currentAttachedImage = attachedImage;
     setAttachedImage(null);
     setIsGenerating(true);
 
     const { data: { user } } = await supabase.auth.getUser();
-    let convId: string | null = null;
-    if (user) {
+    let convId = conversationId;
+    if (user && !convId) {
       const { data } = await supabase.from("conversations").insert({ title: prompt.slice(0, 50), mode: "images", model: selectedModel.id, user_id: user.id } as any).select("id").single();
       convId = data?.id || null;
-      if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt });
+      setConversationId(convId);
     }
+    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt });
 
     try {
       const body: any = {
@@ -138,71 +192,74 @@ const ImageStudioPage = () => {
   return (
     <AppLayout>
       <div className="h-full flex flex-col bg-background relative overflow-hidden">
-        {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-rose-950/30 via-background to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-rose-950/20 via-background to-background pointer-events-none" />
 
         <ModelPickerSheet open={modelPickerOpen} onClose={() => setModelPickerOpen(false)} onSelect={m => { setSelectedModel(m); setModelPickerOpen(false); }} mode="images" selectedModelId={selectedModel.id} />
 
-        {/* Header */}
-        <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-background/50 backdrop-blur-xl border-b border-border/20">
-          <button onClick={() => navigate("/images")} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent transition-colors"><X className="w-4 h-4" /></button>
-          <h1 className="text-sm font-bold text-foreground">Image Studio</h1>
-          <div className="w-8" />
+        {/* Header - back button + dynamic text */}
+        <div className="relative z-10 flex items-center gap-3 px-4 py-3 bg-background/50 backdrop-blur-xl">
+          <button onClick={() => navigate("/images")} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="flex-1">
+            <AnimatePresence mode="wait">
+              <motion.p key={heroIdx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3 }} className="text-sm font-bold">
+                <span className="text-foreground">{HERO_TEXTS[heroIdx].main} </span>
+                <span className="bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent">{HERO_TEXTS[heroIdx].accent}</span>
+              </motion.p>
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Messages Area */}
         <div ref={scrollRef} className="relative z-10 flex-1 overflow-y-auto px-4 py-4">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
-                <ImageIcon className="w-10 h-10 text-primary/40" />
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
+              <div className="w-full max-w-[280px] rounded-3xl overflow-hidden shadow-2xl shadow-primary/10">
+                <img src={studioHero} alt="" className="w-full h-auto" />
               </div>
-              <h2 className="text-lg font-bold text-foreground mb-1">Create something amazing</h2>
-              <p className="text-sm text-muted-foreground">Describe your image or attach a photo to edit</p>
+              <div>
+                <AnimatePresence mode="wait">
+                  <motion.div key={heroIdx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <p className="text-xl font-bold text-foreground">{HERO_TEXTS[heroIdx].main}</p>
+                    <p className="text-xl font-bold bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent">{HERO_TEXTS[heroIdx].accent}</p>
+                  </motion.div>
+                </AnimatePresence>
+                <p className="text-sm text-muted-foreground mt-2">Describe your image or attach a photo to edit</p>
+              </div>
             </div>
           )}
 
           {messages.map((msg) => (
             <div key={msg.id} className={`mb-4 ${msg.role === "user" ? "flex justify-end" : "flex justify-start"}`}>
-              <div className={`max-w-[85%] ${msg.role === "user" ? "bg-primary/15 rounded-2xl rounded-br-md" : "bg-card/60 backdrop-blur-sm rounded-2xl rounded-bl-md border border-border/20"} p-3`}>
-                {/* User attached image */}
+              <div className={`max-w-[85%] ${msg.role === "user" ? "bg-primary/15 rounded-2xl rounded-br-md p-3" : "p-1"}`}>
                 {msg.attachedImage && (
                   <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />
                 )}
-                {/* Text */}
                 {msg.content && (
-                  <div className="text-sm text-foreground">
-                    {msg.role === "assistant" ? (
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    ) : (
-                      msg.content
-                    )}
+                  <div className={`text-sm text-foreground ${msg.role === "assistant" ? "px-2 py-1" : ""}`}>
+                    {msg.content}
                   </div>
                 )}
-                {/* Loading */}
                 {msg.role === "assistant" && !msg.content && isGenerating && (
                   <div className="flex items-center justify-center py-8">
                     <OrbLoader visible={true} />
                   </div>
                 )}
-                {/* Generated images */}
                 {msg.images && msg.images.length > 0 && (
                   <div className="mt-2 space-y-2">
                     {msg.images.map((url, i) => (
-                      <div key={i} className="relative">
-                        <img src={url} alt="" className="w-full rounded-xl" />
-                        <div className="flex items-center gap-2 mt-2">
-                          <button onClick={() => handleDownload(url)} className="p-2 rounded-xl bg-foreground/10 hover:bg-foreground/20 transition-colors">
+                      <div key={i}>
+                        <img src={url} alt="" className="w-full rounded-2xl" />
+                        <div className="flex items-center gap-1.5 mt-2 px-1">
+                          <button onClick={() => handleDownload(url)} className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors">
                             <Download className="w-4 h-4 text-foreground" />
                           </button>
-                          <button className="p-2 rounded-xl bg-foreground/10 hover:bg-foreground/20 transition-colors">
+                          <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors">
                             <ThumbsUp className="w-4 h-4 text-foreground" />
                           </button>
-                          <button className="p-2 rounded-xl bg-foreground/10 hover:bg-foreground/20 transition-colors">
+                          <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors">
                             <Share2 className="w-4 h-4 text-foreground" />
-                          </button>
-                          <button onClick={() => navigator.clipboard.writeText(url).then(() => toast.success("Link copied"))} className="p-2 rounded-xl bg-primary hover:bg-primary/90 transition-colors">
-                            <Send className="w-4 h-4 text-primary-foreground" />
                           </button>
                         </div>
                       </div>
@@ -214,9 +271,8 @@ const ImageStudioPage = () => {
           ))}
         </div>
 
-        {/* Bottom Input Bar */}
-        <div className="relative z-10 p-3 bg-background/80 backdrop-blur-xl border-t border-border/20">
-          {/* Attached image preview */}
+        {/* Bottom Input */}
+        <div className="relative z-10 p-3 bg-background/80 backdrop-blur-xl">
           {attachedImage && (
             <div className="mb-2 relative inline-block">
               <img src={attachedImage} alt="" className="w-16 h-16 object-cover rounded-xl" />
@@ -225,30 +281,22 @@ const ImageStudioPage = () => {
               </button>
             </div>
           )}
-          <div className="flex items-end gap-2 bg-card/80 rounded-2xl border border-border/30 p-2">
-            {/* Model picker button */}
-            <button onClick={() => setModelPickerOpen(true)} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors">
-              {selectedModel.iconUrl ? (
-                <img src={selectedModel.iconUrl} alt="" className="w-5 h-5 rounded-full" />
-              ) : (
-                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">M</div>
-              )}
+          <div className="flex items-end gap-2 bg-card/60 rounded-2xl p-2">
+            <button onClick={() => setModelPickerOpen(true)} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors overflow-hidden">
+              <img src={selectedModel.iconUrl || "/model-logos/bytedance.ico"} alt="" className="w-5 h-5 rounded object-contain" onError={(e) => { (e.target as HTMLImageElement).src = "/model-logos/bytedance.ico"; }} />
             </button>
-            {/* Attach button */}
             <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground">
               <Paperclip className="w-4 h-4" />
             </button>
-            {/* Text input */}
             <textarea
               ref={textareaRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder="Ask me anything"
+              placeholder={STUDIO_PLACEHOLDERS[placeholderIdx]}
               rows={1}
-              className="flex-1 bg-transparent text-sm text-foreground outline-none resize-none placeholder:text-muted-foreground/50 max-h-24 py-2"
+              className="flex-1 bg-transparent text-sm text-foreground outline-none resize-none placeholder:text-muted-foreground/40 max-h-24 py-2"
             />
-            {/* Send button */}
             <button
               onClick={() => handleSend()}
               disabled={(!input.trim() && !attachedImage) || isGenerating}

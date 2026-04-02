@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { ImagePlus } from "lucide-react";
+import { Paperclip } from "lucide-react";
 
 interface UnifiedInputBarProps {
   prompt: string;
@@ -20,9 +20,9 @@ interface UnifiedInputBarProps {
 }
 
 const DEFAULT_PLACEHOLDERS = [
-  "Let's make your dreams come true...",
-  "Turn your ideas into art...",
   "Describe what you imagine...",
+  "Turn your ideas into art...",
+  "Create stunning visuals with AI...",
 ];
 
 const UnifiedInputBar = ({
@@ -62,21 +62,15 @@ const UnifiedInputBar = ({
   }, [prompt]);
 
   return (
-    <div className={`rounded-2xl bg-card/80 backdrop-blur-sm p-3 ${className}`}>
+    <div className={`rounded-2xl bg-card/60 backdrop-blur-sm ${className}`}>
       {attachedImage && (
-        <div className="mb-2 relative inline-block">
+        <div className="px-3 pt-3 relative inline-block">
           <img src={attachedImage} alt="" className="h-14 w-14 rounded-xl object-cover border border-border/20" />
-          <button onClick={onClearAttachment} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]">✕</button>
+          <button onClick={onClearAttachment} className="absolute -right-1 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]">✕</button>
         </div>
       )}
 
-      <div className="flex items-end gap-2 rounded-xl bg-background/80 px-2.5 py-2">
-        {onAttach && (
-          <button onClick={onAttach} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-            <ImagePlus className="w-[18px] h-[18px]" />
-          </button>
-        )}
-
+      <div className="flex items-end gap-2 px-3 py-3">
         {showModelPicker && onModelPick && (
           <button onClick={onModelPick} className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg hover:bg-accent/50 transition-all">
             <img
@@ -88,6 +82,12 @@ const UnifiedInputBar = ({
           </button>
         )}
 
+        {onAttach && (
+          <button onClick={onAttach} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+            <Paperclip className="w-[18px] h-[18px]" />
+          </button>
+        )}
+
         <textarea
           ref={textareaRef}
           rows={1}
@@ -95,14 +95,14 @@ const UnifiedInputBar = ({
           onChange={e => onPromptChange(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
           placeholder={placeholders[placeholderIdx]}
-          className="min-h-[36px] flex-1 resize-none bg-transparent px-1 py-1 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
+          className="min-h-[40px] flex-1 resize-none bg-transparent px-1 py-1.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
         />
 
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onGenerate}
           disabled={disabled || isGenerating}
-          className="shrink-0 rounded-lg bg-foreground px-4 py-2 text-xs font-semibold text-background transition-all disabled:opacity-30"
+          className="shrink-0 rounded-xl bg-foreground px-5 py-2.5 text-xs font-semibold text-background transition-all disabled:opacity-30"
         >
           {isGenerating ? (
             <div className="mx-auto h-3.5 w-3.5 rounded-full border-2 border-background/30 border-t-background animate-spin" />
