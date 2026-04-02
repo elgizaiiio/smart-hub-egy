@@ -5,11 +5,11 @@ import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass, LayoutGrid } from
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
+import { VIDEO_TOOLS } from "@/lib/videoToolsData";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import type { ModelOption } from "@/components/ModelSelector";
 import UnifiedInputBar from "@/components/UnifiedInputBar";
-import ToolCardGrid from "@/components/ToolCardGrid";
 
 type Tab = "home" | "studio" | "community";
 
@@ -83,6 +83,11 @@ const VideosPage = () => {
     if (data) setCommunityItems(data as any);
   };
 
+  const getToolPreview = (toolId: string) => {
+    const tool = VIDEO_TOOLS.find(t => t.id === toolId);
+    return tool?.previewVideo || "";
+  };
+
   const handleGenerate = () => {
     if (!prompt.trim()) return;
     navigate("/videos/studio", { state: { prompt: prompt.trim(), model: selectedModel } });
@@ -146,14 +151,31 @@ const VideosPage = () => {
                 placeholders={VIDEO_PLACEHOLDERS}
               />
 
-              <ToolCardGrid tools={ALL_TOOLS} gradients={GRADIENTS} type="video" />
+              <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                <div className="flex gap-3 min-w-max">
+                  {ALL_TOOLS.map((tool, i) => {
+                    const preview = getToolPreview(tool.id);
+                    const gradient = GRADIENTS[i % GRADIENTS.length];
+                    return (
+                      <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative w-44 h-56 rounded-2xl overflow-hidden flex-shrink-0">
+                        {preview ? <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" /> : <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider">{tool.desc}</p>
+                          <p className="text-base font-bold text-white mt-0.5">{tool.name}</p>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="w-full rounded-2xl overflow-hidden relative h-32 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 flex items-center">
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="w-full rounded-2xl overflow-hidden relative h-28 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 flex items-center">
                 <div className="flex-1 text-left px-5">
-                  <p className="text-lg font-bold text-foreground whitespace-nowrap">Create Your Video</p>
+                  <p className="text-lg font-bold text-foreground">Create Your Video</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Generate videos with AI</p>
                 </div>
-                <div className="w-32 h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+                <div className="w-28 h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
                   <Wand2 className="w-10 h-10 text-primary/40" />
                 </div>
               </motion.button>
