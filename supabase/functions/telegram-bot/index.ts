@@ -724,6 +724,53 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // Skip callbacks for headshot & tool templates
+      if (d === "hs_skip_image") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        const { error } = await sb.from("headshot_templates").insert({
+          name: (session as any).hsName || "Untitled",
+          gender: (session as any).hsGender || "male",
+          prompt: (session as any).hsPrompt || "",
+          preview_url: null,
+        });
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId,
+          error ? `❌ خطأ: ${error.message}` : `✅ تم إضافة قالب *${(session as any).hsName}* بدون صورة`,
+          [[{ text: "➕ آخر", callback_data: "hs_add" }], [{ text: "📷 القوالب", callback_data: "headshot_menu" }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "tt_gender_skip") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        (session as any).ttGender = null;
+        (session as any).adminAction = "tt_awaiting_prompt";
+        await saveSession(sb, chatId, session);
+        await send(BOT_TOKEN, chatId, msgId, "أرسل البرومبت (prompt) للقالب:", [[{ text: "❌ إلغاء", callback_data: "tool_templates_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d === "tt_skip_image") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        const toolId = (session as any).adminModelId;
+        const { error } = await sb.from("tool_templates").insert({
+          tool_id: toolId,
+          name: (session as any).ttName || "Untitled",
+          gender: (session as any).ttGender || null,
+          prompt: (session as any).ttPrompt || "",
+          preview_url: null,
+        });
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId,
+          error ? `❌ خطأ: ${error.message}` : `✅ تم إضافة قالب *${(session as any).ttName}* بدون صورة`,
+          [[{ text: "➕ آخر", callback_data: `tt_add_${toolId}` }], [{ text: "📋 القوالب", callback_data: `tt_tool_${toolId}` }]]
+        );
+        return new Response("OK");
+      }
+
       // ==================== رفع الوسائط ====================
       if (d === "upload_menu") {
         await send(BOT_TOKEN, chatId, msgId, "📤 *رفع الوسائط*\n\nاختر القسم:", [
