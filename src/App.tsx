@@ -77,7 +77,7 @@ import RetouchingPage from "./pages/tools/RetouchingPage";
 import RemoverPage from "./pages/tools/RemoverPage";
 import HairChangerPage from "./pages/tools/HairChangerPage";
 import CartoonPage from "./pages/tools/CartoonPage";
-import AvatarMakerPage from "./pages/tools/AvatarMakerPage";
+
 
 // Video tool pages
 import VideoSwapPage from "./pages/tools/VideoSwapPage";
