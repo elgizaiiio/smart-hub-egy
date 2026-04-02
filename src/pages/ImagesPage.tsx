@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Download, RefreshCw, ArrowLeft, Plus, ImagePlus, Wand2, Compass } from "lucide-react";
+import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass, LayoutGrid, ImagePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import { IMAGE_TOOLS } from "@/lib/imageToolsData";
 import type { ShowcaseItem } from "@/components/ShowcaseGrid";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
 import type { ModelOption } from "@/components/ModelSelector";
+import UnifiedInputBar from "@/components/UnifiedInputBar";
 
 type Tab = "home" | "studio" | "community";
 
@@ -45,7 +45,7 @@ const GRADIENTS = [
   "from-indigo-600/80 to-indigo-900/90", "from-teal-600/80 to-teal-900/90",
 ];
 
-const PLACEHOLDERS = [
+const IMAGE_PLACEHOLDERS = [
   "Turn your ideas into art...",
   "A futuristic city at sunset...",
   "Create stunning portraits...",
@@ -61,16 +61,10 @@ const ImagesPage = () => {
   const [communityItems, setCommunityItems] = useState<ShowcaseItem[]>([]);
   const [previewImg, setPreviewImg] = useState<{ url: string; prompt?: string } | null>(null);
   const [prompt, setPrompt] = useState("");
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(NANO_BANANA_DEFAULT);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % PLACEHOLDERS.length), 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     if (activeTab === "studio") loadStudioImages();
@@ -119,7 +113,6 @@ const ImagesPage = () => {
     e.target.value = "";
   };
 
-  // Full-page detail view for community/studio
   if (previewImg) {
     return (
       <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
@@ -156,7 +149,6 @@ const ImagesPage = () => {
         <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => {}} currentMode="images" />
         <ModelPickerSheet open={modelPickerOpen} onClose={() => setModelPickerOpen(false)} onSelect={m => { setSelectedModel(m); setModelPickerOpen(false); }} mode="images" selectedModelId={selectedModel.id} />
 
-        {/* Header */}
         <div className="sticky top-0 z-10 px-4 pt-3 pb-2 bg-background/80 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground"><Menu className="w-5 h-5" /></button>
@@ -165,41 +157,22 @@ const ImagesPage = () => {
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
             <div className="pt-3 space-y-4">
-              {/* Input Bar - taller, narrower */}
-              <div className="rounded-2xl bg-gradient-to-r from-rose-500/10 via-purple-500/10 to-blue-500/10 border border-border/30 p-3">
-                {attachedImage && (
-                  <div className="mb-2 relative inline-block">
-                    <img src={attachedImage} alt="" className="w-14 h-14 object-cover rounded-xl" />
-                    <button onClick={() => setAttachedImage(null)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setModelPickerOpen(true)} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent/50 transition-colors">
-                    {selectedModel.iconUrl ? <img src={selectedModel.iconUrl} alt="" className="w-6 h-6 rounded-full" /> : <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">M</div>}
-                  </button>
-                  <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent/50 transition-colors text-muted-foreground"><ImagePlus className="w-4.5 h-4.5" /></button>
-                  <input
-                    value={prompt}
-                    onChange={e => setPrompt(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") handleGenerate(); }}
-                    placeholder={PLACEHOLDERS[placeholderIdx]}
-                    className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2.5 min-h-[44px]"
-                  />
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleGenerate}
-                  className="w-full mt-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold"
-                >
-                  Generate
-                </motion.button>
-              </div>
+              <UnifiedInputBar
+                prompt={prompt}
+                onPromptChange={setPrompt}
+                onGenerate={handleGenerate}
+                onAttach={() => fileInputRef.current?.click()}
+                onModelPick={() => setModelPickerOpen(true)}
+                modelIcon={selectedModel.iconUrl}
+                showModelPicker
+                placeholders={IMAGE_PLACEHOLDERS}
+                attachedImage={attachedImage}
+                onClearAttachment={() => setAttachedImage(null)}
+              />
 
-              {/* Tool Cards - bigger */}
               <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                 <div className="flex gap-3 min-w-max">
                   {ALL_TOOLS.map((tool, i) => {
@@ -219,7 +192,6 @@ const ImagesPage = () => {
                 </div>
               </div>
 
-              {/* Create & Edit Cards with half-image */}
               <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/studio")} className="w-full rounded-2xl overflow-hidden relative h-28 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 flex items-center">
                 <div className="flex-1 text-left px-5">
                   <p className="text-lg font-bold text-foreground">Create Your Image</p>
@@ -278,11 +250,11 @@ const ImagesPage = () => {
           )}
         </div>
 
-        {/* Bottom Navigation - Modern Icons */}
+        {/* Bottom Navigation */}
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-8 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
             <button onClick={() => setActiveTab("home")} className="flex flex-col items-center gap-0.5">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === "home" ? 2.5 : 1.8} className={activeTab === "home" ? "text-primary" : "text-muted-foreground"}><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+              <LayoutGrid className={`w-5 h-5 ${activeTab === "home" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "home" ? 2.5 : 1.8} />
             </button>
             <button onClick={() => setActiveTab("studio")} className="flex flex-col items-center gap-0.5">
               <Wand2 className={`w-5 h-5 ${activeTab === "studio" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={activeTab === "studio" ? 2.5 : 1.8} />
