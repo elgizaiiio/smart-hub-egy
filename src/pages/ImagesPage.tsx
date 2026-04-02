@@ -23,21 +23,20 @@ const NANO_BANANA_DEFAULT: ModelOption = {
 };
 
 const ALL_TOOLS = [
-  { id: "inpaint", name: "Inpaint", desc: "Edit parts of an image", route: "/images/tools/inpaint" },
-  { id: "clothes-changer", name: "Clothes Changer", desc: "Change outfits", route: "/images/tools/clothes-changer" },
-  { id: "headshot", name: "AI Headshot", desc: "Professional photos", route: "/images/tools/headshot" },
-  { id: "face-swap", name: "Face Swap", desc: "Swap faces", route: "/images/tools/face-swap" },
-  { id: "bg-remover", name: "BG Remover", desc: "Remove backgrounds", route: "/images/tools/bg-remover" },
-  { id: "cartoon", name: "Cartoon", desc: "Cartoonify photos", route: "/images/tools/cartoon" },
-  { id: "colorizer", name: "Colorizer", desc: "Colorize B&W", route: "/images/tools/colorizer" },
-  { id: "retouching", name: "Retouch", desc: "Enhance photos", route: "/images/tools/retouching" },
-  { id: "remover", name: "Object Remover", desc: "Remove objects", route: "/images/tools/remover" },
-  { id: "sketch-to-image", name: "Sketch to Image", desc: "Convert sketches", route: "/images/tools/sketch-to-image" },
-  { id: "relight", name: "Relight", desc: "Change lighting", route: "/images/tools/relight" },
-  { id: "character-swap", name: "Character Swap", desc: "Swap characters", route: "/images/tools/character-swap" },
-  { id: "storyboard", name: "Storyboard", desc: "Create panels", route: "/images/tools/storyboard" },
-  { id: "hair-changer", name: "Hair Changer", desc: "Change hairstyles", route: "/images/tools/hair-changer" },
-  { id: "avatar-maker", name: "Avatar Maker 3D", desc: "3D avatars", route: "/images/tools/avatar-maker" },
+  { id: "inpaint", name: "Inpaint", route: "/images/tools/inpaint" },
+  { id: "clothes-changer", name: "Clothes Changer", route: "/images/tools/clothes-changer" },
+  { id: "headshot", name: "AI Headshot", route: "/images/tools/headshot" },
+  { id: "face-swap", name: "Face Swap", route: "/images/tools/face-swap" },
+  { id: "bg-remover", name: "BG Remover", route: "/images/tools/bg-remover" },
+  { id: "cartoon", name: "Cartoon", route: "/images/tools/cartoon" },
+  { id: "colorizer", name: "Colorizer", route: "/images/tools/colorizer" },
+  { id: "retouching", name: "Retouch", route: "/images/tools/retouching" },
+  { id: "remover", name: "Object Remover", route: "/images/tools/remover" },
+  { id: "sketch-to-image", name: "Sketch to Image", route: "/images/tools/sketch-to-image" },
+  { id: "relight", name: "Relight", route: "/images/tools/relight" },
+  { id: "character-swap", name: "Character Swap", route: "/images/tools/character-swap" },
+  { id: "storyboard", name: "Storyboard", route: "/images/tools/storyboard" },
+  { id: "hair-changer", name: "Hair Changer", route: "/images/tools/hair-changer" },
 ];
 
 const TOOL_ROWS = [
