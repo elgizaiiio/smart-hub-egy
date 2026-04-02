@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2, Plus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Sparkles, Download, Share2, Plus, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,20 +10,26 @@ import { ImageUploadBox } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
-type Step = 'upload' | 'styles' | 'clubs' | 'generating' | 'result';
+type Step = 'landing' | 'upload' | 'styles' | 'clubs' | 'generating' | 'result';
 
 const ClothesChangerPage = () => {
   const navigate = useNavigate();
   const { hasEnoughCredits } = useCredits();
-  const [step, setStep] = useState<Step>('upload');
+  const [step, setStep] = useState<Step>('landing');
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [selectedClub, setSelectedClub] = useState<typeof FOOTBALL_CLUBS[0] | null>(null);
   const [customPrompt, setCustomPrompt] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [refImage, setRefImage] = useState<string | null>(null);
+  const [landingImage, setLandingImage] = useState<string | null>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
   const { templates } = useToolTemplates("clothes-changer");
+
+  useEffect(() => {
+    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "clothes-changer").maybeSingle()
+      .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
+  }, []);
 
   const handleImageUpload = (img: string) => { setImage(img); setStep('styles'); };
   const handleStyleSelect = (styleId: string) => {
@@ -63,89 +69,108 @@ const ClothesChangerPage = () => {
         <h1 className="text-base font-semibold text-foreground flex-1">Clothes Changer</h1>
       </div>
 
-      <div className="flex-1 px-4 py-4 overflow-y-auto pb-32">
-        {step === 'upload' && <ImageUploadBox label="Upload your photo" image={image} onUpload={handleImageUpload} onClear={() => setImage(null)} />}
-
-        {step === 'styles' && (
-          <div className="space-y-4">
-            <div className="relative rounded-2xl overflow-hidden border border-border/30"><img src={image!} alt="" className="w-full h-40 object-cover" /></div>
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleStyleSelect('blank')} className="w-full rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-center hover:border-primary/50 transition-colors">
-              <p className="text-sm font-semibold text-primary">Custom Style</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Create your own look</p>
-            </motion.button>
-            {selectedStyle === 'blank' && (
-              <div className="space-y-3">
-                <div className="rounded-2xl bg-gradient-to-r from-rose-400/15 via-purple-400/15 to-blue-400/15 border border-border/20 p-3">
-                  <div className="flex items-center gap-2">
-                    <input ref={refInputRef as any} type="file" accept="image/*" className="hidden" onChange={handleRefUpload} />
-                    <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50"><Plus className="w-5 h-5" /></button>
-                    <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the outfit..." className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 resize-none min-h-[80px] focus:outline-none py-2" />
-                  </div>
-                </div>
-                {refImage && (
-                  <div className="flex items-center gap-2">
-                    <img src={refImage} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                    <span className="text-xs text-muted-foreground flex-1">Reference attached</span>
-                    <button onClick={() => setRefImage(null)} className="text-xs text-destructive">Remove</button>
-                  </div>
-                )}
+      <div className="flex-1 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          {step === "landing" && (
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-end pb-16">
+              {landingImage ? <img src={landingImage} alt="Clothes Changer" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-accent/10 to-background" />}
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+              <div className="relative z-10 text-center px-6 space-y-5">
+                <h2 className="text-3xl font-bold text-foreground tracking-tight">Clothes Changer</h2>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">Transform your outfit with AI</p>
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
+                  <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
+                </motion.button>
               </div>
-            )}
-            {templates.length > 0 && (
+            </motion.div>
+          )}
+
+          {step === "upload" && (
+            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4">
+              <ImageUploadBox label="Upload your photo" image={image} onUpload={handleImageUpload} onClear={() => setImage(null)} />
+            </motion.div>
+          )}
+
+          {step === 'styles' && (
+            <motion.div key="styles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4 pb-32 space-y-4">
+              <div className="relative rounded-2xl overflow-hidden border border-border/30"><img src={image!} alt="" className="w-full h-40 object-cover" /></div>
+              <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleStyleSelect('blank')} className="w-full rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-4 text-center hover:border-primary/50 transition-colors">
+                <p className="text-sm font-semibold text-primary">Custom Style</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Create your own look</p>
+              </motion.button>
+              {selectedStyle === 'blank' && (
+                <div className="space-y-3">
+                  <div className="rounded-2xl bg-card/80 border border-border/20 p-3">
+                    <div className="flex items-center gap-2">
+                      <input ref={refInputRef as any} type="file" accept="image/*" className="hidden" onChange={handleRefUpload} />
+                      <button onClick={() => refInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50"><Plus className="w-5 h-5" /></button>
+                      <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the outfit..." className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 resize-none min-h-[80px] focus:outline-none py-2" />
+                    </div>
+                  </div>
+                  {refImage && (
+                    <div className="flex items-center gap-2">
+                      <img src={refImage} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                      <span className="text-xs text-muted-foreground flex-1">Reference attached</span>
+                      <button onClick={() => setRefImage(null)} className="text-xs text-destructive">Remove</button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {templates.length > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {templates.map(t => (
+                    <motion.button key={t.id} whileTap={{ scale: 0.97 }} onClick={() => handleTemplateSelect(t)} className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left">
+                      {t.preview_url ? <img src={t.preview_url} alt={t.name} className="w-full h-36 object-cover" /> : <div className="w-full h-36 bg-gradient-to-br from-primary/10 to-accent/20 flex items-center justify-center"><Sparkles className="w-8 h-8 text-muted-foreground/20" /></div>}
+                      <div className="p-2.5"><p className="text-sm font-medium text-foreground">{t.name}</p></div>
+                    </motion.button>
+                  ))}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
-                {templates.map(t => (
-                  <motion.button key={t.id} whileTap={{ scale: 0.97 }} onClick={() => handleTemplateSelect(t)} className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left">
-                    {t.preview_url ? <img src={t.preview_url} alt={t.name} className="w-full h-36 object-cover" /> : <div className="w-full h-36 bg-gradient-to-br from-primary/10 to-accent/20 flex items-center justify-center"><Sparkles className="w-8 h-8 text-muted-foreground/20" /></div>}
-                    <div className="p-2.5"><p className="text-sm font-medium text-foreground">{t.name}</p></div>
+                {CLOTHES_STYLES.filter(s => s.id !== 'blank').map((style) => (
+                  <motion.button key={style.id} whileTap={{ scale: 0.97 }} onClick={() => handleStyleSelect(style.id)} className="rounded-2xl overflow-hidden border border-border/50 bg-card text-left">
+                    {style.previewUrl ? <img src={style.previewUrl} alt={style.name} className="w-full h-36 object-cover" /> : <div className="w-full h-36 bg-accent flex items-center justify-center"><Sparkles className="w-8 h-8 text-muted-foreground" /></div>}
+                    <div className="p-2.5"><p className="text-sm font-medium text-foreground">{style.name}</p></div>
                   </motion.button>
                 ))}
               </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              {CLOTHES_STYLES.filter(s => s.id !== 'blank').map((style) => (
-                <motion.button key={style.id} whileTap={{ scale: 0.97 }} onClick={() => handleStyleSelect(style.id)} className="rounded-2xl overflow-hidden border border-border/50 bg-card text-left">
-                  {style.previewUrl ? <img src={style.previewUrl} alt={style.name} className="w-full h-36 object-cover" /> : <div className="w-full h-36 bg-accent flex items-center justify-center"><Sparkles className="w-8 h-8 text-muted-foreground" /></div>}
-                  <div className="p-2.5"><p className="text-sm font-medium text-foreground">{style.name}</p></div>
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {step === 'clubs' && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground mb-3">Select a club</p>
-            <div className="grid grid-cols-2 gap-2">
-              {FOOTBALL_CLUBS.map((club) => (
-                <button key={club.name} onClick={() => handleClubSelect(club)} className="px-3 py-2.5 rounded-xl text-left text-sm bg-card border border-border/50 hover:border-primary/50 transition-colors">
-                  <p className="font-medium text-foreground">{club.name}</p>
-                  <p className="text-xs text-muted-foreground">{club.colors}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {step === 'generating' && (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-            <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }} className="relative">
-              <Sparkles className="w-12 h-12 text-yellow-400" />
-              <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full" />
             </motion.div>
-            <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
-          </div>
-        )}
+          )}
 
-        {step === 'result' && resultUrl && (
-          <div className="space-y-4">
-            <div className="rounded-2xl overflow-hidden border border-border/20"><img src={resultUrl} alt="Result" className="w-full" /></div>
-            <div className="flex gap-3">
-              <button onClick={() => { const a = document.createElement("a"); a.href = resultUrl; a.download = "clothes-result.png"; a.click(); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</button>
-              <button onClick={() => { navigator.share?.({ url: resultUrl }).catch(() => { navigator.clipboard.writeText(resultUrl); toast.success("Copied!"); }); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
-            </div>
-            <button onClick={() => { setResultUrl(null); setStep('styles'); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
-          </div>
-        )}
+          {step === 'clubs' && (
+            <motion.div key="clubs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4 space-y-2">
+              <p className="text-sm font-medium text-foreground mb-3">Select a club</p>
+              <div className="grid grid-cols-2 gap-2">
+                {FOOTBALL_CLUBS.map((club) => (
+                  <button key={club.name} onClick={() => handleClubSelect(club)} className="px-3 py-2.5 rounded-xl text-left text-sm bg-card border border-border/50 hover:border-primary/50 transition-colors">
+                    <p className="font-medium text-foreground">{club.name}</p>
+                    <p className="text-xs text-muted-foreground">{club.colors}</p>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'generating' && (
+            <motion.div key="gen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+              <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }} className="relative">
+                <Sparkles className="w-12 h-12 text-yellow-400" />
+              </motion.div>
+              <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
+            </motion.div>
+          )}
+
+          {step === 'result' && resultUrl && (
+            <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 py-4 space-y-4">
+              <div className="rounded-2xl overflow-hidden border border-border/20"><img src={resultUrl} alt="Result" className="w-full" /></div>
+              <div className="flex gap-3">
+                <button onClick={() => { const a = document.createElement("a"); a.href = resultUrl; a.download = "clothes-result.png"; a.click(); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</button>
+                <button onClick={() => { navigator.share?.({ url: resultUrl }).catch(() => { navigator.clipboard.writeText(resultUrl); toast.success("Copied!"); }); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
+              </div>
+              <button onClick={() => { setResultUrl(null); setStep('styles'); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {step === 'styles' && selectedStyle === 'blank' && customPrompt.trim() && (

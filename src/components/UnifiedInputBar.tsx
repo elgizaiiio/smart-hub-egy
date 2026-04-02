@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Paperclip } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 
 interface UnifiedInputBarProps {
   prompt: string;
@@ -58,31 +58,31 @@ const UnifiedInputBar = ({
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "0px";
-    ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
+    ta.style.height = `${Math.min(ta.scrollHeight, 140)}px`;
   }, [prompt]);
 
   return (
-    <div className={`rounded-2xl border border-border/20 bg-gradient-to-br from-card via-card to-accent/30 p-2.5 shadow-sm ${className}`}>
+    <div className={`rounded-2xl bg-card/80 backdrop-blur-sm p-3 ${className}`}>
       {attachedImage && (
         <div className="mb-2 relative inline-block">
-          <img src={attachedImage} alt="" className="h-16 w-16 rounded-xl object-cover border border-border/30" />
-          <button onClick={onClearAttachment} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]">✕</button>
+          <img src={attachedImage} alt="" className="h-14 w-14 rounded-xl object-cover border border-border/20" />
+          <button onClick={onClearAttachment} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]">✕</button>
         </div>
       )}
 
-      <div className="flex items-end gap-2 rounded-xl bg-background/60 px-2 py-2">
+      <div className="flex items-end gap-2 rounded-xl bg-background/80 px-2.5 py-2">
         {onAttach && (
           <button onClick={onAttach} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-            <Paperclip className="w-4 h-4" />
+            <ImagePlus className="w-[18px] h-[18px]" />
           </button>
         )}
 
         {showModelPicker && onModelPick && (
-          <button onClick={onModelPick} className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/30 hover:border-primary/30 transition-all">
+          <button onClick={onModelPick} className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg hover:bg-accent/50 transition-all">
             <img
               src={resolvedIcon}
               alt="Model"
-              className="h-6 w-6 rounded-md object-contain"
+              className="h-5 w-5 rounded object-contain"
               onError={() => setIconError(true)}
             />
           </button>
@@ -95,7 +95,7 @@ const UnifiedInputBar = ({
           onChange={e => onPromptChange(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
           placeholder={placeholders[placeholderIdx]}
-          className="min-h-[40px] flex-1 resize-none bg-transparent px-1 py-1.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/50"
+          className="min-h-[36px] flex-1 resize-none bg-transparent px-1 py-1 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
         />
 
         <motion.button

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,12 @@ const VIDEO_PLACEHOLDERS = [
   "Create your next viral video...",
 ];
 
+const HERO_TEXTS = [
+  { main: "Bring stories to", accent: "life" },
+  { main: "Your ideas,", accent: "in motion" },
+  { main: "AI-powered", accent: "video creation" },
+];
+
 const VideosPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,6 +65,7 @@ const VideosPage = () => {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(NANO_BANANA_DEFAULT);
   const [toolLandingImages, setToolLandingImages] = useState<Record<string, string>>({});
+  const [heroIdx, setHeroIdx] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedVideo, setAttachedVideo] = useState<string | null>(null);
 
@@ -72,8 +79,11 @@ const VideosPage = () => {
     if (s === "studio") setActiveTab("studio");
   }, [location.state]);
 
+  useEffect(() => { loadToolLandingImages(); }, []);
+
   useEffect(() => {
-    loadToolLandingImages();
+    const interval = setInterval(() => setHeroIdx(i => (i + 1) % HERO_TEXTS.length), 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadStudioVideos = async () => {
@@ -95,19 +105,9 @@ const VideosPage = () => {
   };
 
   const loadToolLandingImages = async () => {
-    const { data } = await supabase
-      .from("tool_landing_images")
-      .select("tool_id, image_url")
-      .in("tool_id", ALL_TOOLS.map((tool) => tool.id));
-
+    const { data } = await supabase.from("tool_landing_images").select("tool_id, image_url").in("tool_id", ALL_TOOLS.map(t => t.id));
     if (!data) return;
-
-    setToolLandingImages(
-      data.reduce<Record<string, string>>((acc, item) => {
-        if (item.image_url) acc[item.tool_id] = item.image_url;
-        return acc;
-      }, {})
-    );
+    setToolLandingImages(data.reduce<Record<string, string>>((acc, item) => { if (item.image_url) acc[item.tool_id] = item.image_url; return acc; }, {}));
   };
 
   const getToolPreview = (toolId: string) => {
@@ -126,23 +126,15 @@ const VideosPage = () => {
       <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
         <div className="h-full flex flex-col bg-background">
           <div className="sticky top-0 z-10 px-4 py-3 bg-background/80 backdrop-blur-xl flex items-center gap-3 border-b border-border/30">
-            <button onClick={() => setPreviewVid(null)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-accent/50">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+            <button onClick={() => setPreviewVid(null)} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-accent/50"><ArrowLeft className="w-5 h-5" /></button>
             <h1 className="text-base font-bold text-foreground flex-1">Preview</h1>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-            <div className="rounded-2xl overflow-hidden border border-border/20">
-              <video src={previewVid.url} controls autoPlay className="w-full" />
-            </div>
+            <div className="rounded-2xl overflow-hidden border border-border/20"><video src={previewVid.url} controls autoPlay className="w-full" /></div>
             <div className="flex gap-3">
-              <a href={previewVid.url} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm">
-                <Download className="w-4 h-4" /> Download
-              </a>
+              <a href={previewVid.url} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</a>
               {previewVid.prompt && (
-                <button onClick={() => { navigate("/videos/studio", { state: { prompt: previewVid.prompt } }); setPreviewVid(null); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
-                  <RefreshCw className="w-4 h-4" /> Reuse
-                </button>
+                <button onClick={() => { navigate("/videos/studio", { state: { prompt: previewVid.prompt } }); setPreviewVid(null); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><RefreshCw className="w-4 h-4" /> Reuse</button>
               )}
             </div>
           </div>
@@ -168,6 +160,16 @@ const VideosPage = () => {
         <div className="flex-1 overflow-y-auto px-4 pb-24">
           {activeTab === "home" && (
             <div className="pt-3 space-y-4">
+              {/* Hero text */}
+              <div className="text-center py-2">
+                <AnimatePresence mode="wait">
+                  <motion.div key={heroIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4 }}>
+                    <p className="text-xl font-bold text-foreground">{HERO_TEXTS[heroIdx].main}</p>
+                    <p className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">{HERO_TEXTS[heroIdx].accent}</p>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
               <UnifiedInputBar
                 prompt={prompt}
                 onPromptChange={setPrompt}
@@ -177,7 +179,6 @@ const VideosPage = () => {
                 modelIcon={selectedModel.iconUrl}
                 showModelPicker
                 placeholders={VIDEO_PLACEHOLDERS}
-                className="mx-1"
               />
 
               <div className="space-y-3">
@@ -188,22 +189,15 @@ const VideosPage = () => {
                         const preview = getToolPreview(tool.id);
                         const gradient = GRADIENTS[(rowIndex * 4 + i) % GRADIENTS.length];
                         const isVideo = preview.endsWith(".mp4") || preview.includes("video");
-
                         return (
                           <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
                             {preview ? (
-                              isVideo ? (
-                                <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" />
-                              ) : (
-                                <img src={preview} alt={tool.name} className="absolute inset-0 h-full w-full object-cover" />
-                              )
+                              isVideo ? <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" /> : <img src={preview} alt={tool.name} className="absolute inset-0 h-full w-full object-cover" />
                             ) : (
                               <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <p className="text-sm font-bold text-white">{tool.name}</p>
-                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 p-3"><p className="text-sm font-bold text-white">{tool.name}</p></div>
                           </motion.button>
                         );
                       })}
