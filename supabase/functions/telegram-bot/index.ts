@@ -285,6 +285,7 @@ function mainMenuKB() {
     [{ text: "⚙️ إعدادات الصفحات", callback_data: "pagesettings_menu" }],
     [{ text: "♾️ Unlimited (LemonData)", callback_data: "lemon_menu" }],
     [{ text: "🛠 Tools (صور الأدوات)", callback_data: "tools_menu" }],
+    [{ text: "📋 Tool Templates (قوالب)", callback_data: "tool_templates_menu" }],
     [{ text: "📷 Headshot (قوالب)", callback_data: "headshot_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
@@ -522,24 +523,138 @@ serve(async (req) => {
           { id: "storyboard", name: "Storyboard" }, { id: "sketch-to-image", name: "Sketch to Image" },
           { id: "retouching", name: "Retouching" }, { id: "remover", name: "Object Remover" },
           { id: "hair-changer", name: "Hair Changer" }, { id: "cartoon", name: "Cartoon" },
-          { id: "swap-characters", name: "Swap Characters (Video)" },
-          { id: "talking-photo", name: "Talking Photo (Video)" },
+          { id: "talking-photo", name: "Talking Photo" },
           { id: "video-upscale", name: "Video Upscale" },
           { id: "auto-caption", name: "Auto Caption" },
         ];
-        const rows = allTools.map(t => [{ text: `🛠 ${t.name}`, callback_data: `tool_preview_${t.id}` }]);
+        const rows: { text: string; callback_data: string }[][] = [];
+        // Two rows per tool pair
+        for (let i = 0; i < allTools.length; i += 2) {
+          const row: { text: string; callback_data: string }[] = [{ text: `🖼 ${allTools[i].name}`, callback_data: `tool_landing_${allTools[i].id}` }];
+          if (allTools[i + 1]) row.push({ text: `🖼 ${allTools[i + 1].name}`, callback_data: `tool_landing_${allTools[i + 1].id}` });
+          rows.push(row);
+        }
         rows.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
-        await send(BOT_TOKEN, chatId, msgId, "🛠 *إدارة صور الأدوات*\n\nاختر أداة لتغيير صورتها:", rows);
+        await send(BOT_TOKEN, chatId, msgId, "🛠 *إدارة صور الأدوات (Landing)*\n\nاختر أداة لتغيير صورتها ووصفها:", rows);
         return new Response("OK");
       }
 
-      if (d.startsWith("tool_preview_")) {
-        const toolId = d.replace("tool_preview_", "");
+      if (d.startsWith("tool_landing_")) {
+        const toolId = d.replace("tool_landing_", "");
+        // Show current landing image info
+        const { data: existing } = await sb.from("tool_landing_images").select("*").eq("tool_id", toolId).maybeSingle();
+        const kb: { text: string; callback_data: string }[][] = [
+          [{ text: "📸 تغيير الصورة", callback_data: `tool_set_img_${toolId}` }],
+          [{ text: "📝 تغيير الوصف", callback_data: `tool_set_desc_${toolId}` }],
+          [{ text: "🔙 رجوع", callback_data: "tools_menu" }],
+        ];
+        await send(BOT_TOKEN, chatId, msgId,
+          `🛠 *${toolId}*\n\n` +
+          `الصورة: ${existing?.image_url ? "✅ موجودة" : "❌ غير موجودة"}\n` +
+          `الوصف: ${existing?.description || "لا يوجد"}`,
+          kb
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tool_set_img_")) {
+        const toolId = d.replace("tool_set_img_", "");
         await saveSession(sb, chatId, { adminAction: "tool_awaiting_image", adminModelId: toolId } as any);
         await send(BOT_TOKEN, chatId, msgId,
           `📸 *تغيير صورة الأداة*\n\nالأداة: \`${toolId}\`\n\nأرسل الصورة الجديدة:`,
           [[{ text: "❌ إلغاء", callback_data: "tools_menu" }]]
         );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tool_set_desc_")) {
+        const toolId = d.replace("tool_set_desc_", "");
+        await saveSession(sb, chatId, { adminAction: "tool_awaiting_desc", adminModelId: toolId } as any);
+        await send(BOT_TOKEN, chatId, msgId,
+          `📝 *تغيير وصف الأداة*\n\nالأداة: \`${toolId}\`\n\nأرسل الوصف الجديد:`,
+          [[{ text: "❌ إلغاء", callback_data: "tools_menu" }]]
+        );
+        return new Response("OK");
+      }
+
+      // ==================== Tool Templates (قوالب الأدوات) ====================
+      if (d === "tool_templates_menu") {
+        const toolsWithTemplates = [
+          { id: "face-swap", name: "Face Swap" }, { id: "cartoon", name: "Cartoon" },
+          { id: "hair-changer", name: "Hair Changer" }, { id: "character-swap", name: "Character Swap" },
+          { id: "clothes-changer", name: "Clothes Changer" },
+        ];
+        const rows = toolsWithTemplates.map(t => [{ text: `📋 ${t.name}`, callback_data: `tt_tool_${t.id}` }]);
+        rows.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, "📋 *إدارة قوالب الأدوات*\n\nاختر أداة:", rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tt_tool_")) {
+        const toolId = d.replace("tt_tool_", "");
+        const { data: templates, count } = await sb.from("tool_templates").select("id, name, is_active, gender", { count: "exact" }).eq("tool_id", toolId);
+        const rows: { text: string; callback_data: string }[][] = [
+          [{ text: "➕ إضافة قالب", callback_data: `tt_add_${toolId}` }],
+        ];
+        if (templates && templates.length > 0) {
+          templates.forEach((t: any) => {
+            rows.push([{ text: `${t.is_active ? "✅" : "⏸"} ${t.name}`, callback_data: `tt_view_${t.id}` }]);
+          });
+        }
+        rows.push([{ text: "🔙 رجوع", callback_data: "tool_templates_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `📋 *قوالب ${toolId}* (${count || 0})`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tt_add_")) {
+        const toolId = d.replace("tt_add_", "");
+        await saveSession(sb, chatId, { adminAction: "tt_awaiting_name", adminModelId: toolId } as any);
+        await send(BOT_TOKEN, chatId, msgId, `📋 *إضافة قالب لـ ${toolId}*\n\nأرسل اسم القالب:`, [[{ text: "❌ إلغاء", callback_data: `tt_tool_${toolId}` }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tt_view_")) {
+        const templateId = d.replace("tt_view_", "");
+        const { data: t } = await sb.from("tool_templates").select("*").eq("id", templateId).single();
+        if (!t) { await send(BOT_TOKEN, chatId, msgId, "❌ قالب غير موجود", [[{ text: "🔙 رجوع", callback_data: "tool_templates_menu" }]]); return new Response("OK"); }
+        await send(BOT_TOKEN, chatId, msgId,
+          `📋 *${t.name}*\n\nالأداة: ${t.tool_id}\nالحالة: ${t.is_active ? "✅ نشط" : "⏸ معطل"}\n${t.gender ? `الجنس: ${t.gender}\n` : ""}البرومبت: ${(t.prompt || "").slice(0, 100)}...`,
+          [
+            [
+              { text: t.is_active ? "⏸ تعطيل" : "✅ تفعيل", callback_data: `tt_toggle_${templateId}` },
+              { text: "🗑 حذف", callback_data: `tt_del_${templateId}` },
+            ],
+            [{ text: "🔙 رجوع", callback_data: `tt_tool_${t.tool_id}` }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tt_toggle_")) {
+        const templateId = d.replace("tt_toggle_", "");
+        const { data: t } = await sb.from("tool_templates").select("is_active, tool_id").eq("id", templateId).single();
+        if (t) await sb.from("tool_templates").update({ is_active: !t.is_active }).eq("id", templateId);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم تحديث الحالة", [[{ text: "🔙 رجوع", callback_data: `tt_tool_${t?.tool_id || "face-swap"}` }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tt_del_")) {
+        const templateId = d.replace("tt_del_", "");
+        const { data: t } = await sb.from("tool_templates").select("tool_id").eq("id", templateId).single();
+        await sb.from("tool_templates").delete().eq("id", templateId);
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم حذف القالب", [[{ text: "🔙 رجوع", callback_data: `tt_tool_${t?.tool_id || "face-swap"}` }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tt_gender_")) {
+        // tt_gender_male or tt_gender_female
+        const gender = d.replace("tt_gender_", "");
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        (session as any).ttGender = gender;
+        (session as any).adminAction = "tt_awaiting_prompt";
+        await saveSession(sb, chatId, session);
+        await send(BOT_TOKEN, chatId, msgId, `✅ الجنس: ${gender}\n\nأرسل البرومبت (prompt) للقالب:`, [[{ text: "❌ إلغاء", callback_data: "tool_templates_menu" }]]);
         return new Response("OK");
       }
 
@@ -603,10 +718,56 @@ serve(async (req) => {
         const session = await loadSession(sb, chatId);
         if (!session) return new Response("OK");
         (session as any).hsGender = gender;
-        await saveSession(sb, chatId, session);
-        await send(BOT_TOKEN, chatId, msgId, `✅ الجنس: ${gender}\n\nأرسل البرومبت (prompt) للقالب:`, [[{ text: "❌ إلغاء", callback_data: "headshot_menu" }]]);
         (session as any).adminAction = "hs_awaiting_prompt";
         await saveSession(sb, chatId, session);
+        await send(BOT_TOKEN, chatId, msgId, `✅ الجنس: ${gender}\n\nأرسل البرومبت (prompt) للقالب:`, [[{ text: "❌ إلغاء", callback_data: "headshot_menu" }]]);
+        return new Response("OK");
+      }
+
+      // Skip callbacks for headshot & tool templates
+      if (d === "hs_skip_image") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        const { error } = await sb.from("headshot_templates").insert({
+          name: (session as any).hsName || "Untitled",
+          gender: (session as any).hsGender || "male",
+          prompt: (session as any).hsPrompt || "",
+          preview_url: null,
+        });
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId,
+          error ? `❌ خطأ: ${error.message}` : `✅ تم إضافة قالب *${(session as any).hsName}* بدون صورة`,
+          [[{ text: "➕ آخر", callback_data: "hs_add" }], [{ text: "📷 القوالب", callback_data: "headshot_menu" }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "tt_gender_skip") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        (session as any).ttGender = null;
+        (session as any).adminAction = "tt_awaiting_prompt";
+        await saveSession(sb, chatId, session);
+        await send(BOT_TOKEN, chatId, msgId, "أرسل البرومبت (prompt) للقالب:", [[{ text: "❌ إلغاء", callback_data: "tool_templates_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d === "tt_skip_image") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        const toolId = (session as any).adminModelId;
+        const { error } = await sb.from("tool_templates").insert({
+          tool_id: toolId,
+          name: (session as any).ttName || "Untitled",
+          gender: (session as any).ttGender || null,
+          prompt: (session as any).ttPrompt || "",
+          preview_url: null,
+        });
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId,
+          error ? `❌ خطأ: ${error.message}` : `✅ تم إضافة قالب *${(session as any).ttName}* بدون صورة`,
+          [[{ text: "➕ آخر", callback_data: `tt_add_${toolId}` }], [{ text: "📋 القوالب", callback_data: `tt_tool_${toolId}` }]]
+        );
         return new Response("OK");
       }
 
@@ -2497,6 +2658,216 @@ serve(async (req) => {
             reply_markup: JSON.stringify({ inline_keyboard: [
               [{ text: "✅ لقد انتهيت", callback_data: "lemon_done_adding" }],
             ] }),
+          });
+        }
+        return new Response("OK");
+      }
+
+      // ---- Headshot template text inputs ----
+      if ((session as any)?.adminAction === "hs_awaiting_name" && text) {
+        (session as any).hsName = text.trim();
+        (session as any).adminAction = "hs_awaiting_gender";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ الاسم: *${text.trim()}*\n\nاختر الجنس:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "👨 Male", callback_data: "hs_gender_male" }, { text: "👩 Female", callback_data: "hs_gender_female" }],
+            [{ text: "❌ إلغاء", callback_data: "headshot_menu" }],
+          ]}),
+        });
+        return new Response("OK");
+      }
+
+      if ((session as any)?.adminAction === "hs_awaiting_prompt" && text) {
+        (session as any).hsPrompt = text.trim();
+        (session as any).adminAction = "hs_awaiting_image";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ البرومبت: *${text.trim().slice(0, 50)}...*\n\nأرسل صورة المعاينة للقالب:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي (بدون صورة)", callback_data: "hs_skip_image" }], [{ text: "❌ إلغاء", callback_data: "headshot_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if ((session as any)?.adminAction === "hs_awaiting_image") {
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document?.mime_type?.startsWith("image/")) fileId = message.document.file_id;
+
+        let previewUrl: string | null = null;
+        if (fileId) {
+          const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+          const filePath = fileInfo.result?.file_path;
+          if (filePath) {
+            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+            const fileResp = await fetch(fileUrl);
+            const fileBuffer = await fileResp.arrayBuffer();
+            const ext = filePath.split(".").pop() || "jpg";
+            const storagePath = `headshot-templates/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, { contentType: `image/${ext}`, upsert: true });
+            if (!uploadError) {
+              const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+              previewUrl = urlData.publicUrl;
+            }
+          }
+        }
+
+        const { error } = await sb.from("headshot_templates").insert({
+          name: (session as any).hsName || "Untitled",
+          gender: (session as any).hsGender || "male",
+          prompt: (session as any).hsPrompt || "",
+          preview_url: previewUrl,
+        });
+
+        await clearSession(sb, chatId);
+        if (error) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `❌ خطأ: ${error.message}` });
+        } else {
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId,
+            text: `✅ *تم إضافة قالب Headshot بنجاح!*\n\n📛 الاسم: ${(session as any).hsName}\n👤 الجنس: ${(session as any).hsGender}\n📸 الصورة: ${previewUrl ? "✅" : "❌"}`,
+            parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [
+              [{ text: "➕ إضافة قالب آخر", callback_data: "hs_add" }],
+              [{ text: "📷 قوالب Headshot", callback_data: "headshot_menu" }],
+              [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+            ]}),
+          });
+        }
+        return new Response("OK");
+      }
+
+      // ---- Tool landing image upload ----
+      if ((session as any)?.adminAction === "tool_awaiting_image" && (session as any)?.adminModelId) {
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document?.mime_type?.startsWith("image/")) fileId = message.document.file_id;
+
+        if (!fileId) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "أرسل صورة فقط.", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "tools_menu" }]] }) });
+          return new Response("OK");
+        }
+
+        const toolId = (session as any).adminModelId;
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل تحميل الملف." }); return new Response("OK"); }
+
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || "jpg";
+        const storagePath = `tool-landing/${toolId}.${ext}`;
+        const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, { contentType: `image/${ext}`, upsert: true });
+        if (uploadError) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ: ${uploadError.message}` }); return new Response("OK"); }
+
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        // Upsert into tool_landing_images
+        const { data: existing } = await sb.from("tool_landing_images").select("tool_id").eq("tool_id", toolId).maybeSingle();
+        if (existing) {
+          await sb.from("tool_landing_images").update({ image_url: urlData.publicUrl, updated_at: new Date().toISOString() }).eq("tool_id", toolId);
+        } else {
+          await sb.from("tool_landing_images").insert({ tool_id: toolId, image_url: urlData.publicUrl });
+        }
+
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ تم تحديث صورة \`${toolId}\` بنجاح!`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🛠 الأدوات", callback_data: "tools_menu" }], [{ text: "🔙 القائمة", callback_data: "main_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      // ---- Tool landing description ----
+      if ((session as any)?.adminAction === "tool_awaiting_desc" && text && (session as any)?.adminModelId) {
+        const toolId = (session as any).adminModelId;
+        const { data: existing } = await sb.from("tool_landing_images").select("tool_id").eq("tool_id", toolId).maybeSingle();
+        if (existing) {
+          await sb.from("tool_landing_images").update({ description: text.trim(), updated_at: new Date().toISOString() }).eq("tool_id", toolId);
+        } else {
+          await sb.from("tool_landing_images").insert({ tool_id: toolId, description: text.trim() });
+        }
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ تم تحديث وصف \`${toolId}\`:\n${text.trim().slice(0, 100)}`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🛠 الأدوات", callback_data: "tools_menu" }], [{ text: "🔙 القائمة", callback_data: "main_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      // ---- Tool templates text inputs ----
+      if ((session as any)?.adminAction === "tt_awaiting_name" && text) {
+        const toolId = (session as any).adminModelId;
+        (session as any).ttName = text.trim();
+        (session as any).adminAction = "tt_awaiting_gender_choice";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ الاسم: *${text.trim()}*\n\nاختر الجنس (اختياري):`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [
+            [{ text: "👨 Male", callback_data: "tt_gender_male" }, { text: "👩 Female", callback_data: "tt_gender_female" }],
+            [{ text: "⏭ تخطي", callback_data: "tt_gender_skip" }],
+            [{ text: "❌ إلغاء", callback_data: `tt_tool_${toolId}` }],
+          ]}),
+        });
+        return new Response("OK");
+      }
+
+      if ((session as any)?.adminAction === "tt_awaiting_prompt" && text) {
+        (session as any).ttPrompt = text.trim();
+        (session as any).adminAction = "tt_awaiting_image";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ البرومبت: *${text.trim().slice(0, 50)}...*\n\nأرسل صورة المعاينة:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي", callback_data: "tt_skip_image" }], [{ text: "❌ إلغاء", callback_data: "tool_templates_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      if ((session as any)?.adminAction === "tt_awaiting_image") {
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document?.mime_type?.startsWith("image/")) fileId = message.document.file_id;
+
+        let previewUrl: string | null = null;
+        if (fileId) {
+          const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+          const filePath = fileInfo.result?.file_path;
+          if (filePath) {
+            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+            const fileResp = await fetch(fileUrl);
+            const fileBuffer = await fileResp.arrayBuffer();
+            const ext = filePath.split(".").pop() || "jpg";
+            const storagePath = `tool-templates/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, { contentType: `image/${ext}`, upsert: true });
+            if (!uploadError) {
+              const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+              previewUrl = urlData.publicUrl;
+            }
+          }
+        }
+
+        const toolId = (session as any).adminModelId;
+        const { error } = await sb.from("tool_templates").insert({
+          tool_id: toolId,
+          name: (session as any).ttName || "Untitled",
+          gender: (session as any).ttGender || null,
+          prompt: (session as any).ttPrompt || "",
+          preview_url: previewUrl,
+        });
+
+        await clearSession(sb, chatId);
+        if (error) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `❌ خطأ: ${error.message}` });
+        } else {
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId,
+            text: `✅ *تم إضافة قالب بنجاح!*\n\n🛠 الأداة: ${toolId}\n📛 الاسم: ${(session as any).ttName}\n📸 الصورة: ${previewUrl ? "✅" : "❌"}`,
+            parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [
+              [{ text: "➕ إضافة قالب آخر", callback_data: `tt_add_${toolId}` }],
+              [{ text: "📋 القوالب", callback_data: `tt_tool_${toolId}` }],
+              [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+            ]}),
           });
         }
         return new Response("OK");
