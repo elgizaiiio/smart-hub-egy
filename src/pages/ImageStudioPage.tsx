@@ -236,14 +236,33 @@ const ImageStudioPage = () => {
                 {msg.attachedImage && (
                   <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />
                 )}
-                {msg.content && (
-                  <div className={`text-sm text-foreground ${msg.role === "assistant" ? "px-2 py-1" : ""}`}>
-                    {msg.content}
-                  </div>
+                {msg.content && msg.role === "user" && (
+                  <TruncatedText text={msg.content} />
+                )}
+                {msg.content && msg.role === "assistant" && (
+                  <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>
                 )}
                 {msg.role === "assistant" && !msg.content && isGenerating && (
-                  <div className="flex items-center justify-center py-8">
-                    <OrbLoader visible={true} />
+                  <div className="flex flex-col items-center justify-center py-10 gap-4">
+                    <motion.div
+                      animate={{ rotate: 360, scale: [1, 1.3, 1] }}
+                      transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1.5, repeat: Infinity } }}
+                      className="relative"
+                    >
+                      <Sparkles className="w-10 h-10 text-yellow-400" />
+                      <motion.div animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full" />
+                    </motion.div>
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={Math.floor(Date.now() / 3000)}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="text-lg font-bold bg-gradient-to-r from-violet-400 via-pink-400 to-amber-400 bg-clip-text text-transparent"
+                      >
+                        {["Creating magic...", "Painting pixels...", "Almost there...", "Bringing ideas to life..."][Math.floor(Date.now() / 3000) % 4]}
+                      </motion.p>
+                    </AnimatePresence>
                   </div>
                 )}
                 {msg.images && msg.images.length > 0 && (
