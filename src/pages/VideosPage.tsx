@@ -36,15 +36,14 @@ const TOOL_ROWS = [
   ALL_TOOLS.slice(Math.ceil(ALL_TOOLS.length / 2)),
 ];
 
-const TOOL_CARDS: { id: string; colors: string; accent1: string; accent2: string }[] = [
-  { id: "swap-characters", colors: "from-violet-400 via-purple-500 to-violet-700", accent1: "rgba(180,130,255,0.4)", accent2: "rgba(100,40,180,0.3)" },
-  { id: "talking-photo", colors: "from-rose-400 via-pink-500 to-rose-700", accent1: "rgba(255,130,170,0.4)", accent2: "rgba(180,40,90,0.3)" },
-  { id: "upscale", colors: "from-cyan-400 via-blue-500 to-cyan-700", accent1: "rgba(80,200,255,0.4)", accent2: "rgba(20,100,180,0.3)" },
-  { id: "auto-caption", colors: "from-amber-400 via-orange-500 to-amber-700", accent1: "rgba(255,190,80,0.4)", accent2: "rgba(200,100,20,0.3)" },
-  { id: "lip-sync", colors: "from-emerald-400 via-teal-500 to-emerald-700", accent1: "rgba(80,220,160,0.4)", accent2: "rgba(20,130,80,0.3)" },
-  { id: "video-extender", colors: "from-indigo-400 via-blue-500 to-indigo-700", accent1: "rgba(120,130,255,0.4)", accent2: "rgba(50,40,180,0.3)" },
-];
-const TOOL_CARD_MAP = Object.fromEntries(TOOL_CARDS.map(c => [c.id, c]));
+const TOOL_SILK: Record<string, { bg: string; s1: string; s2: string; s3: string; s4: string }> = {
+  "swap-characters": { bg: "linear-gradient(135deg, #3a1e5f 0%, #7c3aed 40%, #6d28d9 100%)", s1: "rgba(167,139,250,0.5)", s2: "rgba(124,58,237,0.4)", s3: "rgba(196,181,253,0.15)", s4: "rgba(139,92,246,0.25)" },
+  "talking-photo": { bg: "linear-gradient(135deg, #5f1e3a 0%, #e11d48 40%, #9f1239 100%)", s1: "rgba(251,113,133,0.5)", s2: "rgba(225,29,72,0.4)", s3: "rgba(253,164,175,0.15)", s4: "rgba(244,63,94,0.25)" },
+  "upscale": { bg: "linear-gradient(135deg, #1e3a5f 0%, #0284c7 40%, #0369a1 100%)", s1: "rgba(56,189,248,0.5)", s2: "rgba(2,132,199,0.4)", s3: "rgba(125,211,252,0.15)", s4: "rgba(14,165,233,0.25)" },
+  "auto-caption": { bg: "linear-gradient(135deg, #5f3a1e 0%, #d97706 40%, #b45309 100%)", s1: "rgba(251,191,36,0.5)", s2: "rgba(217,119,6,0.4)", s3: "rgba(253,224,71,0.15)", s4: "rgba(245,158,11,0.25)" },
+  "lip-sync": { bg: "linear-gradient(135deg, #1e5f2a 0%, #16a34a 40%, #15803d 100%)", s1: "rgba(74,222,128,0.5)", s2: "rgba(22,163,74,0.4)", s3: "rgba(134,239,172,0.15)", s4: "rgba(34,197,94,0.25)" },
+  "video-extender": { bg: "linear-gradient(135deg, #1e2a5f 0%, #4f46e5 40%, #4338ca 100%)", s1: "rgba(129,140,248,0.5)", s2: "rgba(79,70,229,0.4)", s3: "rgba(165,180,252,0.15)", s4: "rgba(99,102,241,0.25)" },
+};
 
 const VIDEO_PLACEHOLDERS = [
   "A cinematic drone shot over mountains...",
