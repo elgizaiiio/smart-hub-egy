@@ -199,14 +199,16 @@ const VideosPage = () => {
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <div className="flex min-w-max gap-3">
                       {row.map((tool) => {
-                        const gradient = TOOL_GRADIENTS[tool.id] || "from-gray-500 to-gray-700";
+                        const card = TOOL_CARD_MAP[tool.id];
+                        const colors = card?.colors || "from-gray-400 via-gray-500 to-gray-700";
+                        const a1 = card?.accent1 || "rgba(150,150,150,0.4)";
+                        const a2 = card?.accent2 || "rgba(80,80,80,0.3)";
                         return (
-                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
-                            <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(0,0,0,0.2),transparent_60%)]" />
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className={`relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${colors}`}>
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 120% 80% at 20% 30%, ${a1}, transparent), radial-gradient(ellipse 100% 60% at 80% 70%, ${a2}, transparent), radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.08), transparent)` }} />
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 80%, rgba(255,255,255,0.12), transparent 50%), radial-gradient(circle at 70% 20%, rgba(255,255,255,0.1), transparent 40%)` }} />
                             <div className="absolute inset-0 flex items-center justify-center p-4">
-                              <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed">{tool.name}</p>
+                              <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed drop-shadow-sm">{tool.name}</p>
                             </div>
                           </motion.button>
                         );
