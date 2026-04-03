@@ -231,7 +231,7 @@ const ImageStudioPage = () => {
         const urls: string[] = data.image_urls || (data.image_url ? [data.image_url] : []);
         setMessages(prev => {
           const copy = [...prev];
-          copy[copy.length - 1].content = "Here's your generated image";
+          copy[copy.length - 1].content = "";
           copy[copy.length - 1].images = urls;
           return copy;
         });
