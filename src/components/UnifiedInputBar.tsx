@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronDown } from "lucide-react";
+import { motion } from "framer-motion";
+import { ImagePlus, ChevronDown } from "lucide-react";
 
 interface UnifiedInputBarProps {
   prompt: string;
@@ -32,6 +32,7 @@ const UnifiedInputBar = ({
   onGenerate,
   onAttach,
   onModelPick,
+  modelIcon,
   modelName,
   placeholders = DEFAULT_PLACEHOLDERS,
   generateLabel = "Generate",
@@ -47,28 +48,21 @@ const UnifiedInputBar = ({
   const [isTyping, setIsTyping] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Typing animation for placeholders
   useEffect(() => {
     const target = placeholders[placeholderIdx];
     if (!target) return;
-    
     let charIdx = 0;
     setIsTyping(true);
     setDisplayedPlaceholder("");
-    
     const typeInterval = setInterval(() => {
       charIdx++;
       setDisplayedPlaceholder(target.slice(0, charIdx));
       if (charIdx >= target.length) {
         clearInterval(typeInterval);
         setIsTyping(false);
-        // Wait then move to next
-        setTimeout(() => {
-          setPlaceholderIdx(i => (i + 1) % placeholders.length);
-        }, 2000);
+        setTimeout(() => setPlaceholderIdx(i => (i + 1) % placeholders.length), 2000);
       }
     }, 40);
-    
     return () => clearInterval(typeInterval);
   }, [placeholderIdx, placeholders]);
 
@@ -76,51 +70,67 @@ const UnifiedInputBar = ({
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "0px";
-    ta.style.height = `${Math.min(ta.scrollHeight, 140)}px`;
+    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
   }, [prompt]);
 
   return (
-    <div className={`rounded-2xl bg-card/60 backdrop-blur-sm ${className}`}>
+    <div className={`rounded-2xl bg-accent/40 backdrop-blur-sm ${className}`}>
       {attachedImage && (
-        <div className="px-3 pt-3 relative inline-block">
-          <img src={attachedImage} alt="" className="h-14 w-14 rounded-xl object-cover border border-border/20" />
-          <button onClick={onClearAttachment} className="absolute -right-1 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]">✕</button>
+        <div className="px-4 pt-4 relative inline-block">
+          <img src={attachedImage} alt="" className="h-16 w-16 rounded-xl object-cover" />
+          <button onClick={onClearAttachment} className="absolute -right-1 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]">✕</button>
         </div>
       )}
 
-      <div className="flex items-end gap-2 px-3 py-3">
+      {/* Textarea area */}
+      <div className="px-4 pt-4 pb-2">
+        <textarea
+          ref={textareaRef}
+          rows={2}
+          value={prompt}
+          onChange={e => onPromptChange(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
+          placeholder={displayedPlaceholder + (isTyping ? "|" : "")}
+          className="min-h-[64px] w-full resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
+        />
+      </div>
+
+      {/* Bottom controls */}
+      <div className="flex items-center gap-2 px-4 pb-4">
         {showModelPicker && onModelPick && (
           <button
             onClick={onModelPick}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/50 bg-accent/30 px-3 py-2 hover:bg-accent/60 transition-all text-xs font-medium backdrop-blur-sm"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-accent/60 px-3 py-2 hover:bg-accent transition-all text-xs font-medium"
           >
-            <span className="text-muted-foreground">Select</span>
-            <span className="text-blue-400 font-bold">Model</span>
+            {modelIcon ? (
+              <img src={modelIcon} alt="" className="w-4 h-4 rounded-full object-cover" />
+            ) : null}
+            {modelName ? (
+              <span className="text-foreground font-semibold truncate max-w-[100px]">{modelName}</span>
+            ) : (
+              <>
+                <span className="text-muted-foreground">Select</span>
+                <span className="text-blue-400 font-bold">Model</span>
+              </>
+            )}
             <ChevronDown className="w-3 h-3 text-muted-foreground" />
           </button>
         )}
 
         {onAttach && (
-          <button onClick={onAttach} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-accent/20 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-            <Plus className="w-4 h-4" />
+          <button onClick={onAttach} className="flex shrink-0 items-center gap-1.5 rounded-full bg-accent/60 px-3 py-2 hover:bg-accent transition-all text-xs font-medium text-muted-foreground hover:text-foreground">
+            <ImagePlus className="w-3.5 h-3.5" />
+            <span>Media</span>
           </button>
         )}
 
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          value={prompt}
-          onChange={e => onPromptChange(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
-          placeholder={displayedPlaceholder + (isTyping ? "|" : "")}
-          className="min-h-[40px] flex-1 resize-none bg-transparent px-1 py-1.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
-        />
+        <div className="flex-1" />
 
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onGenerate}
           disabled={disabled || isGenerating}
-          className="shrink-0 rounded-xl bg-foreground px-5 py-2.5 text-xs font-semibold text-background transition-all disabled:opacity-30"
+          className="shrink-0 rounded-xl bg-foreground px-6 py-2.5 text-xs font-semibold text-background transition-all disabled:opacity-30"
         >
           {isGenerating ? (
             <div className="mx-auto h-3.5 w-3.5 rounded-full border-2 border-background/30 border-t-background animate-spin" />

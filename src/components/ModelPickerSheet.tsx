@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, X, Check, Lock, Sparkles } from "lucide-react";
+import { ArrowLeft, X, Check, Sparkles } from "lucide-react";
 import { createPortal } from "react-dom";
 import { type ModelDetail, type ModelType, FREE_MODEL_IDS } from "@/lib/modelDetails";
 import { useDynamicModels } from "@/hooks/useModels";
@@ -27,24 +27,11 @@ const MODE_TYPES: Record<PickerMode, {models: ModelType[];tools: ModelType[];mod
   chat: { models: ["chat"], tools: [], modelLabel: "Models", toolLabel: "" }
 };
 
-const MODEL_LOGOS: Record<string, string> = {};
-const MODEL_BADGES: Record<string, string[]> = {};
-const NEW_MODELS: string[] = [];
-const FEATURED_IMAGE_IDS: string[] = [];
-
 interface ModelMediaRecord {
   model_id: string;
   media_url: string;
   media_type: "image" | "video";
 }
-
-const ACCENT_COLORS = [
-  "from-violet-500/20 to-purple-600/10",
-  "from-cyan-500/20 to-blue-600/10",
-  "from-rose-500/20 to-pink-600/10",
-  "from-amber-500/20 to-orange-600/10",
-  "from-emerald-500/20 to-green-600/10",
-];
 
 const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: ModelPickerSheetProps) => {
   const [tab, setTab] = useState<"models" | "tools">("models");
@@ -75,16 +62,6 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     const typeList = tab === "models" ? types.models : types.tools;
     return dynamicModels.filter((m) => typeList.includes(m.type));
   }, [tab, types, dynamicModels]);
-
-  const featuredModels = useMemo(() => {
-    if (mode !== "images" || tab !== "models") return [];
-    return allModels.filter((m) => FEATURED_IMAGE_IDS.includes(m.id));
-  }, [allModels, mode, tab]);
-
-  const otherModels = useMemo(() => {
-    if (mode !== "images" || tab !== "models") return allModels;
-    return allModels.filter((m) => !FEATURED_IMAGE_IDS.includes(m.id));
-  }, [allModels, mode, tab]);
 
   const handleSelect = (model: ModelDetail) => {
     const isFree = FREE_MODEL_IDS.includes(model.id) || model.credits === 0;
@@ -117,85 +94,46 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
 
   const renderModelCard = (model: ModelDetail, idx: number) => {
     const isSelected = selectedModelId === model.id;
-    const logo = model.iconUrl || MODEL_LOGOS[model.id];
-    const badges = model.badges || MODEL_BADGES[model.id] || [];
-    const isNew = (model.badges || []).includes("NEW") || NEW_MODELS.includes(model.id);
+    const logo = model.iconUrl;
     const isFree = model.credits === 0;
-    const accent = ACCENT_COLORS[idx % ACCENT_COLORS.length];
 
     return (
       <motion.button
         key={model.id}
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: idx * 0.03 }}
+        transition={{ delay: idx * 0.02 }}
         onClick={() => handleSelect(model)}
-        className={`w-full text-left transition-all rounded-2xl overflow-hidden mb-2 ${
-          isSelected ? "ring-1 ring-primary/50" : ""
+        className={`w-full text-left transition-all rounded-xl p-3 mb-1.5 flex items-center gap-3 ${
+          isSelected ? "bg-accent/60" : "hover:bg-accent/30"
         }`}
       >
-        <div className={`relative flex items-center gap-3 px-4 py-3.5 bg-gradient-to-r ${accent} backdrop-blur-xl`}>
-          {/* Logo */}
-          <div className="shrink-0">
-            {logo ? (
-              <div className="w-10 h-10 rounded-xl overflow-hidden bg-background/30 backdrop-blur-sm flex items-center justify-center">
-                <img src={logo} alt="" className="w-7 h-7 rounded-lg object-contain" />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-background/30 backdrop-blur-sm flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-primary" />
-              </div>
-            )}
+        {logo ? (
+          <img src={logo} alt="" className="w-9 h-9 rounded-lg object-contain shrink-0" />
+        ) : (
+          <div className="w-9 h-9 rounded-lg bg-accent/40 flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4 text-muted-foreground" />
           </div>
+        )}
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-foreground">{model.name}</span>
-              {isNew && (
-                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500 text-black font-bold uppercase tracking-wider">
-                  New
-                </span>
-              )}
-              {isSelected && (
-                <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                </div>
-              )}
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-semibold text-foreground">{model.name}</span>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-xs font-bold ${isFree ? "text-emerald-400" : "text-muted-foreground"}`}>
+            {isFree ? "Free" : `${model.credits} MC`}
+          </span>
+          {isSelected && (
+            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+              <Check className="w-3 h-3 text-primary-foreground" />
             </div>
-            <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-              {model.description}
-            </p>
-            {badges.length > 0 && (
-              <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                {badges.slice(0, 3).map((badge) => (
-                  <span
-                    key={badge}
-                    className="text-[9px] px-1.5 py-0.5 rounded-full bg-background/40 text-muted-foreground font-medium backdrop-blur-sm"
-                  >
-                    {badge}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Credits */}
-          <div className="shrink-0">
-            <span className={`text-xs px-2.5 py-1.5 rounded-full font-bold ${
-              isFree
-                ? "bg-emerald-500/20 text-emerald-400"
-                : "bg-background/30 text-foreground backdrop-blur-sm"
-            }`}>
-              {isFree ? "Free" : `${model.credits} MC`}
-            </span>
-          </div>
+          )}
         </div>
       </motion.button>
     );
   };
 
-  // Video & Images mode: bottom sheet
   if (mode === "videos" || mode === "images") {
     return createPortal(
       <AnimatePresence>
@@ -213,37 +151,23 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden"
-              style={{
-                background: "linear-gradient(180deg, hsla(var(--card), 0.95) 0%, hsla(var(--background), 0.98) 100%)",
-                backdropFilter: "blur(40px) saturate(1.5)",
-              }}
+              className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl max-h-[80vh] flex flex-col overflow-hidden bg-background/95 backdrop-blur-2xl"
             >
-              {/* Drag handle */}
               <div className="flex justify-center pt-3 pb-1">
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
               </div>
 
-              {/* Header */}
               <div className="flex items-center justify-between px-5 py-3">
                 <h2 className="text-lg font-bold text-foreground">
-                  Choose <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">Model</span>
+                  Choose <span className="text-primary">Model</span>
                 </h2>
                 <button onClick={onClose} className="w-8 h-8 rounded-full bg-accent/30 flex items-center justify-center hover:bg-accent/60 transition-colors">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
 
-              {/* Model list */}
               <div className="flex-1 overflow-y-auto px-4 pb-6">
-                {mode === "images" && tab === "models" ? (
-                  <>
-                    {featuredModels.map((model, i) => renderModelCard(model, i))}
-                    {otherModels.map((model, i) => renderModelCard(model, featuredModels.length + i))}
-                  </>
-                ) : (
-                  allModels.map((model, i) => renderModelCard(model, i))
-                )}
+                {allModels.map((model, i) => renderModelCard(model, i))}
               </div>
             </motion.div>
           </>
@@ -253,7 +177,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
     );
   }
 
-  // Chat mode: full-screen sheet
+  // Chat mode
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -272,7 +196,7 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div className="flex-1 text-center">
-                <h1 className="font-display text-base font-bold text-foreground">Models</h1>
+                <h1 className="text-base font-bold text-foreground">Models</h1>
               </div>
               <button
                 onClick={onClose}
@@ -317,11 +241,11 @@ const ModelPickerSheet = ({ open, onClose, onSelect, mode, selectedModelId }: Mo
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <h2 className="font-display text-2xl font-bold text-foreground">{detailModel.name}</h2>
+                  <h2 className="text-2xl font-bold text-foreground">{detailModel.name}</h2>
                   {detailModel.credits > 0 ? (
                     <span className="text-lg font-bold text-primary">{detailModel.credits} MC</span>
                   ) : (
-                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-sm font-semibold">Free</span>
+                    <span className="text-emerald-400 text-sm font-semibold">Free</span>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{detailModel.longDescription}</p>
