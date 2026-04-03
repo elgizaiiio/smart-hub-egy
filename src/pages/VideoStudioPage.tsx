@@ -216,7 +216,7 @@ const VideoStudioPage = () => {
       } else if (data.video_url) {
         setMessages(prev => {
           const copy = [...prev];
-          copy[copy.length - 1].content = "Here's your generated video";
+          copy[copy.length - 1].content = "";
           copy[copy.length - 1].videos = [data.video_url];
           return copy;
         });
