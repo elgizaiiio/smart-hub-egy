@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Paperclip } from "lucide-react";
+import { ArrowUp, Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Plus, Sparkles, ChevronDown } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,27 @@ import AppLayout from "@/layouts/AppLayout";
 import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
-import OrbLoader from "@/components/OrbLoader";
 import studioHero from "@/assets/studio-videos-hero.jpg";
+
+const TruncatedText = ({ text }: { text: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 120;
+  return (
+    <div className="text-sm text-foreground">
+      {isLong && !expanded ? (
+        <>
+          <span>{text.slice(0, 120)}...</span>
+          <button onClick={() => setExpanded(true)} className="text-blue-400 text-xs ml-1 font-medium">Show more</button>
+        </>
+      ) : (
+        <>
+          <span>{text}</span>
+          {isLong && <button onClick={() => setExpanded(false)} className="text-blue-400 text-xs ml-1 font-medium">Show less</button>}
+        </>
+      )}
+    </div>
+  );
+};
 
 interface ChatMessage {
   id: string;
@@ -33,6 +52,8 @@ const HERO_TEXTS = [
   { main: "Your vision", accent: "animated" },
 ];
 
+const LOADING_TEXTS = ["Creating magic...", "Rendering frames...", "Almost there...", "Bringing ideas to life..."];
+
 const VideoStudioPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -46,6 +67,8 @@ const VideoStudioPage = () => {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
+  const [isTyping, setIsTyping] = useState(true);
   const [heroIdx, setHeroIdx] = useState(0);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,10 +88,23 @@ const VideoStudioPage = () => {
     }
   }, []);
 
+  // Typing animation
   useEffect(() => {
-    const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % STUDIO_PLACEHOLDERS.length), 3000);
-    return () => clearInterval(interval);
-  }, []);
+    const target = STUDIO_PLACEHOLDERS[placeholderIdx];
+    let charIdx = 0;
+    setIsTyping(true);
+    setDisplayedPlaceholder("");
+    const typeInterval = setInterval(() => {
+      charIdx++;
+      setDisplayedPlaceholder(target.slice(0, charIdx));
+      if (charIdx >= target.length) {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        setTimeout(() => setPlaceholderIdx(i => (i + 1) % STUDIO_PLACEHOLDERS.length), 2000);
+      }
+    }, 40);
+    return () => clearInterval(typeInterval);
+  }, [placeholderIdx]);
 
   useEffect(() => {
     const interval = setInterval(() => setHeroIdx(i => (i + 1) % HERO_TEXTS.length), 4000);
@@ -213,9 +249,30 @@ const VideoStudioPage = () => {
             <div key={msg.id} className={`mb-4 ${msg.role === "user" ? "flex justify-end" : "flex justify-start"}`}>
               <div className={`max-w-[85%] ${msg.role === "user" ? "bg-primary/15 rounded-2xl rounded-br-md p-3" : "p-1"}`}>
                 {msg.attachedImage && <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />}
-                {msg.content && <div className={`text-sm text-foreground ${msg.role === "assistant" ? "px-2 py-1" : ""}`}>{msg.content}</div>}
+                {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
+                {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
                 {msg.role === "assistant" && !msg.content && isGenerating && (
-                  <div className="flex items-center justify-center py-8"><OrbLoader visible={true} /></div>
+                  <div className="flex flex-col items-center justify-center py-10 gap-4">
+                    <motion.div
+                      animate={{ rotate: 360, scale: [1, 1.3, 1] }}
+                      transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1.5, repeat: Infinity } }}
+                      className="relative"
+                    >
+                      <Sparkles className="w-10 h-10 text-cyan-400" />
+                      <motion.div animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-cyan-400/30 rounded-full" />
+                    </motion.div>
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={Math.floor(Date.now() / 3000)}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent"
+                      >
+                        {LOADING_TEXTS[Math.floor(Date.now() / 3000) % LOADING_TEXTS.length]}
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
                 )}
                 {msg.videos && msg.videos.length > 0 && (
                   <div className="mt-2 space-y-2">
@@ -236,6 +293,7 @@ const VideoStudioPage = () => {
           ))}
         </div>
 
+        {/* Bottom Input - matching UnifiedInputBar style */}
         <div className="relative z-10 p-3 bg-background/80 backdrop-blur-xl">
           {attachedImage && (
             <div className="mb-2 relative inline-block">
@@ -243,28 +301,34 @@ const VideoStudioPage = () => {
               <button onClick={() => setAttachedImage(null)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"><X className="w-3 h-3" /></button>
             </div>
           )}
-          <div className="flex items-end gap-2 bg-card/60 rounded-2xl p-2">
-            <button onClick={() => setModelPickerOpen(true)} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors overflow-hidden">
-              <img src={selectedModel.iconUrl || "/model-logos/bytedance.ico"} alt="" className="w-5 h-5 rounded object-contain" onError={(e) => { (e.target as HTMLImageElement).src = "/model-logos/bytedance.ico"; }} />
+          <div className="flex items-end gap-2 bg-card/60 rounded-2xl p-3">
+            <button
+              onClick={() => setModelPickerOpen(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/50 bg-accent/30 px-3 py-2 hover:bg-accent/60 transition-all text-xs font-medium backdrop-blur-sm"
+            >
+              <span className="text-muted-foreground">Select</span>
+              <span className="text-blue-400 font-bold">Model</span>
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
-            <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground">
-              <Paperclip className="w-4 h-4" />
+            <button onClick={() => fileInputRef.current?.click()} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-accent/20 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+              <Plus className="w-4 h-4" />
             </button>
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder={STUDIO_PLACEHOLDERS[placeholderIdx]}
+              placeholder={displayedPlaceholder + (isTyping ? "|" : "")}
               rows={1}
               className="flex-1 bg-transparent text-sm text-foreground outline-none resize-none placeholder:text-muted-foreground/40 max-h-24 py-2"
             />
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => handleSend()}
               disabled={(!input.trim() && !attachedImage) || isGenerating}
-              className="shrink-0 w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 hover:bg-primary/90 transition-colors"
+              className="shrink-0 rounded-xl bg-foreground px-5 py-2.5 text-xs font-semibold text-background transition-all disabled:opacity-30"
             >
-              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-            </button>
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
+            </motion.button>
           </div>
         </div>
 

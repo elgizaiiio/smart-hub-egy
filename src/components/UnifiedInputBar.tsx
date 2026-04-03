@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { ImagePlus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, ChevronDown } from "lucide-react";
 
 interface UnifiedInputBarProps {
   prompt: string;
@@ -43,12 +43,34 @@ const UnifiedInputBar = ({
   className = "",
 }: UnifiedInputBarProps) => {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
+  const [isTyping, setIsTyping] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Typing animation for placeholders
   useEffect(() => {
-    const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % placeholders.length), 3000);
-    return () => clearInterval(interval);
-  }, [placeholders.length]);
+    const target = placeholders[placeholderIdx];
+    if (!target) return;
+    
+    let charIdx = 0;
+    setIsTyping(true);
+    setDisplayedPlaceholder("");
+    
+    const typeInterval = setInterval(() => {
+      charIdx++;
+      setDisplayedPlaceholder(target.slice(0, charIdx));
+      if (charIdx >= target.length) {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        // Wait then move to next
+        setTimeout(() => {
+          setPlaceholderIdx(i => (i + 1) % placeholders.length);
+        }, 2000);
+      }
+    }, 40);
+    
+    return () => clearInterval(typeInterval);
+  }, [placeholderIdx, placeholders]);
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -68,15 +90,19 @@ const UnifiedInputBar = ({
 
       <div className="flex items-end gap-2 px-3 py-3">
         {showModelPicker && onModelPick && (
-          <button onClick={onModelPick} className="flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 hover:bg-accent/50 transition-all text-xs font-medium">
+          <button
+            onClick={onModelPick}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/50 bg-accent/30 px-3 py-2 hover:bg-accent/60 transition-all text-xs font-medium backdrop-blur-sm"
+          >
             <span className="text-muted-foreground">Select</span>
-            <span className="text-blue-400 font-semibold">Model</span>
+            <span className="text-blue-400 font-bold">Model</span>
+            <ChevronDown className="w-3 h-3 text-muted-foreground" />
           </button>
         )}
 
         {onAttach && (
-          <button onClick={onAttach} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-            <ImagePlus className="w-[18px] h-[18px]" />
+          <button onClick={onAttach} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-accent/20 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+            <Plus className="w-4 h-4" />
           </button>
         )}
 
@@ -86,7 +112,7 @@ const UnifiedInputBar = ({
           value={prompt}
           onChange={e => onPromptChange(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onGenerate(); } }}
-          placeholder={placeholders[placeholderIdx]}
+          placeholder={displayedPlaceholder + (isTyping ? "|" : "")}
           className="min-h-[40px] flex-1 resize-none bg-transparent px-1 py-1.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/40"
         />
 

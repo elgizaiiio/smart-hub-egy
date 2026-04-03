@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Paperclip, Sparkles } from "lucide-react";
+import { Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Plus, Sparkles, ChevronDown } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +52,8 @@ const HERO_TEXTS = [
   { main: "Your art", accent: "your rules" },
 ];
 
+const LOADING_TEXTS = ["Creating magic...", "Painting pixels...", "Almost there...", "Bringing ideas to life..."];
+
 const ImageStudioPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -65,16 +67,14 @@ const ImageStudioPage = () => {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
+  const [isTyping, setIsTyping] = useState(true);
   const [heroIdx, setHeroIdx] = useState(0);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load existing conversation
-  useEffect(() => {
-    loadExistingConversation();
-  }, []);
+  useEffect(() => { loadExistingConversation(); }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -91,10 +91,23 @@ const ImageStudioPage = () => {
     }
   }, []);
 
+  // Typing animation
   useEffect(() => {
-    const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % STUDIO_PLACEHOLDERS.length), 3000);
-    return () => clearInterval(interval);
-  }, []);
+    const target = STUDIO_PLACEHOLDERS[placeholderIdx];
+    let charIdx = 0;
+    setIsTyping(true);
+    setDisplayedPlaceholder("");
+    const typeInterval = setInterval(() => {
+      charIdx++;
+      setDisplayedPlaceholder(target.slice(0, charIdx));
+      if (charIdx >= target.length) {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        setTimeout(() => setPlaceholderIdx(i => (i + 1) % STUDIO_PLACEHOLDERS.length), 2000);
+      }
+    }, 40);
+    return () => clearInterval(typeInterval);
+  }, [placeholderIdx]);
 
   useEffect(() => {
     const interval = setInterval(() => setHeroIdx(i => (i + 1) % HERO_TEXTS.length), 4000);
@@ -215,7 +228,6 @@ const ImageStudioPage = () => {
 
         <ModelPickerSheet open={modelPickerOpen} onClose={() => setModelPickerOpen(false)} onSelect={m => { setSelectedModel(m); setModelPickerOpen(false); }} mode="images" selectedModelId={selectedModel.id} />
 
-        {/* Header - back button + dynamic text */}
         <div className="relative z-10 flex items-center gap-3 px-4 py-3 bg-background/50 backdrop-blur-xl">
           <button onClick={() => navigate("/images")} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
             <ArrowLeft className="w-4 h-4" />
@@ -230,7 +242,6 @@ const ImageStudioPage = () => {
           </div>
         </div>
 
-        {/* Messages Area */}
         <div ref={scrollRef} className="relative z-10 flex-1 overflow-y-auto px-4 py-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
@@ -252,15 +263,9 @@ const ImageStudioPage = () => {
           {messages.map((msg) => (
             <div key={msg.id} className={`mb-4 ${msg.role === "user" ? "flex justify-end" : "flex justify-start"}`}>
               <div className={`max-w-[85%] ${msg.role === "user" ? "bg-primary/15 rounded-2xl rounded-br-md p-3" : "p-1"}`}>
-                {msg.attachedImage && (
-                  <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />
-                )}
-                {msg.content && msg.role === "user" && (
-                  <TruncatedText text={msg.content} />
-                )}
-                {msg.content && msg.role === "assistant" && (
-                  <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>
-                )}
+                {msg.attachedImage && <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />}
+                {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
+                {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
                 {msg.role === "assistant" && !msg.content && isGenerating && (
                   <div className="flex flex-col items-center justify-center py-10 gap-4">
                     <motion.div
@@ -279,7 +284,7 @@ const ImageStudioPage = () => {
                         exit={{ opacity: 0, y: -8 }}
                         className="text-lg font-bold bg-gradient-to-r from-violet-400 via-pink-400 to-amber-400 bg-clip-text text-transparent"
                       >
-                        {["Creating magic...", "Painting pixels...", "Almost there...", "Bringing ideas to life..."][Math.floor(Date.now() / 3000) % 4]}
+                        {LOADING_TEXTS[Math.floor(Date.now() / 3000) % LOADING_TEXTS.length]}
                       </motion.p>
                     </AnimatePresence>
                   </div>
@@ -290,15 +295,9 @@ const ImageStudioPage = () => {
                       <div key={i}>
                         <img src={url} alt="" className="w-full rounded-2xl" />
                         <div className="flex items-center gap-1.5 mt-2 px-1">
-                          <button onClick={() => handleDownload(url)} className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors">
-                            <Download className="w-4 h-4 text-foreground" />
-                          </button>
-                          <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors">
-                            <ThumbsUp className="w-4 h-4 text-foreground" />
-                          </button>
-                          <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors">
-                            <Share2 className="w-4 h-4 text-foreground" />
-                          </button>
+                          <button onClick={() => handleDownload(url)} className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><Download className="w-4 h-4 text-foreground" /></button>
+                          <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><ThumbsUp className="w-4 h-4 text-foreground" /></button>
+                          <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><Share2 className="w-4 h-4 text-foreground" /></button>
                         </div>
                       </div>
                     ))}
@@ -309,39 +308,42 @@ const ImageStudioPage = () => {
           ))}
         </div>
 
-        {/* Bottom Input */}
+        {/* Bottom Input - matching UnifiedInputBar style */}
         <div className="relative z-10 p-3 bg-background/80 backdrop-blur-xl">
           {attachedImage && (
             <div className="mb-2 relative inline-block">
               <img src={attachedImage} alt="" className="w-16 h-16 object-cover rounded-xl" />
-              <button onClick={() => setAttachedImage(null)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center">
-                <X className="w-3 h-3" />
-              </button>
+              <button onClick={() => setAttachedImage(null)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"><X className="w-3 h-3" /></button>
             </div>
           )}
-          <div className="flex items-end gap-2 bg-card/60 rounded-2xl p-2">
-            <button onClick={() => setModelPickerOpen(true)} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors overflow-hidden">
-              <img src={selectedModel.iconUrl || "/model-logos/bytedance.ico"} alt="" className="w-5 h-5 rounded object-contain" onError={(e) => { (e.target as HTMLImageElement).src = "/model-logos/bytedance.ico"; }} />
+          <div className="flex items-end gap-2 bg-card/60 rounded-2xl p-3">
+            <button
+              onClick={() => setModelPickerOpen(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/50 bg-accent/30 px-3 py-2 hover:bg-accent/60 transition-all text-xs font-medium backdrop-blur-sm"
+            >
+              <span className="text-muted-foreground">Select</span>
+              <span className="text-blue-400 font-bold">Model</span>
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </button>
-            <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground">
-              <Paperclip className="w-4 h-4" />
+            <button onClick={() => fileInputRef.current?.click()} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-accent/20 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
+              <Plus className="w-4 h-4" />
             </button>
             <textarea
-              ref={textareaRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder={STUDIO_PLACEHOLDERS[placeholderIdx]}
+              placeholder={displayedPlaceholder + (isTyping ? "|" : "")}
               rows={1}
               className="flex-1 bg-transparent text-sm text-foreground outline-none resize-none placeholder:text-muted-foreground/40 max-h-24 py-2"
             />
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => handleSend()}
               disabled={(!input.trim() && !attachedImage) || isGenerating}
-              className="shrink-0 w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 hover:bg-primary/90 transition-colors"
+              className="shrink-0 rounded-xl bg-foreground px-5 py-2.5 text-xs font-semibold text-background transition-all disabled:opacity-30"
             >
-              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-            </button>
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
+            </motion.button>
           </div>
         </div>
 
