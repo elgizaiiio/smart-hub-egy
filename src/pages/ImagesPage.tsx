@@ -205,6 +205,7 @@ const ImagesPage = () => {
                 onAttach={() => fileInputRef.current?.click()}
                 onModelPick={() => setModelPickerOpen(true)}
                 modelIcon={selectedModel.iconUrl}
+                modelName={selectedModel.name}
                 showModelPicker
                 placeholders={IMAGE_PLACEHOLDERS}
                 attachedImage={attachedImage}
