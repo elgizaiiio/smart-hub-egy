@@ -290,9 +290,13 @@ const VideoStudioPage = () => {
                 {msg.attachedImage && <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />}
                 {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
                 {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
-                {msg.role === "assistant" && !msg.content && !msg.videos?.length && isGenerating && (
-                  <StudioThinkingLoader />
-                )}
+                <AnimatePresence>
+                  {msg.role === "assistant" && !msg.content && !msg.videos?.length && isGenerating && (
+                    <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
+                      <StudioThinkingLoader />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 {msg.videos && msg.videos.length > 0 && (
                   <div className="mt-2 space-y-2">
                     {msg.videos.map((url, i) => (

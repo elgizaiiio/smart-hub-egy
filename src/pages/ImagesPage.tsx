@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass, LayoutGrid } from "lucide-react";
+import { Menu, Download, RefreshCw, ArrowLeft, Wand2, Compass, LayoutGrid, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
@@ -85,6 +85,7 @@ const ImagesPage = () => {
   const [communityItems, setCommunityItems] = useState<ShowcaseItem[]>([]);
   const [previewImg, setPreviewImg] = useState<{ url: string; prompt?: string } | null>(null);
   const [prompt, setPrompt] = useState("");
+  const [reuseTemplate, setReuseTemplate] = useState<{ url: string; prompt: string } | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(NANO_BANANA_DEFAULT);
   const [toolLandingImages, setToolLandingImages] = useState<Record<string, string>>({});
@@ -173,7 +174,12 @@ const ImagesPage = () => {
             <div className="flex gap-3">
               <a href={previewImg.url} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</a>
               {previewImg.prompt && (
-                <button onClick={() => { navigate("/images/studio", { state: { prompt: previewImg.prompt } }); setPreviewImg(null); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><RefreshCw className="w-4 h-4" /> Reuse</button>
+                <button onClick={() => {
+                  setReuseTemplate({ url: previewImg.url, prompt: previewImg.prompt! });
+                  setPrompt("Let's get creative ✨");
+                  setPreviewImg(null);
+                  setActiveTab("home");
+                }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><RefreshCw className="w-4 h-4" /> Reuse</button>
               )}
             </div>
           </div>
@@ -209,6 +215,15 @@ const ImagesPage = () => {
               </div>
 
               {/* Input bar - bigger, no borders, rectangular */}
+              {reuseTemplate && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/50 backdrop-blur-sm mb-2">
+                  <img src={reuseTemplate.url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                  <p className="text-xs text-muted-foreground flex-1 truncate">Inspired by this template</p>
+                  <button onClick={() => { setReuseTemplate(null); setPrompt(""); }} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               <UnifiedInputBar
                 prompt={prompt}
                 onPromptChange={setPrompt}
