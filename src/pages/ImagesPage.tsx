@@ -241,7 +241,7 @@ const ImagesPage = () => {
                 </div>
               </motion.button>
 
-              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/agent")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-border/20 bg-gradient-to-r from-accent/30 to-accent/5">
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/images/studio")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-border/20 bg-gradient-to-r from-accent/30 to-accent/5">
                 <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
                   <img src={editImageCard} alt="Edit" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />

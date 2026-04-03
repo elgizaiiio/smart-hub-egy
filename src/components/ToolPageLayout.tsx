@@ -67,7 +67,7 @@ const ToolLanding = ({
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
     )}
     <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-    <div className="relative z-10 text-center px-6 space-y-5">
+    <div className="relative z-10 text-center px-6 space-y-2">
       <h2 className="text-3xl font-bold text-foreground tracking-tight">{title}</h2>
       {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">{description}</p>}
       <motion.button
