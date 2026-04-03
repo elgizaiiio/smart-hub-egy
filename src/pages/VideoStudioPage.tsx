@@ -152,12 +152,19 @@ const VideoStudioPage = () => {
       setConversationId(convId);
       const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", convId).order("created_at", { ascending: true });
       if (msgs && msgs.length > 0) {
-        setMessages(msgs.map(m => ({
-          id: m.id,
-          role: m.role as "user" | "assistant",
-          content: m.content,
-          videos: (m.images || []).filter((u: string) => u.includes(".mp4") || u.includes("video")),
-        })));
+        setMessages(msgs.map(m => {
+          const isUser = m.role === "user";
+          const imgs = m.images || [];
+          const videoUrls = imgs.filter((u: string) => u.includes(".mp4") || u.includes("video"));
+          const imageUrls = imgs.filter((u: string) => !u.includes(".mp4") && !u.includes("video"));
+          return {
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            videos: isUser ? undefined : (videoUrls.length > 0 ? videoUrls : undefined),
+            attachedImage: isUser && imageUrls.length > 0 ? imageUrls[0] : undefined,
+          };
+        }));
       }
     }
   };
@@ -197,7 +204,7 @@ const VideoStudioPage = () => {
       convId = data?.id || null;
       setConversationId(convId);
     }
-    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt });
+    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt, images: attachedImage ? [attachedImage] : null });
 
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`, {

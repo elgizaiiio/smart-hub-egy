@@ -155,12 +155,18 @@ const ImageStudioPage = () => {
       setConversationId(convId);
       const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", convId).order("created_at", { ascending: true });
       if (msgs && msgs.length > 0) {
-        setMessages(msgs.map(m => ({
-          id: m.id,
-          role: m.role as "user" | "assistant",
-          content: m.content,
-          images: m.images || undefined,
-        })));
+        setMessages(msgs.map(m => {
+          const isUser = m.role === "user";
+          const imgs = m.images || [];
+          // For user messages: if images array has items, first one could be the attached image
+          return {
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            images: isUser ? undefined : (imgs.length > 0 ? imgs : undefined),
+            attachedImage: isUser && imgs.length > 0 ? imgs[0] : undefined,
+          };
+        }));
       }
     }
   };
@@ -201,7 +207,7 @@ const ImageStudioPage = () => {
       convId = data?.id || null;
       setConversationId(convId);
     }
-    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt });
+    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt, images: currentAttachedImage ? [currentAttachedImage] : null });
 
     try {
       const body: any = {
