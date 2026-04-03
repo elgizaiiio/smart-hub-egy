@@ -19,7 +19,7 @@ const NANO_BANANA_DEFAULT: ModelOption = {
   id: "nano-banana",
   name: "Nano Banana",
   credits: "1",
-  iconUrl: "/model-logos/bytedance.ico",
+  iconUrl: "/model-logos/nano-banana.jpg",
 };
 
 const ALL_TOOLS = [
