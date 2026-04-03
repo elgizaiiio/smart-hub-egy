@@ -172,8 +172,9 @@ async function callLemonImage(
       // For image-to-image, include image in the request
       let url = LEMONDATA_IMG_URL;
       if (imageUrl) {
+        // LemonData expects image_url field for edit endpoints
+        body.image_url = imageUrl;
         body.image = imageUrl;
-        // Some models use /edits endpoint
         url = LEMONDATA_EDIT_URL;
       }
 

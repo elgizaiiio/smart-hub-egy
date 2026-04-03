@@ -52,6 +52,21 @@ const HERO_TEXTS = [
   { main: "Your art", accent: "your rules" },
 ];
 
+const LoadingText = ({ texts }: { texts: string[] }) => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % texts.length), 3000);
+    return () => clearInterval(t);
+  }, [texts]);
+  return (
+    <AnimatePresence mode="wait">
+      <motion.span key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-xs text-muted-foreground">
+        {texts[idx]}
+      </motion.span>
+    </AnimatePresence>
+  );
+};
+
 const LOADING_TEXTS = ["Creating magic...", "Painting pixels...", "Almost there...", "Bringing ideas to life..."];
 
 const ImageStudioPage = () => {
@@ -267,26 +282,16 @@ const ImageStudioPage = () => {
                 {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
                 {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
                 {msg.role === "assistant" && !msg.content && isGenerating && (
-                  <div className="flex flex-col items-center justify-center py-10 gap-4">
+                  <div className="flex items-center gap-2 px-2 py-3">
                     <motion.div
-                      animate={{ rotate: 360, scale: [1, 1.3, 1] }}
-                      transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1.5, repeat: Infinity } }}
-                      className="relative"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="relative shrink-0"
                     >
-                      <Sparkles className="w-10 h-10 text-yellow-400" />
-                      <motion.div animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full" />
+                      <Sparkles className="w-4 h-4 text-yellow-400" />
+                      <motion.div animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-md bg-yellow-400/30 rounded-full" />
                     </motion.div>
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={Math.floor(Date.now() / 3000)}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="text-lg font-bold bg-gradient-to-r from-violet-400 via-pink-400 to-amber-400 bg-clip-text text-transparent"
-                      >
-                        {LOADING_TEXTS[Math.floor(Date.now() / 3000) % LOADING_TEXTS.length]}
-                      </motion.p>
-                    </AnimatePresence>
+                    <LoadingText texts={LOADING_TEXTS} />
                   </div>
                 )}
                 {msg.images && msg.images.length > 0 && (
