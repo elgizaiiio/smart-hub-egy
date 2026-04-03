@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, UserRound, Sparkles, Download, Share2, Upload } from "lucide-react";
+import { ArrowLeft, User, UserRound, Sparkles, Download, Share2, Upload, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
@@ -9,7 +9,7 @@ import { ImageUploadBox } from "@/components/ToolPageLayout";
 
 interface HeadshotTemplate { id: string; name: string; gender: string; prompt: string; preview_url: string | null; }
 
-type Step = "landing" | "browse" | "upload" | "generating" | "result";
+type Step = "browse" | "upload" | "generating" | "result";
 
 const HeadshotPage = () => {
   const navigate = useNavigate();
@@ -18,13 +18,11 @@ const HeadshotPage = () => {
   const [templates, setTemplates] = useState<HeadshotTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<HeadshotTemplate | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [step, setStep] = useState<Step>("landing");
+  const [step, setStep] = useState<Step>("browse");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [landingImage, setLandingImage] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from("headshot_templates").select("*").eq("is_active", true).order("display_order").then(({ data }) => { if (data && data.length > 0) setTemplates(data as HeadshotTemplate[]); });
-    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "headshot").maybeSingle().then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
   }, []);
 
   const filteredTemplates = templates.filter(t => t.gender === "both" || t.gender === gender);
@@ -53,20 +51,6 @@ const HeadshotPage = () => {
 
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {step === "landing" && (
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-end pb-16">
-              {landingImage ? <img src={landingImage} alt="AI Headshot" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-accent/10 to-background" />}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-              <div className="relative z-10 text-center px-6 space-y-5">
-                <h2 className="text-3xl font-bold text-foreground tracking-tight">AI Headshot</h2>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">Professional headshots powered by AI</p>
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("browse")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
-                  <Upload className="w-4 h-4 inline mr-2" />Get Started
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-
           {step === "browse" && (
             <motion.div key="browse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 pb-32">
               <div className="pt-4 pb-6 text-center">
@@ -112,7 +96,8 @@ const HeadshotPage = () => {
                 <button onClick={() => { const a = document.createElement("a"); a.href = resultUrl; a.download = "headshot.png"; a.target = "_blank"; a.click(); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</button>
                 <button onClick={() => { navigator.share?.({ url: resultUrl }).catch(() => { navigator.clipboard.writeText(resultUrl); toast.success("Link copied!"); }); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
               </div>
-              <button onClick={() => { setStep("browse"); setResultUrl(null); setUploadedImage(null); setSelectedTemplate(null); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
+              <button onClick={generateHeadshot} className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium"><RefreshCw className="w-4 h-4" /> Regenerate</button>
+              <button onClick={() => { setStep("browse"); setResultUrl(null); setUploadedImage(null); setSelectedTemplate(null); }} className="w-full py-3 rounded-2xl bg-accent/30 text-foreground text-sm font-medium">Try Again</button>
             </motion.div>
           )}
         </AnimatePresence>

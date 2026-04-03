@@ -2,30 +2,29 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2, Upload } from "lucide-react";
+import { ArrowLeft, Sparkles, Download, Share2, Upload, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCredits } from "@/hooks/useCredits";
 import { ImageUploadBox, TemplateGrid } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
-type Step = "landing" | "upload" | "templates" | "generating" | "result";
+type Step = "upload" | "templates" | "generating" | "result";
 
 const FaceSwapPage = () => {
   const navigate = useNavigate();
   const { hasEnoughCredits } = useCredits();
-  const [step, setStep] = useState<Step>("landing");
+  const [step, setStep] = useState<Step>("upload");
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [targetImage, setTargetImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [landingImage, setLandingImage] = useState<string | null>(null);
   const { templates } = useToolTemplates("face-swap");
   const customInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "face-swap").maybeSingle()
-      .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
+    setTimeout(() => fileInputRef.current?.click(), 300);
   }, []);
 
   const handleSourceUpload = (img: string) => { setSourceImage(img); setStep("templates"); };
@@ -51,6 +50,13 @@ const FaceSwapPage = () => {
     finally { setIsGenerating(false); }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => handleSourceUpload(reader.result as string);
+    reader.readAsDataURL(file); e.target.value = "";
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -60,23 +66,15 @@ const FaceSwapPage = () => {
 
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {step === "landing" && (
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-end pb-16">
-              {landingImage ? <img src={landingImage} alt="Face Swap" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-accent/10 to-background" />}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-              <div className="relative z-10 text-center px-6 space-y-5">
-                <h2 className="text-3xl font-bold text-foreground tracking-tight">Face Swap</h2>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">Swap faces between photos with AI precision</p>
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
-                  <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-
           {step === "upload" && (
-            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4">
-              <ImageUploadBox label="Upload your photo" image={sourceImage} onUpload={handleSourceUpload} onClear={() => setSourceImage(null)} />
+            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center min-h-[60vh] px-6">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              <button onClick={() => fileInputRef.current?.click()} className="w-full max-w-md rounded-3xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-6 cursor-pointer transition-all duration-300 py-20 hover:border-primary/60 hover:bg-primary/5">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  <Upload className="w-9 h-9 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">UPLOAD YOUR <span className="text-primary">PHOTO</span></h2>
+              </button>
             </motion.div>
           )}
 
@@ -115,7 +113,8 @@ const FaceSwapPage = () => {
                 <button onClick={() => { const a = document.createElement("a"); a.href = resultUrl; a.download = "face-swap-result.png"; a.click(); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</button>
                 <button onClick={() => { navigator.share?.({ url: resultUrl }).catch(() => { navigator.clipboard.writeText(resultUrl); toast.success("Copied!"); }); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
               </div>
-              <button onClick={() => { setResultUrl(null); setStep("templates"); setTargetImage(null); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
+              <button onClick={() => { setResultUrl(null); setStep("templates"); }} className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium"><RefreshCw className="w-4 h-4" /> Regenerate</button>
+              <button onClick={() => { setResultUrl(null); setStep("templates"); setTargetImage(null); }} className="w-full py-3 rounded-2xl bg-accent/30 text-foreground text-sm font-medium">Try Again</button>
             </motion.div>
           )}
         </AnimatePresence>

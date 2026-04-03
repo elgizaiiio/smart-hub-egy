@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2, Plus, Upload } from "lucide-react";
+import { ArrowLeft, Sparkles, Download, Share2, Plus, Upload, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,36 +10,50 @@ import { ImageUploadBox } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
-type Step = 'landing' | 'upload' | 'styles' | 'clubs' | 'generating' | 'result';
+type Step = 'upload' | 'styles' | 'clubs' | 'generating' | 'result';
 
 const ClothesChangerPage = () => {
   const navigate = useNavigate();
   const { hasEnoughCredits } = useCredits();
-  const [step, setStep] = useState<Step>('landing');
+  const [step, setStep] = useState<Step>('upload');
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [selectedClub, setSelectedClub] = useState<typeof FOOTBALL_CLUBS[0] | null>(null);
   const [customPrompt, setCustomPrompt] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [refImage, setRefImage] = useState<string | null>(null);
-  const [landingImage, setLandingImage] = useState<string | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { templates } = useToolTemplates("clothes-changer");
 
   useEffect(() => {
-    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "clothes-changer").maybeSingle()
-      .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
+    setTimeout(() => fileInputRef.current?.click(), 300);
   }, []);
 
-  const handleImageUpload = (img: string) => { setImage(img); setStep('styles'); };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setImage(reader.result as string); setStep('styles'); };
+    reader.readAsDataURL(file); e.target.value = "";
+  };
+
   const handleStyleSelect = (styleId: string) => {
     setSelectedStyle(styleId);
     if (styleId === 'football') setStep('clubs');
     else if (styleId === 'blank') setCustomPrompt("");
-    else handleGenerate(CLOTHES_STYLES.find(s => s.id === styleId)?.prompt || '');
+    else {
+      const prompt = CLOTHES_STYLES.find(s => s.id === styleId)?.prompt || '';
+      setPendingPrompt(prompt);
+    }
   };
-  const handleClubSelect = (club: typeof FOOTBALL_CLUBS[0]) => { setSelectedClub(club); handleGenerate(getFootballPrompt(club)); };
-  const handleTemplateSelect = (t: ToolTemplate) => { if (t.prompt) handleGenerate(t.prompt); };
+  const handleClubSelect = (club: typeof FOOTBALL_CLUBS[0]) => {
+    setSelectedClub(club);
+    setPendingPrompt(getFootballPrompt(club));
+  };
+  const handleTemplateSelect = (t: ToolTemplate) => {
+    if (t.prompt) setPendingPrompt(t.prompt);
+  };
 
   const handleRefUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -49,7 +63,7 @@ const ClothesChangerPage = () => {
   };
 
   const handleGenerate = async (prompt?: string) => {
-    const finalPrompt = prompt || customPrompt;
+    const finalPrompt = prompt || pendingPrompt || customPrompt;
     if (!image) { toast.error("Please upload your photo"); return; }
     if (!finalPrompt) { toast.error("Please enter a description"); return; }
     if (!hasEnoughCredits(4)) { toast.error("Insufficient MC"); navigate("/pricing"); return; }
@@ -71,23 +85,15 @@ const ClothesChangerPage = () => {
 
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {step === "landing" && (
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-end pb-16">
-              {landingImage ? <img src={landingImage} alt="Clothes Changer" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-accent/10 to-background" />}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-              <div className="relative z-10 text-center px-6 space-y-5">
-                <h2 className="text-3xl font-bold text-foreground tracking-tight">Clothes Changer</h2>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">Transform your outfit with AI</p>
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
-                  <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-
           {step === "upload" && (
-            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4">
-              <ImageUploadBox label="Upload your photo" image={image} onUpload={handleImageUpload} onClear={() => setImage(null)} />
+            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center min-h-[60vh] px-6">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              <button onClick={() => fileInputRef.current?.click()} className="w-full max-w-md rounded-3xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-6 cursor-pointer transition-all duration-300 py-20 hover:border-primary/60 hover:bg-primary/5">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  <Upload className="w-9 h-9 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">UPLOAD YOUR <span className="text-primary">PHOTO</span></h2>
+              </button>
             </motion.div>
           )}
 
@@ -167,15 +173,22 @@ const ClothesChangerPage = () => {
                 <button onClick={() => { const a = document.createElement("a"); a.href = resultUrl; a.download = "clothes-result.png"; a.click(); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</button>
                 <button onClick={() => { navigator.share?.({ url: resultUrl }).catch(() => { navigator.clipboard.writeText(resultUrl); toast.success("Copied!"); }); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
               </div>
-              <button onClick={() => { setResultUrl(null); setStep('styles'); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
+              <button onClick={() => handleGenerate()} className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium"><RefreshCw className="w-4 h-4" /> Regenerate</button>
+              <button onClick={() => { setResultUrl(null); setStep('styles'); setPendingPrompt(null); }} className="w-full py-3 rounded-2xl bg-accent/30 text-foreground text-sm font-medium">Try Again</button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {step === 'styles' && selectedStyle === 'blank' && customPrompt.trim() && (
+      {step === 'styles' && ((selectedStyle === 'blank' && customPrompt.trim()) || pendingPrompt) && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-          <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleGenerate(customPrompt)} className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center shadow-lg shadow-yellow-500/20">Generate · 4 MC</motion.button>
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleGenerate()} className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center shadow-lg shadow-yellow-500/20">Generate · 4 MC</motion.button>
+        </div>
+      )}
+
+      {step === 'clubs' && pendingPrompt && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleGenerate()} className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center shadow-lg shadow-yellow-500/20">Generate · 4 MC</motion.button>
         </div>
       )}
     </div>
