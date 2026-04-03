@@ -44,12 +44,22 @@ const TOOL_ROWS = [
   ALL_TOOLS.slice(Math.ceil(ALL_TOOLS.length / 2)),
 ];
 
-const GRADIENTS = [
-  "from-emerald-600/80 to-emerald-900/90", "from-rose-600/80 to-rose-900/90",
-  "from-violet-600/80 to-violet-900/90", "from-amber-600/80 to-amber-900/90",
-  "from-cyan-600/80 to-cyan-900/90", "from-pink-600/80 to-pink-900/90",
-  "from-indigo-600/80 to-indigo-900/90", "from-teal-600/80 to-teal-900/90",
-];
+const TOOL_GRADIENTS: Record<string, string> = {
+  "inpaint": "from-blue-500 via-blue-600 to-indigo-700",
+  "clothes-changer": "from-rose-500 via-rose-600 to-red-700",
+  "headshot": "from-amber-500 via-amber-600 to-orange-700",
+  "face-swap": "from-violet-500 via-violet-600 to-purple-700",
+  "bg-remover": "from-cyan-500 via-cyan-600 to-teal-700",
+  "cartoon": "from-pink-500 via-pink-600 to-fuchsia-700",
+  "colorizer": "from-emerald-500 via-emerald-600 to-green-700",
+  "retouching": "from-sky-500 via-sky-600 to-blue-700",
+  "remover": "from-slate-500 via-slate-600 to-zinc-700",
+  "sketch-to-image": "from-lime-500 via-lime-600 to-emerald-700",
+  "relight": "from-yellow-500 via-yellow-600 to-amber-700",
+  "character-swap": "from-fuchsia-500 via-fuchsia-600 to-pink-700",
+  "storyboard": "from-indigo-500 via-indigo-600 to-violet-700",
+  "hair-changer": "from-teal-500 via-teal-600 to-cyan-700",
+};
 
 const IMAGE_PLACEHOLDERS = [
   "A futuristic city at sunset in cyberpunk style...",
