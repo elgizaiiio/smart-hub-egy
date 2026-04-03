@@ -85,6 +85,7 @@ const ImagesPage = () => {
   const [communityItems, setCommunityItems] = useState<ShowcaseItem[]>([]);
   const [previewImg, setPreviewImg] = useState<{ url: string; prompt?: string } | null>(null);
   const [prompt, setPrompt] = useState("");
+  const [reuseTemplate, setReuseTemplate] = useState<{ url: string; prompt: string } | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(NANO_BANANA_DEFAULT);
   const [toolLandingImages, setToolLandingImages] = useState<Record<string, string>>({});
