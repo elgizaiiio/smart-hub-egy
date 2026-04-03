@@ -381,6 +381,7 @@ const ImageStudioPage = () => {
         </div>
 
         <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+        <ImagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
       </div>
     </AppLayout>
   );
