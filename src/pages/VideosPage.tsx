@@ -107,9 +107,15 @@ const VideosPage = () => {
   };
 
   const loadToolLandingImages = async () => {
+    const cached = localStorage.getItem("megsy_tool_images_vid");
+    if (cached) {
+      try { setToolLandingImages(JSON.parse(cached)); } catch {}
+    }
     const { data } = await supabase.from("tool_landing_images").select("tool_id, image_url").in("tool_id", ALL_TOOLS.map(t => t.id));
     if (!data) return;
-    setToolLandingImages(data.reduce<Record<string, string>>((acc, item) => { if (item.image_url) acc[item.tool_id] = item.image_url; return acc; }, {}));
+    const map = data.reduce<Record<string, string>>((acc, item) => { if (item.image_url) acc[item.tool_id] = item.image_url; return acc; }, {});
+    setToolLandingImages(map);
+    localStorage.setItem("megsy_tool_images_vid", JSON.stringify(map));
   };
 
   const getToolPreview = (toolId: string) => {
