@@ -215,6 +215,15 @@ const ImagesPage = () => {
               </div>
 
               {/* Input bar - bigger, no borders, rectangular */}
+              {reuseTemplate && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/50 backdrop-blur-sm mb-2">
+                  <img src={reuseTemplate.url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                  <p className="text-xs text-muted-foreground flex-1 truncate">Inspired by this template</p>
+                  <button onClick={() => { setReuseTemplate(null); setPrompt(""); }} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               <UnifiedInputBar
                 prompt={prompt}
                 onPromptChange={setPrompt}
