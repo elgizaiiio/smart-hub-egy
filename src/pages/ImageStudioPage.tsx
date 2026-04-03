@@ -207,7 +207,7 @@ const ImageStudioPage = () => {
       convId = data?.id || null;
       setConversationId(convId);
     }
-    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt });
+    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt, images: currentAttachedImage ? [currentAttachedImage] : null });
 
     try {
       const body: any = {
