@@ -252,26 +252,16 @@ const VideoStudioPage = () => {
                 {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
                 {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
                 {msg.role === "assistant" && !msg.content && isGenerating && (
-                  <div className="flex flex-col items-center justify-center py-10 gap-4">
+                  <div className="flex items-center gap-2 px-2 py-3">
                     <motion.div
-                      animate={{ rotate: 360, scale: [1, 1.3, 1] }}
-                      transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1.5, repeat: Infinity } }}
-                      className="relative"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="relative shrink-0"
                     >
-                      <Sparkles className="w-10 h-10 text-cyan-400" />
-                      <motion.div animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-cyan-400/30 rounded-full" />
+                      <Sparkles className="w-4 h-4 text-cyan-400" />
+                      <motion.div animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-md bg-cyan-400/30 rounded-full" />
                     </motion.div>
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={Math.floor(Date.now() / 3000)}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent"
-                      >
-                        {LOADING_TEXTS[Math.floor(Date.now() / 3000) % LOADING_TEXTS.length]}
-                      </motion.p>
-                    </AnimatePresence>
+                    <LoadingText texts={LOADING_TEXTS} />
                   </div>
                 )}
                 {msg.videos && msg.videos.length > 0 && (
