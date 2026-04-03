@@ -36,14 +36,15 @@ const TOOL_ROWS = [
   ALL_TOOLS.slice(Math.ceil(ALL_TOOLS.length / 2)),
 ];
 
-const TOOL_GRADIENTS: Record<string, string> = {
-  "swap-characters": "from-violet-500 via-violet-600 to-purple-700",
-  "talking-photo": "from-rose-500 via-rose-600 to-pink-700",
-  "upscale": "from-cyan-500 via-cyan-600 to-blue-700",
-  "auto-caption": "from-amber-500 via-amber-600 to-orange-700",
-  "lip-sync": "from-emerald-500 via-emerald-600 to-teal-700",
-  "video-extender": "from-indigo-500 via-indigo-600 to-blue-700",
-};
+const TOOL_CARDS: { id: string; colors: string; accent1: string; accent2: string }[] = [
+  { id: "swap-characters", colors: "from-violet-400 via-purple-500 to-violet-700", accent1: "rgba(180,130,255,0.4)", accent2: "rgba(100,40,180,0.3)" },
+  { id: "talking-photo", colors: "from-rose-400 via-pink-500 to-rose-700", accent1: "rgba(255,130,170,0.4)", accent2: "rgba(180,40,90,0.3)" },
+  { id: "upscale", colors: "from-cyan-400 via-blue-500 to-cyan-700", accent1: "rgba(80,200,255,0.4)", accent2: "rgba(20,100,180,0.3)" },
+  { id: "auto-caption", colors: "from-amber-400 via-orange-500 to-amber-700", accent1: "rgba(255,190,80,0.4)", accent2: "rgba(200,100,20,0.3)" },
+  { id: "lip-sync", colors: "from-emerald-400 via-teal-500 to-emerald-700", accent1: "rgba(80,220,160,0.4)", accent2: "rgba(20,130,80,0.3)" },
+  { id: "video-extender", colors: "from-indigo-400 via-blue-500 to-indigo-700", accent1: "rgba(120,130,255,0.4)", accent2: "rgba(50,40,180,0.3)" },
+];
+const TOOL_CARD_MAP = Object.fromEntries(TOOL_CARDS.map(c => [c.id, c]));
 
 const VIDEO_PLACEHOLDERS = [
   "A cinematic drone shot over mountains...",
@@ -198,14 +199,16 @@ const VideosPage = () => {
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <div className="flex min-w-max gap-3">
                       {row.map((tool) => {
-                        const gradient = TOOL_GRADIENTS[tool.id] || "from-gray-500 to-gray-700";
+                        const card = TOOL_CARD_MAP[tool.id];
+                        const colors = card?.colors || "from-gray-400 via-gray-500 to-gray-700";
+                        const a1 = card?.accent1 || "rgba(150,150,150,0.4)";
+                        const a2 = card?.accent2 || "rgba(80,80,80,0.3)";
                         return (
-                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
-                            <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(0,0,0,0.2),transparent_60%)]" />
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className={`relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${colors}`}>
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 120% 80% at 20% 30%, ${a1}, transparent), radial-gradient(ellipse 100% 60% at 80% 70%, ${a2}, transparent), radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.08), transparent)` }} />
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 80%, rgba(255,255,255,0.12), transparent 50%), radial-gradient(circle at 70% 20%, rgba(255,255,255,0.1), transparent 40%)` }} />
                             <div className="absolute inset-0 flex items-center justify-center p-4">
-                              <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed">{tool.name}</p>
+                              <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed drop-shadow-sm">{tool.name}</p>
                             </div>
                           </motion.button>
                         );

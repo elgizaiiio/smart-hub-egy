@@ -44,22 +44,24 @@ const TOOL_ROWS = [
   ALL_TOOLS.slice(Math.ceil(ALL_TOOLS.length / 2)),
 ];
 
-const TOOL_GRADIENTS: Record<string, string> = {
-  "inpaint": "from-blue-500 via-blue-600 to-indigo-700",
-  "clothes-changer": "from-rose-500 via-rose-600 to-red-700",
-  "headshot": "from-amber-500 via-amber-600 to-orange-700",
-  "face-swap": "from-violet-500 via-violet-600 to-purple-700",
-  "bg-remover": "from-cyan-500 via-cyan-600 to-teal-700",
-  "cartoon": "from-pink-500 via-pink-600 to-fuchsia-700",
-  "colorizer": "from-emerald-500 via-emerald-600 to-green-700",
-  "retouching": "from-sky-500 via-sky-600 to-blue-700",
-  "remover": "from-slate-500 via-slate-600 to-zinc-700",
-  "sketch-to-image": "from-lime-500 via-lime-600 to-emerald-700",
-  "relight": "from-yellow-500 via-yellow-600 to-amber-700",
-  "character-swap": "from-fuchsia-500 via-fuchsia-600 to-pink-700",
-  "storyboard": "from-indigo-500 via-indigo-600 to-violet-700",
-  "hair-changer": "from-teal-500 via-teal-600 to-cyan-700",
-};
+// Each tool gets a unique silk-fabric gradient with multiple radial layers for depth
+const TOOL_CARDS: { id: string; colors: string; accent1: string; accent2: string }[] = [
+  { id: "inpaint", colors: "from-blue-400 via-indigo-500 to-blue-700", accent1: "rgba(99,149,255,0.4)", accent2: "rgba(55,48,163,0.3)" },
+  { id: "clothes-changer", colors: "from-rose-400 via-red-500 to-rose-700", accent1: "rgba(255,120,130,0.4)", accent2: "rgba(180,30,60,0.3)" },
+  { id: "headshot", colors: "from-amber-400 via-orange-500 to-amber-700", accent1: "rgba(255,190,80,0.4)", accent2: "rgba(200,100,20,0.3)" },
+  { id: "face-swap", colors: "from-violet-400 via-purple-500 to-violet-700", accent1: "rgba(180,130,255,0.4)", accent2: "rgba(100,40,180,0.3)" },
+  { id: "bg-remover", colors: "from-cyan-400 via-teal-500 to-cyan-700", accent1: "rgba(80,220,220,0.4)", accent2: "rgba(20,120,130,0.3)" },
+  { id: "cartoon", colors: "from-pink-400 via-fuchsia-500 to-pink-700", accent1: "rgba(255,130,200,0.4)", accent2: "rgba(180,30,140,0.3)" },
+  { id: "colorizer", colors: "from-emerald-400 via-green-500 to-emerald-700", accent1: "rgba(80,220,140,0.4)", accent2: "rgba(20,130,70,0.3)" },
+  { id: "retouching", colors: "from-sky-400 via-blue-500 to-sky-700", accent1: "rgba(80,180,255,0.4)", accent2: "rgba(20,80,180,0.3)" },
+  { id: "remover", colors: "from-slate-400 via-gray-500 to-slate-700", accent1: "rgba(150,160,180,0.4)", accent2: "rgba(60,70,90,0.3)" },
+  { id: "sketch-to-image", colors: "from-lime-400 via-green-500 to-lime-700", accent1: "rgba(160,220,80,0.4)", accent2: "rgba(80,140,20,0.3)" },
+  { id: "relight", colors: "from-yellow-400 via-amber-500 to-yellow-700", accent1: "rgba(255,220,80,0.4)", accent2: "rgba(200,150,20,0.3)" },
+  { id: "character-swap", colors: "from-fuchsia-400 via-pink-500 to-fuchsia-700", accent1: "rgba(220,100,255,0.4)", accent2: "rgba(140,30,180,0.3)" },
+  { id: "storyboard", colors: "from-indigo-400 via-violet-500 to-indigo-700", accent1: "rgba(120,120,255,0.4)", accent2: "rgba(60,40,180,0.3)" },
+  { id: "hair-changer", colors: "from-teal-400 via-cyan-500 to-teal-700", accent1: "rgba(60,200,190,0.4)", accent2: "rgba(20,120,120,0.3)" },
+];
+const TOOL_CARD_MAP = Object.fromEntries(TOOL_CARDS.map(c => [c.id, c]));
 
 const IMAGE_PLACEHOLDERS = [
   "A futuristic city at sunset in cyberpunk style...",
@@ -228,14 +230,17 @@ const ImagesPage = () => {
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <div className="flex min-w-max gap-3">
                       {row.map((tool) => {
-                        const gradient = TOOL_GRADIENTS[tool.id] || "from-gray-500 to-gray-700";
+                        const card = TOOL_CARD_MAP[tool.id];
+                        const colors = card?.colors || "from-gray-400 via-gray-500 to-gray-700";
+                        const a1 = card?.accent1 || "rgba(150,150,150,0.4)";
+                        const a2 = card?.accent2 || "rgba(80,80,80,0.3)";
                         return (
-                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
-                            <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(0,0,0,0.2),transparent_60%)]" />
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className={`relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${colors}`}>
+                            {/* Silk wave layers */}
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 120% 80% at 20% 30%, ${a1}, transparent), radial-gradient(ellipse 100% 60% at 80% 70%, ${a2}, transparent), radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.08), transparent)` }} />
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 80%, rgba(255,255,255,0.12), transparent 50%), radial-gradient(circle at 70% 20%, rgba(255,255,255,0.1), transparent 40%)` }} />
                             <div className="absolute inset-0 flex items-center justify-center p-4">
-                              <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed">{tool.name}</p>
+                              <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed drop-shadow-sm">{tool.name}</p>
                             </div>
                           </motion.button>
                         );
