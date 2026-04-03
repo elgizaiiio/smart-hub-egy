@@ -298,17 +298,8 @@ const ImageStudioPage = () => {
                 {msg.attachedImage && <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />}
                 {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
                 {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
-                {msg.role === "assistant" && !msg.content && isGenerating && (
-                  <div className="flex items-center gap-2 px-2 py-3">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="relative shrink-0"
-                    >
-                      <Sparkles className="w-4 h-4 text-yellow-400" />
-                      <motion.div animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-md bg-yellow-400/30 rounded-full" />
-                    </motion.div>
-                    <LoadingText texts={LOADING_TEXTS} />
+                {msg.role === "assistant" && !msg.content && !msg.images?.length && isGenerating && (
+                  <StudioThinkingLoader />
                   </div>
                 )}
                 {msg.images && msg.images.length > 0 && (
