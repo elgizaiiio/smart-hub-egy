@@ -147,7 +147,12 @@ const VideosPage = () => {
             <div className="flex gap-3">
               <a href={previewVid.url} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</a>
               {previewVid.prompt && (
-                <button onClick={() => { navigate("/videos/studio", { state: { prompt: previewVid.prompt } }); setPreviewVid(null); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><RefreshCw className="w-4 h-4" /> Reuse</button>
+                <button onClick={() => {
+                  setReuseTemplate({ url: previewVid.url, prompt: previewVid.prompt! });
+                  setPrompt("Let's get creative ✨");
+                  setPreviewVid(null);
+                  setActiveTab("home");
+                }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><RefreshCw className="w-4 h-4" /> Reuse</button>
               )}
             </div>
           </div>
