@@ -174,7 +174,12 @@ const ImagesPage = () => {
             <div className="flex gap-3">
               <a href={previewImg.url} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</a>
               {previewImg.prompt && (
-                <button onClick={() => { navigate("/images/studio", { state: { prompt: previewImg.prompt } }); setPreviewImg(null); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><RefreshCw className="w-4 h-4" /> Reuse</button>
+                <button onClick={() => {
+                  setReuseTemplate({ url: previewImg.url, prompt: previewImg.prompt! });
+                  setPrompt("Let's get creative ✨");
+                  setPreviewImg(null);
+                  setActiveTab("home");
+                }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><RefreshCw className="w-4 h-4" /> Reuse</button>
               )}
             </div>
           </div>
