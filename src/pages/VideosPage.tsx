@@ -36,11 +36,14 @@ const TOOL_ROWS = [
   ALL_TOOLS.slice(Math.ceil(ALL_TOOLS.length / 2)),
 ];
 
-const GRADIENTS = [
-  "from-emerald-600/80 to-emerald-900/90", "from-rose-600/80 to-rose-900/90",
-  "from-violet-600/80 to-violet-900/90", "from-amber-600/80 to-amber-900/90",
-  "from-cyan-600/80 to-cyan-900/90", "from-pink-600/80 to-pink-900/90",
-];
+const TOOL_GRADIENTS: Record<string, string> = {
+  "swap-characters": "from-violet-500 via-violet-600 to-purple-700",
+  "talking-photo": "from-rose-500 via-rose-600 to-pink-700",
+  "upscale": "from-cyan-500 via-cyan-600 to-blue-700",
+  "auto-caption": "from-amber-500 via-amber-600 to-orange-700",
+  "lip-sync": "from-emerald-500 via-emerald-600 to-teal-700",
+  "video-extender": "from-indigo-500 via-indigo-600 to-blue-700",
+};
 
 const VIDEO_PLACEHOLDERS = [
   "A cinematic drone shot over mountains...",
