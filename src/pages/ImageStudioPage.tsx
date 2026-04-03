@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Paperclip } from "lucide-react";
+import { ArrowUp, Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Paperclip, Sparkles } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,27 @@ import AppLayout from "@/layouts/AppLayout";
 import { getDefaultModel } from "@/components/ModelSelector";
 import type { ModelOption } from "@/components/ModelSelector";
 import ModelPickerSheet from "@/components/ModelPickerSheet";
-import OrbLoader from "@/components/OrbLoader";
 import studioHero from "@/assets/studio-images-hero.jpg";
+
+const TruncatedText = ({ text }: { text: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 120;
+  return (
+    <div className="text-sm text-foreground">
+      {isLong && !expanded ? (
+        <>
+          <span>{text.slice(0, 120)}...</span>
+          <button onClick={() => setExpanded(true)} className="text-blue-400 text-xs ml-1 font-medium">Show more</button>
+        </>
+      ) : (
+        <>
+          <span>{text}</span>
+          {isLong && <button onClick={() => setExpanded(false)} className="text-blue-400 text-xs ml-1 font-medium">Show less</button>}
+        </>
+      )}
+    </div>
+  );
+};
 
 interface ChatMessage {
   id: string;

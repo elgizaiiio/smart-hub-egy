@@ -67,13 +67,13 @@ const ToolLanding = ({
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
     )}
     <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-    <div className="relative z-10 text-center px-6 space-y-2">
+    <div className="relative z-10 text-center px-6 space-y-3">
       <h2 className="text-3xl font-bold text-foreground tracking-tight">{title}</h2>
-      {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">{description}</p>}
+      {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed mt-1">{description}</p>}
       <motion.button
         whileTap={{ scale: 0.96 }}
         onClick={onStart}
-        className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20"
+        className="mt-4 px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20"
       >
         {uploadLabel}
       </motion.button>
