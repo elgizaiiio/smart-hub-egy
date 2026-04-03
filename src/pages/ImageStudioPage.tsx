@@ -52,6 +52,21 @@ const HERO_TEXTS = [
   { main: "Your art", accent: "your rules" },
 ];
 
+const LoadingText = ({ texts }: { texts: string[] }) => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % texts.length), 3000);
+    return () => clearInterval(t);
+  }, [texts]);
+  return (
+    <AnimatePresence mode="wait">
+      <motion.span key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-xs text-muted-foreground">
+        {texts[idx]}
+      </motion.span>
+    </AnimatePresence>
+  );
+};
+
 const LOADING_TEXTS = ["Creating magic...", "Painting pixels...", "Almost there...", "Bringing ideas to life..."];
 
 const ImageStudioPage = () => {
