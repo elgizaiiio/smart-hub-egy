@@ -36,11 +36,14 @@ const TOOL_ROWS = [
   ALL_TOOLS.slice(Math.ceil(ALL_TOOLS.length / 2)),
 ];
 
-const GRADIENTS = [
-  "from-emerald-600/80 to-emerald-900/90", "from-rose-600/80 to-rose-900/90",
-  "from-violet-600/80 to-violet-900/90", "from-amber-600/80 to-amber-900/90",
-  "from-cyan-600/80 to-cyan-900/90", "from-pink-600/80 to-pink-900/90",
-];
+const TOOL_GRADIENTS: Record<string, string> = {
+  "swap-characters": "from-violet-500 via-violet-600 to-purple-700",
+  "talking-photo": "from-rose-500 via-rose-600 to-pink-700",
+  "upscale": "from-cyan-500 via-cyan-600 to-blue-700",
+  "auto-caption": "from-amber-500 via-amber-600 to-orange-700",
+  "lip-sync": "from-emerald-500 via-emerald-600 to-teal-700",
+  "video-extender": "from-indigo-500 via-indigo-600 to-blue-700",
+};
 
 const VIDEO_PLACEHOLDERS = [
   "A cinematic drone shot over mountains...",
@@ -194,19 +197,16 @@ const VideosPage = () => {
                 {TOOL_ROWS.map((row, rowIndex) => (
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <div className="flex min-w-max gap-3">
-                      {row.map((tool, i) => {
-                        const preview = getToolPreview(tool.id);
-                        const gradient = GRADIENTS[(rowIndex * 4 + i) % GRADIENTS.length];
-                        const isVideo = preview.endsWith(".mp4") || preview.includes("video");
+                      {row.map((tool) => {
+                        const gradient = TOOL_GRADIENTS[tool.id] || "from-gray-500 to-gray-700";
                         return (
                           <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
-                            {preview ? (
-                              isVideo ? <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" /> : <img src={preview} alt={tool.name} className="absolute inset-0 h-full w-full object-cover" />
-                            ) : (
-                              <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-3"><p className="text-sm font-bold text-white">{tool.name}</p></div>
+                            <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(0,0,0,0.2),transparent_60%)]" />
+                            <div className="absolute inset-0 flex items-center justify-center p-4">
+                              <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed">{tool.name}</p>
+                            </div>
                           </motion.button>
                         );
                       })}
