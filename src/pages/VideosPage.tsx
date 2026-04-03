@@ -18,7 +18,7 @@ const NANO_BANANA_DEFAULT: ModelOption = {
   id: "nano-banana",
   name: "Nano Banana",
   credits: "1",
-  iconUrl: "/model-logos/bytedance.ico",
+  iconUrl: "/model-logos/nano-banana.jpg",
 };
 
 const ALL_TOOLS = [
@@ -215,6 +215,17 @@ const VideosPage = () => {
                 <div className="relative flex-1 px-5 pr-[38%] text-left">
                   <p className="text-lg font-bold text-foreground">Create Your Video</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">Generate videos with AI</p>
+                </div>
+              </motion.button>
+
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => navigate("/videos/studio")} className="relative flex h-32 w-full items-center overflow-hidden rounded-2xl border border-border/20 bg-gradient-to-r from-accent/30 to-accent/5">
+                <div className="absolute inset-y-0 right-0 w-[42%] overflow-hidden">
+                  <img src={createVideoCard} alt="Edit" className="h-full w-full object-cover opacity-80" />
+                  <div className="absolute inset-0 bg-gradient-to-l from-background/10 via-background/20 to-transparent" />
+                </div>
+                <div className="relative flex-1 px-5 pr-[38%] text-left">
+                  <p className="text-lg font-bold text-foreground">Edit Your Video</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Transform existing videos</p>
                 </div>
               </motion.button>
             </div>

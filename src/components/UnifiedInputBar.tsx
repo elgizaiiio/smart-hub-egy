@@ -45,7 +45,7 @@ const UnifiedInputBar = ({
   const [iconError, setIconError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const resolvedIcon = modelIcon && !iconError ? modelIcon : "/model-logos/bytedance.ico";
+  const resolvedIcon = modelIcon && !iconError ? modelIcon : "/model-logos/nano-banana.jpg";
 
   useEffect(() => {
     const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % placeholders.length), 3000);
