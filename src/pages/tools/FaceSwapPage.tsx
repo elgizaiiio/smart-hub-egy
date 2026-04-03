@@ -61,13 +61,11 @@ const FaceSwapPage = () => {
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {step === "landing" && (
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-end pb-16">
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-center">
               {landingImage ? <img src={landingImage} alt="Face Swap" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-accent/10 to-background" />}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-              <div className="relative z-10 text-center px-6 space-y-5">
-                <h2 className="text-3xl font-bold text-foreground tracking-tight">Face Swap</h2>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">Swap faces between photos with AI precision</p>
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+              <div className="relative z-10 text-center px-6">
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
                   <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
                 </motion.button>
               </div>
