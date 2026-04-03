@@ -204,7 +204,7 @@ const VideoStudioPage = () => {
       convId = data?.id || null;
       setConversationId(convId);
     }
-    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt });
+    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt, images: attachedImage ? [attachedImage] : null });
 
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`, {
