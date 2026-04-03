@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Plus, Sparkles, ChevronDown } from "lucide-react";
+import { Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Plus, Sparkles, ChevronDown, RefreshCw } from "lucide-react";
+import ImagePreviewModal from "@/components/ImagePreviewModal";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
