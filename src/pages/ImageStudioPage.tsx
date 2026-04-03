@@ -308,42 +308,50 @@ const ImageStudioPage = () => {
           ))}
         </div>
 
-        {/* Bottom Input - matching UnifiedInputBar style */}
+        {/* Bottom Input */}
         <div className="relative z-10 p-3 bg-background/80 backdrop-blur-xl">
-          {attachedImage && (
-            <div className="mb-2 relative inline-block">
-              <img src={attachedImage} alt="" className="w-16 h-16 object-cover rounded-xl" />
-              <button onClick={() => setAttachedImage(null)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"><X className="w-3 h-3" /></button>
+          <div className="rounded-2xl bg-accent/40 backdrop-blur-sm">
+            {attachedImage && (
+              <div className="px-4 pt-4 relative inline-block">
+                <img src={attachedImage} alt="" className="h-16 w-16 object-cover rounded-xl" />
+                <button onClick={() => setAttachedImage(null)} className="absolute -right-1 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px]">✕</button>
+              </div>
+            )}
+            <div className="px-4 pt-4 pb-2">
+              <textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder={displayedPlaceholder + (isTyping ? "|" : "")}
+                rows={2}
+                className="min-h-[64px] w-full bg-transparent text-sm text-foreground outline-none resize-none placeholder:text-muted-foreground/40"
+              />
             </div>
-          )}
-          <div className="flex items-end gap-2 bg-card/60 rounded-2xl p-3">
-            <button
-              onClick={() => setModelPickerOpen(true)}
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/50 bg-accent/30 px-3 py-2 hover:bg-accent/60 transition-all text-xs font-medium backdrop-blur-sm"
-            >
-              <span className="text-muted-foreground">Select</span>
-              <span className="text-blue-400 font-bold">Model</span>
-              <ChevronDown className="w-3 h-3 text-muted-foreground" />
-            </button>
-            <button onClick={() => fileInputRef.current?.click()} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-accent/20 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-              <Plus className="w-4 h-4" />
-            </button>
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder={displayedPlaceholder + (isTyping ? "|" : "")}
-              rows={1}
-              className="flex-1 bg-transparent text-sm text-foreground outline-none resize-none placeholder:text-muted-foreground/40 max-h-24 py-2"
-            />
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleSend()}
-              disabled={(!input.trim() && !attachedImage) || isGenerating}
-              className="shrink-0 rounded-xl bg-foreground px-5 py-2.5 text-xs font-semibold text-background transition-all disabled:opacity-30"
-            >
-              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
-            </motion.button>
+            <div className="flex items-center gap-2 px-4 pb-4">
+              <button
+                onClick={() => setModelPickerOpen(true)}
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-accent/60 px-3 py-2 hover:bg-accent transition-all text-xs font-medium"
+              >
+                {selectedModel.iconUrl ? (
+                  <img src={selectedModel.iconUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                ) : null}
+                <span className="text-foreground font-semibold truncate max-w-[100px]">{selectedModel.name}</span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+              </button>
+              <button onClick={() => fileInputRef.current?.click()} className="flex shrink-0 items-center gap-1.5 rounded-full bg-accent/60 px-3 py-2 hover:bg-accent transition-all text-xs font-medium text-muted-foreground hover:text-foreground">
+                <Plus className="w-3.5 h-3.5" />
+                <span>Media</span>
+              </button>
+              <div className="flex-1" />
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleSend()}
+                disabled={(!input.trim() && !attachedImage) || isGenerating}
+                className="shrink-0 rounded-xl bg-foreground px-6 py-2.5 text-xs font-semibold text-background transition-all disabled:opacity-30"
+              >
+                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
+              </motion.button>
+            </div>
           </div>
         </div>
 
