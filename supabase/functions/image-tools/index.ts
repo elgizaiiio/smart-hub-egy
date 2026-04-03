@@ -20,57 +20,78 @@ const TOOL_MODELS: Record<string, string> = {
   'remover': 'fal-ai/qwen-image-edit-plus-lora-gallery/remove-element',
   'hair-changer': 'fal-ai/image-apps-v2/hair-change',
   'cartoon': 'fal-ai/image-editing/cartoonify',
-  'avatar-maker': 'fal-ai/hunyuan-3d/v3.1/rapid/image-to-3d',
 };
 
 const TOOL_COSTS: Record<string, number> = {
   'inpaint': 1, 'clothes-changer': 4, 'headshot': 1, 'bg-remover': 0.5,
   'face-swap': 0.5, 'relight': 1, 'colorizer': 1, 'character-swap': 0.5,
   'storyboard': 1, 'sketch-to-image': 1, 'retouching': 1, 'remover': 1,
-  'hair-changer': 1, 'cartoon': 1, 'avatar-maker': 4,
+  'hair-changer': 1, 'cartoon': 1,
 };
+
+async function getLemonDataKey(): Promise<string> {
+  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, supabaseKey);
+
+  const { data, error } = await sb
+    .from("lemondata_keys")
+    .select("api_key")
+    .eq("is_active", true)
+    .eq("is_blocked", false)
+    .order("usage_count", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (error || !data) throw new Error("No active LemonData API key available");
+
+  // Increment usage
+  await sb.from("lemondata_keys").update({ usage_count: (data as any).usage_count + 1, last_used_at: new Date().toISOString() }).eq("api_key", data.api_key);
+
+  return data.api_key;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const FAL_API_KEY = Deno.env.get('FAL_API_KEY');
-    if (!FAL_API_KEY) throw new Error('FAL_API_KEY not configured');
+    const apiKey = await getLemonDataKey();
 
     const { tool, image, mask, target, prompt, color, direction } = await req.json();
     const model = TOOL_MODELS[tool];
     if (!model) throw new Error(`Unknown tool: ${tool}`);
 
-    // Build fal.ai request body based on tool
-    const falBody: Record<string, any> = {};
+    // Build request body
+    const body: Record<string, any> = {};
     
-    if (image) falBody.image_url = image;
-    if (mask) falBody.mask_url = mask;
-    if (target) falBody.target_url = target;
-    if (prompt) falBody.prompt = prompt;
-    if (color) falBody.light_color = color;
-    if (direction) falBody.light_direction = direction;
+    if (image) body.image_url = image;
+    if (mask) body.mask_url = mask;
+    if (target) body.target_url = target;
+    if (prompt) body.prompt = prompt;
+    if (color) body.light_color = color;
+    if (direction) body.light_direction = direction;
 
     // Face/character swap custom prompts
     if (tool === 'face-swap') {
-      falBody.prompt = "Swap the face from the source image onto the target image, preserving all other details exactly.";
+      body.prompt = "Swap the face from the source image onto the target image, preserving all other details exactly.";
     }
     if (tool === 'character-swap') {
-      falBody.prompt = "Replace the character in the target image with the person from the source image, preserving pose, clothing style, and background.";
+      body.prompt = "Replace the character in the target image with the person from the source image, preserving pose, clothing style, and background.";
     }
 
-    const response = await fetch(`https://queue.fal.run/${model}`, {
+    const response = await fetch(`https://api.lemonfox.ai/v1/images/${model}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Key ${FAL_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(falBody),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`fal.ai error: ${response.status} ${err}`);
+      throw new Error(`LemonData error: ${response.status} ${err}`);
     }
 
     const result = await response.json();
@@ -80,20 +101,19 @@ serve(async (req) => {
       let pollResult;
       for (let i = 0; i < 60; i++) {
         await new Promise(r => setTimeout(r, 2000));
-        const pollResp = await fetch(`https://queue.fal.run/${model}/requests/${result.request_id}/status`, {
-          headers: { 'Authorization': `Key ${FAL_API_KEY}` },
+        const pollResp = await fetch(`https://api.lemonfox.ai/v1/images/${model}/requests/${result.request_id}/status`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
         });
         pollResult = await pollResp.json();
         if (pollResult.status === 'COMPLETED') break;
         if (pollResult.status === 'FAILED') throw new Error('Generation failed');
       }
       
-      // Get result
-      const resultResp = await fetch(`https://queue.fal.run/${model}/requests/${result.request_id}`, {
-        headers: { 'Authorization': `Key ${FAL_API_KEY}` },
+      const resultResp = await fetch(`https://api.lemonfox.ai/v1/images/${model}/requests/${result.request_id}`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` },
       });
       const finalResult = await resultResp.json();
-      const url = finalResult?.images?.[0]?.url || finalResult?.image?.url || finalResult?.output?.url || finalResult?.mesh?.url;
+      const url = finalResult?.images?.[0]?.url || finalResult?.image?.url || finalResult?.output?.url;
       
       return new Response(JSON.stringify({ url }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

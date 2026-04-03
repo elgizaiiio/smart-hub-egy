@@ -192,17 +192,16 @@ const InpaintPage = () => {
           {/* Landing */}
           {stage === "landing" && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
-              <div className="relative h-full flex flex-col items-center justify-end pb-20">
+              <div className="relative h-full flex flex-col items-center justify-center">
                 {landingImage ? (
                   <img src={landingImage} alt="Inpaint" className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-500/10 to-background" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-                <div className="relative z-10 text-center px-6 space-y-5">
-                  <h2 className="text-3xl font-bold text-foreground tracking-tight">Inpaint</h2>
-                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">Paint over areas and describe what to change</p>
-                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStage("upload")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                <div className="relative z-10 text-center px-6">
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); }} />
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => fileInputRef.current?.click()} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
                     <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
                   </motion.button>
                 </div>

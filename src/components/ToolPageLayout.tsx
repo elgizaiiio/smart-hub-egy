@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus } from "lucide-react";
+import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
@@ -29,6 +29,7 @@ interface ToolPageLayoutProps {
   autoProcess?: boolean;
   hideHeaderCost?: boolean;
   backTo?: string;
+  onFileSelected?: (dataUrl: string) => void;
 }
 
 // ==================== Star Loading Animation ====================
@@ -48,34 +49,46 @@ const StarLoader = () => (
 
 // ==================== Landing Page ====================
 const ToolLanding = ({
-  title,
   landingImage,
   onStart,
   uploadLabel = "Upload Your Photo",
+  accept = "image/*",
 }: {
-  title: string;
   landingImage?: string | null;
-  onStart: () => void;
+  onStart: (file: File) => void;
   uploadLabel?: string;
-}) => (
-  <div className="relative min-h-[75vh] flex flex-col items-center justify-center">
-    {landingImage ? (
-      <img src={landingImage} alt={title} className="absolute inset-0 w-full h-full object-cover" />
-    ) : (
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
-    )}
-    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-    <div className="relative z-10 text-center px-6">
-      <motion.button
-        whileTap={{ scale: 0.96 }}
-        onClick={onStart}
-        className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20"
-      >
-        {uploadLabel}
-      </motion.button>
+  accept?: string;
+}) => {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onStart(file);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="relative min-h-[75vh] flex flex-col items-center justify-center">
+      {landingImage ? (
+        <img src={landingImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+      <div className="relative z-10 text-center px-6">
+        <input ref={fileRef} type="file" className="hidden" accept={accept} onChange={handleFileChange} />
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={() => fileRef.current?.click()}
+          className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20"
+        >
+          <Upload className="w-4 h-4 inline mr-2" />
+          {uploadLabel}
+        </motion.button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ==================== Yellow Generate Button ====================
 const YellowGenerateButton = ({
@@ -101,9 +114,9 @@ const YellowGenerateButton = ({
 
 // ==================== Result View ====================
 const ResultView = ({
-  resultUrl, resultType = "image", title, onBack,
+  resultUrl, resultType = "image", title, onBack, onRegenerate,
 }: {
-  resultUrl: string; resultType?: "image" | "video"; title: string; onBack: () => void;
+  resultUrl: string; resultType?: "image" | "video"; title: string; onBack: () => void; onRegenerate?: () => void;
 }) => {
   const handleDownload = () => {
     const a = document.createElement("a");
@@ -131,13 +144,18 @@ const ResultView = ({
           <img src={resultUrl} alt="Result" className="w-full" />
         )}
       </div>
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <button onClick={handleDownload} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm">
           <Download className="w-4 h-4" /> Download
         </button>
         <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
           <Share2 className="w-4 h-4" /> Share
         </button>
+        {onRegenerate && (
+          <button onClick={onRegenerate} className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        )}
       </div>
       <button onClick={onBack} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">
         Try Again
@@ -193,25 +211,25 @@ export const TemplateGrid = ({
 
 // ==================== Main Layout ====================
 const ToolPageLayout = ({
-  title, cost, costLabel, toolId, children, onGenerate, isGenerating, resultUrl, resultType = "image", autoProcess, hideHeaderCost = true, backTo,
+  title, cost, costLabel, toolId, children, onGenerate, isGenerating, resultUrl, resultType = "image", autoProcess, hideHeaderCost = true, backTo, onFileSelected,
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
   const { hasEnoughCredits } = useCredits();
   const [landingImage, setLandingImage] = useState<string | null>(null);
-  const [landingDesc, setLandingDesc] = useState<string | null>(null);
   const [showLanding, setShowLanding] = useState(true);
 
-  // Determine back destination
   const defaultBack = toolId && (
     ["swap-characters", "talking-photo", "upscale", "video-upscale", "auto-caption", "lip-sync", "video-extender", "video-to-text"].includes(toolId)
   ) ? "/videos" : "/images";
   const goBack = backTo || defaultBack;
 
+  const acceptType = resultType === "video" ? "video/*" : "image/*";
+  const uploadLabel = resultType === "video" ? "Upload Your Video" : "Upload Your Photo";
+
   useEffect(() => {
-    supabase.from("tool_landing_images").select("image_url, description").eq("tool_id", toolId).maybeSingle()
+    supabase.from("tool_landing_images").select("image_url").eq("tool_id", toolId).maybeSingle()
       .then(({ data }) => {
-        if (data?.image_url) { setLandingImage(data.image_url); setLandingDesc(data.description); }
-        // Always show landing even without image (gradient fallback)
+        if (data?.image_url) setLandingImage(data.image_url);
       });
   }, [toolId]);
 
@@ -223,11 +241,20 @@ const ToolPageLayout = ({
     await onGenerate();
   };
 
-  const uploadLabel = resultType === "video" ? "Upload Your Video" : "Upload Your Photo";
+  const handleLandingFileSelect = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      if (onFileSelected) {
+        onFileSelected(dataUrl);
+      }
+      setShowLanding(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - name only */}
       <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <button onClick={() => navigate(goBack)} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
           <ArrowLeft className="w-5 h-5" />
@@ -235,23 +262,28 @@ const ToolPageLayout = ({
         <h1 className="text-base font-semibold text-foreground flex-1">{title}</h1>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {showLanding && !resultUrl && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ToolLanding
-                title={title}
                 landingImage={landingImage}
-                onStart={() => setShowLanding(false)}
+                onStart={handleLandingFileSelect}
                 uploadLabel={uploadLabel}
+                accept={acceptType}
               />
             </motion.div>
           )}
 
           {resultUrl && (
             <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <ResultView resultUrl={resultUrl} resultType={resultType} title={title} onBack={() => navigate(0)} />
+              <ResultView
+                resultUrl={resultUrl}
+                resultType={resultType}
+                title={title}
+                onBack={() => navigate(0)}
+                onRegenerate={handleGenerate}
+              />
             </motion.div>
           )}
 

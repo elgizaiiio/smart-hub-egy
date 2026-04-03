@@ -36,15 +36,14 @@ const TOOL_ROWS = [
   ALL_TOOLS.slice(Math.ceil(ALL_TOOLS.length / 2)),
 ];
 
-const TOOL_CARDS: { id: string; colors: string; accent1: string; accent2: string }[] = [
-  { id: "swap-characters", colors: "from-violet-400 via-purple-500 to-violet-700", accent1: "rgba(180,130,255,0.4)", accent2: "rgba(100,40,180,0.3)" },
-  { id: "talking-photo", colors: "from-rose-400 via-pink-500 to-rose-700", accent1: "rgba(255,130,170,0.4)", accent2: "rgba(180,40,90,0.3)" },
-  { id: "upscale", colors: "from-cyan-400 via-blue-500 to-cyan-700", accent1: "rgba(80,200,255,0.4)", accent2: "rgba(20,100,180,0.3)" },
-  { id: "auto-caption", colors: "from-amber-400 via-orange-500 to-amber-700", accent1: "rgba(255,190,80,0.4)", accent2: "rgba(200,100,20,0.3)" },
-  { id: "lip-sync", colors: "from-emerald-400 via-teal-500 to-emerald-700", accent1: "rgba(80,220,160,0.4)", accent2: "rgba(20,130,80,0.3)" },
-  { id: "video-extender", colors: "from-indigo-400 via-blue-500 to-indigo-700", accent1: "rgba(120,130,255,0.4)", accent2: "rgba(50,40,180,0.3)" },
-];
-const TOOL_CARD_MAP = Object.fromEntries(TOOL_CARDS.map(c => [c.id, c]));
+const TOOL_SILK: Record<string, { bg: string; s1: string; s2: string; s3: string; s4: string }> = {
+  "swap-characters": { bg: "linear-gradient(135deg, #3a1e5f 0%, #7c3aed 40%, #6d28d9 100%)", s1: "rgba(167,139,250,0.5)", s2: "rgba(124,58,237,0.4)", s3: "rgba(196,181,253,0.15)", s4: "rgba(139,92,246,0.25)" },
+  "talking-photo": { bg: "linear-gradient(135deg, #5f1e3a 0%, #e11d48 40%, #9f1239 100%)", s1: "rgba(251,113,133,0.5)", s2: "rgba(225,29,72,0.4)", s3: "rgba(253,164,175,0.15)", s4: "rgba(244,63,94,0.25)" },
+  "upscale": { bg: "linear-gradient(135deg, #1e3a5f 0%, #0284c7 40%, #0369a1 100%)", s1: "rgba(56,189,248,0.5)", s2: "rgba(2,132,199,0.4)", s3: "rgba(125,211,252,0.15)", s4: "rgba(14,165,233,0.25)" },
+  "auto-caption": { bg: "linear-gradient(135deg, #5f3a1e 0%, #d97706 40%, #b45309 100%)", s1: "rgba(251,191,36,0.5)", s2: "rgba(217,119,6,0.4)", s3: "rgba(253,224,71,0.15)", s4: "rgba(245,158,11,0.25)" },
+  "lip-sync": { bg: "linear-gradient(135deg, #1e5f2a 0%, #16a34a 40%, #15803d 100%)", s1: "rgba(74,222,128,0.5)", s2: "rgba(22,163,74,0.4)", s3: "rgba(134,239,172,0.15)", s4: "rgba(34,197,94,0.25)" },
+  "video-extender": { bg: "linear-gradient(135deg, #1e2a5f 0%, #4f46e5 40%, #4338ca 100%)", s1: "rgba(129,140,248,0.5)", s2: "rgba(79,70,229,0.4)", s3: "rgba(165,180,252,0.15)", s4: "rgba(99,102,241,0.25)" },
+};
 
 const VIDEO_PLACEHOLDERS = [
   "A cinematic drone shot over mountains...",
@@ -199,14 +198,12 @@ const VideosPage = () => {
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <div className="flex min-w-max gap-3">
                       {row.map((tool) => {
-                        const card = TOOL_CARD_MAP[tool.id];
-                        const colors = card?.colors || "from-gray-400 via-gray-500 to-gray-700";
-                        const a1 = card?.accent1 || "rgba(150,150,150,0.4)";
-                        const a2 = card?.accent2 || "rgba(80,80,80,0.3)";
+                        const silk = TOOL_SILK[tool.id] || TOOL_SILK["swap-characters"];
                         return (
-                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className={`relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${colors}`}>
-                            <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 120% 80% at 20% 30%, ${a1}, transparent), radial-gradient(ellipse 100% 60% at 80% 70%, ${a2}, transparent), radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.08), transparent)` }} />
-                            <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 80%, rgba(255,255,255,0.12), transparent 50%), radial-gradient(circle at 70% 20%, rgba(255,255,255,0.1), transparent 40%)` }} />
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl" style={{ background: silk.bg }}>
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 150% 100% at 15% 25%, ${silk.s1}, transparent 70%), radial-gradient(ellipse 130% 90% at 85% 75%, ${silk.s2}, transparent 65%), radial-gradient(ellipse 100% 120% at 50% -10%, ${silk.s3}, transparent 60%)` }} />
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(circle 60px at 25% 75%, ${silk.s4}, transparent), radial-gradient(circle 50px at 75% 25%, rgba(255,255,255,0.08), transparent), radial-gradient(circle 80px at 50% 50%, ${silk.s4}, transparent)` }} />
+                            <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(255,255,255,0.04) 60%, transparent 100%)` }} />
                             <div className="absolute inset-0 flex items-center justify-center p-4">
                               <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed drop-shadow-sm">{tool.name}</p>
                             </div>

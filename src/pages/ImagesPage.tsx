@@ -45,23 +45,22 @@ const TOOL_ROWS = [
 ];
 
 // Each tool gets a unique silk-fabric gradient with multiple radial layers for depth
-const TOOL_CARDS: { id: string; colors: string; accent1: string; accent2: string }[] = [
-  { id: "inpaint", colors: "from-blue-400 via-indigo-500 to-blue-700", accent1: "rgba(99,149,255,0.4)", accent2: "rgba(55,48,163,0.3)" },
-  { id: "clothes-changer", colors: "from-rose-400 via-red-500 to-rose-700", accent1: "rgba(255,120,130,0.4)", accent2: "rgba(180,30,60,0.3)" },
-  { id: "headshot", colors: "from-amber-400 via-orange-500 to-amber-700", accent1: "rgba(255,190,80,0.4)", accent2: "rgba(200,100,20,0.3)" },
-  { id: "face-swap", colors: "from-violet-400 via-purple-500 to-violet-700", accent1: "rgba(180,130,255,0.4)", accent2: "rgba(100,40,180,0.3)" },
-  { id: "bg-remover", colors: "from-cyan-400 via-teal-500 to-cyan-700", accent1: "rgba(80,220,220,0.4)", accent2: "rgba(20,120,130,0.3)" },
-  { id: "cartoon", colors: "from-pink-400 via-fuchsia-500 to-pink-700", accent1: "rgba(255,130,200,0.4)", accent2: "rgba(180,30,140,0.3)" },
-  { id: "colorizer", colors: "from-emerald-400 via-green-500 to-emerald-700", accent1: "rgba(80,220,140,0.4)", accent2: "rgba(20,130,70,0.3)" },
-  { id: "retouching", colors: "from-sky-400 via-blue-500 to-sky-700", accent1: "rgba(80,180,255,0.4)", accent2: "rgba(20,80,180,0.3)" },
-  { id: "remover", colors: "from-slate-400 via-gray-500 to-slate-700", accent1: "rgba(150,160,180,0.4)", accent2: "rgba(60,70,90,0.3)" },
-  { id: "sketch-to-image", colors: "from-lime-400 via-green-500 to-lime-700", accent1: "rgba(160,220,80,0.4)", accent2: "rgba(80,140,20,0.3)" },
-  { id: "relight", colors: "from-yellow-400 via-amber-500 to-yellow-700", accent1: "rgba(255,220,80,0.4)", accent2: "rgba(200,150,20,0.3)" },
-  { id: "character-swap", colors: "from-fuchsia-400 via-pink-500 to-fuchsia-700", accent1: "rgba(220,100,255,0.4)", accent2: "rgba(140,30,180,0.3)" },
-  { id: "storyboard", colors: "from-indigo-400 via-violet-500 to-indigo-700", accent1: "rgba(120,120,255,0.4)", accent2: "rgba(60,40,180,0.3)" },
-  { id: "hair-changer", colors: "from-teal-400 via-cyan-500 to-teal-700", accent1: "rgba(60,200,190,0.4)", accent2: "rgba(20,120,120,0.3)" },
-];
-const TOOL_CARD_MAP = Object.fromEntries(TOOL_CARDS.map(c => [c.id, c]));
+const TOOL_SILK: Record<string, { bg: string; s1: string; s2: string; s3: string; s4: string }> = {
+  "inpaint": { bg: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 40%, #1e40af 100%)", s1: "rgba(96,165,250,0.5)", s2: "rgba(37,99,235,0.4)", s3: "rgba(147,197,253,0.15)", s4: "rgba(59,130,246,0.25)" },
+  "clothes-changer": { bg: "linear-gradient(135deg, #5f1e3a 0%, #e11d48 40%, #9f1239 100%)", s1: "rgba(251,113,133,0.5)", s2: "rgba(225,29,72,0.4)", s3: "rgba(253,164,175,0.15)", s4: "rgba(244,63,94,0.25)" },
+  "headshot": { bg: "linear-gradient(135deg, #5f3a1e 0%, #d97706 40%, #b45309 100%)", s1: "rgba(251,191,36,0.5)", s2: "rgba(217,119,6,0.4)", s3: "rgba(253,224,71,0.15)", s4: "rgba(245,158,11,0.25)" },
+  "face-swap": { bg: "linear-gradient(135deg, #3a1e5f 0%, #7c3aed 40%, #6d28d9 100%)", s1: "rgba(167,139,250,0.5)", s2: "rgba(124,58,237,0.4)", s3: "rgba(196,181,253,0.15)", s4: "rgba(139,92,246,0.25)" },
+  "bg-remover": { bg: "linear-gradient(135deg, #1e4a4a 0%, #0d9488 40%, #0f766e 100%)", s1: "rgba(94,234,212,0.5)", s2: "rgba(13,148,136,0.4)", s3: "rgba(153,246,228,0.15)", s4: "rgba(20,184,166,0.25)" },
+  "cartoon": { bg: "linear-gradient(135deg, #5f1e4a 0%, #d946ef 40%, #a21caf 100%)", s1: "rgba(232,121,249,0.5)", s2: "rgba(217,70,239,0.4)", s3: "rgba(240,171,252,0.15)", s4: "rgba(192,38,211,0.25)" },
+  "colorizer": { bg: "linear-gradient(135deg, #1e5f2a 0%, #16a34a 40%, #15803d 100%)", s1: "rgba(74,222,128,0.5)", s2: "rgba(22,163,74,0.4)", s3: "rgba(134,239,172,0.15)", s4: "rgba(34,197,94,0.25)" },
+  "retouching": { bg: "linear-gradient(135deg, #1e3a5f 0%, #0284c7 40%, #0369a1 100%)", s1: "rgba(56,189,248,0.5)", s2: "rgba(2,132,199,0.4)", s3: "rgba(125,211,252,0.15)", s4: "rgba(14,165,233,0.25)" },
+  "remover": { bg: "linear-gradient(135deg, #2a2a3a 0%, #475569 40%, #334155 100%)", s1: "rgba(148,163,184,0.5)", s2: "rgba(71,85,105,0.4)", s3: "rgba(203,213,225,0.15)", s4: "rgba(100,116,139,0.25)" },
+  "sketch-to-image": { bg: "linear-gradient(135deg, #2a4a1e 0%, #65a30d 40%, #4d7c0f 100%)", s1: "rgba(163,230,53,0.5)", s2: "rgba(101,163,13,0.4)", s3: "rgba(190,242,100,0.15)", s4: "rgba(132,204,22,0.25)" },
+  "relight": { bg: "linear-gradient(135deg, #5f4a1e 0%, #eab308 40%, #ca8a04 100%)", s1: "rgba(250,204,21,0.5)", s2: "rgba(234,179,8,0.4)", s3: "rgba(253,224,71,0.15)", s4: "rgba(202,138,4,0.25)" },
+  "character-swap": { bg: "linear-gradient(135deg, #4a1e5f 0%, #c026d3 40%, #a21caf 100%)", s1: "rgba(232,121,249,0.5)", s2: "rgba(192,38,211,0.4)", s3: "rgba(240,171,252,0.15)", s4: "rgba(168,85,247,0.25)" },
+  "storyboard": { bg: "linear-gradient(135deg, #1e2a5f 0%, #4f46e5 40%, #4338ca 100%)", s1: "rgba(129,140,248,0.5)", s2: "rgba(79,70,229,0.4)", s3: "rgba(165,180,252,0.15)", s4: "rgba(99,102,241,0.25)" },
+  "hair-changer": { bg: "linear-gradient(135deg, #1e4a4f 0%, #06b6d4 40%, #0891b2 100%)", s1: "rgba(34,211,238,0.5)", s2: "rgba(6,182,212,0.4)", s3: "rgba(103,232,249,0.15)", s4: "rgba(8,145,178,0.25)" },
+};
 
 const IMAGE_PLACEHOLDERS = [
   "A futuristic city at sunset in cyberpunk style...",
@@ -229,16 +228,13 @@ const ImagesPage = () => {
                 {TOOL_ROWS.map((row, rowIndex) => (
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <div className="flex min-w-max gap-3">
-                      {row.map((tool) => {
-                        const card = TOOL_CARD_MAP[tool.id];
-                        const colors = card?.colors || "from-gray-400 via-gray-500 to-gray-700";
-                        const a1 = card?.accent1 || "rgba(150,150,150,0.4)";
-                        const a2 = card?.accent2 || "rgba(80,80,80,0.3)";
+                    {row.map((tool) => {
+                        const silk = TOOL_SILK[tool.id] || TOOL_SILK["inpaint"];
                         return (
-                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className={`relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${colors}`}>
-                            {/* Silk wave layers */}
-                            <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 120% 80% at 20% 30%, ${a1}, transparent), radial-gradient(ellipse 100% 60% at 80% 70%, ${a2}, transparent), radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.08), transparent)` }} />
-                            <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 80%, rgba(255,255,255,0.12), transparent 50%), radial-gradient(circle at 70% 20%, rgba(255,255,255,0.1), transparent 40%)` }} />
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl" style={{ background: silk.bg }}>
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 150% 100% at 15% 25%, ${silk.s1}, transparent 70%), radial-gradient(ellipse 130% 90% at 85% 75%, ${silk.s2}, transparent 65%), radial-gradient(ellipse 100% 120% at 50% -10%, ${silk.s3}, transparent 60%)` }} />
+                            <div className="absolute inset-0" style={{ background: `radial-gradient(circle 60px at 25% 75%, ${silk.s4}, transparent), radial-gradient(circle 50px at 75% 25%, rgba(255,255,255,0.08), transparent), radial-gradient(circle 80px at 50% 50%, ${silk.s4}, transparent)` }} />
+                            <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(255,255,255,0.04) 60%, transparent 100%)` }} />
                             <div className="absolute inset-0 flex items-center justify-center p-4">
                               <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed drop-shadow-sm">{tool.name}</p>
                             </div>
