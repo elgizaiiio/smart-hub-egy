@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus } from "lucide-react";
+import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
@@ -32,50 +32,82 @@ interface ToolPageLayoutProps {
 }
 
 // ==================== Star Loading Animation ====================
-const StarLoader = () => (
-  <div className="flex flex-col items-center justify-center py-16 gap-4">
-    <motion.div
-      animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-      transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }}
-      className="relative"
-    >
-      <Sparkles className="w-12 h-12 text-yellow-400" />
-      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full" />
-    </motion.div>
-    <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
-  </div>
-);
+const LOADING_TEXTS = [
+  { text: "Creating", accent: "magic" },
+  { text: "Painting", accent: "pixels" },
+  { text: "Almost", accent: "there" },
+  { text: "Bringing ideas", accent: "to life" },
+];
+
+const StarLoader = () => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % LOADING_TEXTS.length), 2400);
+    return () => clearInterval(t);
+  }, []);
+  const current = LOADING_TEXTS[idx];
+  return (
+    <div className="flex items-center gap-2.5 py-4 justify-center">
+      <motion.svg
+        width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+        className="shrink-0 text-blue-400"
+        animate={{ y: [0, -6, 0], rotate: [0, 180, 360], scale: [1, 1.15, 1] }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+      </motion.svg>
+      <AnimatePresence mode="wait">
+        <motion.span key={idx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-xs">
+          <span className="text-foreground">{current.text} </span>
+          <span className="text-blue-400">{current.accent}</span>
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+};
 
 // ==================== Landing Page ====================
 const ToolLanding = ({
-  title,
   landingImage,
   onStart,
-  uploadLabel = "Upload Your Photo",
 }: {
-  title: string;
   landingImage?: string | null;
   onStart: () => void;
-  uploadLabel?: string;
-}) => (
-  <div className="relative min-h-[75vh] flex flex-col items-center justify-center">
-    {landingImage ? (
-      <img src={landingImage} alt={title} className="absolute inset-0 w-full h-full object-cover" />
-    ) : (
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
-    )}
-    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-    <div className="relative z-10 text-center px-6">
-      <motion.button
-        whileTap={{ scale: 0.96 }}
-        onClick={onStart}
-        className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20"
-      >
-        {uploadLabel}
-      </motion.button>
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      onStart();
+    }
+  };
+
+  return (
+    <div className="relative min-h-[75vh] flex flex-col items-center justify-center">
+      {landingImage ? (
+        <img src={landingImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+      <div className="relative z-10 text-center px-6">
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={handleClick}
+          className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20 flex items-center gap-2"
+        >
+          <Upload className="w-5 h-5" />
+          Upload Your Photo
+        </motion.button>
+      </div>
+      <input ref={fileInputRef} type="file" className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
     </div>
-  </div>
-);
+  );
+};
 
 // ==================== Yellow Generate Button ====================
 const YellowGenerateButton = ({
@@ -101,9 +133,9 @@ const YellowGenerateButton = ({
 
 // ==================== Result View ====================
 const ResultView = ({
-  resultUrl, resultType = "image", title, onBack,
+  resultUrl, resultType = "image", title, onBack, onRegenerate,
 }: {
-  resultUrl: string; resultType?: "image" | "video"; title: string; onBack: () => void;
+  resultUrl: string; resultType?: "image" | "video"; title: string; onBack: () => void; onRegenerate?: () => void;
 }) => {
   const handleDownload = () => {
     const a = document.createElement("a");
@@ -131,7 +163,7 @@ const ResultView = ({
           <img src={resultUrl} alt="Result" className="w-full" />
         )}
       </div>
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <button onClick={handleDownload} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm">
           <Download className="w-4 h-4" /> Download
         </button>
@@ -139,7 +171,12 @@ const ResultView = ({
           <Share2 className="w-4 h-4" /> Share
         </button>
       </div>
-      <button onClick={onBack} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">
+      {onRegenerate && (
+        <button onClick={onRegenerate} className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">
+          <RefreshCw className="w-4 h-4" /> Regenerate
+        </button>
+      )}
+      <button onClick={onBack} className="w-full py-3 rounded-2xl bg-accent/30 text-foreground text-sm font-medium">
         Try Again
       </button>
     </div>
@@ -198,20 +235,17 @@ const ToolPageLayout = ({
   const navigate = useNavigate();
   const { hasEnoughCredits } = useCredits();
   const [landingImage, setLandingImage] = useState<string | null>(null);
-  const [landingDesc, setLandingDesc] = useState<string | null>(null);
   const [showLanding, setShowLanding] = useState(true);
 
-  // Determine back destination
   const defaultBack = toolId && (
     ["swap-characters", "talking-photo", "upscale", "video-upscale", "auto-caption", "lip-sync", "video-extender", "video-to-text"].includes(toolId)
   ) ? "/videos" : "/images";
   const goBack = backTo || defaultBack;
 
   useEffect(() => {
-    supabase.from("tool_landing_images").select("image_url, description").eq("tool_id", toolId).maybeSingle()
+    supabase.from("tool_landing_images").select("image_url").eq("tool_id", toolId).maybeSingle()
       .then(({ data }) => {
-        if (data?.image_url) { setLandingImage(data.image_url); setLandingDesc(data.description); }
-        // Always show landing even without image (gradient fallback)
+        if (data?.image_url) setLandingImage(data.image_url);
       });
   }, [toolId]);
 
@@ -223,11 +257,8 @@ const ToolPageLayout = ({
     await onGenerate();
   };
 
-  const uploadLabel = resultType === "video" ? "Upload Your Video" : "Upload Your Photo";
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - name only */}
       <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <button onClick={() => navigate(goBack)} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-accent transition-colors">
           <ArrowLeft className="w-5 h-5" />
@@ -235,29 +266,33 @@ const ToolPageLayout = ({
         <h1 className="text-base font-semibold text-foreground flex-1">{title}</h1>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {showLanding && !resultUrl && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ToolLanding
-                title={title}
                 landingImage={landingImage}
                 onStart={() => setShowLanding(false)}
-                uploadLabel={uploadLabel}
               />
             </motion.div>
           )}
 
           {resultUrl && (
             <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <ResultView resultUrl={resultUrl} resultType={resultType} title={title} onBack={() => navigate(0)} />
+              <ResultView
+                resultUrl={resultUrl}
+                resultType={resultType}
+                title={title}
+                onBack={() => navigate(0)}
+                onRegenerate={handleGenerate}
+              />
             </motion.div>
           )}
 
           {!showLanding && !resultUrl && (
             <motion.div key="work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4 space-y-4 pb-32">
-              {isGenerating ? <StarLoader /> : children}
+              {isGenerating && <StarLoader />}
+              {children}
             </motion.div>
           )}
         </AnimatePresence>
