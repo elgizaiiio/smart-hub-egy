@@ -300,7 +300,6 @@ const ImageStudioPage = () => {
                 {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
                 {msg.role === "assistant" && !msg.content && !msg.images?.length && isGenerating && (
                   <StudioThinkingLoader />
-                  </div>
                 )}
                 {msg.images && msg.images.length > 0 && (
                   <div className="mt-2 space-y-2">

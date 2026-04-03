@@ -52,22 +52,39 @@ const HERO_TEXTS = [
   { main: "Your vision", accent: "animated" },
 ];
 
-const LoadingText = ({ texts }: { texts: string[] }) => {
+const LOADING_TEXTS = [
+  { text: "Creating", accent: "magic" },
+  { text: "Rendering", accent: "frames" },
+  { text: "Almost", accent: "there" },
+  { text: "Bringing ideas", accent: "to life" },
+];
+
+const StudioThinkingLoader = () => {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % texts.length), 3000);
+    const t = setInterval(() => setIdx(i => (i + 1) % LOADING_TEXTS.length), 2400);
     return () => clearInterval(t);
-  }, [texts]);
+  }, []);
+  const current = LOADING_TEXTS[idx];
   return (
-    <AnimatePresence mode="wait">
-      <motion.span key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-xs text-muted-foreground">
-        {texts[idx]}
-      </motion.span>
-    </AnimatePresence>
+    <div className="flex items-center gap-2.5 py-2">
+      <motion.svg
+        width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+        className="shrink-0 text-blue-400"
+        animate={{ y: [0, -6, 0], rotate: [0, 180, 360], scale: [1, 1.15, 1] }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+      </motion.svg>
+      <AnimatePresence mode="wait">
+        <motion.span key={idx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-xs">
+          <span className="text-foreground">{current.text} </span>
+          <span className="text-blue-400">{current.accent}</span>
+        </motion.span>
+      </AnimatePresence>
+    </div>
   );
 };
-
-const LOADING_TEXTS = ["Creating magic...", "Rendering frames...", "Almost there...", "Bringing ideas to life..."];
 
 const VideoStudioPage = () => {
   const location = useLocation();
