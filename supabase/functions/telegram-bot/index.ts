@@ -541,18 +541,29 @@ serve(async (req) => {
 
       if (d.startsWith("tool_landing_")) {
         const toolId = d.replace("tool_landing_", "");
-        // Show current landing image info
         const { data: existing } = await sb.from("tool_landing_images").select("*").eq("tool_id", toolId).maybeSingle();
         const kb: { text: string; callback_data: string }[][] = [
-          [{ text: "📸 تغيير الصورة", callback_data: `tool_set_img_${toolId}` }],
+          [{ text: "🖼 صورة البطاقة (Card)", callback_data: `tool_set_card_${toolId}` }],
+          [{ text: "📸 صورة Landing Page", callback_data: `tool_set_img_${toolId}` }],
           [{ text: "📝 تغيير الوصف", callback_data: `tool_set_desc_${toolId}` }],
           [{ text: "🔙 رجوع", callback_data: "tools_menu" }],
         ];
         await send(BOT_TOKEN, chatId, msgId,
           `🛠 *${toolId}*\n\n` +
-          `الصورة: ${existing?.image_url ? "✅ موجودة" : "❌ غير موجودة"}\n` +
+          `صورة البطاقة: ${(existing as any)?.card_image_url ? "✅ موجودة" : "❌ غير موجودة"}\n` +
+          `صورة Landing: ${existing?.image_url ? "✅ موجودة" : "❌ غير موجودة"}\n` +
           `الوصف: ${existing?.description || "لا يوجد"}`,
           kb
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tool_set_card_")) {
+        const toolId = d.replace("tool_set_card_", "");
+        await saveSession(sb, chatId, { adminAction: "tool_awaiting_card_image", adminModelId: toolId } as any);
+        await send(BOT_TOKEN, chatId, msgId,
+          `🖼 *صورة البطاقة (Card)*\n\nالأداة: \`${toolId}\`\n\nأرسل الصورة التي ستظهر في بطاقة الأداة:`,
+          [[{ text: "❌ إلغاء", callback_data: "tools_menu" }]]
         );
         return new Response("OK");
       }
@@ -561,7 +572,7 @@ serve(async (req) => {
         const toolId = d.replace("tool_set_img_", "");
         await saveSession(sb, chatId, { adminAction: "tool_awaiting_image", adminModelId: toolId } as any);
         await send(BOT_TOKEN, chatId, msgId,
-          `📸 *تغيير صورة الأداة*\n\nالأداة: \`${toolId}\`\n\nأرسل الصورة الجديدة:`,
+          `📸 *صورة Landing Page*\n\nالأداة: \`${toolId}\`\n\nأرسل صورة خلفية صفحة Landing:`,
           [[{ text: "❌ إلغاء", callback_data: "tools_menu" }]]
         );
         return new Response("OK");
