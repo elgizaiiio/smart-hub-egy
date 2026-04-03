@@ -49,13 +49,11 @@ const StarLoader = () => (
 // ==================== Landing Page ====================
 const ToolLanding = ({
   title,
-  description,
   landingImage,
   onStart,
   uploadLabel = "Upload Your Photo",
 }: {
   title: string;
-  description?: string;
   landingImage?: string | null;
   onStart: () => void;
   uploadLabel?: string;
@@ -69,7 +67,6 @@ const ToolLanding = ({
     <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
     <div className="relative z-10 text-center px-6 space-y-3">
       <h2 className="text-3xl font-bold text-foreground tracking-tight">{title}</h2>
-      {description && <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed mt-1">{description}</p>}
       <motion.button
         whileTap={{ scale: 0.96 }}
         onClick={onStart}

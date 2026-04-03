@@ -197,19 +197,16 @@ const VideosPage = () => {
                 {TOOL_ROWS.map((row, rowIndex) => (
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <div className="flex min-w-max gap-3">
-                      {row.map((tool, i) => {
-                        const preview = getToolPreview(tool.id);
-                        const gradient = GRADIENTS[(rowIndex * 4 + i) % GRADIENTS.length];
-                        const isVideo = preview.endsWith(".mp4") || preview.includes("video");
+                      {row.map((tool) => {
+                        const gradient = TOOL_GRADIENTS[tool.id] || "from-gray-500 to-gray-700";
                         return (
                           <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl">
-                            {preview ? (
-                              isVideo ? <video src={preview} autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover" /> : <img src={preview} alt={tool.name} className="absolute inset-0 h-full w-full object-cover" />
-                            ) : (
-                              <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-3"><p className="text-sm font-bold text-white">{tool.name}</p></div>
+                            <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(0,0,0,0.2),transparent_60%)]" />
+                            <div className="absolute inset-0 flex items-center justify-center p-4">
+                              <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed">{tool.name}</p>
+                            </div>
                           </motion.button>
                         );
                       })}
