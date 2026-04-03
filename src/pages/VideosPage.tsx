@@ -184,6 +184,7 @@ const VideosPage = () => {
                 onAttach={() => fileInputRef.current?.click()}
                 onModelPick={() => setModelPickerOpen(true)}
                 modelIcon={selectedModel.iconUrl}
+                modelName={selectedModel.name}
                 showModelPicker
                 placeholders={VIDEO_PLACEHOLDERS}
                 className="min-h-[72px]"
