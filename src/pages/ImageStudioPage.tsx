@@ -306,22 +306,27 @@ const ImageStudioPage = () => {
                 {msg.attachedImage && <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />}
                 {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
                 {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
-                {msg.role === "assistant" && !msg.content && !msg.images?.length && isGenerating && (
-                  <StudioThinkingLoader />
-                )}
+                <AnimatePresence>
+                  {msg.role === "assistant" && !msg.content && !msg.images?.length && isGenerating && (
+                    <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
+                      <StudioThinkingLoader />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 {msg.images && msg.images.length > 0 && (
-                  <div className="mt-2 space-y-2">
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mt-2 space-y-2">
                     {msg.images.map((url, i) => (
                       <div key={i}>
-                        <img src={url} alt="" className="w-full rounded-2xl" />
+                        <img src={url} alt="" className="w-full rounded-2xl cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setPreviewUrl(url)} />
                         <div className="flex items-center gap-1.5 mt-2 px-1">
                           <button onClick={() => handleDownload(url)} className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><Download className="w-4 h-4 text-foreground" /></button>
                           <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><ThumbsUp className="w-4 h-4 text-foreground" /></button>
                           <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><Share2 className="w-4 h-4 text-foreground" /></button>
+                          <button onClick={() => handleSend(msg.content || undefined)} className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><RefreshCw className="w-4 h-4 text-foreground" /></button>
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
               </div>
             </div>
