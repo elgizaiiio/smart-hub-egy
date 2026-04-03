@@ -541,18 +541,29 @@ serve(async (req) => {
 
       if (d.startsWith("tool_landing_")) {
         const toolId = d.replace("tool_landing_", "");
-        // Show current landing image info
         const { data: existing } = await sb.from("tool_landing_images").select("*").eq("tool_id", toolId).maybeSingle();
         const kb: { text: string; callback_data: string }[][] = [
-          [{ text: "📸 تغيير الصورة", callback_data: `tool_set_img_${toolId}` }],
+          [{ text: "🖼 صورة البطاقة (Card)", callback_data: `tool_set_card_${toolId}` }],
+          [{ text: "📸 صورة Landing Page", callback_data: `tool_set_img_${toolId}` }],
           [{ text: "📝 تغيير الوصف", callback_data: `tool_set_desc_${toolId}` }],
           [{ text: "🔙 رجوع", callback_data: "tools_menu" }],
         ];
         await send(BOT_TOKEN, chatId, msgId,
           `🛠 *${toolId}*\n\n` +
-          `الصورة: ${existing?.image_url ? "✅ موجودة" : "❌ غير موجودة"}\n` +
+          `صورة البطاقة: ${(existing as any)?.card_image_url ? "✅ موجودة" : "❌ غير موجودة"}\n` +
+          `صورة Landing: ${existing?.image_url ? "✅ موجودة" : "❌ غير موجودة"}\n` +
           `الوصف: ${existing?.description || "لا يوجد"}`,
           kb
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tool_set_card_")) {
+        const toolId = d.replace("tool_set_card_", "");
+        await saveSession(sb, chatId, { adminAction: "tool_awaiting_card_image", adminModelId: toolId } as any);
+        await send(BOT_TOKEN, chatId, msgId,
+          `🖼 *صورة البطاقة (Card)*\n\nالأداة: \`${toolId}\`\n\nأرسل الصورة التي ستظهر في بطاقة الأداة:`,
+          [[{ text: "❌ إلغاء", callback_data: "tools_menu" }]]
         );
         return new Response("OK");
       }
@@ -561,7 +572,7 @@ serve(async (req) => {
         const toolId = d.replace("tool_set_img_", "");
         await saveSession(sb, chatId, { adminAction: "tool_awaiting_image", adminModelId: toolId } as any);
         await send(BOT_TOKEN, chatId, msgId,
-          `📸 *تغيير صورة الأداة*\n\nالأداة: \`${toolId}\`\n\nأرسل الصورة الجديدة:`,
+          `📸 *صورة Landing Page*\n\nالأداة: \`${toolId}\`\n\nأرسل صورة خلفية صفحة Landing:`,
           [[{ text: "❌ إلغاء", callback_data: "tools_menu" }]]
         );
         return new Response("OK");
@@ -2737,6 +2748,44 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ---- Tool card image upload ----
+      if ((session as any)?.adminAction === "tool_awaiting_card_image" && (session as any)?.adminModelId) {
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document?.mime_type?.startsWith("image/")) fileId = message.document.file_id;
+
+        if (!fileId) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "أرسل صورة فقط.", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "tools_menu" }]] }) });
+          return new Response("OK");
+        }
+
+        const toolId = (session as any).adminModelId;
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل تحميل الملف." }); return new Response("OK"); }
+
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || "jpg";
+        const storagePath = `tool-cards/${toolId}.${ext}`;
+        const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, { contentType: `image/${ext}`, upsert: true });
+        if (uploadError) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ: ${uploadError.message}` }); return new Response("OK"); }
+
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        // Upsert card_image_url using memories (since tool_landing_images table may not have column)
+        const cardKey = `tool_card_image_${toolId}`;
+        await sb.from("memories").delete().eq("key", cardKey);
+        await sb.from("memories").insert({ key: cardKey, value: urlData.publicUrl });
+
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ تم تحديث صورة بطاقة \`${toolId}\` بنجاح!`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🖼 Landing Page Photos", callback_data: "tools_menu" }], [{ text: "🔙 القائمة", callback_data: "main_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
       // ---- Tool landing image upload ----
       if ((session as any)?.adminAction === "tool_awaiting_image" && (session as any)?.adminModelId) {
         let fileId: string | null = null;
@@ -2762,7 +2811,6 @@ serve(async (req) => {
         if (uploadError) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `خطأ: ${uploadError.message}` }); return new Response("OK"); }
 
         const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
-        // Upsert into tool_landing_images
         const { data: existing } = await sb.from("tool_landing_images").select("tool_id").eq("tool_id", toolId).maybeSingle();
         if (existing) {
           await sb.from("tool_landing_images").update({ image_url: urlData.publicUrl, updated_at: new Date().toISOString() }).eq("tool_id", toolId);
@@ -2772,8 +2820,8 @@ serve(async (req) => {
 
         await clearSession(sb, chatId);
         await tg(BOT_TOKEN, "sendMessage", {
-          chat_id: chatId, text: `✅ تم تحديث صورة \`${toolId}\` بنجاح!`, parse_mode: "Markdown",
-          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🛠 الأدوات", callback_data: "tools_menu" }], [{ text: "🔙 القائمة", callback_data: "main_menu" }]] }),
+          chat_id: chatId, text: `✅ تم تحديث صورة Landing \`${toolId}\` بنجاح!`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🖼 Landing Page Photos", callback_data: "tools_menu" }], [{ text: "🔙 القائمة", callback_data: "main_menu" }]] }),
         });
         return new Response("OK");
       }

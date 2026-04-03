@@ -52,22 +52,39 @@ const HERO_TEXTS = [
   { main: "Your vision", accent: "animated" },
 ];
 
-const LoadingText = ({ texts }: { texts: string[] }) => {
+const LOADING_TEXTS = [
+  { text: "Creating", accent: "magic" },
+  { text: "Rendering", accent: "frames" },
+  { text: "Almost", accent: "there" },
+  { text: "Bringing ideas", accent: "to life" },
+];
+
+const StudioThinkingLoader = () => {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % texts.length), 3000);
+    const t = setInterval(() => setIdx(i => (i + 1) % LOADING_TEXTS.length), 2400);
     return () => clearInterval(t);
-  }, [texts]);
+  }, []);
+  const current = LOADING_TEXTS[idx];
   return (
-    <AnimatePresence mode="wait">
-      <motion.span key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-xs text-muted-foreground">
-        {texts[idx]}
-      </motion.span>
-    </AnimatePresence>
+    <div className="flex items-center gap-2.5 py-2">
+      <motion.svg
+        width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+        className="shrink-0 text-blue-400"
+        animate={{ y: [0, -6, 0], rotate: [0, 180, 360], scale: [1, 1.15, 1] }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+      </motion.svg>
+      <AnimatePresence mode="wait">
+        <motion.span key={idx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-xs">
+          <span className="text-foreground">{current.text} </span>
+          <span className="text-blue-400">{current.accent}</span>
+        </motion.span>
+      </AnimatePresence>
+    </div>
   );
 };
-
-const LOADING_TEXTS = ["Creating magic...", "Rendering frames...", "Almost there...", "Bringing ideas to life..."];
 
 const VideoStudioPage = () => {
   const location = useLocation();
@@ -199,7 +216,7 @@ const VideoStudioPage = () => {
       } else if (data.video_url) {
         setMessages(prev => {
           const copy = [...prev];
-          copy[copy.length - 1].content = "Here's your generated video";
+          copy[copy.length - 1].content = "";
           copy[copy.length - 1].videos = [data.video_url];
           return copy;
         });
@@ -266,18 +283,8 @@ const VideoStudioPage = () => {
                 {msg.attachedImage && <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />}
                 {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
                 {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
-                {msg.role === "assistant" && !msg.content && isGenerating && (
-                  <div className="flex items-center gap-2 px-2 py-3">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="relative shrink-0"
-                    >
-                      <Sparkles className="w-4 h-4 text-cyan-400" />
-                      <motion.div animate={{ opacity: [0.2, 0.8, 0.2] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-md bg-cyan-400/30 rounded-full" />
-                    </motion.div>
-                    <LoadingText texts={LOADING_TEXTS} />
-                  </div>
+                {msg.role === "assistant" && !msg.content && !msg.videos?.length && isGenerating && (
+                  <StudioThinkingLoader />
                 )}
                 {msg.videos && msg.videos.length > 0 && (
                   <div className="mt-2 space-y-2">
