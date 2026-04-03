@@ -11,6 +11,7 @@ import ModelPickerSheet from "@/components/ModelPickerSheet";
 import type { ModelOption } from "@/components/ModelSelector";
 import UnifiedInputBar from "@/components/UnifiedInputBar";
 import createVideoCard from "@/assets/create-video-card.jpg";
+import editVideoCard from "@/assets/edit-video-hero.jpg";
 
 type Tab = "home" | "studio" | "community";
 
