@@ -243,7 +243,6 @@ const ToolPageLayout = ({
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ToolLanding
                 title={title}
-                description={landingDesc || undefined}
                 landingImage={landingImage}
                 onStart={() => setShowLanding(false)}
                 uploadLabel={uploadLabel}
