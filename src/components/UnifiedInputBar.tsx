@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Paperclip } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 
 interface UnifiedInputBarProps {
   prompt: string;
@@ -9,6 +9,7 @@ interface UnifiedInputBarProps {
   onAttach?: () => void;
   onModelPick?: () => void;
   modelIcon?: string | null;
+  modelName?: string;
   placeholders?: string[];
   generateLabel?: string;
   disabled?: boolean;
@@ -31,7 +32,7 @@ const UnifiedInputBar = ({
   onGenerate,
   onAttach,
   onModelPick,
-  modelIcon,
+  modelName,
   placeholders = DEFAULT_PLACEHOLDERS,
   generateLabel = "Generate",
   disabled,
@@ -42,17 +43,12 @@ const UnifiedInputBar = ({
   className = "",
 }: UnifiedInputBarProps) => {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const [iconError, setIconError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const resolvedIcon = modelIcon && !iconError ? modelIcon : "/model-logos/nano-banana.jpg";
 
   useEffect(() => {
     const interval = setInterval(() => setPlaceholderIdx(i => (i + 1) % placeholders.length), 3000);
     return () => clearInterval(interval);
   }, [placeholders.length]);
-
-  useEffect(() => { setIconError(false); }, [modelIcon]);
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -72,19 +68,15 @@ const UnifiedInputBar = ({
 
       <div className="flex items-end gap-2 px-3 py-3">
         {showModelPicker && onModelPick && (
-          <button onClick={onModelPick} className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg hover:bg-accent/50 transition-all">
-            <img
-              src={resolvedIcon}
-              alt="Model"
-              className="h-5 w-5 rounded object-contain"
-              onError={() => setIconError(true)}
-            />
+          <button onClick={onModelPick} className="flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 hover:bg-accent/50 transition-all text-xs font-medium">
+            <span className="text-muted-foreground">Select</span>
+            <span className="text-blue-400 font-semibold">Model</span>
           </button>
         )}
 
         {onAttach && (
           <button onClick={onAttach} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
-            <Paperclip className="w-[18px] h-[18px]" />
+            <ImagePlus className="w-[18px] h-[18px]" />
           </button>
         )}
 
