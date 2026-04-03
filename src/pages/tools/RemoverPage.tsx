@@ -5,18 +5,19 @@ import { ArrowLeft, Paintbrush, Eraser, Upload, Download, RotateCcw } from "luci
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-type Stage = "upload" | "edit" | "result";
+type Stage = "landing" | "upload" | "edit" | "result";
 type Tool = "brush" | "eraser";
 
 const RemoverPage = () => {
   const navigate = useNavigate();
-  const [stage, setStage] = useState<Stage>("upload");
+  const [stage, setStage] = useState<Stage>("landing");
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<Tool>("brush");
   const [brushSize, setBrushSize] = useState(30);
+  const [landingImage, setLandingImage] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -26,7 +27,8 @@ const RemoverPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setTimeout(() => fileInputRef.current?.click(), 300);
+    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "remover").maybeSingle()
+      .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
   }, []);
 
   const setupCanvas = useCallback(() => {
@@ -164,6 +166,26 @@ const RemoverPage = () => {
 
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">
+          {stage === "landing" && (
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+              <div className="relative h-full flex flex-col items-center justify-end pb-20">
+                {landingImage ? (
+                  <img src={landingImage} alt="Object Remover" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-orange-500/10 to-background" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+                <div className="relative z-10 text-center px-6 space-y-5">
+                  <h2 className="text-3xl font-bold text-foreground tracking-tight">Object Remover</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">Mark objects and remove them from your photos</p>
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStage("upload")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
+                    <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {stage === "upload" && (
             <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); }} />
@@ -218,12 +240,9 @@ const RemoverPage = () => {
                 <a href={resultUrl} download="remover-result.png" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm">
                   <Download className="w-4 h-4" /> Download
                 </a>
-                <button onClick={handleGenerate} className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">
-                  <RotateCcw className="w-4 h-4" /> Regenerate
-                </button>
                 <div className="flex gap-2">
                   <button onClick={() => { setStage("edit"); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium">Edit Again</button>
-                  <button onClick={() => { setStage("upload"); setSourceImage(null); setPrompt(""); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium">Start Over</button>
+                  <button onClick={() => { setStage("landing"); setSourceImage(null); setPrompt(""); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium">Start Over</button>
                 </div>
               </div>
             </motion.div>
@@ -233,6 +252,7 @@ const RemoverPage = () => {
 
       {stage === "edit" && (
         <div className="shrink-0 border-t border-border/10 bg-background/90 backdrop-blur-xl px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <p className="text-xs text-center text-muted-foreground mb-2">or</p>
           <div className="rounded-2xl bg-card/80 border border-border/20 p-3">
             <div className="flex items-center gap-2">
               <input value={prompt} onChange={e => setPrompt(e.target.value)}

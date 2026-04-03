@@ -5,12 +5,12 @@ import { ArrowLeft, Paintbrush, Eraser, Upload, Download, RotateCcw, Plus } from
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-type Stage = "upload" | "edit" | "result";
+type Stage = "landing" | "upload" | "edit" | "result";
 type Tool = "brush" | "eraser";
 
 const InpaintPage = () => {
   const navigate = useNavigate();
-  const [stage, setStage] = useState<Stage>("upload");
+  const [stage, setStage] = useState<Stage>("landing");
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [refImage, setRefImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -18,6 +18,7 @@ const InpaintPage = () => {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<Tool>("brush");
   const [brushSize, setBrushSize] = useState(30);
+  const [landingImage, setLandingImage] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -27,9 +28,9 @@ const InpaintPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-open file picker on mount
   useEffect(() => {
-    setTimeout(() => fileInputRef.current?.click(), 300);
+    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "inpaint").maybeSingle()
+      .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
   }, []);
 
   const setupCanvas = useCallback(() => {
@@ -177,6 +178,7 @@ const InpaintPage = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Header */}
       <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/10">
         <button onClick={() => navigate("/images")} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
@@ -187,6 +189,28 @@ const InpaintPage = () => {
 
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">
+          {/* Landing */}
+          {stage === "landing" && (
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+              <div className="relative h-full flex flex-col items-center justify-end pb-20">
+                {landingImage ? (
+                  <img src={landingImage} alt="Inpaint" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-500/10 to-background" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+                <div className="relative z-10 text-center px-6 space-y-5">
+                  <h2 className="text-3xl font-bold text-foreground tracking-tight">Inpaint</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">Paint over areas and describe what to change</p>
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStage("upload")} className="px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/20">
+                    <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Upload */}
           {stage === "upload" && (
             <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); }} />
@@ -207,6 +231,7 @@ const InpaintPage = () => {
             </motion.div>
           )}
 
+          {/* Edit */}
           {stage === "edit" && sourceImage && (
             <motion.div key="edit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col">
               <div className="shrink-0 flex items-center justify-between px-4 py-2">
@@ -248,6 +273,7 @@ const InpaintPage = () => {
             </motion.div>
           )}
 
+          {/* Result */}
           {stage === "result" && resultUrl && (
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col">
               <div className="flex-1 overflow-auto px-4 py-4 flex flex-col gap-3">
@@ -258,12 +284,9 @@ const InpaintPage = () => {
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm">
                   <Download className="w-4 h-4" /> Download
                 </a>
-                <button onClick={handleGenerate} className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">
-                  <RotateCcw className="w-4 h-4" /> Regenerate
-                </button>
                 <div className="flex gap-2">
                   <button onClick={() => { setStage("edit"); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium">Edit Again</button>
-                  <button onClick={() => { setStage("upload"); setSourceImage(null); setRefImage(null); setPrompt(""); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium">Start Over</button>
+                  <button onClick={() => { setStage("landing"); setSourceImage(null); setRefImage(null); setPrompt(""); setResultUrl(null); }} className="flex-1 py-3 rounded-xl bg-accent/50 text-foreground text-sm font-medium">Start Over</button>
                 </div>
               </div>
             </motion.div>
@@ -271,8 +294,10 @@ const InpaintPage = () => {
         </AnimatePresence>
       </div>
 
+      {/* Bottom input bar for edit stage */}
       {stage === "edit" && (
         <div className="shrink-0 border-t border-border/10 bg-background/90 backdrop-blur-xl px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <p className="text-xs text-center text-muted-foreground mb-2">or</p>
           <div className="rounded-2xl bg-card/80 border border-border/20 p-3">
             <div className="flex items-center gap-2">
               <input ref={refInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleRefUpload(e.target.files[0]); }} />
