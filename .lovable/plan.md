@@ -1,58 +1,109 @@
 
 
-# خطة: تحويل بطاقات الأدوات إلى خلفيات فنية متدرجة + إزالة النصوص من Landing Pages
+# خطة شاملة: إصلاح البحث + تحسين الشات + تحديث Studio + إصلاح الأدوات
 
 ---
 
-## ملخص
+## 1. إصلاح البحث في الشات (صور + نتائج)
 
-1. استبدال صور البطاقات الحالية بخلفيات CSS فنية (تدرجات حريرية مثل الصورة المرفوعة) بألوان مختلفة لكل أداة
-2. كتابة اسم الأداة داخل البطاقة بخط صغير وواضح بنفس ستايل نصوص Landing الرئيسية (uppercase، font-display، gradient text)
-3. إزالة النصوص الوصفية من صفحات Landing الخاصة بالأدوات (إبقاء العنوان فقط)
+**المشكلة**: البحث يتوقف ولا يعيد صور.
+
+**السبب المحتمل**: في `streamChat.ts`، عند حدوث خطأ في parsing JSON (سطر 86-88)، يعيد النص للـ buffer مما يسبب loop لا نهائي. أيضاً في `chat/index.ts` الصور ترسل كـ event خاص لكن قد لا يتم قراءته بشكل صحيح.
+
+**الحل**:
+- إصلاح error handling في `streamChat.ts` لتجنب إعادة النص للـ buffer بشكل متكرر
+- التأكد من أن `onImages` يُستدعى بشكل صحيح
+- إضافة timeout للـ search calls في `chat/index.ts` (10 ثوانٍ)
 
 ---
 
-## التفاصيل التقنية
+## 2. تحسين ردود AI (عدم تكرار "أنا ميغسي")
 
-### 1. بطاقات الأدوات - خلفيات فنية
+**المشكلة**: النموذج يكرر أنه Megsy في كل رسالة.
 
-بدلاً من تحميل صور خارجية، سنستخدم CSS gradients مع تأثيرات noise/silk لكل أداة بألوان فريدة:
+**الحل**: تعديل system prompt في `chat/index.ts`:
+- نقل تعريف الهوية لجملة واحدة فقط: "Your name is Megsy. Only mention this if directly asked."
+- إزالة التكرار في القواعد
+- إضافة قاعدة: "Never introduce yourself unless the user asks who you are"
 
+---
+
+## 3. نظام الذاكرة المحسّن
+
+**الحل**: تعديل `chat/index.ts` لإضافة سياق المستخدم:
+- قبل إرسال الرسائل للـ AI، جلب بيانات المستخدم من `profiles` و `ai_personalization`
+- جلب آخر 3 محادثات (عناوين فقط) من `conversations`
+- إضافة هذه المعلومات في system prompt كـ "User Context"
+- جلب `memories` المخزنة سابقاً
+
+---
+
+## 4. Inpaint - مربع الإدخال دائم
+
+**المشكلة**: مربع الإدخال يختفي في بعض المراحل.
+
+**الحل**: في `InpaintPage.tsx`، جعل الـ bottom input bar يظهر في كل المراحل (edit + result) وليس فقط في edit.
+
+---
+
+## 5. Studio - إزالة حفظ المحادثات + تحسين UX
+
+**التغييرات في `ImageStudioPage.tsx` و `VideoStudioPage.tsx`**:
+- إزالة `loadExistingConversation` - كل زيارة تبدأ من جديد
+- إزالة الخلفية الخضراء من رسائل المستخدم (تغيير `bg-primary/15` إلى `bg-accent/30`)
+- عند الضغط على صورة: بدلاً من فتح modal، عرض الصورة كبيرة مع input bar ثابت بالأسفل للتعديل
+- إصلاح Regenerate: تخزين آخر prompt واستخدامه عند الضغط على إعادة التوليد
+
+---
+
+## 6. نظام ذاكرة للصور والفيديوهات
+
+**الحل**: إضافة في `ImageStudioPage.tsx` و `VideoStudioPage.tsx`:
+- حفظ آخر prompt ناجح + النموذج المستخدم في `localStorage`
+- عرض "آخر إبداعاتك" كـ suggestions عند فتح الصفحة فارغة
+
+---
+
+## 7. إصلاح مشكلة الرفع المزدوج في الأدوات
+
+**المشكلة**: في Clothes Changer, Headshot, Face Swap, Cartoon, Character Swap, Hair Changer, Colorizer, BG Remover - عند الضغط على رفع صورة في Landing، ينتقل لصفحة أخرى ليرفع مرة ثانية.
+
+**الحل**: تعديل كل أداة بحيث:
+- Landing page button يفتح file picker مباشرة
+- عند اختيار الملف، يتم تخطي أي مرحلة upload إضافية وينتقل مباشرة للخطوة التالية (templates/styles/processing)
+- الأدوات التي تستخدم `ToolPageLayout` مع `onFileSelected` تعمل بالفعل بشكل صحيح (مثل BG Remover)
+- الأدوات ذات الـ custom flow (FaceSwap, ClothesChanger, etc.) تحتاج تعديل:
+  - `FaceSwapPage`: Landing → click → file picker → مباشرة لـ templates (بدون upload step)
+  - `ClothesChangerPage`: نفس الشيء → مباشرة لـ styles
+  - `HeadshotPage`, `CartoonPage`, `HairChangerPage`, `ColorizerPage`, `CharacterSwapPage`: نفس المنطق
+
+---
+
+## 8. صفحة Preview بعد التوليد في كل الأدوات
+
+**الحل**: تعديل `ResultView` في `ToolPageLayout.tsx`:
+- إضافة مربع إدخال (input bar) أسفل النتيجة للتعديل
+- 3 أزرار: إعادة الإنشاء، تنزيل، إنشاء صورة جديدة
+- Input bar يسمح بكتابة تعديلات وإرسالها
+
+**التصميم**:
 ```text
-Inpaint          → blue-500 → indigo-700
-Clothes Changer  → rose-500 → red-700  
-AI Headshot      → amber-500 → orange-700
-Face Swap        → violet-500 → purple-700
-BG Remover       → cyan-500 → teal-700
-Cartoon          → pink-500 → fuchsia-700
-Colorizer        → emerald-500 → green-700
-Retouch          → sky-500 → blue-700
-Object Remover   → slate-500 → zinc-700
-Sketch to Image  → lime-500 → emerald-700
-Relight          → yellow-500 → amber-700
-Character Swap   → fuchsia-500 → pink-700
-Storyboard       → indigo-500 → violet-700
-Hair Changer     → teal-500 → cyan-700
-(أدوات الفيديو بنفس المنطق بألوان مختلفة)
+┌─────────────────────┐
+│     Generated       │
+│      Image          │
+│                     │
+├─────────────────────┤
+│ [Regenerate] [Download] [New] │
+├─────────────────────┤
+│ [Input bar for edits...]      │
+└─────────────────────┘
 ```
 
-كل بطاقة ستحتوي على:
-- خلفية CSS gradient متعددة الطبقات (radial + linear) لتأثير حريري
-- اسم الأداة بخط صغير (text-xs uppercase tracking-widest) بتدرج لوني مثل Landing
-- بدون أي صور خارجية أو وصف
+---
 
-### 2. ستايل النص داخل البطاقات
+## 9. تسريع تحميل Studio
 
-نفس ستايل Landing الرئيسية:
-- `uppercase tracking-tight font-bold`
-- تدرج لوني على النص: `bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent`
-- حجم صغير وواضح
-
-### 3. إزالة النصوص من Tool Landing Pages
-
-في `ToolPageLayout.tsx` > `ToolLanding` component:
-- إزالة prop الـ `description` ونص الوصف
-- إبقاء العنوان فقط مع زر الرفع
+**الحل**: بما أننا نزيل حفظ المحادثات، لن يكون هناك تحميل بيانات عند الدخول. الصفحة ستبدأ فارغة فوراً.
 
 ---
 
@@ -60,8 +111,28 @@ Hair Changer     → teal-500 → cyan-700
 
 | الملف | التغيير |
 |---|---|
-| `src/pages/ImagesPage.tsx` | استبدال منطق عرض الصور بـ CSS gradients + نص بستايل Landing |
-| `src/pages/VideosPage.tsx` | نفس التغيير |
-| `src/components/ToolPageLayout.tsx` | إزالة description من ToolLanding |
-| أدوات الصور (14 ملف) | إزالة prop الـ description عند استدعاء ToolPageLayout |
+| `src/lib/streamChat.ts` | إصلاح parsing loop |
+| `supabase/functions/chat/index.ts` | إصلاح بحث + تحسين system prompt + ذاكرة المستخدم |
+| `src/pages/ImageStudioPage.tsx` | إزالة persistence، إصلاح UX، regenerate |
+| `src/pages/VideoStudioPage.tsx` | نفس التغييرات |
+| `src/pages/tools/InpaintPage.tsx` | input bar دائم |
+| `src/components/ToolPageLayout.tsx` | ResultView + input bar |
+| `src/pages/tools/FaceSwapPage.tsx` | إصلاح رفع مزدوج |
+| `src/pages/tools/ClothesChangerPage.tsx` | إصلاح رفع مزدوج |
+| `src/pages/tools/HeadshotPage.tsx` | إصلاح رفع مزدوج |
+| `src/pages/tools/CartoonPage.tsx` | إصلاح رفع مزدوج |
+| `src/pages/tools/HairChangerPage.tsx` | إصلاح رفع مزدوج |
+| `src/pages/tools/ColorizerPage.tsx` | إصلاح رفع مزدوج |
+| `src/pages/tools/CharacterSwapPage.tsx` | إصلاح رفع مزدوج |
+
+---
+
+## ترتيب التنفيذ
+
+1. إصلاح `streamChat.ts` + search في `chat/index.ts`
+2. تحسين system prompt + ذاكرة المستخدم
+3. تعديل Studio pages (إزالة persistence + UX)
+4. إصلاح Inpaint input bar
+5. إصلاح الرفع المزدوج في 7 أدوات
+6. تحديث ResultView مع input bar
 
