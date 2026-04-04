@@ -350,7 +350,152 @@ serve(async (req) => {
         return new Response("OK");
       }
 
-      // ==================== LemonData (Unlimited) ====================
+      // ==================== API Keys Management (AgentRouter / Serper / WaveSpeed) ====================
+      if (d === "apikeys_menu") {
+        const services = ["agentrouter", "serper", "wavespeed"];
+        const stats: string[] = [];
+        for (const svc of services) {
+          const { data: keys } = await sb.from("api_keys").select("id, is_active, is_blocked, usage_count").eq("service", svc);
+          const total = keys?.length || 0;
+          const active = keys?.filter((k: any) => k.is_active && !k.is_blocked).length || 0;
+          const blocked = keys?.filter((k: any) => k.is_blocked).length || 0;
+          stats.push(`*${svc}*: ${total} مفتاح (✅ ${active} | 🚫 ${blocked})`);
+        }
+        await send(BOT_TOKEN, chatId, msgId,
+          `🔐 *إدارة مفاتيح API*\n\n${stats.join("\n")}`,
+          [
+            [{ text: "🤖 AgentRouter", callback_data: "ak_svc_agentrouter" }],
+            [{ text: "🔍 Serper", callback_data: "ak_svc_serper" }],
+            [{ text: "🌊 WaveSpeed", callback_data: "ak_svc_wavespeed" }],
+            [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("ak_svc_")) {
+        const service = d.replace("ak_svc_", "");
+        const { data: keys } = await sb.from("api_keys").select("id, api_key, is_active, is_blocked, usage_count, label").eq("service", service);
+        const total = keys?.length || 0;
+        const active = keys?.filter((k: any) => k.is_active && !k.is_blocked).length || 0;
+        const svcNames: Record<string, string> = { agentrouter: "AgentRouter", serper: "Serper", wavespeed: "WaveSpeed" };
+        await send(BOT_TOKEN, chatId, msgId,
+          `🔐 *${svcNames[service] || service}*\n\nإجمالي: *${total}* | نشط: *${active}*`,
+          [
+            [{ text: "➕ إضافة مفتاح", callback_data: `ak_add_${service}` }],
+            [{ text: "📋 قائمة المفاتيح", callback_data: `ak_list_${service}_0` }],
+            [{ text: "🔓 فك حظر الكل", callback_data: `ak_unblock_${service}` }],
+            [{ text: "🔙 رجوع", callback_data: "apikeys_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("ak_add_")) {
+        const service = d.replace("ak_add_", "");
+        await saveSession(sb, chatId, { adminAction: `ak_awaiting_key_${service}` } as any);
+        await send(BOT_TOKEN, chatId, msgId,
+          `➕ *إضافة مفتاح ${service}*\n\nأرسل المفتاح الآن:\n(يمكنك إرسال عدة مفاتيح، كل مفتاح في سطر)`,
+          [[{ text: "❌ إلغاء", callback_data: `ak_svc_${service}` }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("ak_list_")) {
+        const parts = d.replace("ak_list_", "").split("_");
+        const service = parts[0];
+        const page = parseInt(parts[1]) || 0;
+        const PAGE_SIZE = 8;
+        const { data: keys } = await sb.from("api_keys")
+          .select("id, api_key, is_active, is_blocked, usage_count")
+          .eq("service", service)
+          .order("created_at", { ascending: false })
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        const { count } = await sb.from("api_keys").select("id", { count: "exact", head: true }).eq("service", service);
+        const totalPages = Math.ceil((count || 0) / PAGE_SIZE) || 1;
+
+        if (!keys || keys.length === 0) {
+          await send(BOT_TOKEN, chatId, msgId, "لا توجد مفاتيح.", [[{ text: "➕ إضافة", callback_data: `ak_add_${service}` }, { text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]]);
+          return new Response("OK");
+        }
+
+        const rows: { text: string; callback_data: string }[][] = keys.map((k: any) => [{
+          text: `${k.is_blocked ? "🚫" : "✅"} ...${k.api_key.slice(-6)} (${k.usage_count || 0})`,
+          callback_data: `ak_key_${service}_${k.id}`,
+        }]);
+
+        const nav: { text: string; callback_data: string }[] = [];
+        if (page > 0) nav.push({ text: "◀️", callback_data: `ak_list_${service}_${page - 1}` });
+        nav.push({ text: `${page + 1}/${totalPages}`, callback_data: "noop" });
+        if (page < totalPages - 1) nav.push({ text: "▶️", callback_data: `ak_list_${service}_${page + 1}` });
+        rows.push(nav);
+        rows.push([{ text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]);
+
+        await send(BOT_TOKEN, chatId, msgId, `📋 *مفاتيح ${service}*`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("ak_key_")) {
+        const parts = d.replace("ak_key_", "").split("_");
+        const service = parts[0];
+        const keyId = parts[1];
+        const { data: key } = await sb.from("api_keys").select("*").eq("id", keyId).single();
+        if (!key) {
+          await send(BOT_TOKEN, chatId, msgId, "المفتاح غير موجود.", [[{ text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]]);
+          return new Response("OK");
+        }
+        await send(BOT_TOKEN, chatId, msgId,
+          `🔑 *مفتاح ${service}*\n\n` +
+          `المفتاح: \`...${key.api_key.slice(-8)}\`\n` +
+          `الحالة: ${key.is_blocked ? "🚫 محظور" : key.is_active ? "✅ نشط" : "⏸ معطل"}\n` +
+          `الاستخدام: ${key.usage_count || 0}\n` +
+          `${key.block_reason ? `السبب: ${key.block_reason}` : ""}`,
+          [
+            [
+              key.is_blocked ? { text: "🔓 فك الحظر", callback_data: `ak_unblk_${service}_${keyId}` } : { text: "🚫 حظر", callback_data: `ak_blk_${service}_${keyId}` },
+              { text: "🗑 حذف", callback_data: `ak_del_${service}_${keyId}` },
+            ],
+            [{ text: "🔙 رجوع", callback_data: `ak_list_${service}_0` }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("ak_unblk_")) {
+        const parts = d.replace("ak_unblk_", "").split("_");
+        const service = parts[0];
+        const keyId = parts[1];
+        await sb.from("api_keys").update({ is_blocked: false, block_reason: null }).eq("id", keyId);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم فك الحظر", [[{ text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("ak_blk_")) {
+        const parts = d.replace("ak_blk_", "").split("_");
+        const service = parts[0];
+        const keyId = parts[1];
+        await sb.from("api_keys").update({ is_blocked: true, block_reason: "Manual block" }).eq("id", keyId);
+        await send(BOT_TOKEN, chatId, msgId, "🚫 تم الحظر", [[{ text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("ak_del_")) {
+        const parts = d.replace("ak_del_", "").split("_");
+        const service = parts[0];
+        const keyId = parts[1];
+        await sb.from("api_keys").delete().eq("id", keyId);
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم الحذف", [[{ text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("ak_unblock_")) {
+        const service = d.replace("ak_unblock_", "");
+        await sb.from("api_keys").update({ is_blocked: false, block_reason: null }).eq("service", service);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم فك حظر جميع المفاتيح", [[{ text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]]);
+        return new Response("OK");
+      }
+
+
       if (d === "lemon_menu") {
         const { data: keys } = await sb.from("lemondata_keys").select("id, label, is_active, is_blocked, usage_count, error_count");
         const total = keys?.length || 0;
