@@ -9,6 +9,24 @@ const corsHeaders = {
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
 
+function safeParseToolArgs(raw: string): Record<string, unknown> {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // Try to extract JSON from malformed response
+    let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const jsonStart = cleaned.search(/[\{\[]/);
+    const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === '[' ? ']' : '}');
+    if (jsonStart === -1 || jsonEnd === -1) return {};
+    cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+    try {
+      return JSON.parse(cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, ""));
+    } catch {
+      return {};
+    }
+  }
+}
+
 // ── Smart Key Cache: in-memory sticky key to avoid DB queries on every request ──
 let cachedKey: { id: string; api_key: string } | null = null;
 let cachedKeyExpiry = 0;
@@ -427,7 +445,7 @@ ${userContext}`;
                 for (const tc of toolCalls) {
                   try {
                     const toolName = tc.function?.name;
-                    const toolArgs = JSON.parse(tc.function?.arguments || "{}");
+                    const toolArgs = safeParseToolArgs(tc.function?.arguments || "{}");
 
                     if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
                       const searchQuery = toolArgs.query || "";
@@ -579,7 +597,7 @@ ${userContext}`;
                             for (const stc of secondToolCalls) {
                               try {
                                 const sToolName = stc.function?.name;
-                                const sToolArgs = JSON.parse(stc.function?.arguments || "{}");
+                                const sToolArgs = safeParseToolArgs(stc.function?.arguments || "{}");
                                 if (sToolName === "WEB_SEARCH" && SERPER_API_KEY) {
                                   const includeImgs = isDeepResearch ? true : (sToolArgs.include_images ?? false);
                                   const fetches2: Promise<Response>[] = [
