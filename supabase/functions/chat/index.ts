@@ -435,18 +435,18 @@ ${userContext}`;
                       const includeImages = isDeepResearch ? true : (toolArgs.include_images ?? false);
                       
                       const fetches: Promise<Response>[] = [
-                        fetch("https://google.serper.dev/search", {
+                        fetchWithTimeout("https://google.serper.dev/search", {
                           method: "POST",
                           headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
                           body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 10 : 8 }),
-                        }),
+                        }, 10000),
                       ];
                       if (includeImages) {
-                        fetches.push(fetch("https://google.serper.dev/images", {
+                        fetches.push(fetchWithTimeout("https://google.serper.dev/images", {
                           method: "POST",
                           headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
                           body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 6 : 4 }),
-                        }));
+                        }, 10000));
                       }
 
                       const responses = await Promise.all(fetches);
