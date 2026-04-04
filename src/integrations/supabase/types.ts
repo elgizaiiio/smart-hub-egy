@@ -50,6 +50,51 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          api_key: string
+          block_reason: string | null
+          created_at: string | null
+          error_count: number | null
+          id: string
+          is_active: boolean | null
+          is_blocked: boolean | null
+          label: string | null
+          last_error_at: string | null
+          last_used_at: string | null
+          service: string
+          usage_count: number | null
+        }
+        Insert: {
+          api_key: string
+          block_reason?: string | null
+          created_at?: string | null
+          error_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          label?: string | null
+          last_error_at?: string | null
+          last_used_at?: string | null
+          service: string
+          usage_count?: number | null
+        }
+        Update: {
+          api_key?: string
+          block_reason?: string | null
+          created_at?: string | null
+          error_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          label?: string | null
+          last_error_at?: string | null
+          last_used_at?: string | null
+          service?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       books: {
         Row: {
           content: Json | null
