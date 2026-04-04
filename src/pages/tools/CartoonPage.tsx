@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Sparkles, Download, Share2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCredits } from "@/hooks/useCredits";
-import { ImageUploadBox, TemplateGrid } from "@/components/ToolPageLayout";
+import { TemplateGrid } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
-type Step = "landing" | "upload" | "templates" | "generating" | "result";
+type Step = "landing" | "templates" | "generating" | "result";
 
 const CartoonPage = () => {
   const navigate = useNavigate();
@@ -21,13 +21,20 @@ const CartoonPage = () => {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [landingImage, setLandingImage] = useState<string | null>(null);
   const { templates } = useToolTemplates("cartoon");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.from("tool_landing_images").select("image_url").eq("tool_id", "cartoon").maybeSingle()
       .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
   }, []);
 
-  const handleUpload = (img: string) => { setImage(img); setStep("templates"); };
+  const handleLandingUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setImage(reader.result as string); setStep("templates"); };
+    reader.readAsDataURL(file); e.target.value = "";
+  };
+
   const handleTemplateSelect = (t: ToolTemplate) => { setSelectedTemplate(t); };
 
   const handleGenerate = async () => {
@@ -57,16 +64,11 @@ const CartoonPage = () => {
               {landingImage ? <img src={landingImage} alt="Cartoon" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 via-accent/10 to-background" />}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
               <div className="relative z-10 text-center px-6">
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLandingUpload} />
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => fileInputRef.current?.click()} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
                   <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
                 </motion.button>
               </div>
-            </motion.div>
-          )}
-
-          {step === "upload" && (
-            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4">
-              <ImageUploadBox label="Upload photo to cartoonify" image={image} onUpload={handleUpload} onClear={() => setImage(null)} />
             </motion.div>
           )}
 

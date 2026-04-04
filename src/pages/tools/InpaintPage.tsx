@@ -5,7 +5,7 @@ import { ArrowLeft, Paintbrush, Eraser, Upload, Download, RotateCcw, Plus } from
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-type Stage = "landing" | "upload" | "edit" | "result";
+type Stage = "landing" | "edit" | "result";
 type Tool = "brush" | "eraser";
 
 const InpaintPage = () => {
@@ -189,7 +189,7 @@ const InpaintPage = () => {
 
       <div className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">
-          {/* Landing */}
+          {/* Landing - opens file picker directly */}
           {stage === "landing" && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
               <div className="relative h-full flex flex-col items-center justify-center">
@@ -206,27 +206,6 @@ const InpaintPage = () => {
                   </motion.button>
                 </div>
               </div>
-            </motion.div>
-          )}
-
-          {/* Upload */}
-          {stage === "upload" && (
-            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); }} />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full max-w-md rounded-3xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-6 cursor-pointer transition-all duration-300 py-20 hover:border-primary/60 hover:bg-primary/5"
-              >
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <Upload className="w-9 h-9 text-primary" />
-                </div>
-                <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                    UPLOAD YOUR <span className="text-primary">PHOTO</span>
-                  </h2>
-                  <p className="text-sm text-muted-foreground">Drag & drop or tap to select</p>
-                </div>
-              </button>
             </motion.div>
           )}
 
@@ -293,10 +272,9 @@ const InpaintPage = () => {
         </AnimatePresence>
       </div>
 
-      {/* Bottom input bar for edit stage */}
-      {stage === "edit" && (
+      {/* Bottom input bar - always visible for edit AND result stages */}
+      {(stage === "edit" || stage === "result") && (
         <div className="shrink-0 border-t border-border/10 bg-background/90 backdrop-blur-xl px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-          <p className="text-xs text-center text-muted-foreground mb-2">or</p>
           <div className="rounded-2xl bg-card/80 border border-border/20 p-3">
             <div className="flex items-center gap-2">
               <input ref={refInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleRefUpload(e.target.files[0]); }} />

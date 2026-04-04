@@ -5,11 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Sparkles, Download, Share2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCredits } from "@/hooks/useCredits";
-import { ImageUploadBox, TemplateGrid } from "@/components/ToolPageLayout";
+import { TemplateGrid } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
-type Step = "landing" | "upload" | "templates" | "generating" | "result";
+type Step = "landing" | "templates" | "generating" | "result";
 
 const FaceSwapPage = () => {
   const navigate = useNavigate();
@@ -22,13 +22,20 @@ const FaceSwapPage = () => {
   const [landingImage, setLandingImage] = useState<string | null>(null);
   const { templates } = useToolTemplates("face-swap");
   const customInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.from("tool_landing_images").select("image_url").eq("tool_id", "face-swap").maybeSingle()
       .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
   }, []);
 
-  const handleSourceUpload = (img: string) => { setSourceImage(img); setStep("templates"); };
+  const handleLandingUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setSourceImage(reader.result as string); setStep("templates"); };
+    reader.readAsDataURL(file); e.target.value = "";
+  };
+
   const handleTemplateSelect = (t: ToolTemplate) => { if (t.preview_url) setTargetImage(t.preview_url); };
 
   const handleCustomUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,16 +72,11 @@ const FaceSwapPage = () => {
               {landingImage ? <img src={landingImage} alt="Face Swap" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-accent/10 to-background" />}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
               <div className="relative z-10 text-center px-6">
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLandingUpload} />
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => fileInputRef.current?.click()} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
                   <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
                 </motion.button>
               </div>
-            </motion.div>
-          )}
-
-          {step === "upload" && (
-            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4">
-              <ImageUploadBox label="Upload your photo" image={sourceImage} onUpload={handleSourceUpload} onClear={() => setSourceImage(null)} />
             </motion.div>
           )}
 

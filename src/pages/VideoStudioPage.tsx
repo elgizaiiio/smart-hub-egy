@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Plus, Sparkles, ChevronDown } from "lucide-react";
+import { Download, ThumbsUp, Share2, ArrowLeft, X, Loader2, Plus, ChevronDown, RefreshCw } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,11 +102,11 @@ const VideoStudioPage = () => {
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [isTyping, setIsTyping] = useState(true);
   const [heroIdx, setHeroIdx] = useState(0);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { loadExistingConversation(); }, []);
+  // No persistence - start fresh every time
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -143,32 +143,6 @@ const VideoStudioPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const loadExistingConversation = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: convs } = await supabase.from("conversations").select("id").eq("user_id", user.id).eq("mode", "videos").order("updated_at", { ascending: false }).limit(1);
-    if (convs && convs.length > 0) {
-      const convId = convs[0].id;
-      setConversationId(convId);
-      const { data: msgs } = await supabase.from("messages").select("*").eq("conversation_id", convId).order("created_at", { ascending: true });
-      if (msgs && msgs.length > 0) {
-        setMessages(msgs.map(m => {
-          const isUser = m.role === "user";
-          const imgs = m.images || [];
-          const videoUrls = imgs.filter((u: string) => u.includes(".mp4") || u.includes("video"));
-          const imageUrls = imgs.filter((u: string) => !u.includes(".mp4") && !u.includes("video"));
-          return {
-            id: m.id,
-            role: m.role as "user" | "assistant",
-            content: m.content,
-            videos: isUser ? undefined : (videoUrls.length > 0 ? videoUrls : undefined),
-            attachedImage: isUser && imageUrls.length > 0 ? imageUrls[0] : undefined,
-          };
-        }));
-      }
-    }
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -185,6 +159,7 @@ const VideoStudioPage = () => {
     const cost = Number(selectedModel.credits) || 1;
     if (userId && !hasEnoughCredits(cost)) { toast.error("Insufficient credits"); return; }
 
+    setLastPrompt(prompt);
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -196,15 +171,6 @@ const VideoStudioPage = () => {
     setInput("");
     setAttachedImage(null);
     setIsGenerating(true);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    let convId = conversationId;
-    if (user && !convId) {
-      const { data } = await supabase.from("conversations").insert({ title: prompt.slice(0, 50), mode: "videos", model: selectedModel.id, user_id: user.id } as any).select("id").single();
-      convId = data?.id || null;
-      setConversationId(convId);
-    }
-    if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "user", content: prompt, images: attachedImage ? [attachedImage] : null });
 
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`, {
@@ -227,7 +193,6 @@ const VideoStudioPage = () => {
           copy[copy.length - 1].videos = [data.video_url];
           return copy;
         });
-        if (convId) await supabase.from("messages").insert({ conversation_id: convId, role: "assistant", content: prompt, images: [data.video_url] });
       }
     } catch {
       setMessages(prev => {
@@ -239,6 +204,10 @@ const VideoStudioPage = () => {
 
     setIsGenerating(false);
     refreshCredits();
+  };
+
+  const handleRegenerate = () => {
+    if (lastPrompt) handleSend(lastPrompt);
   };
 
   const handleDownload = (url: string) => {
@@ -286,7 +255,7 @@ const VideoStudioPage = () => {
 
           {messages.map((msg) => (
             <div key={msg.id} className={`mb-4 ${msg.role === "user" ? "flex justify-end" : "flex justify-start"}`}>
-              <div className={`max-w-[85%] ${msg.role === "user" ? "bg-primary/15 rounded-2xl rounded-br-md p-3" : "p-1"}`}>
+              <div className={`max-w-[85%] ${msg.role === "user" ? "bg-accent/30 rounded-2xl rounded-br-md p-3" : "p-1"}`}>
                 {msg.attachedImage && <img src={msg.attachedImage} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />}
                 {msg.content && msg.role === "user" && <TruncatedText text={msg.content} />}
                 {msg.content && msg.role === "assistant" && <div className="text-sm text-foreground px-2 py-1">{msg.content}</div>}
@@ -306,6 +275,7 @@ const VideoStudioPage = () => {
                           <button onClick={() => handleDownload(url)} className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><Download className="w-4 h-4 text-foreground" /></button>
                           <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><ThumbsUp className="w-4 h-4 text-foreground" /></button>
                           <button className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><Share2 className="w-4 h-4 text-foreground" /></button>
+                          <button onClick={handleRegenerate} className="p-2 rounded-xl bg-accent/50 hover:bg-accent transition-colors"><RefreshCw className="w-4 h-4 text-foreground" /></button>
                         </div>
                       </div>
                     ))}

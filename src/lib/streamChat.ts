@@ -84,8 +84,8 @@ export async function streamChat({
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) onDelta(content);
         } catch {
-          textBuffer = line + "\n" + textBuffer;
-          break;
+          // Skip malformed JSON lines instead of re-adding to buffer (prevents infinite loop)
+          continue;
         }
       }
     }
@@ -100,6 +100,9 @@ export async function streamChat({
         if (jsonStr === "[DONE]") continue;
         try {
           const parsed = JSON.parse(jsonStr);
+          if (parsed.images && Array.isArray(parsed.images)) {
+            onImages?.(parsed.images);
+          }
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) onDelta(content);
         } catch { /* ignore */ }

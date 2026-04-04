@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ToolPageLayout, { ImageUploadBox } from "@/components/ToolPageLayout";
@@ -20,11 +20,12 @@ const ColorizerPage = () => {
     finally { setIsGenerating(false); }
   };
 
-  const handleUpload = (img: string) => {
-    setImage(img);
+  const handleFileSelected = (dataUrl: string) => {
+    setImage(dataUrl);
+    // Auto-process after file selected from landing
     setTimeout(() => {
       setIsGenerating(true);
-      supabase.functions.invoke("image-tools", { body: { tool: "colorizer", image: img } })
+      supabase.functions.invoke("image-tools", { body: { tool: "colorizer", image: dataUrl } })
         .then(({ data, error }) => {
           if (error) { toast.error("Failed"); setIsGenerating(false); return; }
           if (data?.url) setResultUrl(data.url);
@@ -35,8 +36,8 @@ const ColorizerPage = () => {
   };
 
   return (
-    <ToolPageLayout title="Image Colorizer" cost={1} toolId="colorizer" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} autoProcess>
-      <ImageUploadBox label="Upload B&W image to colorize" image={image} onUpload={handleUpload} onClear={() => setImage(null)} />
+    <ToolPageLayout title="Image Colorizer" cost={1} toolId="colorizer" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} autoProcess onFileSelected={handleFileSelected}>
+      <ImageUploadBox label="Upload B&W image to colorize" image={image} onUpload={handleFileSelected} onClear={() => setImage(null)} />
     </ToolPageLayout>
   );
 };
