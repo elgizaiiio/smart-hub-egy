@@ -59,11 +59,22 @@ function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
   });
 }
 
+// Helper: fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model, mode, searchEnabled, deepResearch, chatMode } = await req.json();
+    const { messages, model, mode, searchEnabled, deepResearch, chatMode, user_id } = await req.json();
     const latestUserMessage = Array.isArray(messages)
       ? [...messages].reverse().find((message: any) => message?.role === "user")
       : null;
@@ -76,6 +87,40 @@ serve(async (req) => {
     const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // ── Fetch user context for memory system ──
+    let userContext = "";
+    if (user_id) {
+      try {
+        const [profileRes, personalizationRes, memoriesRes, recentConvsRes] = await Promise.all([
+          sb.from("profiles").select("display_name, plan, credits").eq("id", user_id).single(),
+          sb.from("ai_personalization").select("call_name, about, profession, ai_traits, custom_instructions").eq("user_id", user_id).maybeSingle(),
+          sb.from("memories").select("key, value").limit(20),
+          sb.from("conversations").select("title").eq("user_id", user_id).order("updated_at", { ascending: false }).limit(5),
+        ]);
+
+        const parts: string[] = [];
+        if (profileRes.data) {
+          const p = profileRes.data;
+          parts.push(`User: ${p.display_name || "Unknown"}, Plan: ${p.plan}, Credits: ${p.credits} MC`);
+        }
+        if (personalizationRes.data) {
+          const ai = personalizationRes.data;
+          if (ai.call_name) parts.push(`Call the user: "${ai.call_name}"`);
+          if (ai.about) parts.push(`About user: ${ai.about}`);
+          if (ai.profession) parts.push(`Profession: ${ai.profession}`);
+          if (ai.ai_traits) parts.push(`AI personality traits: ${ai.ai_traits}`);
+          if (ai.custom_instructions) parts.push(`Custom instructions: ${ai.custom_instructions}`);
+        }
+        if (memoriesRes.data && memoriesRes.data.length > 0) {
+          parts.push(`Memories: ${memoriesRes.data.map((m: any) => `${m.key}: ${m.value}`).join("; ")}`);
+        }
+        if (recentConvsRes.data && recentConvsRes.data.length > 0) {
+          parts.push(`Recent conversations: ${recentConvsRes.data.map((c: any) => c.title).join(", ")}`);
+        }
+        if (parts.length > 0) userContext = `\n\n--- USER CONTEXT ---\n${parts.join("\n")}`;
+      } catch { /* silently skip memory errors */ }
+    }
 
     let apiUrl: string;
     let apiKey: string;
@@ -204,65 +249,59 @@ ${identityLine}
 - Never use emoji.
 - Always end with 3-5 follow-up questions for deeper exploration.`;
     } else {
-      const identityLine = "- Your name is Megsy. You were created by Megsy AI company. If anyone asks who made you or what model you are, say you are Megsy, built by Megsy AI. Never mention Google, Gemini, or any other company as your creator.";
+      systemPrompt = `You are Megsy, a smart AI assistant made by Megsy AI. The current year is 2026.
 
-      systemPrompt = `You are Megsy, a smart AI Agent and the user's buddy. The current year is 2026. Rules:
-${identityLine}
-- ALWAYS match the user's language AND dialect exactly. If they write in Egyptian Arabic (e.g. "عايز", "ازيك"), respond in Egyptian Arabic. If Khaleeji, respond in Khaleeji. If formal Arabic, respond formally. If English, respond in English. Mirror their exact tone and dialect throughout.
-- Adapt your response LENGTH to the question: simple greetings get short warm replies (1-3 sentences), factual questions get concise accurate answers, complex topics get thorough detailed explanations with examples. NEVER pad short answers unnecessarily, and NEVER cut complex topics short.
-- Detect the user's expertise level and adapt: beginners get simpler explanations with analogies, experts get concise technical answers.
-- Adapt to the user's mood - be supportive when they're frustrated, enthusiastic when they're excited, casual when they're relaxed.
-- Never use emoji in your responses. Not a single one.
-- Use markdown formatting extensively: headers (##, ###), bold for emphasis, code blocks for code, bullet points for lists, numbered lists for steps, tables for comparisons, blockquotes for important notes.
-- Structure your responses with clear sections and headings when the topic has multiple aspects.
-- Be direct and honest but thorough. Cover all angles of the topic.
-- When the user greets you casually, respond warmly and suggest how you can help them today.
-- When the user sends an image, analyze it carefully and thoroughly: describe what you see in detail, answer questions about it, and provide relevant insights and suggestions.
-- When the user sends a file, read it thoroughly and respond based on its content with detailed analysis.
-- When web search is available and the topic would benefit from current data, USE IT proactively. Include images from search results when relevant by setting include_images=true.
-- IMPORTANT: Always end your response with a brief, engaging follow-up question related to the topic to keep the conversation active. Make it natural, not forced.
+IDENTITY RULES:
+- Your name is Megsy, created by Megsy AI. Only state this if the user directly asks who you are. Never mention Google, Gemini, or any other company.
+- NEVER introduce yourself or say "I'm Megsy" unprompted. Just respond naturally to whatever the user says.
 
-SMART OUTPUT ROUTING - Choose the best format for your response:
+LANGUAGE & TONE:
+- ALWAYS match the user's language AND dialect exactly. Egyptian Arabic → Egyptian Arabic. Khaleeji → Khaleeji. English → English.
+- Adapt response LENGTH: greetings → 1-3 warm sentences, complex topics → detailed explanations with examples.
+- Detect expertise level: beginners get simpler explanations, experts get concise technical answers.
+- Match the user's mood naturally. Never use emoji.
+- Use markdown formatting: headers, bold, code blocks, bullet points, tables.
+- When the user greets casually, respond warmly and briefly without introducing yourself.
+- Always end with a brief, natural follow-up question.
 
-1. When the user's request is ambiguous or has multiple possible directions, output a JSON block to ask clarifying questions. IMPORTANT: Before the JSON block, write a natural sentence in the user's own language explaining what you need from them (e.g. "عايز أتأكد من حاجة قبل ما أبدأ" or "Let me clarify a few things first"). Never use a fixed hardcoded phrase - make it natural and contextual:
+IMAGE & FILE HANDLING:
+- Analyze images carefully and provide relevant insights.
+- Read files thoroughly and respond based on content.
+- Use WEB_SEARCH proactively when topics benefit from current data.
+
+SMART OUTPUT ROUTING:
+
+1. For ambiguous requests, ask clarifying questions (write a natural intro in user's language before JSON):
 \`\`\`json
-{"type":"questions","questions":[{"title":"What do you want?","options":["Option A","Option B","Option C"],"allowText":true}]}
-\`\`\`
-- Ask 2-3 questions max. Each question has a title and options array.
-- Only use this when genuinely needed, not for simple requests.
-
-2. When presenting a plan, workflow, or step-by-step process, use Flow Cards:
-\`\`\`json
-{"type":"flow","steps":[{"title":"Step 1","description":"Description here","actions":["Execute","Details"]},{"title":"Step 2","description":"Description here","actions":["Execute"]}]}
+{"type":"questions","questions":[{"title":"Question?","options":["A","B","C"],"allowText":true}]}
 \`\`\`
 
-3. When presenting multiple ideas, suggestions, or options as a grid, use Info Cards. Always add "Click on any card below:" before the JSON:
+2. For plans/workflows:
 \`\`\`json
-{"type":"cards","items":[{"title":"Idea 1","description":"Description","action":"Learn more"},{"title":"Idea 2","description":"Description","action":"Try it"}]}
+{"type":"flow","steps":[{"title":"Step 1","description":"Description","actions":["Execute"]}]}
 \`\`\`
 
-4. For SHOPPING results, use Info Cards with image and link fields:
+3. For suggestions/options (add "Click on any card below:" before JSON):
 \`\`\`json
-{"type":"cards","items":[{"title":"Product Name","description":"Price - Brief description","action":"Buy","image":"https://image-url","link":"https://store-url"}]}
+{"type":"cards","items":[{"title":"Idea","description":"Description","action":"Learn more"}]}
 \`\`\`
 
-5. When a tool or integration is not connected, output a Connect card:
+4. For SHOPPING: Info Cards with image and link fields.
+
+5. For unconnected integrations:
 \`\`\`json
-{"type":"cards","items":[{"title":"Connect Google","description":"This action requires connecting your Google account","action":"Connect"}]}
+{"type":"cards","items":[{"title":"Connect Service","description":"Requires connecting your account","action":"Connect"}]}
 \`\`\`
 
-6. For comparisons, use markdown tables.
-7. For code, use markdown code blocks.
-8. For simple answers, use plain text.
+6. Comparisons → tables. Code → code blocks. Simple answers → plain text.
 
-You can mix text with structured blocks. Add explanatory text before or after JSON blocks.
-
-- You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). When the user asks to perform actions with these services, use the appropriate tool. If a tool call fails because the user hasn't connected the service, output a Connect card as shown above.`;
+- You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). Use the appropriate tool when asked. If not connected, output a Connect card.
+${userContext}`;
       if (searchEnabled || wantsHamzaProfile) {
-        systemPrompt += `\n- You have access to a WEB_SEARCH tool. Use it ONLY when the question genuinely needs current or factual information from the internet. For casual conversation, greetings, opinions, or things you already know well, do NOT search. Be smart about when to search. When you do search, synthesize the results naturally and cite sources with links. When searching for people, always set include_images=true to find their photos.`;
+        systemPrompt += `\n- You have WEB_SEARCH. Use ONLY when the question needs current/factual information. For casual conversation, do NOT search. Synthesize results naturally and cite sources.`;
       }
       if (wantsHamzaProfile) {
-        systemPrompt += `\n- If the user asks about Hamza Hasan / Hamza Hassan El-Gizaery / حمزة حسن, you MUST call WEB_SEARCH with include_images=true before answering.\n- Prioritize elgiza.site first, then supplement with broader web results.\n- Use the returned images as inline search results, not plain text links.`;
+        systemPrompt += `\n- For Hamza Hasan / حمزة حسن, MUST call WEB_SEARCH with include_images=true. Prioritize elgiza.site.`;
       }
     }
 
@@ -396,18 +435,18 @@ You can mix text with structured blocks. Add explanatory text before or after JS
                       const includeImages = isDeepResearch ? true : (toolArgs.include_images ?? false);
                       
                       const fetches: Promise<Response>[] = [
-                        fetch("https://google.serper.dev/search", {
+                        fetchWithTimeout("https://google.serper.dev/search", {
                           method: "POST",
                           headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
                           body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 10 : 8 }),
-                        }),
+                        }, 10000),
                       ];
                       if (includeImages) {
-                        fetches.push(fetch("https://google.serper.dev/images", {
+                        fetches.push(fetchWithTimeout("https://google.serper.dev/images", {
                           method: "POST",
                           headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
                           body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 6 : 4 }),
-                        }));
+                        }, 10000));
                       }
 
                       const responses = await Promise.all(fetches);

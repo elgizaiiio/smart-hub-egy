@@ -92,6 +92,14 @@ const ChatPage = () => {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
+  const [chatUserId, setChatUserId] = useState<string | null>(null);
+
+  // Fetch user ID once for memory context
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setChatUserId(user.id);
+    });
+  }, []);
 
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -290,6 +298,7 @@ const ChatPage = () => {
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
       deepResearch: isDeepResearch,
       chatMode: chatMode,
+      user_id: chatUserId || undefined,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
       onDone: async () => {
