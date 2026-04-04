@@ -298,6 +298,7 @@ const ChatPage = () => {
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
       deepResearch: isDeepResearch,
       chatMode: chatMode,
+      user_id: chatUserId || undefined,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
       onDone: async () => {
