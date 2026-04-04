@@ -597,7 +597,7 @@ ${userContext}`;
                             for (const stc of secondToolCalls) {
                               try {
                                 const sToolName = stc.function?.name;
-                                const sToolArgs = JSON.parse(stc.function?.arguments || "{}");
+                                const sToolArgs = safeParseToolArgs(stc.function?.arguments || "{}");
                                 if (sToolName === "WEB_SEARCH" && SERPER_API_KEY) {
                                   const includeImgs = isDeepResearch ? true : (sToolArgs.include_images ?? false);
                                   const fetches2: Promise<Response>[] = [
