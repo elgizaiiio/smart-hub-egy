@@ -268,7 +268,7 @@ const FilesPage = () => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML document for them. Write a unique, contextual description of what was created. Be specific about the content. Suggest 2-3 specific improvements based on what was actually generated. Keep it conversational, 2-4 sentences. Do not use emoji. Respond in the same language as the user's request. IMPORTANT: Do not repeat the same description every time - be creative and specific.` }],
-          model: "gemini-3.1-flash-lite-preview",
+          model: "deepseek-v3.2",
         }),
       });
 
