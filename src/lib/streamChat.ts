@@ -35,7 +35,7 @@ export async function streamChat({
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, model, searchEnabled, deepResearch, chatMode }),
+      body: JSON.stringify({ messages, model, searchEnabled, deepResearch, chatMode, user_id }),
       signal,
     });
 
