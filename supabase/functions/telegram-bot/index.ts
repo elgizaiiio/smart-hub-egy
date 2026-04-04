@@ -2820,7 +2820,31 @@ serve(async (req) => {
         return new Response("OK");
       }
 
-      // ---- Headshot template text inputs ----
+      // ---- API Keys text input handler ----
+      if ((session as any)?.adminAction?.startsWith("ak_awaiting_key_") && text) {
+        const service = (session as any).adminAction.replace("ak_awaiting_key_", "");
+        const keys = text.trim().split("\n").map((k: string) => k.trim()).filter((k: string) => k.length > 10);
+        if (keys.length === 0) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "❌ لم يتم العثور على مفاتيح صالحة." });
+          return new Response("OK");
+        }
+        const rows = keys.map((k: string) => ({ service, api_key: k, label: `Added ${new Date().toLocaleDateString()}` }));
+        const { error } = await sb.from("api_keys").insert(rows);
+        if (error) {
+          await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `❌ خطأ: ${error.message}` });
+        } else {
+          const { count } = await sb.from("api_keys").select("id", { count: "exact", head: true }).eq("service", service).eq("is_active", true).eq("is_blocked", false);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId,
+            text: `✅ تم إضافة *${keys.length}* مفتاح ${service} بنجاح!\n\n📊 إجمالي النشطة: *${count || 0}*`,
+            parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]] }),
+          });
+        }
+        return new Response("OK");
+      }
+
       if ((session as any)?.adminAction === "hs_awaiting_name" && text) {
         (session as any).hsName = text.trim();
         (session as any).adminAction = "hs_awaiting_gender";
