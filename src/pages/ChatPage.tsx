@@ -54,7 +54,7 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
   </svg>;
 
 
-const MEGSY_MODEL = "gemini-3.1-flash-lite-preview";
+const MEGSY_MODEL = "auto"; // Routes to GLM-4.6 (simple) or DeepSeek-v3.2 (complex) via AgentRouter
 
 const ChatPage = () => {
   const navigate = useNavigate();

@@ -7,13 +7,12 @@ const corsHeaders = {
 };
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
-const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
+const AGENTROUTER_URL = "https://agentrouter.org/v1/chat/completions";
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
   try {
     return JSON.parse(raw);
   } catch {
-    // Try to extract JSON from malformed response
     let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
     const jsonStart = cleaned.search(/[\{\[]/);
     const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === '[' ? ']' : '}');
@@ -27,23 +26,51 @@ function safeParseToolArgs(raw: string): Record<string, unknown> {
   }
 }
 
-// ── Smart Key Cache: in-memory sticky key to avoid DB queries on every request ──
-let cachedKey: { id: string; api_key: string } | null = null;
-let cachedKeyExpiry = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// ── Smart Key Management: cached keys per service ──
+const keyCache: Record<string, { id: string; api_key: string; expiry: number }> = {};
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
-async function getLemonDataKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
-  // Return cached key if still valid and not excluded
-  if (cachedKey && Date.now() < cachedKeyExpiry && cachedKey.id !== excludeId) {
-    return cachedKey;
+async function getSmartKey(sb: ReturnType<typeof createClient>, service: string, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
+  const cached = keyCache[service];
+  if (cached && Date.now() < cached.expiry && cached.id !== excludeId) {
+    return { id: cached.id, api_key: cached.api_key };
   }
-  const { data } = await sb.from("lemondata_keys")
+  const { data } = await sb.from("api_keys")
     .select("id, api_key")
+    .eq("service", service)
     .eq("is_active", true)
     .eq("is_blocked", false)
     .limit(50);
+  if (!data || data.length === 0) return null;
+  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
+  if (pool.length === 0) return null;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  keyCache[service] = { id: pick.id, api_key: pick.api_key, expiry: Date.now() + CACHE_TTL_MS };
+  return pick;
+}
+
+function blockSmartKey(sb: ReturnType<typeof createClient>, service: string, keyId: string, reason: string) {
+  if (keyCache[service]?.id === keyId) delete keyCache[service];
+  sb.from("api_keys").update({
+    is_blocked: true, block_reason: reason, last_error_at: new Date().toISOString(),
+    error_count: 1, // Will be incremented
+  }).eq("id", keyId).then(() => {});
+}
+
+function markSmartKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
+  sb.from("api_keys").update({
+    last_used_at: new Date().toISOString(),
+  }).eq("id", keyId).then(() => {});
+}
+
+// ── LemonData key cache (existing system) ──
+let cachedKey: { id: string; api_key: string } | null = null;
+let cachedKeyExpiry = 0;
+
+async function getLemonDataKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
+  if (cachedKey && Date.now() < cachedKeyExpiry && cachedKey.id !== excludeId) return cachedKey;
+  const { data } = await sb.from("lemondata_keys").select("id, api_key").eq("is_active", true).eq("is_blocked", false).limit(50);
   if (!data || data.length === 0) { cachedKey = null; return null; }
-  // Filter out excluded key
   const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
   if (pool.length === 0) { cachedKey = null; return null; }
   const pick = pool[Math.floor(Math.random() * pool.length)];
@@ -52,32 +79,15 @@ async function getLemonDataKey(sb: ReturnType<typeof createClient>, excludeId?: 
   return pick;
 }
 
-// Block key - fire and forget, also invalidate cache
 function blockLemonKey(sb: ReturnType<typeof createClient>, keyId: string, reason: string) {
-  if (cachedKey?.id === keyId) { cachedKey = null; }
-  // Fire and forget - don't await
-  sb.from("lemondata_keys").update({
-    is_blocked: true,
-    block_reason: reason,
-    last_error_at: new Date().toISOString(),
-  }).eq("id", keyId).then(() => {
-    sb.from("lemondata_keys").select("error_count").eq("id", keyId).single().then(({ data }) => {
-      if (data) sb.from("lemondata_keys").update({ error_count: (data.error_count || 0) + 1 }).eq("id", keyId);
-    });
-  });
+  if (cachedKey?.id === keyId) cachedKey = null;
+  sb.from("lemondata_keys").update({ is_blocked: true, block_reason: reason, last_error_at: new Date().toISOString() }).eq("id", keyId).then(() => {});
 }
 
-// Mark key as used - fire and forget
 function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
-  sb.from("lemondata_keys").select("usage_count").eq("id", keyId).single().then(({ data }) => {
-    sb.from("lemondata_keys").update({
-      last_used_at: new Date().toISOString(),
-      usage_count: ((data?.usage_count) || 0) + 1,
-    }).eq("id", keyId);
-  });
+  sb.from("lemondata_keys").update({ last_used_at: new Date().toISOString() }).eq("id", keyId).then(() => {});
 }
 
-// Helper: fetch with timeout
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -86,6 +96,29 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 1
   } finally {
     clearTimeout(timer);
   }
+}
+
+// ── Complexity detection: route to GLM-4.6 (simple) or DeepSeek-v3.2 (complex) ──
+function detectComplexity(messages: any[]): "simple" | "complex" {
+  const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
+  if (!lastUser) return "simple";
+  const text = typeof lastUser.content === "string" ? lastUser.content : 
+    Array.isArray(lastUser.content) ? lastUser.content.map((p: any) => p?.text || "").join(" ") : "";
+  
+  // Complex indicators
+  const complexPatterns = [
+    /\b(code|program|script|function|algorithm|debug|develop|build|create|implement)\b/i,
+    /\b(analyze|analysis|compare|explain in detail|research|summarize|translate|write.*report)\b/i,
+    /\b(math|equation|calculate|solve|formula|proof)\b/i,
+    /```/,  // Code blocks
+    /\b(step by step|detailed|comprehensive|in-depth)\b/i,
+  ];
+  
+  if (text.length > 500) return "complex";
+  if (complexPatterns.some(p => p.test(text))) return "complex";
+  if (messages.length > 10) return "complex"; // Long conversations need better context
+  
+  return "simple";
 }
 
 serve(async (req) => {
@@ -102,9 +135,15 @@ serve(async (req) => {
     const wantsHamzaProfile = /(hamza|hassan el-gizaery|elgiza|حمزه|حمزة|حمزة حسن)/i.test(latestUserText);
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
-    const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // ── Get Serper key from smart key system ──
+    let SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
+    const serperSmartKey = await getSmartKey(sb, "serper");
+    if (serperSmartKey) {
+      SERPER_API_KEY = serperSmartKey.api_key;
+    }
 
     // ── Fetch user context for memory system ──
     let userContext = "";
@@ -114,7 +153,7 @@ serve(async (req) => {
           sb.from("profiles").select("display_name, plan, credits").eq("id", user_id).single(),
           sb.from("ai_personalization").select("call_name, about, profession, ai_traits, custom_instructions").eq("user_id", user_id).maybeSingle(),
           sb.from("memories").select("key, value").limit(20),
-          sb.from("conversations").select("title").eq("user_id", user_id).order("updated_at", { ascending: false }).limit(5),
+          sb.from("conversations").select("title, mode").eq("user_id", user_id).order("updated_at", { ascending: false }).limit(10),
         ]);
 
         const parts: string[] = [];
@@ -127,7 +166,7 @@ serve(async (req) => {
           if (ai.call_name) parts.push(`Call the user: "${ai.call_name}"`);
           if (ai.about) parts.push(`About user: ${ai.about}`);
           if (ai.profession) parts.push(`Profession: ${ai.profession}`);
-          if (ai.ai_traits) parts.push(`AI personality traits: ${ai.ai_traits}`);
+          if (ai.ai_traits) parts.push(`AI personality: ${ai.ai_traits}`);
           if (ai.custom_instructions) parts.push(`Custom instructions: ${ai.custom_instructions}`);
         }
         if (memoriesRes.data && memoriesRes.data.length > 0) {
@@ -144,21 +183,61 @@ serve(async (req) => {
     let apiKey: string;
     let modelId: string;
     let usedKeyId: string | null = null;
+    let usedKeyService: string | null = null;
 
     const lovableModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3-flash-preview"];
-    const requestedModel = model || "gemini-3.1-flash-preview";
+    const requestedModel = model || "glm-4.6";
 
     if (lovableModels.some(m => requestedModel.includes(m))) {
       if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
       apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
       apiKey = LOVABLE_API_KEY;
       modelId = requestedModel.startsWith("google/") ? requestedModel : `google/${requestedModel}`;
+    } else if (requestedModel === "glm-4.6" || requestedModel === "deepseek-v3.2" || requestedModel === "auto") {
+      // ── AgentRouter: GLM-4.6 for simple, DeepSeek-v3.2 for complex ──
+      const arKey = await getSmartKey(sb, "agentrouter");
+      if (!arKey) {
+        // Fallback to LemonData
+        const lemonKey = await getLemonDataKey(sb);
+        if (!lemonKey) {
+          const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+          if (!OPENROUTER_API_KEY) {
+            return new Response(JSON.stringify({ error: "No API keys available" }), {
+              status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+          apiKey = OPENROUTER_API_KEY;
+          modelId = requestedModel === "auto" ? "deepseek/deepseek-chat-v3-0324" : requestedModel;
+        } else {
+          apiUrl = "https://api.lemondata.cc/v1/chat/completions";
+          apiKey = lemonKey.api_key;
+          usedKeyId = lemonKey.id;
+          modelId = requestedModel;
+        }
+      } else {
+        apiUrl = AGENTROUTER_URL;
+        apiKey = arKey.api_key;
+        usedKeyId = arKey.id;
+        usedKeyService = "agentrouter";
+        
+        // Auto-select model based on complexity
+        if (requestedModel === "auto" || requestedModel === "glm-4.6") {
+          const complexity = detectComplexity(messages);
+          // For files mode, always use DeepSeek
+          if (mode === "files" || complexity === "complex" || deepResearch) {
+            modelId = "deepseek-v3.2";
+          } else {
+            modelId = "glm-4.6";
+          }
+        } else {
+          modelId = requestedModel;
+        }
+      }
     } else {
       // Use LemonData with smart cached key
       const lemonKey = await getLemonDataKey(sb);
-
       if (!lemonKey) {
-        // Fallback: try OpenRouter if no LemonData keys available
         const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
         if (!OPENROUTER_API_KEY) {
           return new Response(JSON.stringify({ error: "No API keys available" }), {
@@ -168,12 +247,13 @@ serve(async (req) => {
         apiUrl = "https://openrouter.ai/api/v1/chat/completions";
         apiKey = OPENROUTER_API_KEY;
       } else {
-        apiUrl = LEMONDATA_URL;
+        apiUrl = "https://api.lemondata.cc/v1/chat/completions";
         apiKey = lemonKey.api_key;
         usedKeyId = lemonKey.id;
       }
       modelId = requestedModel;
     }
+
     // Build Composio tools for function calling
     const composioTools = COMPOSIO_API_KEY ? [
       { type: "function", function: { name: "GMAIL_SEND_EMAIL", description: "Send an email using Gmail", parameters: { type: "object", properties: { to: { type: "string" }, subject: { type: "string" }, body: { type: "string" } }, required: ["to", "subject", "body"] } } },
@@ -200,7 +280,7 @@ serve(async (req) => {
           description: isDeepResearch
             ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 6-10 TIMES with different queries to gather exhaustive information from every possible angle. Divide your research into sub-tasks: overview, latest news, expert analysis, data/statistics, case studies, counterarguments, future outlook, and related images. Always set include_images=true for at least half your searches."
             : "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data. Do NOT search for casual greetings or simple conversational messages.",
-          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results. Always true for deep research." } }, required: ["query"] },
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results" } }, required: ["query"] },
         },
       },
     ] : [];
@@ -209,6 +289,14 @@ serve(async (req) => {
     let systemPrompt: string;
     if (mode === "files") {
       systemPrompt = `You are Megsy, a smart AI File Agent made by Megsy AI. The current year is 2026. You are a decision-making agent, not a simple chatbot.
+
+CRITICAL RESPONSE RULES:
+- Create COMPREHENSIVE, DETAILED, WELL-STRUCTURED documents. NEVER abbreviate or shorten.
+- Write FULL paragraphs, complete lists, and detailed explanations.
+- If asked for a report, write AT LEAST 2000 words with full sections.
+- If asked for a presentation, include AT LEAST 10 detailed slides.
+- Use rich formatting: headers (##, ###), bold, bullet points, numbered lists, tables, code blocks.
+- Structure your responses with clear sections and sub-sections.
 
 DECISION ENGINE - For every request, internally decide one action:
 - analyze_file: Deep analysis of uploaded file content
@@ -219,68 +307,77 @@ DECISION ENGINE - For every request, internally decide one action:
 - ask_user: Ask clarifying questions when request is ambiguous
 - auto_review: If user uploads file without clear instructions, automatically provide: Summary, Key Insights, Issues Found, Suggestions
 - multi_file_analysis: Compare multiple files, extract differences
-- external_connection_required: When external access (Google Drive, etc.) is needed
 
 Rules:
-- Create comprehensive, detailed, well-structured documents.
-- When asked to generate HTML documents, make them professional, thorough, and visually polished with proper CSS styling.
-- Include ALL relevant sections, details, and content. Do NOT abbreviate or shorten anything.
-- Write FULL paragraphs, complete lists, and detailed explanations.
-- If the user asks for a report, write at least 2000 words. If a presentation, include at least 10 detailed slides.
-- When the user attaches images, analyze them carefully and incorporate your observations into the document.
-- When the user attaches documents/files, read the content thoroughly and use it in your response.
-- If a file is uploaded WITHOUT any text message, perform auto_review immediately.
-- When editing content, keep EXACT same structure and formatting. ONLY replace text. Do NOT change layout.
-- Match the user's language and dialect exactly.
-- Never use emoji.
-- Vary your descriptions and follow-up suggestions. Never repeat the same phrases.
-- Always end with a specific follow-up question related to what was created.
-- If web search is enabled, use it to find real data, statistics, and references for the document.
+- When the user attaches images, analyze them carefully and incorporate observations.
+- When the user attaches documents/files, read thoroughly and use content.
+- If a file is uploaded WITHOUT text, perform auto_review immediately.
+- When editing content, keep EXACT same structure and formatting.
+- Match the user's language and dialect exactly (Egyptian Arabic → Egyptian Arabic).
+- Never use emoji. Never introduce yourself unless asked.
+- Vary descriptions and follow-up suggestions.
+- Always end with a specific follow-up question.
 - When request is ambiguous, use smart questions:
 \`\`\`json
 {"type":"questions","questions":[{"title":"What format do you need?","options":["Report","Presentation","Summary"],"allowText":true}]}
 \`\`\`
-IMPORTANT: Before ANY questions JSON block, write a natural sentence in the user's language explaining what you need from them. Never use a fixed English phrase. Write it naturally as part of your response.
-- If external access is needed, output a Connect card:
-\`\`\`json
-{"type":"cards","items":[{"title":"Connect Google Drive","description":"This action requires connecting your Google Drive","action":"Connect"}]}
-\`\`\`
-- For PowerPoint requests, return structured JSON slides.`;
+IMPORTANT: Before ANY questions JSON block, write a natural sentence explaining what you need.
+- For PowerPoint requests, return structured JSON slides.
+${userContext}`;
     } else if (isDeepResearch) {
-      const isMegsyModel = requestedModel.includes("gemini-3-flash");
-      const identityLine = isMegsyModel
-        ? "- Your name is Megsy. You were created by Megsy AI company. Never mention Google, Gemini, or any other company as your creator."
-        : "";
-      systemPrompt = `You are Megsy, a Deep Research AI Agent made by Megsy AI. The current year is 2026. Rules:
-${identityLine}
-- You are in DEEP RESEARCH mode. Your job is to conduct the most thorough, exhaustive research possible on the user's topic.
-- You MUST use the WEB_SEARCH tool AT LEAST 6-10 TIMES with different queries to gather information from every possible angle.
-- Divide your research into sub-tasks: 1) General overview 2) Latest developments 3) Expert opinions 4) Data & statistics 5) Case studies 6) Counterarguments 7) Future outlook 8) Visual references
-- For at least half your searches, set include_images=true to gather relevant images.
-- After gathering all information, synthesize it into a comprehensive, well-structured research report.
-- Your report should include: Executive Summary, Key Findings, Detailed Analysis with sub-sections, Data & Statistics (use tables), Expert Opinions, Counterarguments/Limitations, Visual Evidence (reference the images), and Conclusion with Actionable Recommendations.
-- Use markdown formatting extensively: headers (##, ###), bold, bullet points, numbered lists, and tables where appropriate.
-- Cite ALL sources with links in the format [Source Name](URL).
+      systemPrompt = `You are Megsy, a Deep Research AI Agent made by Megsy AI. The current year is 2026.
+
+CRITICAL: Never introduce yourself. Never say "I'm Megsy" unless directly asked.
+
+DEEP RESEARCH MODE:
+- You MUST use the WEB_SEARCH tool AT LEAST 6-10 TIMES with different queries.
+- Divide research into: 1) General overview 2) Latest developments 3) Expert opinions 4) Data & statistics 5) Case studies 6) Counterarguments 7) Future outlook 8) Visual references
+- For at least half your searches, set include_images=true.
+- After gathering all information, synthesize into a comprehensive, well-structured research report.
+
+REPORT STRUCTURE:
+## Executive Summary
+## Key Findings
+## Detailed Analysis (with sub-sections)
+## Data & Statistics (use tables)
+## Expert Opinions
+## Counterarguments/Limitations
+## Visual Evidence
+## Conclusion with Actionable Recommendations
+## Sources
+
+- Use markdown extensively: headers, bold, bullet points, numbered lists, tables.
+- Cite ALL sources: [Source Name](URL)
 - Match the user's language and dialect exactly.
-- Be extremely thorough - aim for at least 2000-3000 words in your final report.
-- Include relevant images when available by using the include_images parameter in your searches.
+- Aim for 2000-3000+ words in final report.
 - Never use emoji.
-- Always end with 3-5 follow-up questions for deeper exploration.`;
+- End with 3-5 follow-up questions.
+${userContext}`;
     } else {
       systemPrompt = `You are Megsy, a smart AI assistant made by Megsy AI. The current year is 2026.
 
 IDENTITY RULES:
-- Your name is Megsy, created by Megsy AI. Only state this if the user directly asks who you are. Never mention Google, Gemini, or any other company.
-- NEVER introduce yourself or say "I'm Megsy" unprompted. Just respond naturally to whatever the user says.
+- Your name is Megsy. Only state this if directly asked who you are.
+- NEVER introduce yourself or say "I'm Megsy" unprompted. Just respond naturally.
+- Never mention Google, Gemini, DeepSeek, GLM or any AI company.
+
+RESPONSE QUALITY RULES (CRITICAL):
+- Give THOROUGH, DETAILED responses. Never be too brief.
+- For questions: provide comprehensive answers with context, examples, and nuance.
+- For tasks: break down into clear steps with explanations.
+- Use markdown formatting extensively: ## headers, **bold**, \`code\`, bullet points, numbered lists, tables.
+- Structure long responses with clear sections and sub-headers.
+- Include relevant examples, analogies, and practical applications.
+- When comparing things, use tables for clarity.
+- For technical topics, include code examples when helpful.
 
 LANGUAGE & TONE:
 - ALWAYS match the user's language AND dialect exactly. Egyptian Arabic → Egyptian Arabic. Khaleeji → Khaleeji. English → English.
-- Adapt response LENGTH: greetings → 1-3 warm sentences, complex topics → detailed explanations with examples.
+- Adapt response LENGTH: greetings → 1-3 warm sentences, questions → detailed explanations, complex topics → comprehensive analysis.
 - Detect expertise level: beginners get simpler explanations, experts get concise technical answers.
 - Match the user's mood naturally. Never use emoji.
-- Use markdown formatting: headers, bold, code blocks, bullet points, tables.
 - When the user greets casually, respond warmly and briefly without introducing yourself.
-- Always end with a brief, natural follow-up question.
+- Always end with a brief, natural follow-up question related to the topic.
 
 IMAGE & FILE HANDLING:
 - Analyze images carefully and provide relevant insights.
@@ -289,7 +386,7 @@ IMAGE & FILE HANDLING:
 
 SMART OUTPUT ROUTING:
 
-1. For ambiguous requests, ask clarifying questions (write a natural intro in user's language before JSON):
+1. For ambiguous requests (write a natural intro in user's language before JSON):
 \`\`\`json
 {"type":"questions","questions":[{"title":"Question?","options":["A","B","C"],"allowText":true}]}
 \`\`\`
@@ -299,7 +396,7 @@ SMART OUTPUT ROUTING:
 {"type":"flow","steps":[{"title":"Step 1","description":"Description","actions":["Execute"]}]}
 \`\`\`
 
-3. For suggestions/options (add "Click on any card below:" before JSON):
+3. For suggestions (add "Click on any card below:" before JSON):
 \`\`\`json
 {"type":"cards","items":[{"title":"Idea","description":"Description","action":"Learn more"}]}
 \`\`\`
@@ -313,10 +410,10 @@ SMART OUTPUT ROUTING:
 
 6. Comparisons → tables. Code → code blocks. Simple answers → plain text.
 
-- You have access to integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). Use the appropriate tool when asked. If not connected, output a Connect card.
+- You have integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). Use the appropriate tool when asked. If not connected, output a Connect card.
 ${userContext}`;
       if (searchEnabled || wantsHamzaProfile) {
-        systemPrompt += `\n- You have WEB_SEARCH. Use ONLY when the question needs current/factual information. For casual conversation, do NOT search. Synthesize results naturally and cite sources.`;
+        systemPrompt += `\n- You have WEB_SEARCH. Use ONLY when the question needs current/factual information. For casual conversation, do NOT search. Synthesize results naturally and cite sources with links.`;
       }
       if (wantsHamzaProfile) {
         systemPrompt += `\n- For Hamza Hasan / حمزة حسن, MUST call WEB_SEARCH with include_images=true. Prioritize elgiza.site.`;
@@ -330,6 +427,7 @@ ${userContext}`;
         ...messages,
       ],
       stream: true,
+      max_tokens: isDeepResearch ? 8192 : (mode === "files" ? 8192 : 4096),
     };
 
     const allTools = [...composioTools, ...searchTools];
@@ -338,7 +436,7 @@ ${userContext}`;
       body.tool_choice = "auto";
     }
 
-    // LemonData key rotation: retry with different keys on auth failures
+    // Key rotation: retry with different keys on auth failures
     let response: Response;
     let retryCount = 0;
     const MAX_RETRIES = 3;
@@ -354,10 +452,32 @@ ${userContext}`;
         body: JSON.stringify(body),
       });
 
-      // If LemonData key failed with auth error, block and retry with new key
-      if ((response.status === 401 || response.status === 403) && apiUrl === LEMONDATA_URL && usedKeyId && retryCount < MAX_RETRIES) {
-        console.error(`LemonData key ${usedKeyId} failed with ${response.status}, blocking...`);
-        blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`); // fire-and-forget
+      // AgentRouter key rotation
+      if ((response.status === 401 || response.status === 403) && apiUrl === AGENTROUTER_URL && usedKeyId && usedKeyService === "agentrouter" && retryCount < MAX_RETRIES) {
+        console.error(`AgentRouter key ${usedKeyId} failed with ${response.status}, blocking...`);
+        blockSmartKey(sb, "agentrouter", usedKeyId, `HTTP ${response.status}`);
+        const newKey = await getSmartKey(sb, "agentrouter", usedKeyId);
+        if (newKey) {
+          apiKey = newKey.api_key;
+          usedKeyId = newKey.id;
+          retryCount++;
+          continue;
+        }
+        // Fallback to LemonData
+        const lemonKey = await getLemonDataKey(sb);
+        if (lemonKey) {
+          apiUrl = "https://api.lemondata.cc/v1/chat/completions";
+          apiKey = lemonKey.api_key;
+          usedKeyId = lemonKey.id;
+          usedKeyService = "lemondata";
+          retryCount++;
+          continue;
+        }
+      }
+
+      // LemonData key rotation
+      if ((response.status === 401 || response.status === 403) && apiUrl.includes("lemondata") && usedKeyId && retryCount < MAX_RETRIES) {
+        blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
         const newKey = await getLemonDataKey(sb, usedKeyId);
         if (newKey) {
           apiKey = newKey.api_key;
@@ -365,10 +485,8 @@ ${userContext}`;
           retryCount++;
           continue;
         }
-        // No more LemonData keys — fallback to OpenRouter
         const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
         if (OPENROUTER_API_KEY) {
-          console.log("All LemonData keys exhausted, falling back to OpenRouter");
           apiUrl = "https://openrouter.ai/api/v1/chat/completions";
           apiKey = OPENROUTER_API_KEY;
           usedKeyId = null;
@@ -376,14 +494,14 @@ ${userContext}`;
           continue;
         }
       }
-      // If rate limited on LemonData, try another key immediately
-      if (response.status === 429 && apiUrl === LEMONDATA_URL && usedKeyId && retryCount < MAX_RETRIES) {
-        const newKey = await getLemonDataKey(sb, usedKeyId);
-        if (newKey) {
-          apiKey = newKey.api_key;
-          usedKeyId = newKey.id;
-          retryCount++;
-          continue;
+
+      if (response.status === 429 && usedKeyId && retryCount < MAX_RETRIES) {
+        if (usedKeyService === "agentrouter") {
+          const newKey = await getSmartKey(sb, "agentrouter", usedKeyId);
+          if (newKey) { apiKey = newKey.api_key; usedKeyId = newKey.id; retryCount++; continue; }
+        } else if (apiUrl.includes("lemondata")) {
+          const newKey = await getLemonDataKey(sb, usedKeyId);
+          if (newKey) { apiKey = newKey.api_key; usedKeyId = newKey.id; retryCount++; continue; }
         }
       }
       break;
@@ -391,7 +509,14 @@ ${userContext}`;
 
     // Mark key as used on success
     if (usedKeyId && response.ok) {
-      markKeyUsed(sb, usedKeyId); // fire and forget
+      if (usedKeyService === "agentrouter") {
+        markSmartKeyUsed(sb, usedKeyId);
+      } else {
+        markKeyUsed(sb, usedKeyId);
+      }
+    }
+    if (serperSmartKey && SERPER_API_KEY === serperSmartKey.api_key) {
+      markSmartKeyUsed(sb, serperSmartKey.id);
     }
 
     if (!response.ok) {
@@ -449,7 +574,6 @@ ${userContext}`;
 
                     if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
                       const searchQuery = toolArgs.query || "";
-                      // For deep research, always include images
                       const includeImages = isDeepResearch ? true : (toolArgs.include_images ?? false);
                       
                       const fetches: Promise<Response>[] = [
@@ -507,7 +631,6 @@ ${userContext}`;
                     );
 
                     if (!account) {
-                      // Output a connect card instead of plain text
                       const serviceName = toolName.split("_")[0];
                       const connectCard = `\n\n\`\`\`json\n{"type":"cards","items":[{"title":"Connect ${serviceName}","description":"This action requires connecting your ${serviceName} account first","action":"Connect"}]}\n\`\`\``;
                       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: connectCard } }] })}\n\n`));
@@ -558,8 +681,7 @@ ${userContext}`;
                       })),
                   ];
 
-                  const secondBody: any = { model: modelId, messages: searchMessages, stream: true };
-                  // For deep research, allow more tool calls in second pass
+                  const secondBody: any = { model: modelId, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
                   if (isDeepResearch && SERPER_API_KEY) {
                     secondBody.tools = searchTools;
                     secondBody.tool_choice = "auto";
@@ -601,18 +723,18 @@ ${userContext}`;
                                 if (sToolName === "WEB_SEARCH" && SERPER_API_KEY) {
                                   const includeImgs = isDeepResearch ? true : (sToolArgs.include_images ?? false);
                                   const fetches2: Promise<Response>[] = [
-                                    fetch("https://google.serper.dev/search", {
+                                    fetchWithTimeout("https://google.serper.dev/search", {
                                       method: "POST",
                                       headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
                                       body: JSON.stringify({ q: sToolArgs.query || "", num: 8 }),
-                                    }),
+                                    }, 10000),
                                   ];
                                   if (includeImgs) {
-                                    fetches2.push(fetch("https://google.serper.dev/images", {
+                                    fetches2.push(fetchWithTimeout("https://google.serper.dev/images", {
                                       method: "POST",
                                       headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
                                       body: JSON.stringify({ q: sToolArgs.query || "", num: 4 }),
-                                    }));
+                                    }, 10000));
                                   }
                                   const resps2 = await Promise.all(fetches2);
                                   const sd = await resps2[0].json();
@@ -657,7 +779,7 @@ ${userContext}`;
                                   "Content-Type": "application/json",
                                   ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://megsyai.com", "X-Title": "Megsy" } : {}),
                                 },
-                                body: JSON.stringify({ model: modelId, messages: thirdMessages, stream: true }),
+                                body: JSON.stringify({ model: modelId, messages: thirdMessages, stream: true, max_tokens: 8192 }),
                               });
                               if (thirdResp.ok && thirdResp.body) {
                                 const thirdReader = thirdResp.body.getReader();
@@ -706,7 +828,6 @@ ${userContext}`;
 
                   // Send images as a special event
                   if (allImages.length > 0) {
-                    // Deduplicate images
                     const uniqueImages = [...new Set(allImages)];
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "" } }], images: uniqueImages })}\n\n`));
                   }
