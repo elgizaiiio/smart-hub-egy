@@ -59,11 +59,22 @@ function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
   });
 }
 
+// Helper: fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model, mode, searchEnabled, deepResearch, chatMode } = await req.json();
+    const { messages, model, mode, searchEnabled, deepResearch, chatMode, user_id } = await req.json();
     const latestUserMessage = Array.isArray(messages)
       ? [...messages].reverse().find((message: any) => message?.role === "user")
       : null;
@@ -76,6 +87,40 @@ serve(async (req) => {
     const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // ── Fetch user context for memory system ──
+    let userContext = "";
+    if (user_id) {
+      try {
+        const [profileRes, personalizationRes, memoriesRes, recentConvsRes] = await Promise.all([
+          sb.from("profiles").select("display_name, plan, credits").eq("id", user_id).single(),
+          sb.from("ai_personalization").select("call_name, about, profession, ai_traits, custom_instructions").eq("user_id", user_id).maybeSingle(),
+          sb.from("memories").select("key, value").limit(20),
+          sb.from("conversations").select("title").eq("user_id", user_id).order("updated_at", { ascending: false }).limit(5),
+        ]);
+
+        const parts: string[] = [];
+        if (profileRes.data) {
+          const p = profileRes.data;
+          parts.push(`User: ${p.display_name || "Unknown"}, Plan: ${p.plan}, Credits: ${p.credits} MC`);
+        }
+        if (personalizationRes.data) {
+          const ai = personalizationRes.data;
+          if (ai.call_name) parts.push(`Call the user: "${ai.call_name}"`);
+          if (ai.about) parts.push(`About user: ${ai.about}`);
+          if (ai.profession) parts.push(`Profession: ${ai.profession}`);
+          if (ai.ai_traits) parts.push(`AI personality traits: ${ai.ai_traits}`);
+          if (ai.custom_instructions) parts.push(`Custom instructions: ${ai.custom_instructions}`);
+        }
+        if (memoriesRes.data && memoriesRes.data.length > 0) {
+          parts.push(`Memories: ${memoriesRes.data.map((m: any) => `${m.key}: ${m.value}`).join("; ")}`);
+        }
+        if (recentConvsRes.data && recentConvsRes.data.length > 0) {
+          parts.push(`Recent conversations: ${recentConvsRes.data.map((c: any) => c.title).join(", ")}`);
+        }
+        if (parts.length > 0) userContext = `\n\n--- USER CONTEXT ---\n${parts.join("\n")}`;
+      } catch { /* silently skip memory errors */ }
+    }
 
     let apiUrl: string;
     let apiKey: string;
