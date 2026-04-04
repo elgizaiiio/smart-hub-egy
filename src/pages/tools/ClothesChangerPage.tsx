@@ -6,11 +6,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 import { CLOTHES_STYLES, FOOTBALL_CLUBS, getFootballPrompt } from "@/lib/imageToolsData";
-import { ImageUploadBox } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
-type Step = 'landing' | 'upload' | 'styles' | 'clubs' | 'generating' | 'result';
+type Step = 'landing' | 'styles' | 'clubs' | 'generating' | 'result';
 
 const ClothesChangerPage = () => {
   const navigate = useNavigate();
@@ -24,6 +23,7 @@ const ClothesChangerPage = () => {
   const [refImage, setRefImage] = useState<string | null>(null);
   const [landingImage, setLandingImage] = useState<string | null>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { templates } = useToolTemplates("clothes-changer");
 
   useEffect(() => {
@@ -31,7 +31,13 @@ const ClothesChangerPage = () => {
       .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
   }, []);
 
-  const handleImageUpload = (img: string) => { setImage(img); setStep('styles'); };
+  const handleLandingUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setImage(reader.result as string); setStep('styles'); };
+    reader.readAsDataURL(file); e.target.value = "";
+  };
+
   const handleStyleSelect = (styleId: string) => {
     setSelectedStyle(styleId);
     if (styleId === 'football') setStep('clubs');
@@ -76,16 +82,11 @@ const ClothesChangerPage = () => {
               {landingImage ? <img src={landingImage} alt="Clothes Changer" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-accent/10 to-background" />}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
               <div className="relative z-10 text-center px-6">
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLandingUpload} />
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => fileInputRef.current?.click()} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
                   <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
                 </motion.button>
               </div>
-            </motion.div>
-          )}
-
-          {step === "upload" && (
-            <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4">
-              <ImageUploadBox label="Upload your photo" image={image} onUpload={handleImageUpload} onClear={() => setImage(null)} />
             </motion.div>
           )}
 
