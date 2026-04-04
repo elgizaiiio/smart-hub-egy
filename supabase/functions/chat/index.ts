@@ -445,7 +445,7 @@ ${userContext}`;
                 for (const tc of toolCalls) {
                   try {
                     const toolName = tc.function?.name;
-                    const toolArgs = JSON.parse(tc.function?.arguments || "{}");
+                    const toolArgs = safeParseToolArgs(tc.function?.arguments || "{}");
 
                     if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
                       const searchQuery = toolArgs.query || "";
