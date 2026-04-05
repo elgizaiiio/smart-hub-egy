@@ -131,7 +131,7 @@ serve(async (req) => {
         const parts: string[] = [];
         if (profileRes.data) {
           const p = profileRes.data;
-          parts.push(`User: ${p.display_name || "Unknown"}, Plan: ${p.plan}, Credits: ${p.credits} MC`);
+          parts.push(`User name: ${p.display_name || "Unknown"} (Plan: ${p.plan}, Credits: ${p.credits} MC — only mention if user asks)`);
         }
         if (personalizationRes.data) {
           const ai = personalizationRes.data;
@@ -468,12 +468,13 @@ IDENTITY RULES:
 - Your name is Megsy. Only state this if directly asked who you are.
 - NEVER introduce yourself or say "I'm Megsy" unprompted. Just respond naturally.
 - Never mention Google, Gemini, DeepSeek, GLM, LemonData or any AI company.
+- NEVER share user's account info (credits, plan, etc.) unless EXPLICITLY asked about it.
 
-RESPONSE QUALITY RULES (CRITICAL):
-- Give THOROUGH, DETAILED responses. Never be too brief.
+CONVERSATION RULES (CRITICAL):
+- For casual greetings (hi, ازيك, مرحبا, etc.): respond WARMLY and BRIEFLY like a friend. Just say hi back naturally. Do NOT mention credits, plan, features, or capabilities.
 - For questions: provide comprehensive answers with context, examples, and nuance.
 - For tasks: break down into clear steps with explanations.
-- Use markdown formatting extensively: ## headers, **bold**, \`code\`, bullet points, numbered lists, tables.
+- Use markdown formatting: ## headers, **bold**, \`code\`, bullet points, numbered lists, tables.
 - Structure long responses with clear sections and sub-headers.
 - Include relevant examples, analogies, and practical applications.
 - When comparing things, use tables for clarity.
@@ -481,11 +482,11 @@ RESPONSE QUALITY RULES (CRITICAL):
 
 LANGUAGE & TONE:
 - ALWAYS match the user's language AND dialect exactly. Egyptian Arabic → Egyptian Arabic. Khaleeji → Khaleeji. English → English.
-- Adapt response LENGTH: greetings → 1-3 warm sentences, questions → detailed explanations, complex topics → comprehensive analysis.
+- Adapt response LENGTH: greetings → 1-2 warm sentences ONLY, questions → detailed explanations, complex topics → comprehensive analysis.
 - Detect expertise level: beginners get simpler explanations, experts get concise technical answers.
 - Match the user's mood naturally. Never use emoji.
-- When the user greets casually, respond warmly and briefly without introducing yourself.
-- Always end with a brief, natural follow-up question related to the topic.
+- When the user greets casually, respond warmly and briefly like a friend. Example: "ازيك" → "الحمدلله بخير، وانت عامل ايه؟" NOT a list of features.
+- End with a brief, natural follow-up question ONLY for substantive topics, NOT for greetings.
 
 IMAGE & FILE HANDLING:
 - Analyze images carefully and provide relevant insights.
@@ -682,6 +683,7 @@ async function handleToolCalls(
       const secondReader = secondResp.body.getReader();
       const decoder = new TextDecoder();
       let buf2 = "";
+      let secondToolCalls: any[] = [];
 
       while (true) {
         const { done: d2, value: v2 } = await secondReader.read();
@@ -695,10 +697,26 @@ async function handleToolCalls(
           if (d === "[DONE]") continue;
           try {
             const p = JSON.parse(d);
-            const c = p.choices?.[0]?.delta?.content;
+            const delta2 = p.choices?.[0]?.delta;
+            if (!delta2) continue;
+            // Accumulate recursive tool calls (deep research does multiple searches)
+            if (delta2.tool_calls) {
+              for (const tc of delta2.tool_calls) {
+                const idx = tc.index ?? 0;
+                if (!secondToolCalls[idx]) secondToolCalls[idx] = { function: { name: "", arguments: "" } };
+                if (tc.function?.name) secondToolCalls[idx].function.name = tc.function.name;
+                if (tc.function?.arguments) secondToolCalls[idx].function.arguments += tc.function.arguments;
+              }
+              continue;
+            }
+            const c = delta2.content;
             if (c) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`));
           } catch { /* skip */ }
         }
+      }
+      // Handle recursive tool calls from deep research (up to 2 more rounds)
+      if (secondToolCalls.length > 0 && isDeepResearch) {
+        await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, false, [], sb);
       }
     }
   }
