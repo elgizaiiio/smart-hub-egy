@@ -59,6 +59,10 @@ import EnterprisePage from "./pages/EnterprisePage";
 import AboutPage from "./pages/AboutPage";
 import AuthDocsPage from "./pages/AuthDocsPage";
 import VoicePage from "./pages/VoicePage";
+import VoiceChangerPage from "./pages/voice/VoiceChangerPage";
+import CloneVoicePage from "./pages/voice/CloneVoicePage";
+import TTSPage from "./pages/voice/TTSPage";
+import MusicGeneratorPage from "./pages/voice/MusicGeneratorPage";
 import VideoToTextPage from "./pages/tools/VideoToTextPage";
 import AIPersonalizationPage from "./pages/AIPersonalizationPage";
 
