@@ -53,10 +53,10 @@ const VIDEO_PLACEHOLDERS = [
 ];
 
 const HERO_TEXTS = [
-  { main: "Bring stories to", accent: "life" },
-  { main: "Your ideas", accent: "in motion" },
-  { main: "AI-powered", accent: "video creation" },
-  { main: "Dream it", accent: "film it" },
+  { main: "Generate cinematic", accent: "AI videos" },
+  { main: "Text to video", accent: "in seconds" },
+  { main: "Your story", accent: "brought to life" },
+  { main: "Create videos with", accent: "AI magic" },
 ];
 
 const VideosPage = () => {

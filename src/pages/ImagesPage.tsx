@@ -70,10 +70,10 @@ const IMAGE_PLACEHOLDERS = [
 ];
 
 const HERO_TEXTS = [
-  { main: "Create something", accent: "extraordinary" },
-  { main: "Imagine it", accent: "generate it" },
-  { main: "Your vision", accent: "AI-powered" },
-  { main: "Dream big", accent: "create bigger" },
+  { main: "Turn words into", accent: "stunning images" },
+  { main: "AI-powered", accent: "image creation" },
+  { main: "Your imagination", accent: "visualized" },
+  { main: "Create art with", accent: "a single prompt" },
 ];
 
 const ImagesPage = () => {
