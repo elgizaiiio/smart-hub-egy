@@ -59,6 +59,10 @@ import EnterprisePage from "./pages/EnterprisePage";
 import AboutPage from "./pages/AboutPage";
 import AuthDocsPage from "./pages/AuthDocsPage";
 import VoicePage from "./pages/VoicePage";
+import VoiceChangerPage from "./pages/voice/VoiceChangerPage";
+import CloneVoicePage from "./pages/voice/CloneVoicePage";
+import TTSPage from "./pages/voice/TTSPage";
+import MusicGeneratorPage from "./pages/voice/MusicGeneratorPage";
 import VideoToTextPage from "./pages/tools/VideoToTextPage";
 import AIPersonalizationPage from "./pages/AIPersonalizationPage";
 
@@ -209,6 +213,10 @@ const App = () => {
                 <Route path="/videos/tools/lip-sync" element={<ProtectedRoute><LipSyncPage /></ProtectedRoute>} />
                 <Route path="/videos/tools/video-to-text" element={<ProtectedRoute><VideoToTextPage /></ProtectedRoute>} />
                 <Route path="/voice" element={<ProtectedRoute><VoicePage key={currentUserId} /></ProtectedRoute>} />
+                <Route path="/voice/changer" element={<ProtectedRoute><VoiceChangerPage /></ProtectedRoute>} />
+                <Route path="/voice/clone" element={<ProtectedRoute><CloneVoicePage /></ProtectedRoute>} />
+                <Route path="/voice/tts" element={<ProtectedRoute><TTSPage /></ProtectedRoute>} />
+                <Route path="/voice/music" element={<ProtectedRoute><MusicGeneratorPage /></ProtectedRoute>} />
                 <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

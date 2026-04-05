@@ -1639,6 +1639,36 @@ export type Database = {
         }
         Relationships: []
       }
+      tts_voices: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          preview_audio_url: string
+          voice_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          preview_audio_url: string
+          voice_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          preview_audio_url?: string
+          voice_id?: string | null
+        }
+        Relationships: []
+      }
       user_gallery: {
         Row: {
           created_at: string
@@ -1775,6 +1805,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      voice_templates: {
+        Row: {
+          audio_file_url: string
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          preview_image_url: string | null
+        }
+        Insert: {
+          audio_file_url: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          preview_image_url?: string | null
+        }
+        Update: {
+          audio_file_url?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          preview_image_url?: string | null
+        }
+        Relationships: []
       }
       withdrawal_requests: {
         Row: {

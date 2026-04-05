@@ -12,6 +12,9 @@ import type { ModelOption } from "@/components/ModelSelector";
 import UnifiedInputBar from "@/components/UnifiedInputBar";
 import createImageCard from "@/assets/create-image-card.jpg";
 import editImageCard from "@/assets/edit-image-card.jpg";
+import silkCard1 from "@/assets/silk-card-1.webp";
+import silkCard2 from "@/assets/silk-card-2.jpg";
+import silkCard3 from "@/assets/silk-card-3.webp";
 
 type Tab = "home" | "studio" | "community";
 
@@ -243,13 +246,26 @@ const ImagesPage = () => {
                 {TOOL_ROWS.map((row, rowIndex) => (
                   <div key={rowIndex} className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <div className="flex min-w-max gap-3">
-                    {row.map((tool) => {
+                    {row.map((tool, toolIdx) => {
                         const silk = TOOL_SILK[tool.id] || TOOL_SILK["inpaint"];
+                        // First row, first 3 tools get real silk images
+                        const globalIdx = rowIndex * TOOL_ROWS[0].length + toolIdx;
+                        const silkImages = [silkCard1, silkCard2, silkCard3];
+                        const hasSilkImage = globalIdx < 3;
                         return (
-                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl" style={{ background: silk.bg }}>
-                            <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 150% 100% at 15% 25%, ${silk.s1}, transparent 70%), radial-gradient(ellipse 130% 90% at 85% 75%, ${silk.s2}, transparent 65%), radial-gradient(ellipse 100% 120% at 50% -10%, ${silk.s3}, transparent 60%)` }} />
-                            <div className="absolute inset-0" style={{ background: `radial-gradient(circle 60px at 25% 75%, ${silk.s4}, transparent), radial-gradient(circle 50px at 75% 25%, rgba(255,255,255,0.08), transparent), radial-gradient(circle 80px at 50% 50%, ${silk.s4}, transparent)` }} />
-                            <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(255,255,255,0.04) 60%, transparent 100%)` }} />
+                          <motion.button key={tool.id} whileTap={{ scale: 0.96 }} onClick={() => navigate(tool.route)} className="relative h-56 w-44 flex-shrink-0 overflow-hidden rounded-2xl" style={{ background: hasSilkImage ? '#000' : silk.bg }}>
+                            {hasSilkImage ? (
+                              <>
+                                <img src={silkImages[globalIdx]} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+                              </>
+                            ) : (
+                              <>
+                                <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 150% 100% at 15% 25%, ${silk.s1}, transparent 70%), radial-gradient(ellipse 130% 90% at 85% 75%, ${silk.s2}, transparent 65%), radial-gradient(ellipse 100% 120% at 50% -10%, ${silk.s3}, transparent 60%)` }} />
+                                <div className="absolute inset-0" style={{ background: `radial-gradient(circle 60px at 25% 75%, ${silk.s4}, transparent), radial-gradient(circle 50px at 75% 25%, rgba(255,255,255,0.08), transparent), radial-gradient(circle 80px at 50% 50%, ${silk.s4}, transparent)` }} />
+                                <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(255,255,255,0.04) 60%, transparent 100%)` }} />
+                              </>
+                            )}
                             <div className="absolute inset-0 flex items-center justify-center p-4">
                               <p className="text-[11px] uppercase tracking-[0.2em] font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent text-center leading-relaxed drop-shadow-sm">{tool.name}</p>
                             </div>

@@ -288,6 +288,8 @@ function mainMenuKB() {
     [{ text: "🖼 Landing Page Photos", callback_data: "tools_menu" }],
     [{ text: "📋 Tool Templates (قوالب)", callback_data: "tool_templates_menu" }],
     [{ text: "📷 Headshot (قوالب)", callback_data: "headshot_menu" }],
+    [{ text: "🎤 Voice Templates", callback_data: "voice_templates_menu" }],
+    [{ text: "🔊 TTS Voices", callback_data: "tts_voices_menu" }],
     [{ text: "📊 الإحصائيات", callback_data: "stats" }],
   ];
 }

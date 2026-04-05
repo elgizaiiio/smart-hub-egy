@@ -108,8 +108,8 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               <div className="px-3 mb-2">
                 <button
                   onClick={() => { onNewChat(); onClose(); navigate(location.pathname); }}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-colors"
-                  style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all"
+                  style={{ background: "linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(271, 81%, 56%) 50%, hsl(330, 81%, 60%) 100%)", color: "#fff" }}
                 >
                   <Plus className="w-4 h-4" />
                   New chat
