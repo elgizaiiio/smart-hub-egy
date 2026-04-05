@@ -31,12 +31,7 @@ const serviceItems = [
 ];
 
 const THEME_PALETTES = [
-  { bg: "hsl(230, 25%, 12%)", surface: "hsl(230, 20%, 16%)" },
-  { bg: "hsl(270, 20%, 12%)", surface: "hsl(270, 18%, 16%)" },
-  { bg: "hsl(170, 20%, 10%)", surface: "hsl(170, 18%, 14%)" },
-  { bg: "hsl(340, 18%, 12%)", surface: "hsl(340, 16%, 16%)" },
-  { bg: "hsl(25, 18%, 11%)", surface: "hsl(25, 16%, 15%)" },
-  { bg: "hsl(210, 15%, 11%)", surface: "hsl(210, 13%, 15%)" },
+  { bg: "hsl(0, 0%, 4%)", surface: "hsl(0, 0%, 8%)" },
 ];
 
 const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConversationId, currentMode = "chat" }: AppSidebarProps) => {
@@ -124,19 +119,24 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
               {/* Services */}
               <div className="px-3">
                 <div className="space-y-0.5">
-                  {serviceItems.map((item) => (
-                    <button
-                      key={item.path}
-                      onClick={() => { navigate(item.path); onClose(); }}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                        location.pathname === item.path
-                          ? "bg-white/10 text-white"
-                          : "text-white/60 hover:bg-white/5 hover:text-white/80"
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+                  {serviceItems.map((item, i) => {
+                    const isActive = location.pathname === item.path;
+                    const colors = ["text-blue-400", "text-emerald-400", "text-rose-400", "text-amber-400", "text-violet-400", "text-cyan-400"];
+                    const activeColor = colors[i % colors.length];
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => { navigate(item.path); onClose(); }}
+                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                          isActive
+                            ? `bg-white/8 ${activeColor}`
+                            : "text-white/50 hover:bg-white/5 hover:text-white/70"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

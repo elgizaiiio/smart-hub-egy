@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
-const AGENTROUTER_URL = "https://agentrouter.org/v1/chat/completions";
+const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
   try {
@@ -26,44 +26,10 @@ function safeParseToolArgs(raw: string): Record<string, unknown> {
   }
 }
 
-// ── Smart Key Management: cached keys per service ──
-const keyCache: Record<string, { id: string; api_key: string; expiry: number }> = {};
+// ── Smart Key Cache ──
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-async function getSmartKey(sb: ReturnType<typeof createClient>, service: string, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
-  const cached = keyCache[service];
-  if (cached && Date.now() < cached.expiry && cached.id !== excludeId) {
-    return { id: cached.id, api_key: cached.api_key };
-  }
-  const { data } = await sb.from("api_keys")
-    .select("id, api_key")
-    .eq("service", service)
-    .eq("is_active", true)
-    .eq("is_blocked", false)
-    .limit(50);
-  if (!data || data.length === 0) return null;
-  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
-  if (pool.length === 0) return null;
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  keyCache[service] = { id: pick.id, api_key: pick.api_key, expiry: Date.now() + CACHE_TTL_MS };
-  return pick;
-}
-
-function blockSmartKey(sb: ReturnType<typeof createClient>, service: string, keyId: string, reason: string) {
-  if (keyCache[service]?.id === keyId) delete keyCache[service];
-  sb.from("api_keys").update({
-    is_blocked: true, block_reason: reason, last_error_at: new Date().toISOString(),
-    error_count: 1, // Will be incremented
-  }).eq("id", keyId).then(() => {});
-}
-
-function markSmartKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
-  sb.from("api_keys").update({
-    last_used_at: new Date().toISOString(),
-  }).eq("id", keyId).then(() => {});
-}
-
-// ── LemonData key cache (existing system) ──
+// ── LemonData key cache ──
 let cachedKey: { id: string; api_key: string } | null = null;
 let cachedKeyExpiry = 0;
 
@@ -88,6 +54,20 @@ function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
   sb.from("lemondata_keys").update({ last_used_at: new Date().toISOString() }).eq("id", keyId).then(() => {});
 }
 
+// Serper key from api_keys table
+const serperKeyCache: { id: string; api_key: string; expiry: number } = { id: "", api_key: "", expiry: 0 };
+
+async function getSerperKey(sb: ReturnType<typeof createClient>): Promise<string | null> {
+  if (serperKeyCache.api_key && Date.now() < serperKeyCache.expiry) return serperKeyCache.api_key;
+  const { data } = await sb.from("api_keys").select("id, api_key").eq("service", "serper").eq("is_active", true).limit(10);
+  if (!data || data.length === 0) return Deno.env.get("SERPER_API_KEY") || null;
+  const pick = data[Math.floor(Math.random() * data.length)];
+  serperKeyCache.id = pick.id;
+  serperKeyCache.api_key = pick.api_key;
+  serperKeyCache.expiry = Date.now() + CACHE_TTL_MS;
+  return pick.api_key;
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -98,26 +78,23 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 1
   }
 }
 
-// ── Complexity detection: route to GLM-4.6 (simple) or DeepSeek-v3.2 (complex) ──
-function detectComplexity(messages: any[]): "simple" | "complex" {
+// ── Complexity detection for model routing ──
+function detectComplexity(messages: any[], mode?: string): "simple" | "complex" {
+  if (mode === "files") return "complex";
   const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
   if (!lastUser) return "simple";
-  const text = typeof lastUser.content === "string" ? lastUser.content : 
+  const text = typeof lastUser.content === "string" ? lastUser.content :
     Array.isArray(lastUser.content) ? lastUser.content.map((p: any) => p?.text || "").join(" ") : "";
-  
-  // Complex indicators
   const complexPatterns = [
     /\b(code|program|script|function|algorithm|debug|develop|build|create|implement)\b/i,
     /\b(analyze|analysis|compare|explain in detail|research|summarize|translate|write.*report)\b/i,
     /\b(math|equation|calculate|solve|formula|proof)\b/i,
-    /```/,  // Code blocks
+    /```/,
     /\b(step by step|detailed|comprehensive|in-depth)\b/i,
   ];
-  
   if (text.length > 500) return "complex";
   if (complexPatterns.some(p => p.test(text))) return "complex";
-  if (messages.length > 10) return "complex"; // Long conversations need better context
-  
+  if (messages.length > 10) return "complex";
   return "simple";
 }
 
@@ -133,17 +110,12 @@ serve(async (req) => {
       ? latestUserMessage.content.map((part: any) => part?.text || "").join(" ")
       : String(latestUserMessage?.content || "");
     const wantsHamzaProfile = /(hamza|hassan el-gizaery|elgiza|حمزه|حمزة|حمزة حسن)/i.test(latestUserText);
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // ── Get Serper key from smart key system ──
-    let SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
-    const serperSmartKey = await getSmartKey(sb, "serper");
-    if (serperSmartKey) {
-      SERPER_API_KEY = serperSmartKey.api_key;
-    }
+    // ── Get Serper key ──
+    const SERPER_API_KEY = await getSerperKey(sb);
 
     // ── Fetch user context for memory system ──
     let userContext = "";
@@ -179,80 +151,64 @@ serve(async (req) => {
       } catch { /* silently skip memory errors */ }
     }
 
-    let apiUrl: string;
-    let apiKey: string;
+    // ── Model routing: ALL through LemonData ──
+    const complexity = detectComplexity(messages, mode);
+    const isDeepResearch = deepResearch === true;
+
+    // Model selection via LemonData
     let modelId: string;
-    let usedKeyId: string | null = null;
-    let usedKeyService: string | null = null;
-
-    const lovableModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-3-flash-preview"];
-    const requestedModel = model || "glm-4.6";
-
-    if (lovableModels.some(m => requestedModel.includes(m))) {
-      if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      apiKey = LOVABLE_API_KEY;
-      modelId = requestedModel.startsWith("google/") ? requestedModel : `google/${requestedModel}`;
-    } else if (requestedModel === "glm-4.6" || requestedModel === "deepseek-v3.2" || requestedModel === "auto") {
-      // ── AgentRouter: GLM-4.6 for simple, DeepSeek-v3.2 for complex ──
-      const arKey = await getSmartKey(sb, "agentrouter");
-      if (!arKey) {
-        // Fallback to LemonData
-        const lemonKey = await getLemonDataKey(sb);
-        if (!lemonKey) {
-          const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
-          if (!OPENROUTER_API_KEY) {
-            return new Response(JSON.stringify({ error: "No API keys available" }), {
-              status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
-          apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-          apiKey = OPENROUTER_API_KEY;
-          modelId = requestedModel === "auto" ? "deepseek/deepseek-chat-v3-0324" : requestedModel;
-        } else {
-          apiUrl = "https://api.lemondata.cc/v1/chat/completions";
-          apiKey = lemonKey.api_key;
-          usedKeyId = lemonKey.id;
-          modelId = requestedModel;
-        }
-      } else {
-        apiUrl = AGENTROUTER_URL;
-        apiKey = arKey.api_key;
-        usedKeyId = arKey.id;
-        usedKeyService = "agentrouter";
-        
-        // Auto-select model based on complexity
-        if (requestedModel === "auto" || requestedModel === "glm-4.6") {
-          const complexity = detectComplexity(messages);
-          // For files mode, always use DeepSeek
-          if (mode === "files" || complexity === "complex" || deepResearch) {
-            modelId = "deepseek-v3.2";
-          } else {
-            modelId = "glm-4.6";
-          }
-        } else {
-          modelId = requestedModel;
-        }
-      }
+    if (model && model !== "auto") {
+      modelId = model;
+    } else if (mode === "files" || isDeepResearch) {
+      modelId = "deepseek-v3-2";
+    } else if (complexity === "complex") {
+      modelId = "deepseek-v3-2";
     } else {
-      // Use LemonData with smart cached key
-      const lemonKey = await getLemonDataKey(sb);
-      if (!lemonKey) {
-        const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
-        if (!OPENROUTER_API_KEY) {
-          return new Response(JSON.stringify({ error: "No API keys available" }), {
-            status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-        apiKey = OPENROUTER_API_KEY;
-      } else {
-        apiUrl = "https://api.lemondata.cc/v1/chat/completions";
-        apiKey = lemonKey.api_key;
-        usedKeyId = lemonKey.id;
-      }
-      modelId = requestedModel;
+      modelId = "gemini-2.5-flash-lite";
     }
+
+    // Get LemonData key
+    const lemonKey = await getLemonDataKey(sb);
+    if (!lemonKey) {
+      // Fallback to LOVABLE_API_KEY
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        return new Response(JSON.stringify({ error: "No API keys available" }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Use Lovable AI gateway as fallback
+      const apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      modelId = "google/gemini-2.5-flash-lite";
+      
+      // Build system prompt and body, then make request
+      const systemPrompt = buildSystemPrompt(mode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
+      const body: any = {
+        model: modelId,
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        stream: true,
+        max_tokens: isDeepResearch ? 8192 : (mode === "files" ? 8192 : 4096),
+      };
+      
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("Lovable AI fallback error:", response.status, t);
+        return new Response(JSON.stringify({ error: "AI service error" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    }
+
+    let apiKey = lemonKey.api_key;
+    let usedKeyId = lemonKey.id;
 
     // Build Composio tools for function calling
     const composioTools = COMPOSIO_API_KEY ? [
@@ -271,24 +227,172 @@ serve(async (req) => {
     ] : [];
 
     // Build search tool
-    const isDeepResearch = deepResearch === true;
     const searchTools = (((searchEnabled || isDeepResearch) || wantsHamzaProfile) && SERPER_API_KEY) ? [
       {
         type: "function",
         function: {
           name: "WEB_SEARCH",
           description: isDeepResearch
-            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 6-10 TIMES with different queries to gather exhaustive information from every possible angle. Divide your research into sub-tasks: overview, latest news, expert analysis, data/statistics, case studies, counterarguments, future outlook, and related images. Always set include_images=true for at least half your searches."
-            : "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data. Do NOT search for casual greetings or simple conversational messages.",
+            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 6-10 TIMES with different queries to gather exhaustive information from every possible angle."
+            : "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data.",
           parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results" } }, required: ["query"] },
         },
       },
     ] : [];
 
     // System prompt
-    let systemPrompt: string;
-    if (mode === "files") {
-      systemPrompt = `You are Megsy, a smart AI File Agent made by Megsy AI. The current year is 2026. You are a decision-making agent, not a simple chatbot.
+    const systemPrompt = buildSystemPrompt(mode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
+
+    const body: any = {
+      model: modelId,
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      stream: true,
+      max_tokens: isDeepResearch ? 8192 : (mode === "files" ? 8192 : 4096),
+    };
+
+    const allTools = [...composioTools, ...searchTools];
+    if (allTools.length > 0) {
+      body.tools = allTools;
+      body.tool_choice = "auto";
+    }
+
+    // Key rotation with retry
+    let response: Response;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+
+    while (true) {
+      response = await fetch(LEMONDATA_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if ((response.status === 401 || response.status === 403 || response.status === 429) && retryCount < MAX_RETRIES) {
+        if (response.status !== 429) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
+        const newKey = await getLemonDataKey(sb, usedKeyId);
+        if (newKey) {
+          apiKey = newKey.api_key;
+          usedKeyId = newKey.id;
+          retryCount++;
+          continue;
+        }
+        // Fallback to Lovable AI
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (LOVABLE_API_KEY) {
+          body.model = "google/gemini-2.5-flash-lite";
+          const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (fallbackResp.ok) {
+            return new Response(fallbackResp.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+          }
+        }
+      }
+      break;
+    }
+
+    // Mark key as used on success
+    if (response.ok) markKeyUsed(sb, usedKeyId);
+
+    if (!response.ok) {
+      const status = response.status;
+      if (status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const t = await response.text();
+      console.error("AI error:", status, t);
+      return new Response(JSON.stringify({ error: "AI service error" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("No response body");
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let toolCalls: any[] = [];
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") {
+              // Handle tool calls
+              if (toolCalls.length > 0) {
+                await handleToolCalls(controller, encoder, toolCalls, body, LEMONDATA_URL, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb);
+              }
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta;
+              if (!delta) continue;
+
+              // Accumulate tool calls
+              if (delta.tool_calls) {
+                for (const tc of delta.tool_calls) {
+                  const idx = tc.index ?? 0;
+                  if (!toolCalls[idx]) toolCalls[idx] = { function: { name: "", arguments: "" } };
+                  if (tc.function?.name) toolCalls[idx].function.name = tc.function.name;
+                  if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
+                }
+                continue;
+              }
+
+              // Forward content
+              if (delta.content) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: delta.content } }] })}\n\n`));
+              }
+            } catch {
+              // Skip malformed JSON
+            }
+          }
+        }
+
+        // Handle remaining tool calls
+        if (toolCalls.length > 0) {
+          await handleToolCalls(controller, encoder, toolCalls, body, LEMONDATA_URL, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb);
+        }
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+
+    return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+
+  } catch (e) {
+    console.error("chat error:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
+
+// ── Build system prompt ──
+function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string): string {
+  if (mode === "files") {
+    return `You are Megsy, a smart AI File Agent made by Megsy AI. The current year is 2026. You are a decision-making agent, not a simple chatbot.
 
 CRITICAL RESPONSE RULES:
 - Create COMPREHENSIVE, DETAILED, WELL-STRUCTURED documents. NEVER abbreviate or shorten.
@@ -321,11 +425,14 @@ Rules:
 \`\`\`json
 {"type":"questions","questions":[{"title":"What format do you need?","options":["Report","Presentation","Summary"],"allowText":true}]}
 \`\`\`
+
 IMPORTANT: Before ANY questions JSON block, write a natural sentence explaining what you need.
 - For PowerPoint requests, return structured JSON slides.
 ${userContext}`;
-    } else if (isDeepResearch) {
-      systemPrompt = `You are Megsy, a Deep Research AI Agent made by Megsy AI. The current year is 2026.
+  }
+  
+  if (isDeepResearch) {
+    return `You are Megsy, a Deep Research AI Agent made by Megsy AI. The current year is 2026.
 
 CRITICAL: Never introduce yourself. Never say "I'm Megsy" unless directly asked.
 
@@ -353,13 +460,14 @@ REPORT STRUCTURE:
 - Never use emoji.
 - End with 3-5 follow-up questions.
 ${userContext}`;
-    } else {
-      systemPrompt = `You are Megsy, a smart AI assistant made by Megsy AI. The current year is 2026.
+  }
+  
+  let prompt = `You are Megsy, a smart AI assistant made by Megsy AI. The current year is 2026.
 
 IDENTITY RULES:
 - Your name is Megsy. Only state this if directly asked who you are.
 - NEVER introduce yourself or say "I'm Megsy" unprompted. Just respond naturally.
-- Never mention Google, Gemini, DeepSeek, GLM or any AI company.
+- Never mention Google, Gemini, DeepSeek, GLM, LemonData or any AI company.
 
 RESPONSE QUALITY RULES (CRITICAL):
 - Give THOROUGH, DETAILED responses. Never be too brief.
@@ -412,465 +520,186 @@ SMART OUTPUT ROUTING:
 
 - You have integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). Use the appropriate tool when asked. If not connected, output a Connect card.
 ${userContext}`;
-      if (searchEnabled || wantsHamzaProfile) {
-        systemPrompt += `\n- You have WEB_SEARCH. Use ONLY when the question needs current/factual information. For casual conversation, do NOT search. Synthesize results naturally and cite sources with links.`;
-      }
-      if (wantsHamzaProfile) {
-        systemPrompt += `\n- For Hamza Hasan / حمزة حسن, MUST call WEB_SEARCH with include_images=true. Prioritize elgiza.site.`;
-      }
-    }
 
-    const body: any = {
-      model: modelId,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
-      ],
-      stream: true,
-      max_tokens: isDeepResearch ? 8192 : (mode === "files" ? 8192 : 4096),
-    };
-
-    const allTools = [...composioTools, ...searchTools];
-    if (allTools.length > 0) {
-      body.tools = allTools;
-      body.tool_choice = "auto";
-    }
-
-    // Key rotation: retry with different keys on auth failures
-    let response: Response;
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
-
-    while (true) {
-      response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://megsyai.com", "X-Title": "Megsy" } : {}),
-        },
-        body: JSON.stringify(body),
-      });
-
-      // AgentRouter key rotation
-      if ((response.status === 401 || response.status === 403) && apiUrl === AGENTROUTER_URL && usedKeyId && usedKeyService === "agentrouter" && retryCount < MAX_RETRIES) {
-        console.error(`AgentRouter key ${usedKeyId} failed with ${response.status}, blocking...`);
-        blockSmartKey(sb, "agentrouter", usedKeyId, `HTTP ${response.status}`);
-        const newKey = await getSmartKey(sb, "agentrouter", usedKeyId);
-        if (newKey) {
-          apiKey = newKey.api_key;
-          usedKeyId = newKey.id;
-          retryCount++;
-          continue;
-        }
-        // Fallback to LemonData
-        const lemonKey = await getLemonDataKey(sb);
-        if (lemonKey) {
-          apiUrl = "https://api.lemondata.cc/v1/chat/completions";
-          apiKey = lemonKey.api_key;
-          usedKeyId = lemonKey.id;
-          usedKeyService = "lemondata";
-          retryCount++;
-          continue;
-        }
-      }
-
-      // LemonData key rotation
-      if ((response.status === 401 || response.status === 403) && apiUrl.includes("lemondata") && usedKeyId && retryCount < MAX_RETRIES) {
-        blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
-        const newKey = await getLemonDataKey(sb, usedKeyId);
-        if (newKey) {
-          apiKey = newKey.api_key;
-          usedKeyId = newKey.id;
-          retryCount++;
-          continue;
-        }
-        const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
-        if (OPENROUTER_API_KEY) {
-          apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-          apiKey = OPENROUTER_API_KEY;
-          usedKeyId = null;
-          retryCount++;
-          continue;
-        }
-      }
-
-      if (response.status === 429 && usedKeyId && retryCount < MAX_RETRIES) {
-        if (usedKeyService === "agentrouter") {
-          const newKey = await getSmartKey(sb, "agentrouter", usedKeyId);
-          if (newKey) { apiKey = newKey.api_key; usedKeyId = newKey.id; retryCount++; continue; }
-        } else if (apiUrl.includes("lemondata")) {
-          const newKey = await getLemonDataKey(sb, usedKeyId);
-          if (newKey) { apiKey = newKey.api_key; usedKeyId = newKey.id; retryCount++; continue; }
-        }
-      }
-      break;
-    }
-
-    // Mark key as used on success
-    if (usedKeyId && response.ok) {
-      if (usedKeyService === "agentrouter") {
-        markSmartKeyUsed(sb, usedKeyId);
-      } else {
-        markKeyUsed(sb, usedKeyId);
-      }
-    }
-    if (serperSmartKey && SERPER_API_KEY === serperSmartKey.api_key) {
-      markSmartKeyUsed(sb, serperSmartKey.id);
-    }
-
-    if (!response.ok) {
-      const status = response.status;
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI error:", status, t);
-      return new Response(JSON.stringify({ error: "AI service error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
-
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-
-    let toolCalls: any[] = [];
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const data = line.slice(6).trim();
-            if (data === "[DONE]") {
-              // If we have tool calls, execute them
-              if (toolCalls.length > 0) {
-                const allSearchResults: string[] = [];
-                const allImages: string[] = [];
-
-                for (const tc of toolCalls) {
-                  try {
-                    const toolName = tc.function?.name;
-                    const toolArgs = safeParseToolArgs(tc.function?.arguments || "{}");
-
-                    if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
-                      const searchQuery = toolArgs.query || "";
-                      const includeImages = isDeepResearch ? true : (toolArgs.include_images ?? false);
-                      
-                      const fetches: Promise<Response>[] = [
-                        fetchWithTimeout("https://google.serper.dev/search", {
-                          method: "POST",
-                          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                          body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 10 : 8 }),
-                        }, 10000),
-                      ];
-                      if (includeImages) {
-                        fetches.push(fetchWithTimeout("https://google.serper.dev/images", {
-                          method: "POST",
-                          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                          body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 6 : 4 }),
-                        }, 10000));
-                      }
-
-                      const responses = await Promise.all(fetches);
-                      const searchData = await responses[0].json();
-                      const imageData = includeImages && responses[1] ? await responses[1].json() : null;
-
-                      let context = `Search: "${searchQuery}"\n`;
-                      if (searchData.organic) {
-                        context += searchData.organic.map((r: any, i: number) =>
-                          `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`
-                        ).join("\n\n");
-                      }
-                      if (searchData.knowledgeGraph) {
-                        const kg = searchData.knowledgeGraph;
-                        context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
-                        if (kg.imageUrl) allImages.push(kg.imageUrl);
-                      }
-                      if (imageData?.images) {
-                        imageData.images.slice(0, isDeepResearch ? 6 : 4).forEach((img: any) => {
-                          if (img.imageUrl) allImages.push(img.imageUrl);
-                        });
-                      }
-                      allSearchResults.push(context);
-                      continue;
-                    }
-
-                    // Handle Composio tools
-                    if (!COMPOSIO_API_KEY) continue;
-
-                    const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
-                      headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
-                    });
-                    const connData = await connResp.json();
-                    const accounts = connData.items || connData || [];
-                    
-                    const appName = toolName.split("_")[0].toLowerCase();
-                    const account = accounts.find((a: any) => 
-                      (a.appName || "").toLowerCase().includes(appName) || 
-                      (a.appUniqueId || "").toLowerCase().includes(appName)
-                    );
-
-                    if (!account) {
-                      const serviceName = toolName.split("_")[0];
-                      const connectCard = `\n\n\`\`\`json\n{"type":"cards","items":[{"title":"Connect ${serviceName}","description":"This action requires connecting your ${serviceName} account first","action":"Connect"}]}\n\`\`\``;
-                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: connectCard } }] })}\n\n`));
-                      continue;
-                    }
-
-                    const execResp = await fetch(`${COMPOSIO_BASE}/actions/${encodeURIComponent(toolName)}/execute`, {
-                      method: "POST",
-                      headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
-                      body: JSON.stringify({ connectedAccountId: account.id, input: toolArgs }),
-                    });
-                    const execData = await execResp.json();
-
-                    const resultText = execResp.ok
-                      ? `\n\n---\n**${toolName}** executed successfully.\n\`\`\`json\n${JSON.stringify(execData.data || execData, null, 2).slice(0, 1500)}\n\`\`\``
-                      : `\n\n---\n**${toolName}** failed: ${JSON.stringify(execData).slice(0, 500)}`;
-
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
-                  } catch (toolErr) {
-                    console.error("Tool execution error:", toolErr);
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: `\n\nTool error: ${toolErr}` } }] })}\n\n`));
-                  }
-                }
-
-                // If we have search results, make a second AI call with ALL results combined
-                if (allSearchResults.length > 0) {
-                  const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
-
-                  const searchMessages = [
-                    ...body.messages,
-                    {
-                      role: "assistant",
-                      content: null,
-                      tool_calls: toolCalls
-                        .filter(tc => tc.function?.name === "WEB_SEARCH")
-                        .map((tc, i) => ({
-                          id: `search_${i}`,
-                          type: "function",
-                          function: { name: "WEB_SEARCH", arguments: tc.function.arguments }
-                        })),
-                    },
-                    ...toolCalls
-                      .filter(tc => tc.function?.name === "WEB_SEARCH")
-                      .map((tc, i) => ({
-                        role: "tool",
-                        tool_call_id: `search_${i}`,
-                        content: allSearchResults[i] || "No results found.",
-                      })),
-                  ];
-
-                  const secondBody: any = { model: modelId, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
-                  if (isDeepResearch && SERPER_API_KEY) {
-                    secondBody.tools = searchTools;
-                    secondBody.tool_choice = "auto";
-                  }
-
-                  const secondResp = await fetch(apiUrl, {
-                    method: "POST",
-                    headers: {
-                      Authorization: `Bearer ${apiKey}`,
-                      "Content-Type": "application/json",
-                      ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://megsyai.com", "X-Title": "Megsy" } : {}),
-                    },
-                    body: JSON.stringify(secondBody),
-                  });
-
-                  if (secondResp.ok && secondResp.body) {
-                    const secondReader = secondResp.body.getReader();
-                    let buf2 = "";
-                    let secondToolCalls: any[] = [];
-
-                    while (true) {
-                      const { done: d2, value: v2 } = await secondReader.read();
-                      if (d2) break;
-                      buf2 += decoder.decode(v2, { stream: true });
-                      const lines2 = buf2.split("\n");
-                      buf2 = lines2.pop() || "";
-                      for (const l2 of lines2) {
-                        if (!l2.startsWith("data: ")) continue;
-                        const d = l2.slice(6).trim();
-                        if (d === "[DONE]") {
-                          // Handle additional tool calls from second response (deep research continuation)
-                          if (secondToolCalls.length > 0) {
-                            const moreResults: string[] = [];
-                            const moreImages: string[] = [];
-                            for (const stc of secondToolCalls) {
-                              try {
-                                const sToolName = stc.function?.name;
-                                const sToolArgs = safeParseToolArgs(stc.function?.arguments || "{}");
-                                if (sToolName === "WEB_SEARCH" && SERPER_API_KEY) {
-                                  const includeImgs = isDeepResearch ? true : (sToolArgs.include_images ?? false);
-                                  const fetches2: Promise<Response>[] = [
-                                    fetchWithTimeout("https://google.serper.dev/search", {
-                                      method: "POST",
-                                      headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                                      body: JSON.stringify({ q: sToolArgs.query || "", num: 8 }),
-                                    }, 10000),
-                                  ];
-                                  if (includeImgs) {
-                                    fetches2.push(fetchWithTimeout("https://google.serper.dev/images", {
-                                      method: "POST",
-                                      headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-                                      body: JSON.stringify({ q: sToolArgs.query || "", num: 4 }),
-                                    }, 10000));
-                                  }
-                                  const resps2 = await Promise.all(fetches2);
-                                  const sd = await resps2[0].json();
-                                  const id2 = includeImgs && resps2[1] ? await resps2[1].json() : null;
-                                  let ctx = `Search: "${sToolArgs.query}"\n`;
-                                  if (sd.organic) {
-                                    ctx += sd.organic.map((r: any, i: number) => `[${i+1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`).join("\n\n");
-                                  }
-                                  if (id2?.images) {
-                                    id2.images.slice(0, 4).forEach((img: any) => {
-                                      if (img.imageUrl) moreImages.push(img.imageUrl);
-                                    });
-                                  }
-                                  moreResults.push(ctx);
-                                }
-                              } catch {}
-                            }
-
-                            if (moreResults.length > 0) {
-                              allImages.push(...moreImages);
-                              const thirdMessages = [
-                                ...searchMessages,
-                                {
-                                  role: "assistant",
-                                  content: null,
-                                  tool_calls: secondToolCalls.map((stc, i) => ({
-                                    id: `search_extra_${i}`,
-                                    type: "function",
-                                    function: { name: "WEB_SEARCH", arguments: stc.function.arguments }
-                                  })),
-                                },
-                                ...secondToolCalls.map((stc, i) => ({
-                                  role: "tool",
-                                  tool_call_id: `search_extra_${i}`,
-                                  content: moreResults[i] || "No results.",
-                                })),
-                              ];
-                              const thirdResp = await fetch(apiUrl, {
-                                method: "POST",
-                                headers: {
-                                  Authorization: `Bearer ${apiKey}`,
-                                  "Content-Type": "application/json",
-                                  ...(apiUrl.includes("openrouter") ? { "HTTP-Referer": "https://megsyai.com", "X-Title": "Megsy" } : {}),
-                                },
-                                body: JSON.stringify({ model: modelId, messages: thirdMessages, stream: true, max_tokens: 8192 }),
-                              });
-                              if (thirdResp.ok && thirdResp.body) {
-                                const thirdReader = thirdResp.body.getReader();
-                                let buf3 = "";
-                                while (true) {
-                                  const { done: d3, value: v3 } = await thirdReader.read();
-                                  if (d3) break;
-                                  buf3 += decoder.decode(v3, { stream: true });
-                                  const lines3 = buf3.split("\n");
-                                  buf3 = lines3.pop() || "";
-                                  for (const l3 of lines3) {
-                                    if (!l3.startsWith("data: ")) continue;
-                                    const dd = l3.slice(6).trim();
-                                    if (dd === "[DONE]") continue;
-                                    try {
-                                      const pp = JSON.parse(dd);
-                                      if (pp.choices?.[0]?.delta?.content) {
-                                        controller.enqueue(encoder.encode(`data: ${dd}\n\n`));
-                                      }
-                                    } catch {}
-                                  }
-                                }
-                              }
-                            }
-                          }
-                          continue;
-                        }
-                        try {
-                          const p = JSON.parse(d);
-                          if (p.choices?.[0]?.delta?.tool_calls) {
-                            for (const stc of p.choices[0].delta.tool_calls) {
-                              const idx = stc.index ?? 0;
-                              if (!secondToolCalls[idx]) secondToolCalls[idx] = { function: { name: "", arguments: "" } };
-                              if (stc.function?.name) secondToolCalls[idx].function.name += stc.function.name;
-                              if (stc.function?.arguments) secondToolCalls[idx].function.arguments += stc.function.arguments;
-                            }
-                            continue;
-                          }
-                          if (p.choices?.[0]?.delta?.content) {
-                            controller.enqueue(encoder.encode(`data: ${d}\n\n`));
-                          }
-                        } catch {}
-                      }
-                    }
-                  }
-
-                  // Send images as a special event
-                  if (allImages.length > 0) {
-                    const uniqueImages = [...new Set(allImages)];
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "" } }], images: uniqueImages })}\n\n`));
-                  }
-                }
-              }
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-              controller.close();
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(data);
-              const delta = parsed.choices?.[0]?.delta;
-              
-              if (delta?.tool_calls) {
-                for (const tc of delta.tool_calls) {
-                  const idx = tc.index ?? 0;
-                  if (!toolCalls[idx]) toolCalls[idx] = { function: { name: "", arguments: "" } };
-                  if (tc.function?.name) toolCalls[idx].function.name += tc.function.name;
-                  if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
-                }
-                continue;
-              }
-
-              if (delta?.content) {
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-              }
-            } catch { /* skip malformed */ }
-          }
-        }
-
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        controller.close();
-      },
-    });
-
-    return new Response(stream, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
-  } catch (e) {
-    console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  if (searchEnabled || wantsHamzaProfile) {
+    prompt += `\n- You have WEB_SEARCH. Use ONLY when the question needs current/factual information. For casual conversation, do NOT search. Synthesize results naturally and cite sources with links.`;
   }
-});
+  if (wantsHamzaProfile) {
+    prompt += `\n- For Hamza Hasan / حمزة حسن, MUST call WEB_SEARCH with include_images=true. Prioritize elgiza.site.`;
+  }
+  
+  return prompt;
+}
+
+// ── Handle tool calls (search, composio) ──
+async function handleToolCalls(
+  controller: ReadableStreamDefaultController,
+  encoder: TextEncoder,
+  toolCalls: any[],
+  originalBody: any,
+  apiUrl: string,
+  apiKey: string,
+  modelId: string,
+  SERPER_API_KEY: string | null,
+  COMPOSIO_API_KEY: string | undefined,
+  isDeepResearch: boolean,
+  searchTools: any[],
+  sb: ReturnType<typeof createClient>,
+) {
+  const allSearchResults: string[] = [];
+  const allImages: string[] = [];
+
+  for (const tc of toolCalls) {
+    try {
+      const toolName = tc.function?.name;
+      const toolArgs = safeParseToolArgs(tc.function?.arguments || "{}");
+
+      if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
+        const searchQuery = toolArgs.query || "";
+        const includeImages = isDeepResearch ? true : (toolArgs.include_images ?? false);
+        
+        const fetches: Promise<Response>[] = [
+          fetchWithTimeout("https://google.serper.dev/search", {
+            method: "POST",
+            headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 10 : 8 }),
+          }, 10000),
+        ];
+        if (includeImages) {
+          fetches.push(fetchWithTimeout("https://google.serper.dev/images", {
+            method: "POST",
+            headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 6 : 4 }),
+          }, 10000));
+        }
+
+        const responses = await Promise.all(fetches);
+        const searchData = await responses[0].json();
+        const imageData = includeImages && responses[1] ? await responses[1].json() : null;
+
+        let context = `Search: "${searchQuery}"\n`;
+        if (searchData.organic) {
+          context += searchData.organic.map((r: any, i: number) =>
+            `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`
+          ).join("\n\n");
+        }
+        if (searchData.knowledgeGraph) {
+          const kg = searchData.knowledgeGraph;
+          context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
+          if (kg.imageUrl) allImages.push(kg.imageUrl);
+        }
+        if (imageData?.images) {
+          imageData.images.slice(0, isDeepResearch ? 6 : 4).forEach((img: any) => {
+            if (img.imageUrl) allImages.push(img.imageUrl);
+          });
+        }
+        allSearchResults.push(context);
+        continue;
+      }
+
+      // Handle Composio tools
+      if (!COMPOSIO_API_KEY) continue;
+      const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
+        headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
+      });
+      const connData = await connResp.json();
+      const accounts = connData.items || connData || [];
+      
+      const appName = toolName.split("_")[0].toLowerCase();
+      const account = accounts.find((a: any) =>
+        (a.appName || "").toLowerCase().includes(appName) ||
+        (a.appUniqueId || "").toLowerCase().includes(appName)
+      );
+
+      if (!account) {
+        const serviceName = toolName.split("_")[0];
+        const connectCard = `\n\n\`\`\`json\n{"type":"cards","items":[{"title":"Connect ${serviceName}","description":"Requires connecting your ${serviceName} account first","action":"Connect"}]}\n\`\`\``;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: connectCard } }] })}\n\n`));
+        continue;
+      }
+
+      const execResp = await fetch(`${COMPOSIO_BASE}/actions/${encodeURIComponent(toolName)}/execute`, {
+        method: "POST",
+        headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ connectedAccountId: account.id, input: toolArgs }),
+      });
+      const execData = await execResp.json();
+
+      const resultText = execResp.ok
+        ? `\n\n---\n**${toolName}** executed successfully.\n\`\`\`json\n${JSON.stringify(execData.data || execData, null, 2).slice(0, 1500)}\n\`\`\``
+        : `\n\n---\n**${toolName}** failed: ${JSON.stringify(execData).slice(0, 500)}`;
+
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
+    } catch (toolErr) {
+      console.error("Tool execution error:", toolErr);
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: `\n\nTool error: ${toolErr}` } }] })}\n\n`));
+    }
+  }
+
+  // If we have search results, make a second AI call
+  if (allSearchResults.length > 0) {
+    // Send images first if any
+    if (allImages.length > 0) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ images: allImages })}\n\n`));
+    }
+
+    const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
+    const searchMessages = [
+      ...originalBody.messages,
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: toolCalls
+          .filter(tc => tc.function?.name === "WEB_SEARCH")
+          .map((tc, i) => ({
+            id: `search_${i}`,
+            type: "function",
+            function: { name: "WEB_SEARCH", arguments: tc.function.arguments }
+          })),
+      },
+      ...toolCalls
+        .filter(tc => tc.function?.name === "WEB_SEARCH")
+        .map((tc, i) => ({
+          role: "tool",
+          tool_call_id: `search_${i}`,
+          content: allSearchResults[i] || "No results found.",
+        })),
+    ];
+
+    const secondBody: any = { model: modelId, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
+    if (isDeepResearch && searchTools.length > 0) {
+      secondBody.tools = searchTools;
+      secondBody.tool_choice = "auto";
+    }
+
+    const secondResp = await fetch(apiUrl, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(secondBody),
+    });
+
+    if (secondResp.ok && secondResp.body) {
+      const secondReader = secondResp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf2 = "";
+
+      while (true) {
+        const { done: d2, value: v2 } = await secondReader.read();
+        if (d2) break;
+        buf2 += decoder.decode(v2, { stream: true });
+        const lines2 = buf2.split("\n");
+        buf2 = lines2.pop() || "";
+        for (const l2 of lines2) {
+          if (!l2.startsWith("data: ")) continue;
+          const d = l2.slice(6).trim();
+          if (d === "[DONE]") continue;
+          try {
+            const p = JSON.parse(d);
+            const c = p.choices?.[0]?.delta?.content;
+            if (c) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`));
+          } catch { /* skip */ }
+        }
+      }
+    }
+  }
+}
