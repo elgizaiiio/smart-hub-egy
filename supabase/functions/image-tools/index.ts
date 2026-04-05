@@ -1,132 +1,215 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const TOOL_MODELS: Record<string, string> = {
-  'inpaint': 'fal-ai/qwen-image-edit/inpaint',
-  'clothes-changer': 'fal-ai/nano-banana-pro/edit',
-  'headshot': 'fal-ai/image-apps-v2/headshot-photo',
-  'bg-remover': 'fal-ai/bria/background/remove',
-  'face-swap': 'fal-ai/flux-2/klein/9b/base/edit',
-  'relight': 'bria/fibo-edit/relight',
-  'colorizer': 'bria/fibo-edit/colorize',
-  'character-swap': 'fal-ai/flux-2/klein/9b/base/edit',
-  'storyboard': 'fal-ai/flux-2-pro',
-  'sketch-to-image': 'bria/fibo-edit/sketch_to_colored_image',
-  'retouching': 'fal-ai/retoucher',
-  'remover': 'fal-ai/qwen-image-edit-plus-lora-gallery/remove-element',
-  'hair-changer': 'fal-ai/image-apps-v2/hair-change',
-  'cartoon': 'fal-ai/image-editing/cartoonify',
+// Tool → provider mapping
+// "lemon" = LemonData image API, "wavespeed" = WaveSpeed API
+interface ToolConfig {
+  provider: "lemon" | "wavespeed";
+  lemonModel?: string;
+  wavespeedModel?: string;
+  needsPrompt?: boolean;
+  needsImage?: boolean;
+  needsTarget?: boolean;
+  needsMask?: boolean;
+}
+
+const TOOL_CONFIG: Record<string, ToolConfig> = {
+  'inpaint': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true, needsMask: true },
+  'clothes-changer': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'headshot': { provider: "lemon", lemonModel: "nano-banana-pro", needsPrompt: true, needsImage: true },
+  'bg-remover': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-background-remover", needsImage: true },
+  'face-swap': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-face-swap", needsImage: true, needsTarget: true },
+  'relight': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'colorizer': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'character-swap': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-face-swap", needsImage: true, needsTarget: true },
+  'storyboard': { provider: "lemon", lemonModel: "nano-banana-pro", needsPrompt: true },
+  'sketch-to-image': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'retouching': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'remover': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true, needsMask: true },
+  'hair-changer': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'cartoon': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
 };
 
-const TOOL_COSTS: Record<string, number> = {
-  'inpaint': 1, 'clothes-changer': 4, 'headshot': 1, 'bg-remover': 0.5,
-  'face-swap': 0.5, 'relight': 1, 'colorizer': 1, 'character-swap': 0.5,
-  'storyboard': 1, 'sketch-to-image': 1, 'retouching': 1, 'remover': 1,
-  'hair-changer': 1, 'cartoon': 1,
+const TOOL_PROMPTS: Record<string, string> = {
+  'clothes-changer': "Change the clothes on this person to: ",
+  'headshot': "Create a professional headshot photo from this image, maintaining the person's features with studio lighting and clean background",
+  'relight': "Relight this image with professional studio lighting",
+  'colorizer': "Colorize this black and white image with natural, realistic colors",
+  'sketch-to-image': "Transform this sketch into a detailed, realistic image: ",
+  'retouching': "Professionally retouch this portrait photo, smooth skin, remove blemishes, enhance features naturally",
+  'remover': "Remove the selected object from this image and fill the area naturally",
+  'hair-changer': "Change the hairstyle of this person to: ",
+  'cartoon': "Transform this photo into a high-quality cartoon/anime style illustration, preserving the person's features",
+  'inpaint': "Fill the masked area naturally: ",
 };
 
-async function getLemonDataKey(): Promise<string> {
-  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const sb = createClient(supabaseUrl, supabaseKey);
+// ── LemonData key cache ──
+let cachedLemonKey: { id: string; api_key: string } | null = null;
+let cachedLemonKeyExpiry = 0;
+const CACHE_TTL = 5 * 60 * 1000;
 
-  const { data, error } = await sb
-    .from("lemondata_keys")
-    .select("api_key")
-    .eq("is_active", true)
-    .eq("is_blocked", false)
-    .order("usage_count", { ascending: true })
-    .limit(1)
-    .single();
+async function getLemonKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string }> {
+  if (cachedLemonKey && Date.now() < cachedLemonKeyExpiry && cachedLemonKey.id !== excludeId) return cachedLemonKey;
+  const { data } = await sb.from("lemondata_keys").select("id, api_key").eq("is_active", true).eq("is_blocked", false).limit(50);
+  if (!data || data.length === 0) throw new Error("No active LemonData keys");
+  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
+  if (pool.length === 0) throw new Error("No active LemonData keys");
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  cachedLemonKey = pick;
+  cachedLemonKeyExpiry = Date.now() + CACHE_TTL;
+  return pick;
+}
 
-  if (error || !data) throw new Error("No active LemonData API key available");
+function blockLemonKey(sb: ReturnType<typeof createClient>, keyId: string) {
+  if (cachedLemonKey?.id === keyId) cachedLemonKey = null;
+  sb.from("lemondata_keys").update({ is_blocked: true, block_reason: "HTTP error", last_error_at: new Date().toISOString() }).eq("id", keyId).then(() => {});
+}
 
-  // Increment usage
-  await sb.from("lemondata_keys").update({ usage_count: (data as any).usage_count + 1, last_used_at: new Date().toISOString() }).eq("api_key", data.api_key);
+// ── WaveSpeed key cache ──
+let cachedWaveKey: { id: string; api_key: string } | null = null;
+let cachedWaveKeyExpiry = 0;
 
-  return data.api_key;
+async function getWaveSpeedKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string }> {
+  if (cachedWaveKey && Date.now() < cachedWaveKeyExpiry && cachedWaveKey.id !== excludeId) return cachedWaveKey;
+  const { data } = await sb.from("api_keys").select("id, api_key").eq("service", "wavespeed").eq("is_active", true).limit(10);
+  if (!data || data.length === 0) throw new Error("No active WaveSpeed keys. Add keys via Telegram bot.");
+  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
+  if (pool.length === 0) throw new Error("No active WaveSpeed keys");
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  cachedWaveKey = pick;
+  cachedWaveKeyExpiry = Date.now() + CACHE_TTL;
+  return pick;
+}
+
+// ── LemonData image call ──
+async function callLemonImage(sb: ReturnType<typeof createClient>, model: string, prompt: string, imageUrl?: string, maskUrl?: string): Promise<string> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const key = await getLemonKey(sb, attempt > 0 ? cachedLemonKey?.id : undefined);
+    try {
+      const body: Record<string, any> = { model, prompt, n: 1, size: "1024x1024" };
+      let url = "https://api.lemondata.cc/v1/images/generations";
+      
+      if (imageUrl) {
+        body.image_url = imageUrl;
+        body.image = imageUrl;
+        url = "https://api.lemondata.cc/v1/images/edits";
+      }
+      if (maskUrl) body.mask = maskUrl;
+
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key.api_key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (resp.status === 401 || resp.status === 403) { blockLemonKey(sb, key.id); continue; }
+      if (resp.status === 429) { continue; }
+      if (!resp.ok) { const t = await resp.text(); throw new Error(`LemonData error: ${resp.status} ${t.slice(0, 200)}`); }
+
+      sb.from("lemondata_keys").update({ last_used_at: new Date().toISOString() }).eq("id", key.id).then(() => {});
+      
+      const result = await resp.json();
+      const imgUrl = result.data?.[0]?.url || result.data?.[0]?.b64_json ? `data:image/png;base64,${result.data[0].b64_json}` : result.url || result.image?.url || result.output?.url;
+      if (imgUrl) return imgUrl;
+      throw new Error("No image URL in response");
+    } catch (e: any) {
+      if (attempt === 2) throw e;
+    }
+  }
+  throw new Error("All LemonData attempts failed");
+}
+
+// ── WaveSpeed call ──
+async function callWaveSpeed(sb: ReturnType<typeof createClient>, model: string, params: Record<string, any>): Promise<string> {
+  const key = await getWaveSpeedKey(sb);
+  
+  const submitResp = await fetch(`https://api.wavespeed.ai/api/v3/${model}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key.api_key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ ...params, enable_base64_output: false }),
+  });
+
+  if (!submitResp.ok) {
+    const t = await submitResp.text();
+    throw new Error(`WaveSpeed error: ${submitResp.status} ${t.slice(0, 200)}`);
+  }
+
+  const submitData = await submitResp.json();
+  const taskId = submitData.data?.id || submitData.id;
+  if (!taskId) {
+    // Check if result is already available (sync mode)
+    const url = submitData.data?.outputs?.[0] || submitData.data?.output?.url || submitData.output?.url;
+    if (url) return url;
+    throw new Error("No task ID returned from WaveSpeed");
+  }
+
+  // Poll for result
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const pollResp = await fetch(`https://api.wavespeed.ai/api/v3/predictions/${taskId}/result`, {
+      headers: { Authorization: `Bearer ${key.api_key}` },
+    });
+    if (!pollResp.ok) continue;
+    const pollData = await pollResp.json();
+    const status = pollData.data?.status || pollData.status;
+    if (status === "completed" || status === "success") {
+      const url = pollData.data?.outputs?.[0] || pollData.data?.output?.url || pollData.output?.url;
+      if (url) return url;
+    }
+    if (status === "failed" || status === "error") throw new Error("WaveSpeed generation failed");
+  }
+  throw new Error("WaveSpeed generation timed out");
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const apiKey = await getLemonDataKey();
-
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { tool, image, mask, target, prompt, color, direction } = await req.json();
-    const model = TOOL_MODELS[tool];
-    if (!model) throw new Error(`Unknown tool: ${tool}`);
-
-    // Build request body
-    const body: Record<string, any> = {};
     
-    if (image) body.image_url = image;
-    if (mask) body.mask_url = mask;
-    if (target) body.target_url = target;
-    if (prompt) body.prompt = prompt;
-    if (color) body.light_color = color;
-    if (direction) body.light_direction = direction;
+    const config = TOOL_CONFIG[tool];
+    if (!config) throw new Error(`Unknown tool: ${tool}`);
 
-    // Face/character swap custom prompts
-    if (tool === 'face-swap') {
-      body.prompt = "Swap the face from the source image onto the target image, preserving all other details exactly.";
-    }
-    if (tool === 'character-swap') {
-      body.prompt = "Replace the character in the target image with the person from the source image, preserving pose, clothing style, and background.";
-    }
+    let resultUrl: string;
 
-    const response = await fetch(`https://api.lemonfox.ai/v1/images/${model}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`LemonData error: ${response.status} ${err}`);
-    }
-
-    const result = await response.json();
-    
-    // Handle queue response - poll for result
-    if (result.request_id) {
-      let pollResult;
-      for (let i = 0; i < 60; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        const pollResp = await fetch(`https://api.lemonfox.ai/v1/images/${model}/requests/${result.request_id}/status`, {
-          headers: { 'Authorization': `Bearer ${apiKey}` },
-        });
-        pollResult = await pollResp.json();
-        if (pollResult.status === 'COMPLETED') break;
-        if (pollResult.status === 'FAILED') throw new Error('Generation failed');
+    if (config.provider === "wavespeed") {
+      // WaveSpeed tools (face-swap, bg-remover, character-swap)
+      const params: Record<string, any> = {};
+      if (tool === 'face-swap' || tool === 'character-swap') {
+        params.source_image = image;
+        params.target_image = target || image;
+        params.target_index = 0;
+        params.output_format = "jpeg";
+      } else if (tool === 'bg-remover') {
+        params.image = image;
+        params.output_format = "png";
       }
       
-      const resultResp = await fetch(`https://api.lemonfox.ai/v1/images/${model}/requests/${result.request_id}`, {
-        headers: { 'Authorization': `Bearer ${apiKey}` },
-      });
-      const finalResult = await resultResp.json();
-      const url = finalResult?.images?.[0]?.url || finalResult?.image?.url || finalResult?.output?.url;
-      
-      return new Response(JSON.stringify({ url }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      resultUrl = await callWaveSpeed(sb, config.wavespeedModel!, params);
+    } else {
+      // LemonData tools
+      let fullPrompt = prompt || "";
+      const toolPrompt = TOOL_PROMPTS[tool];
+      if (toolPrompt) {
+        fullPrompt = prompt ? `${toolPrompt}${prompt}` : toolPrompt;
+      }
+      if (!fullPrompt) fullPrompt = "Edit this image";
+
+      resultUrl = await callLemonImage(sb, config.lemonModel!, fullPrompt, image || undefined, mask || undefined);
     }
 
-    // Direct response
-    const url = result?.images?.[0]?.url || result?.image?.url || result?.output?.url;
-    return new Response(JSON.stringify({ url }), {
+    return new Response(JSON.stringify({ url: resultUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
+    console.error("image-tools error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
