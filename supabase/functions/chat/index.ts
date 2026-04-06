@@ -155,14 +155,14 @@ serve(async (req) => {
     const complexity = detectComplexity(messages, mode);
     const isDeepResearch = deepResearch === true;
 
-    // Model selection via LemonData - claude-haiku-4.5 for chat & files
+    // Model selection via LemonData
     let modelId: string;
     if (model && model !== "auto") {
       modelId = model;
     } else if (isDeepResearch) {
       modelId = "deepseek-v3-2";
     } else {
-      modelId = "anthropic/claude-haiku-4.5";
+      modelId = "gemini-2.5-flash";
     }
 
     // Get LemonData key
