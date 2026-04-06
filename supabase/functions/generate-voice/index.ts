@@ -47,34 +47,42 @@ serve(async (req) => {
 
     const key = keys[Math.floor(Math.random() * keys.length)];
 
-    // Map model_id to deapi endpoint
+    // Determine API base URL based on key source
+    const isLemon = keyTable === "lemondata_keys";
+    const apiBase = isLemon ? "https://api.lemondata.ai" : "https://api.deapi.ai";
+
+    // Map model_id to endpoint
     const MODEL_MAP: Record<string, { endpoint: string; params: Record<string, any> }> = {
+      "suno-music": {
+        endpoint: `${apiBase}/v1/audio/generations`,
+        params: { model: "suno-music", prompt },
+      },
       "qwen3-tts-custom": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "qwen3-tts-customvoice", input: prompt },
       },
       "qwen3-tts-design": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "qwen3-tts-voicedesign", input: prompt },
       },
       "qwen3-tts-clone": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "qwen3-tts-voiceclone", input: prompt },
       },
       "chatterbox": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "chatterbox", input: prompt },
       },
       "kokoro": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "kokoro", input: prompt },
       },
       "ace-step-turbo": {
-        endpoint: "https://api.deapi.ai/v1/audio/generations",
+        endpoint: `${apiBase}/v1/audio/generations`,
         params: { model: "ace-step-1.5-turbo", prompt },
       },
       "ace-step-base": {
-        endpoint: "https://api.deapi.ai/v1/audio/generations",
+        endpoint: `${apiBase}/v1/audio/generations`,
         params: { model: "ace-step-1.5-base", prompt },
       },
     };
