@@ -273,7 +273,6 @@ const ToolPageLayout = ({
                 resultType={resultType}
                 title={title}
                 onBack={() => navigate(0)}
-                onRegenerate={handleGenerate}
               />
             </motion.div>
           )}
