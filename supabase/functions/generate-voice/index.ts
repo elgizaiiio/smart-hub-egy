@@ -18,14 +18,32 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get an active deapi key
-    const { data: keys } = await supabase
-      .from("deapi_keys")
-      .select("api_key, id")
+    // Try lemondata_keys first, fallback to deapi_keys
+    let keys: any[] = [];
+    let keyTable = "lemondata_keys";
+    
+    const { data: lemonKeys } = await supabase
+      .from("lemondata_keys")
+      .select("api_key, id, usage_count")
       .eq("is_active", true)
+      .eq("is_blocked", false)
       .limit(10);
+    
+    if (lemonKeys && lemonKeys.length > 0) {
+      keys = lemonKeys;
+    } else {
+      const { data: deapiKeys } = await supabase
+        .from("deapi_keys")
+        .select("api_key, id, usage_count")
+        .eq("is_active", true)
+        .limit(10);
+      if (deapiKeys && deapiKeys.length > 0) {
+        keys = deapiKeys;
+        keyTable = "deapi_keys";
+      }
+    }
 
-    if (!keys || keys.length === 0) throw new Error("No active API keys available");
+    if (keys.length === 0) throw new Error("No active API keys available");
 
     const key = keys[Math.floor(Math.random() * keys.length)];
 
