@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const LEMON_BASE = "https://api.lemondata.cc";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -19,128 +21,157 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Try lemondata_keys first, fallback to deapi_keys
-    let keys: any[] = [];
-    let keyTable = "lemondata_keys";
-    
+    // Get active lemondata key
     const { data: lemonKeys } = await supabase
       .from("lemondata_keys")
       .select("api_key, id, usage_count")
       .eq("is_active", true)
       .eq("is_blocked", false)
-      .limit(10);
-    
-    if (lemonKeys && lemonKeys.length > 0) {
-      keys = lemonKeys;
-    } else {
-      const { data: deapiKeys } = await supabase
-        .from("deapi_keys")
-        .select("api_key, id, usage_count")
-        .eq("is_active", true)
-        .limit(10);
-      if (deapiKeys && deapiKeys.length > 0) {
-        keys = deapiKeys;
-        keyTable = "deapi_keys";
+      .limit(20);
+
+    if (!lemonKeys || lemonKeys.length === 0) throw new Error("No active API keys available");
+    const key = lemonKeys[Math.floor(Math.random() * lemonKeys.length)];
+
+    const isMusic = model_id === "suno-music" || model_id === "ace-step-turbo" || model_id === "ace-step-base";
+
+    if (isMusic) {
+      // ═══ MUSIC: async poll-based via /v1/music/generations ═══
+      const musicBody: Record<string, any> = {
+        model: model_id === "suno-music" ? "suno_music" : model_id === "ace-step-turbo" ? "ace-step-1.5-turbo" : "ace-step-1.5-base",
+        prompt,
+      };
+      if (settings?.title) musicBody.title = settings.title;
+      if (settings?.tags) musicBody.tags = settings.tags;
+      if (settings?.duration) musicBody.duration = settings.duration;
+
+      console.log("Music generation request:", JSON.stringify(musicBody));
+
+      const createResp = await fetch(`${LEMON_BASE}/v1/music/generations`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${key.api_key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(musicBody),
+      });
+
+      if (!createResp.ok) {
+        const errText = await createResp.text();
+        if (createResp.status === 401 || createResp.status === 403) {
+          supabase.from("lemondata_keys").update({ is_blocked: true, block_reason: `HTTP ${createResp.status}` }).eq("id", key.id);
+        }
+        throw new Error(`Music API error ${createResp.status}: ${errText}`);
       }
-    }
 
-    if (keys.length === 0) throw new Error("No active API keys available");
+      const createData = await createResp.json();
+      const taskId = createData.id || createData.task_id;
+      if (!taskId) {
+        // If response already has audio_url, return directly
+        const directUrl = createData.audio_url || createData.url || createData.data?.[0]?.audio_url;
+        if (directUrl) {
+          return new Response(JSON.stringify({ success: true, url: directUrl, model: model_id }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw new Error("No task ID returned from music API");
+      }
 
-    const key = keys[Math.floor(Math.random() * keys.length)];
+      // Poll for completion (max 120s)
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 3000));
 
-    // Determine API base URL based on key source
-    const isLemon = keyTable === "lemondata_keys";
-    const apiBase = isLemon ? "https://api.lemondata.cc" : "https://api.deapi.ai";
+        const pollResp = await fetch(`${LEMON_BASE}/v1/music/generations/${taskId}`, {
+          headers: { "Authorization": `Bearer ${key.api_key}` },
+        });
 
-    // Map model_id to endpoint
-    const MODEL_MAP: Record<string, { endpoint: string; params: Record<string, any> }> = {
-      "suno-music": {
-        endpoint: `${apiBase}/v1/audio/generations`,
-        params: { model: "suno-music", prompt },
-      },
-      "qwen3-tts-custom": {
-        endpoint: `${apiBase}/v1/audio/speech`,
-        params: { model: "qwen3-tts-customvoice", input: prompt },
-      },
-      "qwen3-tts-design": {
-        endpoint: `${apiBase}/v1/audio/speech`,
-        params: { model: "qwen3-tts-voicedesign", input: prompt },
-      },
-      "qwen3-tts-clone": {
-        endpoint: `${apiBase}/v1/audio/speech`,
-        params: { model: "qwen3-tts-voiceclone", input: prompt },
-      },
-      "chatterbox": {
-        endpoint: `${apiBase}/v1/audio/speech`,
-        params: { model: "chatterbox", input: prompt },
-      },
-      "kokoro": {
-        endpoint: `${apiBase}/v1/audio/speech`,
-        params: { model: "kokoro", input: prompt },
-      },
-      "ace-step-turbo": {
-        endpoint: `${apiBase}/v1/audio/generations`,
-        params: { model: "ace-step-1.5-turbo", prompt },
-      },
-      "ace-step-base": {
-        endpoint: `${apiBase}/v1/audio/generations`,
-        params: { model: "ace-step-1.5-base", prompt },
-      },
-    };
+        if (!pollResp.ok) {
+          const pollErr = await pollResp.text();
+          console.error("Poll error:", pollResp.status, pollErr);
+          continue;
+        }
 
-    const modelConfig = MODEL_MAP[model_id];
-    if (!modelConfig) throw new Error(`Unknown model: ${model_id}`);
+        const pollData = await pollResp.json();
+        console.log("Poll status:", pollData.status, "progress:", pollData.progress);
 
-    // Add any extra settings
-    const body = { ...modelConfig.params, ...(settings || {}) };
+        if (pollData.status === "completed") {
+          const audioUrl = pollData.audio_url || pollData.url || pollData.data?.[0]?.audio_url;
+          // Update usage
+          supabase.from("lemondata_keys").update({
+            usage_count: (key.usage_count || 0) + 1,
+            last_used_at: new Date().toISOString(),
+          }).eq("id", key.id);
 
-    const resp = await fetch(modelConfig.endpoint, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${key.api_key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+          return new Response(JSON.stringify({
+            success: true,
+            url: audioUrl,
+            video_url: pollData.video_url || null,
+            title: pollData.title || null,
+            lyrics: pollData.lyrics || null,
+            model: model_id,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
-    // Update usage count
-    await supabase.from(keyTable).update({
-      usage_count: (key.usage_count || 0) + 1,
-      last_used_at: new Date().toISOString(),
-    }).eq("id", key.id);
-
-    if (!resp.ok) {
-      const errText = await resp.text();
-      if (resp.status === 401 || resp.status === 403 || resp.status === 429) {
-        if (keyTable === "lemondata_keys") {
-          await supabase.from(keyTable).update({ is_blocked: true, block_reason: `HTTP ${resp.status}` }).eq("id", key.id);
-        } else {
-          await supabase.from(keyTable).update({ is_active: false }).eq("id", key.id);
+        if (pollData.status === "failed") {
+          throw new Error("Music generation failed: " + (pollData.error || "Unknown"));
         }
       }
-      throw new Error(`API error ${resp.status}: ${errText}`);
-    }
+      throw new Error("Music generation timed out after 120s");
 
-    const contentType = resp.headers.get("content-type") || "";
+    } else {
+      // ═══ TTS/VOICE: synchronous via /v1/audio/speech ═══
+      const ttsBody: Record<string, any> = { input: prompt };
 
-    // Audio binary response
-    if (contentType.includes("audio") || contentType.includes("octet-stream")) {
-      const audioData = await resp.arrayBuffer();
-      const base64 = base64Encode(new Uint8Array(audioData));
-      const audioUrl = `data:audio/mp3;base64,${base64}`;
+      // Map model_id to LemonData TTS model
+      if (model_id === "tts-1-hd" || model_id === "tts-hd") {
+        ttsBody.model = "tts-1-hd";
+      } else {
+        ttsBody.model = "tts-1";
+      }
 
-      return new Response(JSON.stringify({ success: true, url: audioUrl, model: model_id }), {
+      // Voice selection
+      if (settings?.voice) ttsBody.voice = settings.voice;
+      else ttsBody.voice = "nova";
+
+      if (settings?.speed) ttsBody.speed = settings.speed;
+      if (settings?.response_format) ttsBody.response_format = settings.response_format;
+
+      console.log("TTS request:", JSON.stringify({ ...ttsBody, input: ttsBody.input?.slice(0, 50) }));
+
+      const resp = await fetch(`${LEMON_BASE}/v1/audio/speech`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${key.api_key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(ttsBody),
+      });
+
+      // Update usage (fire-and-forget)
+      supabase.from("lemondata_keys").update({
+        usage_count: (key.usage_count || 0) + 1,
+        last_used_at: new Date().toISOString(),
+      }).eq("id", key.id);
+
+      if (!resp.ok) {
+        const errText = await resp.text();
+        if (resp.status === 401 || resp.status === 403) {
+          supabase.from("lemondata_keys").update({ is_blocked: true, block_reason: `HTTP ${resp.status}` }).eq("id", key.id);
+        }
+        throw new Error(`TTS API error ${resp.status}: ${errText}`);
+      }
+
+      const contentType = resp.headers.get("content-type") || "";
+
+      if (contentType.includes("audio") || contentType.includes("octet-stream")) {
+        const audioData = await resp.arrayBuffer();
+        const base64 = base64Encode(new Uint8Array(audioData));
+        return new Response(JSON.stringify({ success: true, url: `data:audio/mp3;base64,${base64}`, model: model_id }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const data = await resp.json();
+      const url = data.url || data.audio_url || data.output?.url || data.data?.[0]?.url;
+      return new Response(JSON.stringify({ success: true, url: url || null, data, model: model_id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // JSON response (may contain URL)
-    const data = await resp.json();
-    const url = data.url || data.audio_url || data.output?.url || data.data?.[0]?.url;
-
-    return new Response(JSON.stringify({ success: true, url: url || null, data, model: model_id }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (e) {
     console.error("generate-voice error:", e);
     return new Response(
