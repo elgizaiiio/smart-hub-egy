@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Menu, Mic, Music, Volume2, AudioLines } from "lucide-react";
+import { Menu, Mic, Music, Volume2, AudioLines, Phone } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import silkCard1 from "@/assets/silk-card-1.webp";
