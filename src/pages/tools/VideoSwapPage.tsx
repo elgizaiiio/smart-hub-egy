@@ -119,7 +119,7 @@ const VideoSwapPage = () => {
               <div className="rounded-2xl overflow-hidden border border-border/20"><video src={resultUrl} controls autoPlay className="w-full" /></div>
               <div className="flex gap-3">
                 <a href={resultUrl} download className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</a>
-                <button onClick={() => { navigator.share?.({ url: resultUrl }).catch(() => { navigator.clipboard.writeText(resultUrl); toast.success("Copied!"); }); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
+                <button onClick={() => { navigator.clipboard.writeText(resultUrl); toast.success("Link copied!"); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
               </div>
               <button onClick={() => { setResultUrl(null); setStep("templates"); setFaceImage(null); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
             </motion.div>

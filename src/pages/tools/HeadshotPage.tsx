@@ -21,7 +21,6 @@ const HeadshotPage = () => {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [landingImage, setLandingImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.from("headshot_templates").select("*").eq("is_active", true).order("display_order").then(({ data }) => { if (data && data.length > 0) setTemplates(data as HeadshotTemplate[]); });
@@ -30,37 +29,40 @@ const HeadshotPage = () => {
 
   const filteredTemplates = templates.filter(t => t.gender === "both" || t.gender === gender);
 
-  const handleTemplateSelect = (t: HeadshotTemplate) => {
-    setSelectedTemplate(t);
-    // Open file picker directly for photo
-    photoInputRef.current?.click();
-  };
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLandingUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       setUploadedImage(reader.result as string);
-      // Auto-generate after photo selected
-      generateHeadshot(reader.result as string);
+      setStep("browse");
     };
     reader.readAsDataURL(file); e.target.value = "";
   };
 
-  const generateHeadshot = async (img?: string) => {
-    const photo = img || uploadedImage;
-    if (!photo || !selectedTemplate) return;
+  const handleTemplateSelect = (t: HeadshotTemplate) => {
+    setSelectedTemplate(t);
+  };
+
+  const generateHeadshot = async () => {
+    if (!uploadedImage || !selectedTemplate) return;
     if (!hasEnoughCredits(1)) { toast.error("Insufficient MC"); navigate("/pricing"); return; }
     setStep("generating");
     try {
       const genderPrefix = gender === "male" ? "A handsome man" : "A beautiful woman";
       const fullPrompt = `${genderPrefix}, ${selectedTemplate.prompt}. Keep the exact facial features from the uploaded photo.`;
-      const { data, error } = await supabase.functions.invoke("generate-image", { body: { prompt: fullPrompt, image: photo, model: "nano-banana", aspectRatio: "2:3" } });
+      const { data, error } = await supabase.functions.invoke("generate-image", { body: { prompt: fullPrompt, image: uploadedImage, model: "nano-banana", aspectRatio: "2:3" } });
       if (error) throw error;
       const url = data?.images?.[0] || data?.url;
       if (!url) throw new Error("No image generated");
       setResultUrl(url); setStep("result"); toast.success("Headshot generated!");
     } catch (e: any) { toast.error(e.message || "Generation failed"); setStep("browse"); }
+  };
+
+  const handleShare = () => {
+    if (resultUrl) {
+      navigator.clipboard.writeText(resultUrl);
+      toast.success("Link copied!");
+    }
   };
 
   return (
@@ -70,7 +72,7 @@ const HeadshotPage = () => {
         <h1 className="text-base font-semibold text-foreground flex-1">AI Headshot</h1>
       </div>
 
-      <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLandingUpload} />
 
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
@@ -79,8 +81,8 @@ const HeadshotPage = () => {
               {landingImage ? <img src={landingImage} alt="AI Headshot" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-accent/10 to-background" />}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
               <div className="relative z-10 text-center px-6">
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("browse")} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
-                  <Upload className="w-4 h-4 inline mr-2" />Get Started
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => fileInputRef.current?.click()} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
+                  <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
                 </motion.button>
               </div>
             </motion.div>
@@ -88,18 +90,19 @@ const HeadshotPage = () => {
 
           {step === "browse" && (
             <motion.div key="browse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 pb-32">
-              <div className="pt-4 pb-6 text-center">
-                <h2 className="text-2xl font-bold text-foreground">Generate your perfect</h2>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">headshots</h2>
-                <p className="text-sm text-muted-foreground mt-2">Choose a style, then upload your photo</p>
-              </div>
+              {uploadedImage && (
+                <div className="mt-4 mb-4 relative rounded-2xl overflow-hidden border border-border/30">
+                  <img src={uploadedImage} alt="Your photo" className="w-full h-40 object-cover" />
+                </div>
+              )}
               <div className="flex gap-2 mb-6">
                 <button onClick={() => setGender("female")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all ${gender === "female" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}><UserRound className="w-4 h-4" /> Female</button>
                 <button onClick={() => setGender("male")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all ${gender === "male" ? "bg-primary text-primary-foreground" : "bg-accent/40 text-muted-foreground"}`}><User className="w-4 h-4" /> Male</button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {filteredTemplates.map(t => (
-                  <motion.button key={t.id} whileTap={{ scale: 0.97 }} onClick={() => handleTemplateSelect(t)} className="rounded-2xl overflow-hidden border border-border/20 bg-card text-left">
+                  <motion.button key={t.id} whileTap={{ scale: 0.97 }} onClick={() => handleTemplateSelect(t)}
+                    className={`rounded-2xl overflow-hidden border bg-card text-left transition-all ${selectedTemplate?.id === t.id ? 'border-primary ring-2 ring-primary/30' : 'border-border/20'}`}>
                     {t.preview_url ? <img src={t.preview_url} alt={t.name} className="w-full h-40 object-cover" /> : <div className="w-full h-40 bg-gradient-to-br from-primary/15 to-accent/20 flex items-center justify-center"><UserRound className="w-12 h-12 text-muted-foreground/20" /></div>}
                     <div className="p-3"><p className="text-sm font-semibold text-foreground">{t.name}</p></div>
                   </motion.button>
@@ -122,13 +125,19 @@ const HeadshotPage = () => {
               <div className="rounded-2xl overflow-hidden border border-border/20"><img src={resultUrl} alt="Result" className="w-full" /></div>
               <div className="flex gap-3">
                 <button onClick={() => { const a = document.createElement("a"); a.href = resultUrl; a.download = "headshot.png"; a.target = "_blank"; a.click(); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-medium text-sm"><Download className="w-4 h-4" /> Download</button>
-                <button onClick={() => { navigator.share?.({ url: resultUrl }).catch(() => { navigator.clipboard.writeText(resultUrl); toast.success("Link copied!"); }); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
+                <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm"><Share2 className="w-4 h-4" /> Share</button>
               </div>
-              <button onClick={() => { setStep("browse"); setResultUrl(null); setUploadedImage(null); setSelectedTemplate(null); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
+              <button onClick={() => { setStep("browse"); setResultUrl(null); setSelectedTemplate(null); }} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">Try Again</button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {step === "browse" && selectedTemplate && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-20 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+          <motion.button whileTap={{ scale: 0.97 }} onClick={generateHeadshot} className="w-full py-3.5 rounded-2xl bg-yellow-500 text-black font-bold text-sm flex items-center justify-center shadow-lg shadow-yellow-500/20">Generate · 1 MC</motion.button>
+        </div>
+      )}
     </div>
   );
 };

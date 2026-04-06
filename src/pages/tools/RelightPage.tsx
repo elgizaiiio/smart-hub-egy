@@ -17,8 +17,9 @@ const RelightPage = () => {
     if (!image) { toast.error("Please upload an image"); return; }
     setIsGenerating(true);
     try {
+      const colorName = lightColor === "#ffffff" ? "white" : lightColor === "#ff6b6b" ? "warm red" : lightColor === "#4ecdc4" ? "teal" : lightColor === "#45b7d1" ? "cool blue" : lightColor === "#f9ca24" ? "warm yellow" : lightColor === "#6c5ce7" ? "purple" : lightColor === "#fd79a8" ? "pink" : lightColor;
       const { data, error } = await supabase.functions.invoke("image-tools", {
-        body: { tool: "relight", image, color: lightColor, direction: lightDirection },
+        body: { tool: "relight", image, color: lightColor, direction: lightDirection, prompt: `Relight this image with ${colorName} light from the ${lightDirection} side, creating dramatic professional studio lighting` },
       });
       if (error) throw error;
       if (data?.url) setResultUrl(data.url);
@@ -27,8 +28,12 @@ const RelightPage = () => {
     finally { setIsGenerating(false); }
   };
 
+  const handleFileSelected = (dataUrl: string) => {
+    setImage(dataUrl);
+  };
+
   return (
-    <ToolPageLayout title="Relight" cost={1} toolId="relight" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl}>
+    <ToolPageLayout title="Relight" cost={1} toolId="relight" onGenerate={handleGenerate} isGenerating={isGenerating} resultUrl={resultUrl} onFileSelected={handleFileSelected}>
       <ImageUploadBox label="Upload image" image={image} onUpload={setImage} onClear={() => setImage(null)} />
       <div>
         <p className="text-sm font-medium text-foreground mb-2">Light Color</p>
