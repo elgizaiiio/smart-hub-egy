@@ -50,7 +50,7 @@ serve(async (req) => {
 
     // Determine API base URL based on key source
     const isLemon = keyTable === "lemondata_keys";
-    const apiBase = isLemon ? "https://api.lemondata.ai" : "https://api.deapi.ai";
+    const apiBase = isLemon ? "https://api.lemondata.cc" : "https://api.deapi.ai";
 
     // Map model_id to endpoint
     const MODEL_MAP: Record<string, { endpoint: string; params: Record<string, any> }> = {
