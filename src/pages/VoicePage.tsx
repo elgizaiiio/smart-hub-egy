@@ -137,6 +137,29 @@ const VoicePage = () => {
             ))}
           </div>
 
+          {/* Call with AI button */}
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate("/voice/call")}
+            className="w-full h-28 relative overflow-hidden rounded-2xl text-left mb-3"
+            style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #3b82f6 100%)" }}
+          >
+            <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 150% 100% at 15% 25%, rgba(59,130,246,0.4), transparent 70%), radial-gradient(ellipse 130% 90% at 85% 75%, rgba(99,102,241,0.3), transparent 65%)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(255,255,255,0.04) 60%, transparent 100%)" }} />
+            <div className="relative h-full flex items-center px-5 gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white/80">
+                <Phone className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-white">Call with AI</p>
+                <p className="text-xs text-white/50 mt-0.5">Talk naturally with Megsy</p>
+              </div>
+            </div>
+          </motion.button>
+
           {/* Bottom card - Music Generator with full silk gradient background */}
           {BOTTOM_SERVICES.map((service, i) => {
             const silk = SILK_PALETTES[0];
@@ -145,7 +168,7 @@ const VoicePage = () => {
                 key={service.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: 0.25 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate(service.route)}
                 className="w-full h-28 relative overflow-hidden rounded-2xl text-left mb-3"
