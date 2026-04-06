@@ -438,6 +438,7 @@ DEEP RESEARCH MODE:
 - You MUST use the WEB_SEARCH tool AT LEAST 6-10 TIMES with different queries.
 - Divide research into: 1) General overview 2) Latest developments 3) Expert opinions 4) Data & statistics 5) Case studies 6) Counterarguments 7) Future outlook 8) Visual references
 - For at least half your searches, set include_images=true.
+- While researching people, brands, founders, celebrities, athletes, politicians, or public figures, always gather relevant images too.
 - After gathering all information, synthesize into a comprehensive, well-structured research report.
 
 REPORT STRUCTURE:
@@ -490,6 +491,7 @@ IMAGE & FILE HANDLING:
 - Analyze images carefully and provide relevant insights.
 - Read files thoroughly and respond based on content.
 - Use WEB_SEARCH proactively when topics benefit from current data.
+- If web search is enabled and the user asks about a person or public figure, include relevant photos with the answer.
 
 SMART OUTPUT ROUTING:
 
@@ -547,6 +549,10 @@ async function handleToolCalls(
 ) {
   const allSearchResults: string[] = [];
   const allImages: string[] = [];
+  const shouldIncludeImages = (query: string, explicit: boolean) => {
+    if (isDeepResearch || explicit) return true;
+    return /(who is|biography|profile|photos|images|picture|person|celebrity|founder|actor|singer|player|president|ممثل|مطرب|لاعب|شخص|شخصية|صور|صورة|مؤسس)/i.test(query);
+  };
 
   for (const tc of toolCalls) {
     try {
@@ -555,7 +561,7 @@ async function handleToolCalls(
 
       if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
         const searchQuery = toolArgs.query || "";
-        const includeImages = isDeepResearch ? true : (toolArgs.include_images ?? false);
+        const includeImages = shouldIncludeImages(String(searchQuery), Boolean(toolArgs.include_images));
         
         const fetches: Promise<Response>[] = [
           fetchWithTimeout("https://google.serper.dev/search", {

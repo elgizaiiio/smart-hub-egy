@@ -48,7 +48,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
     return THEME_PALETTES[Math.floor(Math.random() * THEME_PALETTES.length)];
   }, [open]);
 
-  const showRecent = ["chat", "code", "images", "videos", "files"].includes(currentMode);
+  const showRecent = ["chat", "files"].includes(currentMode);
 
   useEffect(() => {
     if (open) {
@@ -139,17 +139,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                   })}
                 </div>
               </div>
-
-              {(currentMode === "images" || currentMode === "videos") && (
-                <div className="px-3 mt-2 mb-1">
-                  <button
-                    onClick={() => { navigate(currentMode === "images" ? "/images/studio" : "/videos/studio"); onClose(); }}
-                    className="w-full py-2.5 text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                  >
-                    Open Studio
-                  </button>
-                </div>
-              )}
 
               {/* Recent conversations */}
               {showRecent && (

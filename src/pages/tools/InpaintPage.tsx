@@ -160,9 +160,21 @@ const InpaintPage = () => {
     return maskCanvas.toDataURL("image/png");
   };
 
+  const hasMaskSelection = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return false;
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (let i = 3; i < pixels.length; i += 4) {
+      if (pixels[i] > 10) return true;
+    }
+    return false;
+  };
+
   const handleGenerate = async () => {
     if (!sourceImage) { toast.error("Please upload an image"); return; }
     if (!prompt.trim()) { toast.error("Describe what to change"); return; }
+    if (!hasMaskSelection()) { toast.error("حدد الجزء الذي تريد تعديله أولا"); return; }
     setIsGenerating(true);
     try {
       const maskDataUrl = getMaskDataUrl();

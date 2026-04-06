@@ -278,7 +278,7 @@ const CodeWorkspace = () => {
   const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
 
-  const { userId, hasEnoughCredits, refreshCredits, loading: creditsLoading } = useCredits();
+  const { userId, credits, hasEnoughCredits, refreshCredits, loading: creditsLoading } = useCredits();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -370,7 +370,12 @@ const CodeWorkspace = () => {
     const msgText = text || input;
     if (!msgText.trim() || isLoading) return;
 
-    if (!hasEnoughCredits(BUILD_CREDIT_COST)) {
+    if (creditsLoading) {
+      toast.error("جاري تحميل الرصيد...");
+      return;
+    }
+
+    if (credits !== null && !hasEnoughCredits(BUILD_CREDIT_COST)) {
       toast.error("رصيد MC غير كافي. تحتاج 5 MC للبناء.");
       return;
     }
@@ -400,7 +405,7 @@ const CodeWorkspace = () => {
     if (userId && retryCount === 0) {
       const deductResp = await fetch(`${SUPABASE_URL}/functions/v1/deduct-credits`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
         body: JSON.stringify({
           user_id: userId, amount: BUILD_CREDIT_COST,
           action_type: "code_build", description: "Code workspace build",
@@ -426,7 +431,7 @@ const CodeWorkspace = () => {
     try {
       const buildResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
         body: JSON.stringify({ messages: allMessages, action: "build" }),
       });
 
@@ -524,7 +529,7 @@ const CodeWorkspace = () => {
           .from("projects")
           .insert({
             user_id: userId,
-            name: prompt.slice(0, 50) || "Untitled Project",
+            name: msgText.slice(0, 50) || "Untitled Project",
             status: "ready",
             files_snapshot: allFiles as any,
             conversation_id: conversationId,
@@ -594,7 +599,7 @@ const CodeWorkspace = () => {
     try {
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/vercel-deploy`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
         body: JSON.stringify({ files, project_name: prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "megsy-project" }),
       });
       const data = await resp.json();
