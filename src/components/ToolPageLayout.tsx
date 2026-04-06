@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus, RefreshCw } from "lucide-react";
+import { ArrowLeft, Upload, Download, X, Share2, Sparkles, ImagePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
@@ -114,9 +114,9 @@ const YellowGenerateButton = ({
 
 // ==================== Result View ====================
 const ResultView = ({
-  resultUrl, resultType = "image", title, onBack, onRegenerate,
+  resultUrl, resultType = "image", title, onBack,
 }: {
-  resultUrl: string; resultType?: "image" | "video"; title: string; onBack: () => void; onRegenerate?: () => void;
+  resultUrl: string; resultType?: "image" | "video"; title: string; onBack: () => void;
 }) => {
   const handleDownload = () => {
     const a = document.createElement("a");
@@ -147,11 +147,6 @@ const ResultView = ({
         <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
           <Share2 className="w-4 h-4" /> Share
         </button>
-        {onRegenerate && (
-          <button onClick={onRegenerate} className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-accent text-foreground font-medium text-sm">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        )}
       </div>
       <button onClick={onBack} className="w-full py-3 rounded-2xl bg-accent/50 text-foreground text-sm font-medium">
         Try Again
