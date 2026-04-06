@@ -278,7 +278,7 @@ const CodeWorkspace = () => {
   const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
 
-  const { userId, hasEnoughCredits, refreshCredits } = useCredits();
+  const { userId, hasEnoughCredits, refreshCredits, loading: creditsLoading } = useCredits();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -334,10 +334,10 @@ const CodeWorkspace = () => {
 
   // Auto-send initial prompt
   useEffect(() => {
-    if (prompt && messages.length === 0 && !paramConversationId) {
+    if (prompt && messages.length === 0 && !paramConversationId && !creditsLoading) {
       handleSend(prompt);
     }
-  }, [prompt, loadedConversation]);
+  }, [prompt, loadedConversation, creditsLoading]);
 
   // Render preview in iframe when previewHtml changes
   useEffect(() => {
