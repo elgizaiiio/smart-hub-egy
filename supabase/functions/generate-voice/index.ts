@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,45 +19,71 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get an active deapi key
-    const { data: keys } = await supabase
-      .from("deapi_keys")
-      .select("api_key, id")
+    // Try lemondata_keys first, fallback to deapi_keys
+    let keys: any[] = [];
+    let keyTable = "lemondata_keys";
+    
+    const { data: lemonKeys } = await supabase
+      .from("lemondata_keys")
+      .select("api_key, id, usage_count")
       .eq("is_active", true)
+      .eq("is_blocked", false)
       .limit(10);
+    
+    if (lemonKeys && lemonKeys.length > 0) {
+      keys = lemonKeys;
+    } else {
+      const { data: deapiKeys } = await supabase
+        .from("deapi_keys")
+        .select("api_key, id, usage_count")
+        .eq("is_active", true)
+        .limit(10);
+      if (deapiKeys && deapiKeys.length > 0) {
+        keys = deapiKeys;
+        keyTable = "deapi_keys";
+      }
+    }
 
-    if (!keys || keys.length === 0) throw new Error("No active API keys available");
+    if (keys.length === 0) throw new Error("No active API keys available");
 
     const key = keys[Math.floor(Math.random() * keys.length)];
 
-    // Map model_id to deapi endpoint
+    // Determine API base URL based on key source
+    const isLemon = keyTable === "lemondata_keys";
+    const apiBase = isLemon ? "https://api.lemondata.ai" : "https://api.deapi.ai";
+
+    // Map model_id to endpoint
     const MODEL_MAP: Record<string, { endpoint: string; params: Record<string, any> }> = {
+      "suno-music": {
+        endpoint: `${apiBase}/v1/audio/generations`,
+        params: { model: "suno-music", prompt },
+      },
       "qwen3-tts-custom": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "qwen3-tts-customvoice", input: prompt },
       },
       "qwen3-tts-design": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "qwen3-tts-voicedesign", input: prompt },
       },
       "qwen3-tts-clone": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "qwen3-tts-voiceclone", input: prompt },
       },
       "chatterbox": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "chatterbox", input: prompt },
       },
       "kokoro": {
-        endpoint: "https://api.deapi.ai/v1/audio/speech",
+        endpoint: `${apiBase}/v1/audio/speech`,
         params: { model: "kokoro", input: prompt },
       },
       "ace-step-turbo": {
-        endpoint: "https://api.deapi.ai/v1/audio/generations",
+        endpoint: `${apiBase}/v1/audio/generations`,
         params: { model: "ace-step-1.5-turbo", prompt },
       },
       "ace-step-base": {
-        endpoint: "https://api.deapi.ai/v1/audio/generations",
+        endpoint: `${apiBase}/v1/audio/generations`,
         params: { model: "ace-step-1.5-base", prompt },
       },
     };
@@ -77,18 +104,21 @@ serve(async (req) => {
     });
 
     // Update usage count
-    await supabase.from("deapi_keys").update({
-      usage_count: (key as any).usage_count + 1,
+    await supabase.from(keyTable).update({
+      usage_count: (key.usage_count || 0) + 1,
       last_used_at: new Date().toISOString(),
     }).eq("id", key.id);
 
     if (!resp.ok) {
       const errText = await resp.text();
-      // Mark key inactive on auth errors
-      if (resp.status === 401 || resp.status === 403) {
-        await supabase.from("deapi_keys").update({ is_active: false }).eq("id", key.id);
+      if (resp.status === 401 || resp.status === 403 || resp.status === 429) {
+        if (keyTable === "lemondata_keys") {
+          await supabase.from(keyTable).update({ is_blocked: true, block_reason: `HTTP ${resp.status}` }).eq("id", key.id);
+        } else {
+          await supabase.from(keyTable).update({ is_active: false }).eq("id", key.id);
+        }
       }
-      throw new Error(`deapi error ${resp.status}: ${errText}`);
+      throw new Error(`API error ${resp.status}: ${errText}`);
     }
 
     const contentType = resp.headers.get("content-type") || "";
@@ -96,7 +126,7 @@ serve(async (req) => {
     // Audio binary response
     if (contentType.includes("audio") || contentType.includes("octet-stream")) {
       const audioData = await resp.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(audioData)));
+      const base64 = base64Encode(new Uint8Array(audioData));
       const audioUrl = `data:audio/mp3;base64,${base64}`;
 
       return new Response(JSON.stringify({ success: true, url: audioUrl, model: model_id }), {
