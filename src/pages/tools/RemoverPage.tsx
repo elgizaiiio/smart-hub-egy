@@ -138,14 +138,25 @@ const RemoverPage = () => {
     return maskCanvas.toDataURL("image/png");
   };
 
+  const hasMaskSelection = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return false;
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (let i = 3; i < pixels.length; i += 4) {
+      if (pixels[i] > 10) return true;
+    }
+    return false;
+  };
+
   const handleGenerate = async () => {
     if (!sourceImage) { toast.error("Please upload an image"); return; }
-    if (!prompt.trim()) { toast.error("Describe what to remove"); return; }
+    if (!hasMaskSelection()) { toast.error("حدد الجزء الذي تريد مسحه أولا"); return; }
     setIsGenerating(true);
     try {
       const maskDataUrl = getMaskDataUrl();
       const { data, error } = await supabase.functions.invoke("image-tools", {
-        body: { tool: "remover", image: sourceImage, mask: maskDataUrl, prompt: prompt.trim() },
+        body: { tool: "remover", image: sourceImage, mask: maskDataUrl, prompt: prompt.trim() || "Remove the selected object and fill the area naturally" },
       });
       if (error) throw error;
       if (data?.url) { setResultUrl(data.url); setStage("result"); }
@@ -258,7 +269,7 @@ const RemoverPage = () => {
                 placeholder="Describe what to remove..."
                 className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50 py-2"
               />
-              <motion.button whileTap={{ scale: 0.95 }} onClick={handleGenerate} disabled={isGenerating || !prompt.trim()}
+              <motion.button whileTap={{ scale: 0.95 }} onClick={handleGenerate} disabled={isGenerating}
                 className="shrink-0 px-5 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold disabled:opacity-30 transition-all">
                 {isGenerating ? <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" /> : "Generate"}
               </motion.button>

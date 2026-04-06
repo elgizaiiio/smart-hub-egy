@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Mic, MicOff, PhoneOff } from "lucide-react";
+import { Mic, MicOff, PhoneOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import "./VoiceCallLoader.css";
@@ -11,6 +11,7 @@ const VoiceCallPage = () => {
   const [isConnecting, setIsConnecting] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [statusText, setStatusText] = useState("Connecting...");
   const wsRef = useRef<WebSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -21,32 +22,22 @@ const VoiceCallPage = () => {
 
   const startCall = useCallback(async () => {
     try {
-      // Get Deepgram key
-      const { data: keys } = await supabase
-        .from("api_keys")
-        .select("api_key")
-        .eq("service", "deepgram")
-        .eq("is_active", true)
-        .limit(5);
+      const { data: tokenData, error: tokenError } = await supabase.functions.invoke("deepgram-token", {
+        body: { ttl_seconds: 60 },
+      });
+      if (tokenError) throw tokenError;
+      const apiKey = tokenData?.token;
+      if (!apiKey) throw new Error("Failed to create Deepgram token");
 
-      if (!keys || keys.length === 0) {
-        console.error("No Deepgram keys available");
-        setIsConnecting(false);
-        return;
-      }
-
-      const apiKey = keys[Math.floor(Math.random() * keys.length)].api_key;
-
-      // Get user mic
+      setStatusText("Requesting microphone...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 48000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
       mediaStreamRef.current = stream;
 
-      // Connect WebSocket to Deepgram Agent API
-      const ws = new WebSocket("wss://agent.deepgram.com/agent", ["token", apiKey]);
+      setStatusText("Starting voice agent...");
+      const ws = new WebSocket("wss://agent.deepgram.com/v1/agent/converse", ["token", apiKey]);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        // Send settings
         ws.send(JSON.stringify({
           type: "Settings",
           audio: {
@@ -71,11 +62,10 @@ const VoiceCallPage = () => {
 
         setIsConnected(true);
         setIsConnecting(false);
+        setStatusText("Connected");
 
-        // Start timer
         timerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000);
 
-        // Start sending audio
         const audioContext = new AudioContext({ sampleRate: 48000 });
         audioContextRef.current = audioContext;
         const source = audioContext.createMediaStreamSource(stream);
@@ -98,15 +88,14 @@ const VoiceCallPage = () => {
 
       ws.onmessage = async (event) => {
         if (event.data instanceof Blob) {
-          // Audio response from agent
           const arrayBuffer = await event.data.arrayBuffer();
           audioQueueRef.current.push(arrayBuffer);
           if (!isPlayingRef.current) playNextAudio();
         } else {
-          // JSON message (transcript, etc.)
           try {
             const msg = JSON.parse(event.data);
-            console.log("Agent message:", msg.type);
+            if (msg.type === "AgentStartedSpeaking") setStatusText("Megsy is speaking...");
+            if (msg.type === "UserStartedSpeaking") setStatusText("Listening...");
           } catch {}
         }
       };
@@ -114,15 +103,18 @@ const VoiceCallPage = () => {
       ws.onclose = () => {
         setIsConnected(false);
         setIsConnecting(false);
+        setStatusText("Call ended");
       };
 
       ws.onerror = () => {
         setIsConnected(false);
         setIsConnecting(false);
+        setStatusText("Connection failed");
       };
     } catch (err) {
       console.error("Call error:", err);
       setIsConnecting(false);
+      setStatusText(err instanceof Error ? err.message : "Connection failed");
     }
   }, []);
 
@@ -134,6 +126,7 @@ const VoiceCallPage = () => {
     try {
       const audioContext = audioContextRef.current || new AudioContext({ sampleRate: 24000 });
       if (!audioContextRef.current) audioContextRef.current = audioContext;
+      if (audioContext.state === "suspended") await audioContext.resume();
 
       const int16 = new Int16Array(buffer);
       const float32 = new Float32Array(int16.length);
@@ -156,7 +149,7 @@ const VoiceCallPage = () => {
     if (wsRef.current) wsRef.current.close();
     if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
     if (processorRef.current) processorRef.current.disconnect();
-    if (audioContextRef.current) audioContextRef.current.close();
+    audioContextRef.current?.close().catch(() => {});
     if (timerRef.current) clearInterval(timerRef.current);
     navigate("/voice");
   };
@@ -167,7 +160,7 @@ const VoiceCallPage = () => {
       if (wsRef.current) wsRef.current.close();
       if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
       if (processorRef.current) processorRef.current.disconnect();
-      if (audioContextRef.current) audioContextRef.current.close();
+      audioContextRef.current?.close().catch(() => {});
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [startCall]);
@@ -180,16 +173,7 @@ const VoiceCallPage = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background relative overflow-hidden">
-      {/* Back button */}
-      <div className="absolute top-4 left-4 z-10">
-        <button onClick={endCall} className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Center content */}
       <div className="flex-1 flex flex-col items-center justify-center">
-        {/* Animated orb loader */}
         <div className="loader-wrapper">
           <div className="loader" />
           <span className="loader-letter" style={{ animationDelay: "0s" }}>M</span>
@@ -199,17 +183,15 @@ const VoiceCallPage = () => {
           <span className="loader-letter" style={{ animationDelay: "0.4s" }}>y</span>
         </div>
 
-        {/* Status text */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-8 text-sm text-muted-foreground"
+          className="mt-8 text-sm text-muted-foreground text-center px-6"
         >
-          {isConnecting ? "Connecting..." : isConnected ? formatTime(callDuration) : "Disconnected"}
+          {isConnected ? formatTime(callDuration) : statusText}
         </motion.p>
       </div>
 
-      {/* Bottom controls */}
       <div className="pb-12 flex items-center justify-center gap-8">
         <motion.button
           whileTap={{ scale: 0.9 }}

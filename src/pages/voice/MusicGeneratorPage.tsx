@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowUp, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppLayout from "@/layouts/AppLayout";
@@ -21,6 +21,8 @@ const HERO_TEXTS = [
   { line1: "AI", line2: "Composer" },
 ];
 
+const LOADING_TEXTS = ["Composing your track...", "Layering melodies...", "Polishing the vibe..."];
+
 const MusicGeneratorPage = () => {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
@@ -29,7 +31,19 @@ const MusicGeneratorPage = () => {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<{ url: string; prompt: string }[]>([]);
   const [heroIdx, setHeroIdx] = useState(0);
+  const [loadingIdx, setLoadingIdx] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => setHeroIdx((prev) => (prev + 1) % HERO_TEXTS.length), 3500);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!generating) return;
+    const timer = setInterval(() => setLoadingIdx((prev) => (prev + 1) % LOADING_TEXTS.length), 1800);
+    return () => clearInterval(timer);
+  }, [generating]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -80,6 +94,19 @@ const MusicGeneratorPage = () => {
           {results.length === 0 && (
             <div className="text-center py-20 text-muted-foreground/50 text-sm">
               Describe the music you want to create
+            </div>
+          )}
+          {generating && (
+            <div className="rounded-3xl border border-border/20 bg-card/50 p-6 text-center space-y-4">
+              <motion.div
+                animate={{ rotate: 360, scale: [1, 1.15, 1] }}
+                transition={{ rotate: { duration: 2.2, repeat: Infinity, ease: "linear" }, scale: { duration: 1.4, repeat: Infinity } }}
+                className="mx-auto relative w-fit"
+              >
+                <Sparkles className="w-10 h-10 text-primary" />
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl" />
+              </motion.div>
+              <p className="text-sm font-medium text-foreground">{LOADING_TEXTS[loadingIdx]}</p>
             </div>
           )}
         </div>

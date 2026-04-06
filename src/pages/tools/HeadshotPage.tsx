@@ -52,7 +52,7 @@ const HeadshotPage = () => {
       const fullPrompt = `${genderPrefix}, ${selectedTemplate.prompt}. Keep the exact facial features from the uploaded photo.`;
       const { data, error } = await supabase.functions.invoke("generate-image", { body: { prompt: fullPrompt, image: uploadedImage, model: "nano-banana", aspectRatio: "2:3" } });
       if (error) throw error;
-      const url = data?.images?.[0] || data?.url;
+      const url = data?.images?.[0] || data?.image_urls?.[0] || data?.image_url || data?.url;
       if (!url) throw new Error("No image generated");
       setResultUrl(url); setStep("result"); toast.success("Headshot generated!");
     } catch (e: any) { toast.error(e.message || "Generation failed"); setStep("browse"); }
