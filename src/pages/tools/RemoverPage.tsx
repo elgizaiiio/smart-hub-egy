@@ -249,9 +249,8 @@ const RemoverPage = () => {
         </AnimatePresence>
       </div>
 
-      {stage === "edit" && (
+      {(stage === "edit" || stage === "result") && (
         <div className="shrink-0 border-t border-border/10 bg-background/90 backdrop-blur-xl px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-          <p className="text-xs text-center text-muted-foreground mb-2">or</p>
           <div className="rounded-2xl bg-card/80 border border-border/20 p-3">
             <div className="flex items-center gap-2">
               <input value={prompt} onChange={e => setPrompt(e.target.value)}

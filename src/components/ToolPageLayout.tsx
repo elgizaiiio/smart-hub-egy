@@ -127,12 +127,8 @@ const ResultView = ({
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
-      try { await navigator.share({ url: resultUrl }); } catch {}
-    } else {
-      navigator.clipboard.writeText(resultUrl);
-      toast.success("Link copied!");
-    }
+    navigator.clipboard.writeText(resultUrl);
+    toast.success("Link copied!");
   };
 
   return (
