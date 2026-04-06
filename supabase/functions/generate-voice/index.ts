@@ -103,18 +103,21 @@ serve(async (req) => {
     });
 
     // Update usage count
-    await supabase.from("deapi_keys").update({
-      usage_count: (key as any).usage_count + 1,
+    await supabase.from(keyTable).update({
+      usage_count: (key.usage_count || 0) + 1,
       last_used_at: new Date().toISOString(),
     }).eq("id", key.id);
 
     if (!resp.ok) {
       const errText = await resp.text();
-      // Mark key inactive on auth errors
-      if (resp.status === 401 || resp.status === 403) {
-        await supabase.from("deapi_keys").update({ is_active: false }).eq("id", key.id);
+      if (resp.status === 401 || resp.status === 403 || resp.status === 429) {
+        if (keyTable === "lemondata_keys") {
+          await supabase.from(keyTable).update({ is_blocked: true, block_reason: `HTTP ${resp.status}` }).eq("id", key.id);
+        } else {
+          await supabase.from(keyTable).update({ is_active: false }).eq("id", key.id);
+        }
       }
-      throw new Error(`deapi error ${resp.status}: ${errText}`);
+      throw new Error(`API error ${resp.status}: ${errText}`);
     }
 
     const contentType = resp.headers.get("content-type") || "";
