@@ -162,7 +162,7 @@ serve(async (req) => {
     } else if (isDeepResearch) {
       modelId = "deepseek-v3-2";
     } else {
-      modelId = "gemini-2.5-flash";
+      modelId = "claude-haiku-4-5";
     }
 
     // Get LemonData key
@@ -714,7 +714,7 @@ async function handleToolCalls(
       }
       // Handle recursive tool calls from deep research (up to 2 more rounds)
       if (secondToolCalls.length > 0 && isDeepResearch) {
-        await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, false, [], sb);
+        await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb);
       }
     }
   }
