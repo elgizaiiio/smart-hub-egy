@@ -37,7 +37,7 @@ serve(async (req) => {
     if (isMusic) {
       // ═══ MUSIC: async poll-based via /v1/music/generations ═══
       const musicBody: Record<string, any> = {
-        model: model_id === "suno-music" ? "suno_music" : model_id === "ace-step-turbo" ? "ace-step-1.5-turbo" : "ace-step-1.5-base",
+        model: "suno_music",
         prompt,
       };
       if (settings?.title) musicBody.title = settings.title;
