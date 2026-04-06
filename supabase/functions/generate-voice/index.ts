@@ -126,7 +126,7 @@ serve(async (req) => {
     // Audio binary response
     if (contentType.includes("audio") || contentType.includes("octet-stream")) {
       const audioData = await resp.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(audioData)));
+      const base64 = base64Encode(new Uint8Array(audioData));
       const audioUrl = `data:audio/mp3;base64,${base64}`;
 
       return new Response(JSON.stringify({ success: true, url: audioUrl, model: model_id }), {
