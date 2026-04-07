@@ -109,11 +109,15 @@ async function callLemonImage(sb: ReturnType<typeof createClient>, model: string
       }
       if (maskUrl) body.mask = maskUrl;
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000);
       const resp = await fetch(url, {
         method: "POST",
         headers: { Authorization: `Bearer ${key.api_key}`, "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (resp.status === 401 || resp.status === 403) { blockLemonKey(sb, key.id); continue; }
       if (resp.status === 429) { continue; }
