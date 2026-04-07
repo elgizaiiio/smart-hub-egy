@@ -261,16 +261,21 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </button>
 
           <div className="flex-1 min-w-0">
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={displayedPlaceholder || " "}
-              rows={1}
-              className="w-full bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
-              style={{ minHeight: "36px" }}
-            />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {activeAgent && (
+                <AgentBadge agentId={activeAgent} onRemove={onAgentRemove} size="sm" />
+              )}
+              <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                placeholder={displayedPlaceholder || " "}
+                rows={1}
+                className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
+                style={{ minHeight: "36px" }}
+              />
+            </div>
           </div>
 
           {isLoading ? (
