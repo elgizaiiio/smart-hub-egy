@@ -245,6 +245,7 @@ const ChatPage = () => {
     setAttachedFiles([]);
     setIsLoading(true);setIsThinking(true);
     setPendingQuestions([]); // Clear previous questions on new send
+    setStatusHistory([]); // Clear status history for new message
 
     const convId = await createOrUpdateConversation(userInput || "File analysis");
     if (convId) await saveMessage(convId, "user", userInput || `[${currentFiles.length} file(s) attached]`);
@@ -294,19 +295,30 @@ const ChatPage = () => {
 
     // Mode prompts are now handled server-side via chatMode parameter
     const isDeepResearch = chatMode === "deep-research";
-    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "يبدأ البحث العميق..." : "يبدأ البحث...");
-    if (chatMode === "shopping") setSearchStatus("يبحث عن منتجات...");
+    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Starting deep research..." : "Starting search...");
+    if (chatMode === "shopping") setSearchStatus("Searching for products...");
+    if (computerUseEnabled) setSearchStatus("Initializing Megsy Computer...");
 
     await streamChat({
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
       deepResearch: isDeepResearch,
       chatMode: chatMode,
       user_id: chatUserId || undefined,
+      computerUseEnabled,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
-      onStatus: (status) => { setSearchStatus(status); setIsThinking(true); },
+      onStatus: (status) => {
+        setSearchStatus(status);
+        setIsThinking(true);
+        // Accumulate real status events into history
+        setStatusHistory(prev => {
+          // Avoid duplicates
+          if (prev.length > 0 && prev[prev.length - 1] === status) return prev;
+          return [...prev, status];
+        });
+      },
       onDone: async () => {
-        setIsLoading(false);setIsThinking(false);setSearchStatus("");
+        setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);
         if (convId && assistantContent) {
           await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (searchImages.length > 0) {
@@ -319,7 +331,7 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
         }
       },
-      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");},
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);},
       signal: controller.signal
     });
   };
