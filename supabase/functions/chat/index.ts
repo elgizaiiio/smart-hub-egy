@@ -206,7 +206,37 @@ serve(async (req) => {
       { type: "function", function: { name: "LINKEDIN_CREATE_POST", description: "Create a LinkedIn post", parameters: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } } },
       { type: "function", function: { name: "YOUTUBE_LIST_VIDEOS", description: "List videos from a YouTube channel", parameters: { type: "object", properties: { query: { type: "string" }, max_results: { type: "number", default: 5 } } } } },
     ] : [];
-...
+
+    // Build search tool
+    const searchTools = (((searchEnabled || isDeepResearch) || wantsHamzaProfile) && SERPER_API_KEY) ? [
+      {
+        type: "function",
+        function: {
+          name: "WEB_SEARCH",
+          description: isDeepResearch
+            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 6-10 TIMES with different queries to gather exhaustive information from every possible angle."
+            : "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results" } }, required: ["query"] },
+        },
+      },
+    ] : [];
+
+    // System prompt
+    const systemPrompt = buildSystemPrompt(mode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
+
+    const body: any = {
+      model: modelId,
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      stream: true,
+      max_tokens: isDeepResearch ? 8192 : (mode === "files" ? 8192 : 4096),
+    };
+
+    const allTools = [...composioTools, ...searchTools];
+    if (allTools.length > 0) {
+      body.tools = allTools;
+      body.tool_choice = "auto";
+    }
+
     // Key rotation with retry
     let response: Response;
     let retryCount = 0;
