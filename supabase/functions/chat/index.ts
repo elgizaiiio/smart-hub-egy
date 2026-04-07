@@ -1025,7 +1025,7 @@ async function handleToolCalls(
     ];
 
     const secondBody: any = {
-      model: "claude-haiku-4-5",
+      model: modelId,
       messages: searchMessages,
       stream: true,
       max_tokens: isDeepResearch ? 3072 : 1536,
