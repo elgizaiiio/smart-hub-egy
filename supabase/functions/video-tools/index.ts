@@ -28,7 +28,7 @@ serve(async (req) => {
     if (!FAL_API_KEY) throw new Error('FAL_API_KEY not configured');
 
     const body = await req.json();
-    const { tool, video, image, audio, script, resolution, tier, extraSeconds, withAudio, duration } = body;
+    const { tool, video, image, audio, script, resolution, tier, extraSeconds, withAudio, duration, prompt, backgroundImage } = body;
     const model = TOOL_MODELS[tool];
     if (!model) throw new Error(`Unknown tool: ${tool}`);
 
@@ -42,6 +42,8 @@ serve(async (req) => {
     if (extraSeconds) falBody.extend_seconds = extraSeconds;
     if (withAudio !== undefined) falBody.with_audio = withAudio;
     if (duration) falBody.duration = duration;
+    if (prompt) falBody.prompt = prompt;
+    if (backgroundImage) falBody.background_image_url = backgroundImage;
 
     const response = await fetch(`https://queue.fal.run/${model}`, {
       method: 'POST',
