@@ -339,7 +339,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(false);setComputerUseEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
