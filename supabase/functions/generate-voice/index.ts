@@ -116,7 +116,7 @@ serve(async (req) => {
       if (!taskId) throw new Error("No task ID returned from music API");
 
       // Return task_id for client-side polling
-      return new Response(JSON.stringify({ success: true, status: "pending", task_id: taskId }), {
+      return new Response(JSON.stringify({ success: true, status: "pending", task_id: taskId, key_id: key.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
