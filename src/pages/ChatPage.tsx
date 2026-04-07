@@ -290,11 +290,10 @@ const ChatPage = () => {
       }
     }
 
-    if (chatMode !== "normal" && MODE_PROMPTS[chatMode]) {
-      allMessages.unshift({ role: "user" as const, content: `[System instruction]: ${MODE_PROMPTS[chatMode]}` });
-    }
+    // Mode prompts are now handled server-side via chatMode parameter
     const isDeepResearch = chatMode === "deep-research";
     if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "يبدأ البحث العميق..." : "يبدأ البحث...");
+    if (chatMode === "shopping") setSearchStatus("يبحث عن منتجات...");
 
     await streamChat({
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,

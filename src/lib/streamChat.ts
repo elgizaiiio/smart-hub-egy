@@ -66,6 +66,9 @@ export async function streamChat({
       if (parsed.images && Array.isArray(parsed.images)) {
         onImages?.(parsed.images);
       }
+      if (parsed.products && Array.isArray(parsed.products)) {
+        onProducts?.(parsed.products);
+      }
       const content = parsed.choices?.[0]?.delta?.content as string | undefined;
       if (content) onDelta(content);
     };
