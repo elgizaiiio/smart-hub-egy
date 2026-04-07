@@ -83,10 +83,10 @@ serve(async (req) => {
 
     if (isMusic) {
       // ═══ MUSIC: submit task and return task_id immediately ═══
+      console.log("Music generation request:", { model: "suno_music", prompt: prompt?.slice(0, 50) });
       const musicBody: Record<string, any> = { model: "suno_music", prompt };
       if (settings?.title) musicBody.title = settings.title;
       if (settings?.tags) musicBody.tags = settings.tags;
-      if (settings?.duration) musicBody.duration = settings.duration;
 
       const createResp = await fetch(`${LEMON_BASE}/v1/music/generations`, {
         method: "POST",
@@ -96,6 +96,7 @@ serve(async (req) => {
 
       if (!createResp.ok) {
         const errText = await createResp.text();
+        console.error("Music API error:", createResp.status, errText);
         if (createResp.status === 401 || createResp.status === 403) {
           supabase.from("lemondata_keys").update({ is_blocked: true, block_reason: `HTTP ${createResp.status}` }).eq("id", key.id);
         }
@@ -103,11 +104,13 @@ serve(async (req) => {
       }
 
       const createData = await createResp.json();
+      console.log("Music API response:", JSON.stringify(createData).slice(0, 200));
       const taskId = createData.id || createData.task_id;
 
       // If response already has audio_url, return directly
       const directUrl = createData.audio_url || createData.url || createData.data?.[0]?.audio_url;
       if (directUrl) {
+        console.log("Direct audio URL received");
         return new Response(JSON.stringify({ success: true, status: "completed", url: directUrl, model: model_id }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -115,6 +118,7 @@ serve(async (req) => {
 
       if (!taskId) throw new Error("No task ID returned from music API");
 
+      console.log("Returning task_id for polling:", taskId);
       // Return task_id for client-side polling
       return new Response(JSON.stringify({ success: true, status: "pending", task_id: taskId, key_id: key.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
