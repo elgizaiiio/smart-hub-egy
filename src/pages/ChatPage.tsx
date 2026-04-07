@@ -298,7 +298,6 @@ const ChatPage = () => {
     const isDeepResearch = chatMode === "deep-research";
     if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Starting deep research..." : "Starting search...");
     if (chatMode === "shopping") setSearchStatus("Searching for products...");
-    if (computerUseEnabled) setSearchStatus("Initializing Megsy Computer...");
 
     await streamChat({
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
@@ -807,9 +806,9 @@ Ask me anything to get started!`;
                   onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
               )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
-                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} statusHistory={statusHistory} isComputerUse={computerUseEnabled} />
+                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} statusHistory={statusHistory} />
               }
-              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader statusHistory={statusHistory} isComputerUse={computerUseEnabled} />}
+              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader statusHistory={statusHistory} />}
               <div ref={messagesEndRef} />
             </div>
           )}

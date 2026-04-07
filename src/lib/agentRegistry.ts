@@ -1,6 +1,6 @@
 import {
   GraduationCap, ShoppingCart, Search, Presentation, PenTool,
-  FileSpreadsheet, ScrollText, ImageIcon, Video, Code, Mic,
+  FileSpreadsheet, ScrollText, ImageIcon, Video, Mic,
   FileText, Sparkles, Brain, Mail
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -60,7 +60,7 @@ export const AGENTS: AgentDef[] = [
       { id: "hunyuan", label: "Hunyuan", cost: 15 },
     ],
   },
-  { id: "code", label: "Code", mention: "@code", icon: Code, color: "text-sky-400", bg: "bg-sky-500/15", description: "Build apps & code", category: "code" },
+  
   {
     id: "voice", label: "Voice", mention: "@voice", icon: Mic,
     color: "text-purple-400", bg: "bg-purple-500/15",
@@ -74,9 +74,9 @@ export const AGENTS: AgentDef[] = [
 
   // Integrations
   {
-    id: "email", label: "Email", mention: "@email", icon: Mail,
+    id: "integrations", label: "Integrations", mention: "@integrations", icon: Mail,
     color: "text-teal-400", bg: "bg-teal-500/15",
-    description: "Send emails",
+    description: "Gmail, Outlook, Slack & more",
     category: "integration",
   },
 ];

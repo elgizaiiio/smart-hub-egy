@@ -53,6 +53,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const [mentionQuery, setMentionQuery] = useState("");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelQuery, setModelQuery] = useState("");
+  const [lastSelectedAgent, setLastSelectedAgent] = useState<AgentDef | null>(null);
 
   useEffect(() => {
     valueRef.current = value;
@@ -62,12 +63,13 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const safeQuestionIndex = hasQuestions ? Math.min(questionIndex, pendingQuestions!.length - 1) : 0;
   const currentQuestion = hasQuestions ? pendingQuestions![safeQuestionIndex] : null;
 
-  // Get models for active agent
+  // Get models for active agent OR last selected agent
   const activeAgentModels = useMemo(() => {
+    if (lastSelectedAgent?.models?.length) return lastSelectedAgent.models;
     if (!activeAgent) return [];
     const agent = getAgentById(activeAgent);
     return agent?.models || [];
-  }, [activeAgent]);
+  }, [activeAgent, lastSelectedAgent]);
 
   // Placeholder typing animation
   useEffect(() => {
@@ -136,8 +138,8 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = newVal.slice(0, cursorPos);
 
-    // Check for # model picker (only when agent is selected and has models)
-    if (activeAgent && activeAgentModels.length > 0) {
+    // Check for # model picker (when agent with models is selected)
+    if ((activeAgent || lastSelectedAgent) && activeAgentModels.length > 0) {
       const hashMatch = textBeforeCursor.match(/#(\w*)$/);
       if (hashMatch) {
         setModelPickerOpen(true);
@@ -168,19 +170,35 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     const textBeforeCursor = value.slice(0, cursorPos);
     const cleanedBefore = textBeforeCursor.replace(/@\w*$/, "");
     const textAfter = value.slice(cursorPos);
-    onChange(cleanedBefore + textAfter);
+    // Keep @agent visible in input
+    const agentTag = `@${agent.label} `;
+    const newVal = cleanedBefore + agentTag + textAfter;
+    onChange(newVal);
     setMentionOpen(false);
     setMentionQuery("");
+    setLastSelectedAgent(agent);
     onAgentSelect?.(agent);
+
+    // Auto-open model picker if agent has models
+    if (agent.models && agent.models.length > 0) {
+      setTimeout(() => {
+        // Insert # and open model picker
+        const pos = (cleanedBefore + agentTag).length;
+        onChange(cleanedBefore + agentTag + "#" + textAfter);
+        setModelPickerOpen(true);
+        setModelQuery("");
+      }, 50);
+    }
   };
 
   const handleModelSelect = (model: AgentModel) => {
-    // Remove the #query from input
+    // Replace #query with #model-label and keep it visible
     const cursorPos = textareaRef.current?.selectionStart || value.length;
     const textBeforeCursor = value.slice(0, cursorPos);
     const cleanedBefore = textBeforeCursor.replace(/#\w*$/, "");
     const textAfter = value.slice(cursorPos);
-    onChange(cleanedBefore + textAfter);
+    const modelTag = `#${model.label} `;
+    onChange(cleanedBefore + modelTag + textAfter);
     setModelPickerOpen(false);
     setModelQuery("");
     onModelSelect?.(model);
@@ -317,17 +335,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              {activeAgent && (
-                <span className="text-xs text-muted-foreground select-none shrink-0 flex items-center gap-1">
-                  @{activeAgent}
-                  {selectedModel && (
-                    <span className="text-[10px] text-muted-foreground/70">#{selectedModel.id}</span>
-                  )}
-                  <button onClick={() => { onAgentRemove?.(); onModelRemove?.(); }} className="hover:text-foreground transition-colors ml-0.5">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
+              {/* Agent and model shown inline in text, no separate badges */}
               <textarea
                 ref={textareaRef}
                 value={value}

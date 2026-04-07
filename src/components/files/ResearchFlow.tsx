@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, FileText, CheckCircle2, Loader2, BookOpen } from "lucide-react";
+import { FileText, CheckCircle2, Loader2, BookOpen } from "lucide-react";
 
 export interface ResearchStep {
   id: string;
@@ -12,8 +12,14 @@ interface ResearchFlowProps {
   outline?: string[] | null;
 }
 
-const ICONS: Record<string, typeof Search> = {
-  search: Search,
+const StarIcon = ({ className }: { className?: string }) => (
+  <svg className={className} width="14" height="14" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+  </svg>
+);
+
+const ICONS: Record<string, any> = {
+  search: StarIcon,
   outline: FileText,
   review: CheckCircle2,
   generate: BookOpen,
@@ -28,7 +34,7 @@ const ResearchFlow = ({ steps, outline }: ResearchFlowProps) => {
     >
       {steps.map((step, i) => {
         const iconKey = step.id.includes("search") ? "search" : step.id.includes("outline") ? "outline" : step.id.includes("review") ? "review" : "generate";
-        const Icon = ICONS[iconKey] || Search;
+        const Icon = ICONS[iconKey] || StarIcon;
         return (
           <motion.div
             key={step.id}
