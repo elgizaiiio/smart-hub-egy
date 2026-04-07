@@ -151,62 +151,45 @@ serve(async (req) => {
       } catch { /* silently skip memory errors */ }
     }
 
-    // ── Model routing: ALL through LemonData ──
+    // ── Model routing ──
     const complexity = detectComplexity(messages, mode);
     const isDeepResearch = deepResearch === true;
+    const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
+    const isLovableGatewayModel = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
 
-    // Model selection via LemonData
-    let modelId: string;
-    if (model && model !== "auto") {
-      modelId = model;
-    } else if (isDeepResearch) {
-      modelId = "deepseek-v3-2";
-    } else {
-      modelId = "claude-haiku-4-5";
-    }
+    let modelId: string = requestedModel ?? (isDeepResearch ? "deepseek-v3-2" : "claude-haiku-4-5");
+    let apiUrl = LEMONDATA_URL;
+    let apiKey = "";
+    let usedKeyId: string | null = null;
 
-    // Get LemonData key
-    const lemonKey = await getLemonDataKey(sb);
-    if (!lemonKey) {
-      // Fallback to LOVABLE_API_KEY
+    if (isLovableGatewayModel) {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       if (!LOVABLE_API_KEY) {
         return new Response(JSON.stringify({ error: "No API keys available" }), {
           status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // Use Lovable AI gateway as fallback
-      const apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      modelId = "google/gemini-2.5-flash";
-      
-      // Build system prompt and body, then make request
-      const systemPrompt = buildSystemPrompt(mode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
-      const body: any = {
-        model: modelId,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-        stream: true,
-        max_tokens: isDeepResearch ? 8192 : (mode === "files" ? 8192 : 4096),
-      };
-      
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      
-      if (!response.ok) {
-        const t = await response.text();
-        console.error("Lovable AI fallback error:", response.status, t);
-        return new Response(JSON.stringify({ error: "AI service error" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      apiKey = LOVABLE_API_KEY;
+    } else {
+      const lemonKey = await getLemonDataKey(sb);
+      if (lemonKey) {
+        apiKey = lemonKey.api_key;
+        usedKeyId = lemonKey.id;
+      } else {
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (!LOVABLE_API_KEY) {
+          return new Response(JSON.stringify({ error: "No API keys available" }), {
+            status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+        apiKey = LOVABLE_API_KEY;
+        if (!requestedModel) {
+          modelId = "google/gemini-2.5-flash";
+        }
       }
-      
-      return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
     }
-
-    let apiKey = lemonKey.api_key;
-    let usedKeyId = lemonKey.id;
 
     // Build Composio tools for function calling
     const composioTools = COMPOSIO_API_KEY ? [
@@ -223,62 +206,34 @@ serve(async (req) => {
       { type: "function", function: { name: "LINKEDIN_CREATE_POST", description: "Create a LinkedIn post", parameters: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } } },
       { type: "function", function: { name: "YOUTUBE_LIST_VIDEOS", description: "List videos from a YouTube channel", parameters: { type: "object", properties: { query: { type: "string" }, max_results: { type: "number", default: 5 } } } } },
     ] : [];
-
-    // Build search tool
-    const searchTools = (((searchEnabled || isDeepResearch) || wantsHamzaProfile) && SERPER_API_KEY) ? [
-      {
-        type: "function",
-        function: {
-          name: "WEB_SEARCH",
-          description: isDeepResearch
-            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 6-10 TIMES with different queries to gather exhaustive information from every possible angle."
-            : "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data.",
-          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results" } }, required: ["query"] },
-        },
-      },
-    ] : [];
-
-    // System prompt
-    const systemPrompt = buildSystemPrompt(mode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
-
-    const body: any = {
-      model: modelId,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: true,
-      max_tokens: isDeepResearch ? 8192 : (mode === "files" ? 8192 : 4096),
-    };
-
-    const allTools = [...composioTools, ...searchTools];
-    if (allTools.length > 0) {
-      body.tools = allTools;
-      body.tool_choice = "auto";
-    }
-
+...
     // Key rotation with retry
     let response: Response;
     let retryCount = 0;
     const MAX_RETRIES = 3;
 
     while (true) {
-      response = await fetch(LEMONDATA_URL, {
+      response = await fetch(apiUrl, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      if ((response.status === 401 || response.status === 403 || response.status === 429) && retryCount < MAX_RETRIES) {
-        if (response.status !== 429) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
-        const newKey = await getLemonDataKey(sb, usedKeyId);
+      if (apiUrl === LEMONDATA_URL && (response.status === 401 || response.status === 403 || response.status === 429) && retryCount < MAX_RETRIES) {
+        if (response.status !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
+        const newKey = await getLemonDataKey(sb, usedKeyId || undefined);
         if (newKey) {
           apiKey = newKey.api_key;
           usedKeyId = newKey.id;
           retryCount++;
           continue;
         }
-        // Fallback to Lovable AI
+
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
         if (LOVABLE_API_KEY) {
-          body.model = "google/gemini-2.5-flash";
+          body.model = requestedModel && /^(google\/|openai\/)/.test(requestedModel)
+            ? requestedModel
+            : "google/gemini-2.5-flash";
           const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -287,19 +242,26 @@ serve(async (req) => {
           if (fallbackResp.ok) {
             return new Response(fallbackResp.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
           }
+          const fallbackText = await fallbackResp.text();
+          console.error("Lovable AI fallback error:", fallbackResp.status, fallbackText);
         }
       }
       break;
     }
 
     // Mark key as used on success
-    if (response.ok) markKeyUsed(sb, usedKeyId);
+    if (response.ok && usedKeyId) markKeyUsed(sb, usedKeyId);
 
     if (!response.ok) {
       const status = response.status;
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (status === 402) {
+        return new Response(JSON.stringify({ error: "Credits depleted" }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
