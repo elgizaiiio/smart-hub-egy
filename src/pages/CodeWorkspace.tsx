@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import CodeChatContainer from "@/components/code/CodeChatContainer";
 import SupabaseConnectCard from "@/components/code/SupabaseConnectCard";
 import RunAIEngine from "@/components/engines/RunAIEngine";
+import OpenBuilderEngine from "@/components/engines/OpenBuilderEngine";
 import { CodeStep, StepType } from "@/components/code/CodeStepMessage";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -547,20 +548,33 @@ const CodeWorkspace = () => {
     </div>
   );
 
+  const runnerCode = useMemo(() => {
+    if (Object.keys(files).length === 0) return "";
+    return buildRunnerCode(files);
+  }, [files, previewKey]);
+
   const previewPanel = (
-    <div className="h-full relative bg-secondary flex flex-col">
+    <div className="h-full relative bg-secondary flex">
       {Object.keys(files).length > 0 ? (
         <>
-          <div className="flex-1 relative overflow-hidden min-h-0">
-            <ReactRunnerPreview files={files} previewKey={previewKey} />
-            <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10" title="Reload">
-              <RefreshCw className="w-4 h-4" />
-            </button>
+          {/* OpenBuilder side panel - desktop only */}
+          {!isMobile && (
+            <div className="w-56 shrink-0 border-r border-border overflow-hidden">
+              <OpenBuilderEngine code={runnerCode} />
+            </div>
+          )}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 relative overflow-hidden min-h-0">
+              <ReactRunnerPreview files={files} previewKey={previewKey} />
+              <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10" title="Reload">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+            <RunAIEngine />
           </div>
-          <RunAIEngine />
         </>
       ) : (
-        <div className="h-full flex items-center justify-center">
+        <div className="h-full w-full flex items-center justify-center">
           <div className="text-center space-y-2">
             <Globe className="w-8 h-8 text-muted-foreground/30 mx-auto" />
             <p className="text-muted-foreground text-sm">Preview will appear here</p>
