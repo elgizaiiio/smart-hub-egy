@@ -9,7 +9,7 @@ import CodeChatContainer from "@/components/code/CodeChatContainer";
 import SupabaseConnectCard from "@/components/code/SupabaseConnectCard";
 import { CodeStep, StepType } from "@/components/code/CodeStepMessage";
 import { AnimatePresence, motion } from "framer-motion";
-import LiveCodes from "livecodes/react";
+import { LiveProvider, LivePreview, LiveError } from "react-live";
 
 const BUILD_CREDIT_COST = 5;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -48,39 +48,30 @@ const parseJsonFallback = (raw: string): FileTree => {
   return {};
 };
 
-// Build LiveCodes config from generated files
-const buildLiveCodesConfig = (files: FileTree) => {
-  // Find the App component
+// Build react-live code from generated files
+const buildReactLiveCode = (files: FileTree): string => {
   const appCandidates = ["src/App.jsx", "src/App.js", "src/App.tsx", "App.jsx", "App.js"];
   let appCode = "";
   for (const c of appCandidates) {
     if (files[c]) { appCode = files[c]; break; }
   }
 
-  // Collect all CSS
-  const cssContent = Object.entries(files)
-    .filter(([p]) => p.endsWith(".css"))
-    .map(([, c]) => c.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+[^;]+;/g, ""))
-    .join("\n");
-
-  // Collect component files (non-App, non-main, non-config)
+  // Collect component files
   const componentCode: string[] = [];
   for (const [path, content] of Object.entries(files)) {
     if (!path.match(/\.(jsx|js|tsx|ts)$/)) continue;
     if (path.includes("vite.config") || path.includes("postcss") || path.includes("tailwind.config")) continue;
     if (path.includes("main.jsx") || path.includes("main.js") || path.includes("main.tsx")) continue;
     if (appCandidates.includes(path)) continue;
-    // Strip imports/exports for inline bundling
     let code = content;
     code = code.replace(/import\s+.*?from\s+['"][^'"]+['"]\s*;?/g, "");
     code = code.replace(/import\s+['"][^'"]+['"]\s*;?/g, "");
     code = code.replace(/export\s+default\s+function\s+(\w+)/g, "function $1");
     code = code.replace(/export\s+default\s+/g, "");
     code = code.replace(/export\s+(const|let|var|function|class)\s+/g, "$1 ");
-    componentCode.push(`// --- ${path} ---\n${code}`);
+    componentCode.push(code);
   }
 
-  // Build combined script: components first, then App
   let combinedApp = appCode;
   combinedApp = combinedApp.replace(/import\s+.*?from\s+['"][^'"]+['"]\s*;?/g, "");
   combinedApp = combinedApp.replace(/import\s+['"][^'"]+['"]\s*;?/g, "");
@@ -88,28 +79,15 @@ const buildLiveCodesConfig = (files: FileTree) => {
   combinedApp = combinedApp.replace(/export\s+default\s+/g, "");
   combinedApp = combinedApp.replace(/export\s+(const|let|var|function|class)\s+/g, "$1 ");
 
-  const fullScript = `${componentCode.join("\n\n")}\n\n// --- App ---\n${combinedApp}\n\n// Render\nconst root = ReactDOM.createRoot(document.getElementById('root'));\nroot.render(React.createElement(App));`;
+  return `${componentCode.join("\n\n")}\n\n${combinedApp}\n\nrender(<App />)`;
+};
 
-  return {
-    markup: {
-      language: "html" as const,
-      content: `<div id="root"></div>`,
-    },
-    style: {
-      language: "css" as const,
-      content: `* { margin: 0; padding: 0; box-sizing: border-box; }\nbody { font-family: system-ui, -apple-system, sans-serif; }\n${cssContent}`,
-    },
-    script: {
-      language: "jsx" as const,
-      content: fullScript,
-    },
-    scripts: [
-      "https://cdn.tailwindcss.com",
-      "https://unpkg.com/react@18/umd/react.production.min.js",
-      "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js",
-      "https://unpkg.com/react-router-dom@6/dist/umd/react-router-dom.production.min.js",
-    ],
-  };
+// Extract CSS from files
+const extractCSS = (files: FileTree): string => {
+  return Object.entries(files)
+    .filter(([p]) => p.endsWith(".css"))
+    .map(([, c]) => c.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+[^;]+;/g, ""))
+    .join("\n");
 };
 
 const VITE_TEMPLATE: FileTree = {
