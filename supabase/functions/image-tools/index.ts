@@ -237,6 +237,30 @@ async function callWaveSpeed(sb: ReturnType<typeof createClient>, model: string,
   throw new Error("WaveSpeed generation timed out");
 }
 
+// Upload base64 to Supabase storage and return public URL
+async function uploadBase64ToStorage(sb: ReturnType<typeof createClient>, base64Data: string, prefix: string): Promise<string> {
+  // If it's already a URL, return as-is
+  if (base64Data.startsWith("http://") || base64Data.startsWith("https://")) return base64Data;
+  
+  // Extract the actual base64 content
+  const matches = base64Data.match(/^data:image\/(\w+);base64,(.+)$/);
+  if (!matches) throw new Error("Invalid base64 image data");
+  
+  const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
+  const rawBase64 = matches[2];
+  const bytes = Uint8Array.from(atob(rawBase64), c => c.charCodeAt(0));
+  
+  const fileName = `${prefix}-${crypto.randomUUID()}.${ext}`;
+  const { error } = await sb.storage.from("user-images").upload(fileName, bytes, {
+    contentType: `image/${matches[1]}`,
+    upsert: false,
+  });
+  if (error) throw new Error(`Storage upload failed: ${error.message}`);
+  
+  const { data: urlData } = sb.storage.from("user-images").getPublicUrl(fileName);
+  return urlData.publicUrl;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -249,11 +273,15 @@ serve(async (req) => {
 
     let resultUrl: string;
 
+    // For providers that need public URLs (fal.ai, WaveSpeed), upload base64 first
+    const needsPublicUrl = config.provider === "fal" || config.provider === "wavespeed";
+
     if (config.provider === "fal") {
-      // fal.ai tools (relight via IC-Light V2)
       const params: Record<string, any> = {};
       if (tool === 'relight') {
-        params.image_url = image;
+        // Upload base64 to get a public URL for fal.ai
+        const imageUrl = needsPublicUrl && image ? await uploadBase64ToStorage(sb, image, "relight") : image;
+        params.image_url = imageUrl;
         params.prompt = prompt || "Professional studio lighting, dramatic";
         params.num_inference_steps = 28;
         params.guidance_scale = 5;
@@ -264,21 +292,24 @@ serve(async (req) => {
       }
       resultUrl = await callFal(config.falModel!, params);
     } else if (config.provider === "wavespeed") {
-      // WaveSpeed tools (face-swap, bg-remover, character-swap)
       const params: Record<string, any> = {};
       if (tool === 'face-swap' || tool === 'character-swap') {
-        params.source_image = image;
-        params.target_image = target || image;
+        // Upload base64 images to get public URLs for WaveSpeed
+        const sourceUrl = image ? await uploadBase64ToStorage(sb, image, "swap-src") : image;
+        const targetUrl = target ? await uploadBase64ToStorage(sb, target, "swap-tgt") : sourceUrl;
+        params.source_image = sourceUrl;
+        params.target_image = targetUrl;
         params.target_index = 0;
         params.output_format = "jpeg";
       } else if (tool === 'bg-remover') {
-        params.image = image;
+        const imageUrl = image ? await uploadBase64ToStorage(sb, image, "bgrem") : image;
+        params.image = imageUrl;
         params.output_format = "png";
       }
       
       resultUrl = await callWaveSpeed(sb, config.wavespeedModel!, params);
     } else {
-      // LemonData tools
+      // LemonData tools - supports base64 directly
       let fullPrompt = prompt || "";
       const toolPrompt = TOOL_PROMPTS[tool];
       if (toolPrompt) {

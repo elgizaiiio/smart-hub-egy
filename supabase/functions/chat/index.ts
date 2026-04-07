@@ -361,7 +361,7 @@ serve(async (req) => {
 
         // Handle remaining tool calls
         if (toolCalls.length > 0) {
-          await handleToolCalls(controller, encoder, toolCalls, body, LEMONDATA_URL, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, 0);
+          await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, 0);
         }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();

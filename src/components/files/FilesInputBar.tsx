@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Paperclip, Image, Globe, ArrowUp, Loader2, X, FileText } from "lucide-react";
 import AgentBadge from "@/components/AgentBadge";
@@ -51,12 +51,13 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef(input);
+  const skipPlaceholderReset = useRef(false);
 
   useImperativeHandle(ref, () => ({ focus: () => textareaRef.current?.focus() }));
 
   useEffect(() => { inputRef.current = input; }, [input]);
 
-  // Typewriter placeholder
+  // Typewriter placeholder - only runs when no input
   useEffect(() => {
     if (inputRef.current) { setDisplayedPlaceholder(""); return; }
     const target = FILE_PLACEHOLDERS[placeholderIdx];
@@ -65,23 +66,31 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
     const t = setInterval(() => {
       if (inputRef.current) { clearInterval(t); setDisplayedPlaceholder(""); return; }
       if (i < target.length) { setDisplayedPlaceholder(target.slice(0, i + 1)); i++; }
-      else { clearInterval(t); setTimeout(() => setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length), 2500); }
+      else { clearInterval(t); setTimeout(() => { skipPlaceholderReset.current = true; setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length); }, 2500); }
     }, 50);
     return () => clearInterval(t);
   }, [placeholderIdx]);
 
+  // Clear placeholder when user starts typing - but DON'T cycle placeholder
   useEffect(() => {
-    if (input) setDisplayedPlaceholder("");
-    else setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length);
+    if (input) {
+      setDisplayedPlaceholder("");
+    } else if (!skipPlaceholderReset.current) {
+      // Only reset placeholder cycle when input is cleared by user action
+      setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length);
+    }
+    skipPlaceholderReset.current = false;
   }, [input]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea - use requestAnimationFrame to avoid layout thrashing
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = "auto";
-    const minH = focused || input ? 56 : (compact ? 32 : 48);
-    el.style.height = Math.max(Math.min(el.scrollHeight, 160), minH) + "px";
+    requestAnimationFrame(() => {
+      el.style.height = "auto";
+      const minH = focused || input ? 64 : (compact ? 40 : 56);
+      el.style.height = Math.max(Math.min(el.scrollHeight, 180), minH) + "px";
+    });
   }, [input, focused, compact]);
 
   // Close menu on outside click
@@ -94,7 +103,7 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     onInputChange(val);
     const cursorPos = e.target.selectionStart;
@@ -102,16 +111,16 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
     const atMatch = before.match(/@(\w*)$/);
     if (atMatch) { setMentionOpen(true); setMentionQuery(atMatch[1]); }
     else { setMentionOpen(false); setMentionQuery(""); }
-  };
+  }, [onInputChange]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (!mentionOpen) onSubmit();
     }
-  };
+  }, [mentionOpen, onSubmit]);
 
-  const handleAgentSelect = (agent: AgentDef) => {
+  const handleAgentSelect = useCallback((agent: AgentDef) => {
     const cursorPos = textareaRef.current?.selectionStart || input.length;
     const before = input.slice(0, cursorPos).replace(/@\w*$/, "");
     const after = input.slice(cursorPos);
@@ -119,11 +128,22 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
     onAgentChange(agent.id);
     setMentionOpen(false);
     setMentionQuery("");
-    textareaRef.current?.focus();
-  };
+    // Use setTimeout to ensure React state updates before focusing
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  }, [input, onInputChange, onAgentChange]);
+
+  const handleFocus = useCallback(() => setFocused(true), []);
+  const handleBlur = useCallback((e: React.FocusEvent) => {
+    // Don't blur if clicking within the input bar container
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (relatedTarget && e.currentTarget.closest('.files-input-container')?.contains(relatedTarget)) {
+      return;
+    }
+    setFocused(false);
+  }, []);
 
   return (
-    <div className={compact ? "max-w-2xl mx-auto w-full" : "max-w-xl mx-auto w-full"}>
+    <div className={`files-input-container ${compact ? "max-w-2xl mx-auto w-full" : "max-w-xl mx-auto w-full"}`}>
       {attachedFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
           {attachedFiles.map((f, i) => (
@@ -147,9 +167,16 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
             />
           )}
         </AnimatePresence>
-        <div className={`flex items-end gap-2 rounded-2xl border bg-secondary/80 backdrop-blur-sm px-4 py-3 transition-all ${focused ? "border-primary/30 shadow-[0_0_20px_rgba(139,92,246,0.08)]" : "border-border/50"}`}>
+        <div className={`flex items-end gap-2 rounded-2xl border bg-secondary/80 backdrop-blur-sm px-4 py-3 transition-all duration-200 ${focused ? "border-primary/30 shadow-[0_0_20px_rgba(139,92,246,0.08)]" : "border-border/50"}`}>
           <div className="relative" ref={menuRef}>
-            <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              type="button"
+              tabIndex={-1}
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
             <AnimatePresence>
               {menuOpen && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-black/80 backdrop-blur-2xl border border-border/30 rounded-xl shadow-lg p-1">
@@ -172,18 +199,23 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
                 value={input}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
                 placeholder={displayedPlaceholder || "Describe what you need..."}
                 rows={1}
-                className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1 max-h-[160px]"
-                style={{ minHeight: focused || input ? "56px" : (compact ? "32px" : "48px") }}
+                autoComplete="off"
+                autoCorrect="off"
+                enterKeyHint="send"
+                className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-2 max-h-[180px]"
+                style={{ minHeight: focused || input ? "64px" : (compact ? "40px" : "56px") }}
               />
             </div>
           </div>
           <button
             onClick={onSubmit}
             disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
+            type="button"
+            tabIndex={-1}
             className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
           >
             {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
