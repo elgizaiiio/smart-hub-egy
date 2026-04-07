@@ -6,6 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const HB_BASE = "https://api.hyperbrowser.ai";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 let cachedHBKey: { id: string; api_key: string } | null = null;
 let cachedHBKeyExpiry = 0;
@@ -31,11 +32,15 @@ function markHBKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
   sb.from("api_keys").update({ last_used_at: new Date().toISOString(), usage_count: 1 }).eq("id", keyId).then(() => {});
 }
 
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { goal, url, action, extract_schema } = await req.json();
+    const { goal, url } = await req.json();
     
     if (!goal && !url) {
       return new Response(JSON.stringify({ error: "Missing goal or url" }), {
@@ -53,6 +58,7 @@ serve(async (req) => {
     }
 
     const encoder = new TextEncoder();
+    const task = url ? `Go to ${url} and ${goal || "extract the main content"}` : goal;
     
     const stream = new ReadableStream({
       async start(controller) {
@@ -68,24 +74,26 @@ serve(async (req) => {
 
         while (retries <= MAX_RETRIES) {
           try {
-            pushStatus(`يفتح المتصفح الذكي...`);
+            pushStatus("Opening smart browser...");
             
-            // Create a session
-            const sessionResp = await fetch("https://app.hyperbrowser.ai/api/v2/sessions", {
+            // Start task using HyperAgent async API
+            const startResp = await fetch(`${HB_BASE}/api/task/hyper-agent`, {
               method: "POST",
               headers: {
                 "x-api-key": hbKey!.api_key,
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                screen: { width: 1280, height: 720 },
+                task,
+                maxSteps: 20,
+                keepBrowserOpen: false,
               }),
             });
 
-            if (!sessionResp.ok) {
-              const errText = await sessionResp.text();
-              if ((sessionResp.status === 401 || sessionResp.status === 403) && retries < MAX_RETRIES) {
-                blockHBKey(sb, hbKey!.id, `HTTP ${sessionResp.status}`);
+            if (!startResp.ok) {
+              const errText = await startResp.text();
+              if ((startResp.status === 401 || startResp.status === 403) && retries < MAX_RETRIES) {
+                blockHBKey(sb, hbKey!.id, `HTTP ${startResp.status}`);
                 const newKey = await getHyperbrowserKey(sb, hbKey!.id);
                 if (newKey) {
                   hbKey = newKey;
@@ -93,71 +101,96 @@ serve(async (req) => {
                   continue;
                 }
               }
-              throw new Error(`Session creation failed: ${sessionResp.status} ${errText}`);
+              throw new Error(`Task start failed: ${startResp.status} ${errText}`);
             }
 
-            const session = await sessionResp.json();
-            const sessionId = session.id;
-            markHBKeyUsed(sb, hbKey!.id);
-
-            pushStatus(`تم فتح المتصفح بنجاح`);
-
-            // If we have a specific URL, navigate to it
-            if (url) {
-              pushStatus(`يتصفح ${new URL(url).hostname}...`);
-            }
-
-            // Use the AI agent endpoint for autonomous browsing
-            const agentResp = await fetch(`https://app.hyperbrowser.ai/api/v2/agents/browser-use`, {
-              method: "POST",
-              headers: {
-                "x-api-key": hbKey!.api_key,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                task: goal || `Navigate to ${url} and extract the main content`,
-                sessionId,
-                maxSteps: 15,
-              }),
-            });
-
-            if (!agentResp.ok) {
-              const errText = await agentResp.text();
-              // Try to close session
-              await fetch(`https://app.hyperbrowser.ai/api/v2/sessions/${sessionId}/stop`, {
-                method: "POST",
-                headers: { "x-api-key": hbKey!.api_key },
-              }).catch(() => {});
-              throw new Error(`Agent failed: ${agentResp.status} ${errText}`);
-            }
-
-            const agentResult = await agentResp.json();
+            const startData = await startResp.json();
+            const jobId = startData.jobId;
+            if (!jobId) throw new Error("No jobId returned");
             
-            // Stream steps as status updates
-            if (agentResult.steps && Array.isArray(agentResult.steps)) {
-              for (const step of agentResult.steps) {
-                if (step.description) {
-                  pushStatus(step.description);
+            markHBKeyUsed(sb, hbKey!.id);
+            pushStatus("Browser opened — executing task...");
+            if (url) pushStatus(`Navigating to ${new URL(url).hostname}...`);
+
+            // Poll for status with live step streaming
+            let lastStepCount = 0;
+            let pollCount = 0;
+            const MAX_POLLS = 90; // 3 minutes max (2s intervals)
+            let finalResult: any = null;
+
+            while (pollCount < MAX_POLLS) {
+              await delay(2000);
+              pollCount++;
+
+              const statusResp = await fetch(`${HB_BASE}/api/task/hyper-agent/${jobId}/status`, {
+                headers: { "x-api-key": hbKey!.api_key },
+              });
+
+              if (!statusResp.ok) {
+                pushStatus("Checking progress...");
+                continue;
+              }
+
+              const statusData = await statusResp.json();
+              const status = statusData.status;
+
+              // Stream new steps as they appear
+              if (statusData.steps && Array.isArray(statusData.steps)) {
+                const newSteps = statusData.steps.slice(lastStepCount);
+                for (const step of newSteps) {
+                  const desc = step.description || step.next_goal || step.action || "";
+                  const stepUrl = step.url || "";
+                  if (desc) {
+                    const stepMsg = stepUrl 
+                      ? `${desc} — ${stepUrl}` 
+                      : desc;
+                    pushStatus(stepMsg);
+                  }
                 }
+                lastStepCount = statusData.steps.length;
+              }
+
+              // Check current URL being browsed
+              if (statusData.currentUrl && pollCount % 3 === 0) {
+                pushStatus(`Currently on: ${statusData.currentUrl}`);
+              }
+
+              if (status === "completed" || status === "finished" || status === "done") {
+                finalResult = statusData;
+                break;
+              }
+
+              if (status === "failed" || status === "error") {
+                throw new Error(statusData.error || "Task failed");
+              }
+
+              // Show progress indicator periodically
+              if (pollCount % 5 === 0 && !statusData.steps?.length) {
+                pushStatus("Still working...");
               }
             }
 
-            pushStatus("تم الانتهاء من التصفح");
+            if (!finalResult && pollCount >= MAX_POLLS) {
+              pushStatus("Task timed out — retrieving partial results...");
+              // Try to get final status one more time
+              const finalResp = await fetch(`${HB_BASE}/api/task/hyper-agent/${jobId}/status`, {
+                headers: { "x-api-key": hbKey!.api_key },
+              });
+              if (finalResp.ok) finalResult = await finalResp.json();
+            }
 
-            // Send the final result
+            pushStatus("Browsing completed");
+
+            const output = finalResult?.output || finalResult?.result || finalResult;
+            const steps = finalResult?.steps?.map((s: any) => s.description || s.next_goal).filter(Boolean) || [];
+
             pushData({
               type: "browser_result",
-              result: agentResult.output || agentResult.result || agentResult,
-              steps: agentResult.steps?.map((s: any) => s.description).filter(Boolean) || [],
+              result: typeof output === 'string' ? output : JSON.stringify(output, null, 2),
+              steps,
             });
 
-            // Close session
-            await fetch(`https://app.hyperbrowser.ai/api/v2/sessions/${sessionId}/stop`, {
-              method: "POST",
-              headers: { "x-api-key": hbKey!.api_key },
-            }).catch(() => {});
-
-            break; // Success, exit retry loop
+            break; // Success
 
           } catch (err) {
             console.error(`Computer-use attempt ${retries + 1} error:`, err);
