@@ -66,6 +66,8 @@ import VoiceCallPage from "./pages/voice/VoiceCallPage";
 import MusicGeneratorPage from "./pages/voice/MusicGeneratorPage";
 import MusicPlayerPage from "./pages/voice/MusicPlayerPage";
 import NoiseRemoverPage from "./pages/voice/NoiseRemoverPage";
+import VoiceTranslatePage from "./pages/voice/VoiceTranslatePage";
+import VoiceStudioPage from "./pages/voice/VoiceStudioPage";
 import VideoToTextPage from "./pages/tools/VideoToTextPage";
 import AIPersonalizationPage from "./pages/AIPersonalizationPage";
 
