@@ -6,6 +6,28 @@ import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 
+// Local landing images
+const LOCAL_LANDING: Record<string, () => Promise<{ default: string }>> = {
+  'inpaint': () => import('@/assets/tool-landing/inpaint.jpg'),
+  'clothes-changer': () => import('@/assets/tool-landing/clothes-changer.jpg'),
+  'headshot': () => import('@/assets/tool-landing/headshot.jpg'),
+  'bg-remover': () => import('@/assets/tool-landing/bg-remover.jpg'),
+  'face-swap': () => import('@/assets/tool-landing/face-swap.jpg'),
+  'relight': () => import('@/assets/tool-landing/relight.jpg'),
+  'colorizer': () => import('@/assets/tool-landing/colorizer.jpg'),
+  'sketch-to-image': () => import('@/assets/tool-landing/sketch-to-image.jpg'),
+  'retouching': () => import('@/assets/tool-landing/retouching.jpg'),
+  'remover': () => import('@/assets/tool-landing/remover.jpg'),
+  'hair-changer': () => import('@/assets/tool-landing/hair-changer.jpg'),
+  'cartoon': () => import('@/assets/tool-landing/cartoon.jpg'),
+  'avatar-generator': () => import('@/assets/tool-landing/avatar-generator.jpg'),
+  'product-photo': () => import('@/assets/tool-landing/product-photo.jpg'),
+  'logo-generator': () => import('@/assets/tool-landing/logo-generator.jpg'),
+  'perspective-correction': () => import('@/assets/tool-landing/perspective-correction.jpg'),
+  'storyboard': () => import('@/assets/tool-landing/storyboard.jpg'),
+  'character-swap': () => import('@/assets/tool-landing/character-swap.jpg'),
+};
+
 // ==================== Types ====================
 export interface ToolTemplate {
   id: string;
@@ -264,7 +286,9 @@ const ToolPageLayout = ({
   useEffect(() => {
     supabase.from("tool_landing_images").select("image_url").eq("tool_id", toolId).maybeSingle()
       .then(({ data }) => {
-        if (data?.image_url) setLandingImage(data.image_url);
+        if (data?.image_url) { setLandingImage(data.image_url); return; }
+        const loader = LOCAL_LANDING[toolId];
+        if (loader) loader().then(m => setLandingImage(m.default));
       });
   }, [toolId]);
 
