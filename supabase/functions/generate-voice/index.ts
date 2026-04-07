@@ -13,22 +13,34 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { model_id, prompt, type, settings, poll_task_id } = await req.json();
+    const { model_id, prompt, type, settings, poll_task_id, poll_key_id } = await req.json();
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: lemonKeys } = await supabase
-      .from("lemondata_keys")
-      .select("api_key, id, usage_count")
-      .eq("is_active", true)
-      .eq("is_blocked", false)
-      .limit(20);
+    let key: { api_key: string; id: string; usage_count: number };
 
-    if (!lemonKeys || lemonKeys.length === 0) throw new Error("No active API keys available");
-    const key = lemonKeys[Math.floor(Math.random() * lemonKeys.length)];
+    if (poll_key_id) {
+      // Use the exact same key that created the task
+      const { data: exactKey } = await supabase
+        .from("lemondata_keys")
+        .select("api_key, id, usage_count")
+        .eq("id", poll_key_id)
+        .single();
+      if (!exactKey) throw new Error("Poll key not found");
+      key = exactKey;
+    } else {
+      const { data: lemonKeys } = await supabase
+        .from("lemondata_keys")
+        .select("api_key, id, usage_count")
+        .eq("is_active", true)
+        .eq("is_blocked", false)
+        .limit(20);
+      if (!lemonKeys || lemonKeys.length === 0) throw new Error("No active API keys available");
+      key = lemonKeys[Math.floor(Math.random() * lemonKeys.length)];
+    }
 
     // ═══ POLL MODE: check status of existing music task ═══
     if (poll_task_id) {
@@ -104,7 +116,7 @@ serve(async (req) => {
       if (!taskId) throw new Error("No task ID returned from music API");
 
       // Return task_id for client-side polling
-      return new Response(JSON.stringify({ success: true, status: "pending", task_id: taskId }), {
+      return new Response(JSON.stringify({ success: true, status: "pending", task_id: taskId, key_id: key.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 

@@ -64,12 +64,12 @@ const MusicGeneratorPage = () => {
       }
 
       if (data?.task_id) {
-        // Client-side polling
         const taskId = data.task_id;
+        const keyId = data.key_id;
         for (let i = 0; i < 60; i++) {
           await new Promise(r => setTimeout(r, 3000));
           const { data: pollData } = await supabase.functions.invoke("generate-voice", {
-            body: { poll_task_id: taskId },
+            body: { poll_task_id: taskId, poll_key_id: keyId },
           });
           if (pollData?.status === "completed" && pollData?.url) {
             setResults(prev => [{ url: pollData.url, prompt: prompt.trim() }, ...prev]);
