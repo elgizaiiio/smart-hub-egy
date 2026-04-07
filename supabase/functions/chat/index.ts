@@ -619,8 +619,6 @@ async function handleToolCalls(
 
     const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
     
-    // Use simplified message format for models that may not support tool_calls format
-    // This is more compatible across all providers (LemonData, Lovable Gateway)
     const searchMessages = [
       ...originalBody.messages,
       {
@@ -633,7 +631,20 @@ async function handleToolCalls(
       },
     ];
 
-    const secondBody: any = { model: modelId, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
+    // For the synthesis call, prefer Lovable Gateway for reliability
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    let synthesisUrl = apiUrl;
+    let synthesisKey = apiKey;
+    let synthesisModel = modelId;
+    
+    // If using LemonData and it's deep research, switch to Lovable for synthesis
+    if (LOVABLE_API_KEY && isDeepResearch) {
+      synthesisUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      synthesisKey = LOVABLE_API_KEY;
+      synthesisModel = "google/gemini-2.5-flash";
+    }
+
+    const secondBody: any = { model: synthesisModel, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
     // Only allow further tool calls if we haven't hit max depth
     if (isDeepResearch && searchTools.length > 0 && depth < MAX_DEPTH) {
       secondBody.tools = searchTools;
@@ -641,9 +652,9 @@ async function handleToolCalls(
     }
 
     try {
-      const secondResp = await fetch(apiUrl, {
+      const secondResp = await fetch(synthesisUrl, {
         method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${synthesisKey}`, "Content-Type": "application/json" },
         body: JSON.stringify(secondBody),
       });
 
