@@ -304,17 +304,67 @@ const FilesPage = () => {
           <div className="w-9" />
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 pb-44 md:pb-52">
+        <div className="flex-1 overflow-y-auto min-h-0 pb-4 md:pb-8">
           {!hasMessages ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg w-full">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-xl w-full">
                 {/* Hero text */}
                 <h1 className="font-display text-3xl md:text-4xl font-black uppercase leading-[1.1] tracking-tight text-foreground">CREATE YOUR</h1>
                 <h1 className="font-display text-3xl md:text-4xl font-black uppercase leading-[1] tracking-tight bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">DOCUMENTS</h1>
                 <p className="text-sm text-muted-foreground mt-3 mb-6">Generate documents, presentations, spreadsheets and more</p>
 
+                {/* Centered Input */}
+                <div className="max-w-lg mx-auto mb-8">
+                  {attachedFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {attachedFiles.map((f, i) => (
+                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs text-foreground">
+                          {f.type === "image" ? <Image className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                          <span className="truncate max-w-[100px]">{f.name}</span>
+                          <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
+                    <div className="relative" ref={menuRef}>
+                      <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
+                      <AnimatePresence>
+                        {menuOpen && (
+                          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-card border border-border rounded-xl shadow-lg p-1">
+                            <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Paperclip className="w-4 h-4" /> Attach file</button>
+                            <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Image className="w-4 h-4" /> Attach image</button>
+                            <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
+                              <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <div className="flex-1 relative">
+                      <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                        placeholder={displayedPlaceholder || "Describe what you need..."}
+                        rows={1}
+                        className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
+                        style={{ minHeight: "32px" }}
+                      />
+                    </div>
+                    <button
+                      onClick={handleGenerate}
+                      disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
+                      className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
+                    >
+                      {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
                 {/* Service cards */}
-                <div className="grid grid-cols-4 gap-3 mb-6">
+                <div className="grid grid-cols-4 gap-3">
                   {FILE_SERVICES.map((svc, i) => (
                     <motion.button
                       key={svc.id}
@@ -361,59 +411,59 @@ const FilesPage = () => {
           )}
         </div>
 
-        {/* Bottom Input */}
-        <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
-          <div className="max-w-2xl mx-auto">
-            {/* Attached files */}
-            {attachedFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {attachedFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs text-foreground">
-                    {f.type === "image" ? <Image className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
-                    <span className="truncate max-w-[100px]">{f.name}</span>
-                    <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
-                  </div>
-                ))}
+        {/* Bottom Input - only when in chat mode */}
+        {hasMessages && (
+          <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+            <div className="max-w-2xl mx-auto">
+              {attachedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {attachedFiles.map((f, i) => (
+                    <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs text-foreground">
+                      {f.type === "image" ? <Image className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                      <span className="truncate max-w-[100px]">{f.name}</span>
+                      <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
+                <div className="relative" ref={menuRef}>
+                  <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
+                  <AnimatePresence>
+                    {menuOpen && (
+                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-card border border-border rounded-xl shadow-lg p-1">
+                        <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Paperclip className="w-4 h-4" /> Attach file</button>
+                        <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Image className="w-4 h-4" /> Attach image</button>
+                        <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
+                          <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                    placeholder={displayedPlaceholder || "Describe what you need..."}
+                    rows={1}
+                    className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
+                    style={{ minHeight: "32px" }}
+                  />
+                </div>
+                <button
+                  onClick={handleGenerate}
+                  disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
+                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
+                >
+                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                </button>
               </div>
-            )}
-
-            <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
-              <div className="relative" ref={menuRef}>
-                <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
-                <AnimatePresence>
-                  {menuOpen && (
-                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-card border border-border rounded-xl shadow-lg p-1">
-                      <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Paperclip className="w-4 h-4" /> Attach file</button>
-                      <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Image className="w-4 h-4" /> Attach image</button>
-                      <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
-                        <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              <div className="flex-1 relative">
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                  placeholder={displayedPlaceholder || "Describe what you need..."}
-                  rows={1}
-                  className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
-                  style={{ minHeight: "32px" }}
-                />
-              </div>
-              <button
-                onClick={handleGenerate}
-                disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
-                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
-              >
-                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-              </button>
             </div>
           </div>
-        </div>
+        )}
 
         <input ref={fileInputRef} type="file" accept=".txt,.pdf,.doc,.docx,.csv,.json,.md" multiple className="hidden" onChange={e => handleFileAttach(e, "file")} />
         <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFileAttach(e, "image")} />
