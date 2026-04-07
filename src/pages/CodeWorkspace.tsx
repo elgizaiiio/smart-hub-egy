@@ -10,6 +10,10 @@ import SupabaseConnectCard from "@/components/code/SupabaseConnectCard";
 import { CodeStep, StepType } from "@/components/code/CodeStepMessage";
 import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  SandpackProvider,
+  SandpackPreview,
+} from "@codesandbox/sandpack-react";
 
 const BUILD_CREDIT_COST = 5;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -48,91 +52,14 @@ const parseJsonFallback = (raw: string): FileTree => {
   return {};
 };
 
-const buildPreviewHtml = (files: FileTree): string => {
-  const modules: Record<string, string> = {};
+// Convert AI file paths to Sandpack format (must start with /)
+const toSandpackFiles = (files: FileTree): Record<string, string> => {
+  const result: Record<string, string> = {};
   for (const [path, content] of Object.entries(files)) {
-    if (path.match(/\.(jsx|js|tsx|ts)$/) && !path.includes("vite.config") && !path.includes("postcss") && !path.includes("tailwind.config")) {
-      modules[path] = content;
-    }
+    const key = path.startsWith("/") ? path : `/${path}`;
+    result[key] = content;
   }
-  const cssFiles = Object.entries(files)
-    .filter(([p]) => p.endsWith(".css"))
-    .map(([, c]) => c.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+[^;]+;/g, ""))
-    .join("\n");
-  const moduleScripts = Object.entries(modules)
-    .map(([path, code]) => {
-      const escaped = code.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-      return `__modules["${path}"] = \`${escaped}\`;`;
-    })
-    .join("\n");
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Preview</title>
-<script src="https://cdn.tailwindcss.com"><\/script>
-<script src="https://unpkg.com/react@18/umd/react.development.js"><\/script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"><\/script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
-<script src="https://unpkg.com/react-router-dom@6/dist/umd/react-router-dom.production.min.js"><\/script>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; }
-${cssFiles}
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script>
-const __modules = {};
-${moduleScripts}
-try {
-  const appCandidates = ['src/App.jsx', 'src/App.js', 'src/App.tsx', 'App.jsx', 'App.js'];
-  let appCode = null;
-  for (const c of appCandidates) { if (__modules[c]) { appCode = __modules[c]; break; } }
-  if (appCode) {
-    const allCode = [];
-    const sortedPaths = Object.keys(__modules).sort((a, b) => {
-      if (a.includes('App')) return 1;
-      if (b.includes('App')) return -1;
-      return 0;
-    });
-    for (const p of sortedPaths) {
-      if (p.includes('main.jsx') || p.includes('main.js') || p.includes('main.tsx')) continue;
-      let code = __modules[p];
-      code = code.replace(/import\\s+.*?from\\s+['"][^'"]+['"]/g, '');
-      code = code.replace(/import\\s+['"][^'"]+['"]/g, '');
-      code = code.replace(/export\\s+default\\s+function\\s+(\\w+)/g, 'function $1');
-      code = code.replace(/export\\s+default\\s+/g, 'var __default_' + p.replace(/[^a-zA-Z0-9]/g, '_') + ' = ');
-      code = code.replace(/export\\s+(const|let|var|function|class)\\s+/g, '$1 ');
-      allCode.push('// --- ' + p + ' ---\\n' + code);
-    }
-    const combined = allCode.join('\\n\\n');
-    const transformed = Babel.transform(combined, { presets: ['react'], filename: 'combined.jsx' }).code;
-    eval(transformed);
-    const AppComponent = window.App || eval('typeof App !== "undefined" ? App : null');
-    if (AppComponent) {
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      if (typeof ReactRouterDOM !== 'undefined' && appCode.includes('Router')) {
-        root.render(React.createElement(ReactRouterDOM.BrowserRouter, null, React.createElement(AppComponent)));
-      } else {
-        root.render(React.createElement(AppComponent));
-      }
-    } else {
-      document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#888;">Could not find App component</div>';
-    }
-  } else {
-    document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#888;">No App component found</div>';
-  }
-} catch(e) {
-  console.error('Preview error:', e);
-  document.getElementById('root').innerHTML = '<div style="padding:2rem;"><h3 style="color:#ef4444;margin-bottom:8px;">Preview Error</h3><pre style="background:#1a1a1a;color:#fca5a5;padding:1rem;border-radius:8px;overflow:auto;font-size:12px;">' + e.message + '</pre></div>';
-}
-<\/script>
-</body>
-</html>`;
+  return result;
 };
 
 const VITE_TEMPLATE: FileTree = {
@@ -191,15 +118,15 @@ const CodeWorkspace = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showSupabaseConnect, setShowSupabaseConnect] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loadedConversation, setLoadedConversation] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
   // Step-by-step system
   const [steps, setSteps] = useState<CodeStep[]>([]);
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
 
   const [files, setFiles] = useState<FileTree>({});
+  const [sandpackFiles, setSandpackFiles] = useState<Record<string, string> | null>(null);
+  const [sandpackKey, setSandpackKey] = useState(0);
   const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
   const [supabaseConfig, setSupabaseConfig] = useState<{ url: string; anon_key: string } | null>(null);
@@ -238,8 +165,9 @@ const CodeWorkspace = () => {
         const loadedFiles = { ...snap };
         delete loadedFiles.__supabase_config;
         setFiles(loadedFiles);
-        const html = buildPreviewHtml({ ...VITE_TEMPLATE, ...loadedFiles });
-        setPreviewHtml(html);
+        const allFiles = { ...VITE_TEMPLATE, ...loadedFiles };
+        setSandpackFiles(toSandpackFiles(allFiles));
+        setSandpackKey(k => k + 1);
       }
     };
     loadProject();
@@ -250,13 +178,6 @@ const CodeWorkspace = () => {
       handleSend(prompt);
     }
   }, [prompt, loadedConversation, creditsLoading]);
-
-  useEffect(() => {
-    if (previewHtml && iframeRef.current) {
-      const blob = new Blob([previewHtml], { type: "text/html" });
-      iframeRef.current.src = URL.createObjectURL(blob);
-    }
-  }, [previewHtml]);
 
   const addStep = async (type: StepType, text: string, file?: string): Promise<CodeStep> => {
     const step = makeStep(type, text, file);
@@ -330,7 +251,7 @@ const CodeWorkspace = () => {
       refreshCredits();
     }
 
-    // Step 1: Pre-message (AI explains what it will do)
+    // Step 1: Pre-message
     await addStep("pre_message", getPreMessage(msgText));
 
     // Step 2: Thinking
@@ -377,7 +298,6 @@ const CodeWorkspace = () => {
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
                 fullContent += content;
-                // Detect new files being written
                 const currentFiles = parseFileMarkers(fullContent);
                 const newCount = Object.keys(currentFiles).length;
                 if (newCount > detectedFileCount) {
@@ -416,12 +336,12 @@ const CodeWorkspace = () => {
 
       completeStep(parseStep.id);
 
-      // Save & render
+      // Save & render with Sandpack
       const saveStep = await addStep("saving", "Saving changes...");
       const allFiles = { ...VITE_TEMPLATE, ...parsedFiles };
       setFiles(allFiles);
-      const html = buildPreviewHtml(allFiles);
-      setPreviewHtml(html);
+      setSandpackFiles(toSandpackFiles(allFiles));
+      setSandpackKey(k => k + 1);
       completeStep(saveStep.id);
 
       // Done
@@ -468,7 +388,7 @@ const CodeWorkspace = () => {
   };
 
   const handleRefreshPreview = () => {
-    if (Object.keys(files).length > 0) setPreviewHtml(buildPreviewHtml(files));
+    if (sandpackFiles) setSandpackKey(k => k + 1);
   };
 
   const handleDownloadFiles = () => {
@@ -575,14 +495,40 @@ const CodeWorkspace = () => {
   );
 
   const previewPanel = (
-    <div className="h-full relative bg-secondary">
-      {previewHtml ? (
-        <>
-          <iframe ref={iframeRef} className="w-full h-full border-none" title="Preview" sandbox="allow-scripts allow-same-origin" />
-          <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm" title="Reload">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </>
+    <div className="h-full relative bg-secondary flex flex-col">
+      {sandpackFiles ? (
+        <SandpackProvider
+          key={sandpackKey}
+          template="react"
+          files={sandpackFiles}
+          theme="dark"
+          options={{
+            externalResources: ["https://cdn.tailwindcss.com"],
+            autoReload: true,
+          }}
+          customSetup={{
+            dependencies: {
+              "react-router-dom": "^6.20.0",
+              "lucide-react": "^0.400.0",
+              "framer-motion": "^11.0.0",
+            },
+          }}
+        >
+          <div className="flex-1 h-full relative">
+            <SandpackPreview
+              showNavigator={false}
+              showRefreshButton={false}
+              style={{ height: "100%", width: "100%" }}
+            />
+            <button
+              onClick={handleRefreshPreview}
+              className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10"
+              title="Reload"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </SandpackProvider>
       ) : (
         <div className="h-full flex items-center justify-center">
           <div className="text-center space-y-2">
