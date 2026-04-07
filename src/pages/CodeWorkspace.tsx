@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, Github, RefreshCw, Triangle, Download } from "lucide-react";
+import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, Github, RefreshCw, Triangle, Download, Database } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 import { useIsMobile } from "@/hooks/use-mobile";
-import ThinkingLoader from "@/components/ThinkingLoader";
-import BuildTimeline, { BuildStep } from "@/components/BuildTimeline";
+import CodeChatContainer from "@/components/code/CodeChatContainer";
+import SupabaseConnectCard from "@/components/code/SupabaseConnectCard";
+import { CodeStep, StepType } from "@/components/code/CodeStepMessage";
 import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -17,12 +18,11 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 interface ChatMsg {
   role: "user" | "assistant" | "system";
   content: string;
-  type?: "plan" | "build" | "log" | "status" | "timeline";
+  type?: "plan" | "build" | "log" | "status" | "timeline" | "steps";
 }
 
 type FileTree = Record<string, string>;
 
-// ── Parse ===FILE: path=== ... ===END=== format ──
 const parseFileMarkers = (raw: string): FileTree => {
   const files: FileTree = {};
   const regex = /===FILE:\s*(.+?)===\n([\s\S]*?)===END===/g;
@@ -30,14 +30,11 @@ const parseFileMarkers = (raw: string): FileTree => {
   while ((match = regex.exec(raw)) !== null) {
     const path = match[1].trim();
     const content = match[2];
-    if (path && content !== undefined) {
-      files[path] = content;
-    }
+    if (path && content !== undefined) files[path] = content;
   }
   return files;
 };
 
-// ── Fallback: try JSON parse ──
 const parseJsonFallback = (raw: string): FileTree => {
   let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
   const jsonStart = cleaned.search(/[\{\[]/);
@@ -51,30 +48,20 @@ const parseJsonFallback = (raw: string): FileTree => {
   return {};
 };
 
-// ── Build HTML for in-browser preview ──
 const buildPreviewHtml = (files: FileTree): string => {
-  // Collect all JSX/JS files
   const modules: Record<string, string> = {};
   for (const [path, content] of Object.entries(files)) {
     if (path.match(/\.(jsx|js|tsx|ts)$/) && !path.includes("vite.config") && !path.includes("postcss") && !path.includes("tailwind.config")) {
       modules[path] = content;
     }
   }
-
-  // Get CSS
   const cssFiles = Object.entries(files)
     .filter(([p]) => p.endsWith(".css"))
     .map(([, c]) => c.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+[^;]+;/g, ""))
     .join("\n");
-
-  // Build module map as inline scripts
   const moduleScripts = Object.entries(modules)
     .map(([path, code]) => {
-      // Escape for embedding in HTML
-      const escaped = code
-        .replace(/\\/g, "\\\\")
-        .replace(/`/g, "\\`")
-        .replace(/\$\{/g, "\\${");
+      const escaped = code.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
       return `__modules["${path}"] = \`${escaped}\`;`;
     })
     .join("\n");
@@ -99,117 +86,35 @@ ${cssFiles}
 <body>
 <div id="root"></div>
 <script>
-// Simple module system for in-browser preview
 const __modules = {};
 ${moduleScripts}
-
-// Resolve imports
-function __require(name) {
-  if (name === 'react' || name === 'React') return React;
-  if (name === 'react-dom' || name === 'react-dom/client') return ReactDOM;
-  if (name === 'react-router-dom') return ReactRouterDOM;
-  
-  // Try to find module
-  const candidates = [name, name + '.jsx', name + '.js', 'src/' + name, 'src/' + name + '.jsx', 'src/' + name + '.js'];
-  for (const c of candidates) {
-    if (__modules[c]) return __evalModule(c);
-  }
-  
-  // Return empty module
-  console.warn('Module not found:', name);
-  return {};
-}
-
-const __moduleCache = {};
-function __evalModule(path) {
-  if (__moduleCache[path]) return __moduleCache[path];
-  
-  const code = __modules[path];
-  if (!code) return {};
-  
-  try {
-    // Transform import/export with Babel
-    let transformed = code;
-    
-    // Replace import statements
-    transformed = transformed.replace(/import\\s+(?:React|{[^}]*}|\\*\\s+as\\s+\\w+|\\w+)\\s+from\\s+['"]([^'"]+)['"]/g, (match, mod) => {
-      return '/* import from ' + mod + ' */';
-    });
-    transformed = transformed.replace(/import\\s+['"]([^'"]+)['"]/g, '/* import $1 */');
-    
-    // Replace export default
-    transformed = transformed.replace(/export\\s+default\\s+/g, '__exports.default = ');
-    transformed = transformed.replace(/export\\s+(?:const|let|var|function|class)\\s+/g, '__exports.');
-    
-    const __exports = {};
-    const fn = new Function('React', 'ReactDOM', 'ReactRouterDOM', '__exports', '__require', transformed);
-    fn(React, ReactDOM, ReactRouterDOM, __exports, __require);
-    
-    __moduleCache[path] = __exports.default || __exports;
-    return __moduleCache[path];
-  } catch(e) {
-    console.error('Error evaluating', path, e);
-    return {};
-  }
-}
-
-// Try Babel approach for JSX
 try {
-  // Find App component
   const appCandidates = ['src/App.jsx', 'src/App.js', 'src/App.tsx', 'App.jsx', 'App.js'];
   let appCode = null;
-  let appPath = null;
-  
-  for (const c of appCandidates) {
-    if (__modules[c]) {
-      appCode = __modules[c];
-      appPath = c;
-      break;
-    }
-  }
-  
+  for (const c of appCandidates) { if (__modules[c]) { appCode = __modules[c]; break; } }
   if (appCode) {
-    // Use Babel to transform ALL modules
     const allCode = [];
-    
-    // Sort: non-App files first, App last
     const sortedPaths = Object.keys(__modules).sort((a, b) => {
       if (a.includes('App')) return 1;
       if (b.includes('App')) return -1;
       return 0;
     });
-    
     for (const p of sortedPaths) {
       if (p.includes('main.jsx') || p.includes('main.js') || p.includes('main.tsx')) continue;
-      
       let code = __modules[p];
-      // Clean imports
       code = code.replace(/import\\s+.*?from\\s+['"][^'"]+['"]/g, '');
       code = code.replace(/import\\s+['"][^'"]+['"]/g, '');
-      // Replace exports
       code = code.replace(/export\\s+default\\s+function\\s+(\\w+)/g, 'function $1');
       code = code.replace(/export\\s+default\\s+/g, 'var __default_' + p.replace(/[^a-zA-Z0-9]/g, '_') + ' = ');
       code = code.replace(/export\\s+(const|let|var|function|class)\\s+/g, '$1 ');
-      
       allCode.push('// --- ' + p + ' ---\\n' + code);
     }
-    
     const combined = allCode.join('\\n\\n');
-    
-    const transformed = Babel.transform(combined, {
-      presets: ['react'],
-      filename: 'combined.jsx',
-    }).code;
-    
+    const transformed = Babel.transform(combined, { presets: ['react'], filename: 'combined.jsx' }).code;
     eval(transformed);
-    
-    // Find App component
-    const AppComponent = window.App || window.__default_src_App_jsx || eval('typeof App !== "undefined" ? App : null');
-    
+    const AppComponent = window.App || eval('typeof App !== "undefined" ? App : null');
     if (AppComponent) {
       const root = ReactDOM.createRoot(document.getElementById('root'));
-      
-      // Check if react-router-dom is used
       if (typeof ReactRouterDOM !== 'undefined' && appCode.includes('Router')) {
         root.render(React.createElement(ReactRouterDOM.BrowserRouter, null, React.createElement(AppComponent)));
       } else {
@@ -219,7 +124,7 @@ try {
       document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#888;">Could not find App component</div>';
     }
   } else {
-    document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#888;">No App component found in generated files</div>';
+    document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#888;">No App component found</div>';
   }
 } catch(e) {
   console.error('Preview error:', e);
@@ -230,18 +135,11 @@ try {
 </html>`;
 };
 
-// ── VITE template defaults ──
 const VITE_TEMPLATE: FileTree = {
   "src/main.jsx": `import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App'\nimport './index.css'\nReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)`,
   "src/App.jsx": `export default function App() { return <div className="min-h-screen flex items-center justify-center bg-gray-50"><h1 className="text-4xl font-bold text-gray-900">Hello from Megsy!</h1></div> }`,
   "src/index.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\nbody { font-family: system-ui, sans-serif; margin: 0; }`,
 };
-
-const DEFAULT_STEPS: () => BuildStep[] = () => [
-  { id: "ai", label: "AI Generation", status: "pending" },
-  { id: "parse", label: "Parsing files", status: "pending" },
-  { id: "preview", label: "Rendering preview", status: "pending" },
-];
 
 const callGithub = async (body: Record<string, unknown>) => {
   const resp = await fetch(`${SUPABASE_URL}/functions/v1/github-repo`, {
@@ -251,6 +149,34 @@ const callGithub = async (body: Record<string, unknown>) => {
   });
   return resp.json();
 };
+
+// Step delays for realism
+const stepDelay = (type: StepType): number => {
+  const base: Record<string, [number, number]> = {
+    thinking: [400, 800],
+    reading: [300, 600],
+    writing: [500, 900],
+    editing: [500, 900],
+    creating: [600, 1000],
+    searching: [400, 700],
+    saving: [200, 400],
+    done: [100, 200],
+    pre_message: [100, 200],
+    post_message: [100, 200],
+    error: [100, 200],
+  };
+  const [min, max] = base[type] || [200, 500];
+  return min + Math.random() * (max - min);
+};
+
+let stepCounter = 0;
+const makeStep = (type: StepType, text: string, file?: string): CodeStep => ({
+  id: `step-${++stepCounter}`,
+  type,
+  text,
+  file,
+  status: "active",
+});
 
 const CodeWorkspace = () => {
   const navigate = useNavigate();
@@ -263,39 +189,23 @@ const CodeWorkspace = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const [buildSteps, setBuildSteps] = useState<BuildStep[]>([]);
-  const [isBuildActive, setIsBuildActive] = useState(false);
+  const [showSupabaseConnect, setShowSupabaseConnect] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loadedConversation, setLoadedConversation] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-  const [consoleErrors, setConsoleErrors] = useState<string[]>([]);
+
+  // Step-by-step system
+  const [steps, setSteps] = useState<CodeStep[]>([]);
+  const [activeStepId, setActiveStepId] = useState<string | null>(null);
 
   const [files, setFiles] = useState<FileTree>({});
   const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
+  const [supabaseConfig, setSupabaseConfig] = useState<{ url: string; anon_key: string } | null>(null);
 
   const { userId, credits, hasEnoughCredits, refreshCredits, loading: creditsLoading } = useCredits();
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, buildSteps]);
-
-  // Listen for iframe console errors
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (e.data?.type === "console-error") {
-        setConsoleErrors(prev => [...prev.slice(-9), e.data.message]);
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, []);
-
-  // Load saved conversation
   useEffect(() => {
     if (!paramConversationId || loadedConversation) return;
     const loadMessages = async () => {
@@ -312,7 +222,6 @@ const CodeWorkspace = () => {
     loadMessages();
   }, [paramConversationId, loadedConversation]);
 
-  // Load saved project files
   useEffect(() => {
     if (!paramProjectId) return;
     const loadProject = async () => {
@@ -322,9 +231,13 @@ const CodeWorkspace = () => {
         .eq("id", paramProjectId)
         .single();
       if (data?.files_snapshot && typeof data.files_snapshot === "object") {
-        const loadedFiles = data.files_snapshot as FileTree;
+        const snap = data.files_snapshot as any;
+        if (snap.__supabase_config) {
+          setSupabaseConfig(snap.__supabase_config);
+        }
+        const loadedFiles = { ...snap };
+        delete loadedFiles.__supabase_config;
         setFiles(loadedFiles);
-        // Re-render preview from saved files
         const html = buildPreviewHtml({ ...VITE_TEMPLATE, ...loadedFiles });
         setPreviewHtml(html);
       }
@@ -332,14 +245,12 @@ const CodeWorkspace = () => {
     loadProject();
   }, [paramProjectId]);
 
-  // Auto-send initial prompt
   useEffect(() => {
     if (prompt && messages.length === 0 && !paramConversationId && !creditsLoading) {
       handleSend(prompt);
     }
   }, [prompt, loadedConversation, creditsLoading]);
 
-  // Render preview in iframe when previewHtml changes
   useEffect(() => {
     if (previewHtml && iframeRef.current) {
       const blob = new Blob([previewHtml], { type: "text/html" });
@@ -347,8 +258,21 @@ const CodeWorkspace = () => {
     }
   }, [previewHtml]);
 
-  const updateStep = (stepId: string, updates: Partial<BuildStep>) => {
-    setBuildSteps(prev => prev.map(s => s.id === stepId ? { ...s, ...updates } : s));
+  const addStep = async (type: StepType, text: string, file?: string): Promise<CodeStep> => {
+    const step = makeStep(type, text, file);
+    setSteps(prev => prev.map(s => s.status === "active" ? { ...s, status: "done" as const } : s).concat(step));
+    setActiveStepId(step.id);
+    await new Promise(r => setTimeout(r, stepDelay(type)));
+    return step;
+  };
+
+  const completeStep = (stepId: string) => {
+    setSteps(prev => prev.map(s => s.id === stepId ? { ...s, status: "done" as const } : s));
+  };
+
+  const completeAllSteps = () => {
+    setSteps(prev => prev.map(s => ({ ...s, status: "done" as const })));
+    setActiveStepId(null);
   };
 
   const createOrGetConversation = async (firstMessage: string) => {
@@ -365,18 +289,13 @@ const CodeWorkspace = () => {
     return null;
   };
 
-  // ── Direct build: prompt → generate → parse → preview ──
   const handleSend = async (text?: string, retryCount = 0) => {
     const msgText = text || input;
     if (!msgText.trim() || isLoading) return;
 
-    if (creditsLoading) {
-      toast.error("جاري تحميل الرصيد...");
-      return;
-    }
-
+    if (creditsLoading) { toast.error("Loading balance..."); return; }
     if (credits !== null && !hasEnoughCredits(BUILD_CREDIT_COST)) {
-      toast.error("رصيد MC غير كافي. تحتاج 5 MC للبناء.");
+      toast.error("Not enough MC. You need 5 MC to build.");
       return;
     }
 
@@ -387,17 +306,8 @@ const CodeWorkspace = () => {
     }
 
     setIsLoading(true);
-    setIsThinking(true);
-    setIsBuildActive(true);
-
-    // Initialize build steps
-    const steps = DEFAULT_STEPS();
-    setBuildSteps(steps);
-    setMessages(prev => {
-      // Remove previous timeline if retrying
-      const filtered = prev.filter(m => m.type !== "timeline");
-      return [...filtered, { role: "system", content: "", type: "timeline" }];
-    });
+    setSteps([]);
+    setActiveStepId(null);
 
     const convId = await createOrGetConversation(msgText);
 
@@ -414,38 +324,40 @@ const CodeWorkspace = () => {
       const deductData = await deductResp.json();
       if (!deductData.success) {
         toast.error(deductData.error || "MC deduction failed");
-        setIsLoading(false); setIsThinking(false); setIsBuildActive(false);
+        setIsLoading(false);
         return;
       }
       refreshCredits();
     }
 
-    // Step 1: AI Generation
-    updateStep("ai", { status: "running" });
+    // Step 1: Pre-message (AI explains what it will do)
+    await addStep("pre_message", getPreMessage(msgText));
 
-    const allMessages = messages
-      .filter(m => m.role !== "system" && m.type !== "log" && m.type !== "timeline")
-      .concat(retryCount === 0 ? [userMsg] : [])
-      .map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
+    // Step 2: Thinking
+    const thinkStep = await addStep("thinking", "Analyzing request...");
 
+    // Step 3: AI Generation
     try {
       const buildResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-        body: JSON.stringify({ messages: allMessages, action: "build" }),
+        body: JSON.stringify({ messages: messages.filter(m => m.role !== "system").concat(retryCount === 0 ? [userMsg] : []).map(m => ({ role: m.role, content: m.content })), action: "build" }),
       });
 
       if (!buildResp.ok || !buildResp.body) {
-        const err = await buildResp.json().catch(() => ({ error: "Build request failed" }));
-        throw new Error(err.error || "Build request failed");
+        const err = await buildResp.json().catch(() => ({ error: "Build failed" }));
+        throw new Error(err.error || "Build failed");
       }
+
+      completeStep(thinkStep.id);
+      const searchStep = await addStep("searching", "Searching docs...");
 
       // Stream response
       const reader = buildResp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
       let fullContent = "";
-      let streamingFiles: FileTree = {};
+      let detectedFileCount = 0;
 
       const readStream = async () => {
         while (true) {
@@ -464,14 +376,17 @@ const CodeWorkspace = () => {
               const parsed = JSON.parse(jsonStr);
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
-                setIsThinking(false);
                 fullContent += content;
-
-                // Streaming file detection
+                // Detect new files being written
                 const currentFiles = parseFileMarkers(fullContent);
-                if (Object.keys(currentFiles).length > Object.keys(streamingFiles).length) {
-                  streamingFiles = currentFiles;
-                  updateStep("ai", { detail: `${Object.keys(streamingFiles).length} files detected` });
+                const newCount = Object.keys(currentFiles).length;
+                if (newCount > detectedFileCount) {
+                  const newFileNames = Object.keys(currentFiles).slice(detectedFileCount);
+                  for (const fname of newFileNames) {
+                    completeStep(steps[steps.length - 1]?.id || "");
+                    await addStep("creating", "Creating", fname);
+                  }
+                  detectedFileCount = newCount;
                 }
               }
             } catch {}
@@ -479,59 +394,52 @@ const CodeWorkspace = () => {
         }
       };
 
+      completeStep(searchStep.id);
+      const writeStep = await addStep("writing", "Generating code...");
+
       await readStream();
-      updateStep("ai", { status: "done" });
+      completeStep(writeStep.id);
 
-      // Step 2: Parse files
-      updateStep("parse", { status: "running" });
-
+      // Parse files
+      const parseStep = await addStep("reading", "Parsing files...");
       let parsedFiles = parseFileMarkers(fullContent);
-
-      // Fallback to JSON if no file markers found
-      if (Object.keys(parsedFiles).length === 0) {
-        parsedFiles = parseJsonFallback(fullContent);
-      }
+      if (Object.keys(parsedFiles).length === 0) parsedFiles = parseJsonFallback(fullContent);
 
       if (Object.keys(parsedFiles).length === 0) {
-        // Auto-retry once
         if (retryCount < 1) {
-          updateStep("parse", { status: "error", detail: "Retrying..." });
-          setIsLoading(false); setIsThinking(false);
+          completeAllSteps();
+          setIsLoading(false);
           return handleSend(msgText, retryCount + 1);
         }
         throw new Error("Could not parse generated files");
       }
 
+      completeStep(parseStep.id);
+
+      // Save & render
+      const saveStep = await addStep("saving", "Saving changes...");
       const allFiles = { ...VITE_TEMPLATE, ...parsedFiles };
       setFiles(allFiles);
-      updateStep("parse", { status: "done", detail: `${Object.keys(parsedFiles).length} files` });
-
-      // Step 3: Render preview
-      updateStep("preview", { status: "running" });
-
       const html = buildPreviewHtml(allFiles);
       setPreviewHtml(html);
+      completeStep(saveStep.id);
 
-      updateStep("preview", { status: "done" });
+      // Done
+      await addStep("done", "Done");
+      completeAllSteps();
 
-      setMessages(prev => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `Project built with ${Object.keys(parsedFiles).length} files:\n${Object.keys(parsedFiles).map(f => `- ${f}`).join("\n")}`,
-          type: "build",
-        },
-      ]);
+      // Post message
+      const postMsg = getPostMessage(msgText, Object.keys(parsedFiles));
+      setMessages(prev => [...prev, { role: "assistant", content: postMsg, type: "build" }]);
 
       // Save project
       if (userId) {
-        const { data: proj } = await supabase
-          .from("projects")
+        const { data: proj } = await supabase.from("projects")
           .insert({
             user_id: userId,
             name: msgText.slice(0, 50) || "Untitled Project",
             status: "ready",
-            files_snapshot: allFiles as any,
+            files_snapshot: { ...allFiles, ...(supabaseConfig ? { __supabase_config: supabaseConfig } : {}) } as any,
             conversation_id: conversationId,
           })
           .select("id")
@@ -543,59 +451,48 @@ const CodeWorkspace = () => {
       if (convId) {
         supabase.from("messages").insert([
           { conversation_id: convId, role: "user", content: msgText },
-          { conversation_id: convId, role: "assistant", content: `Built ${Object.keys(parsedFiles).length} files` },
+          { conversation_id: convId, role: "assistant", content: postMsg },
         ]);
       }
 
-      // Switch to preview on mobile
       if (isMobile) setActiveTab("preview");
 
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : "Unknown error";
-      updateStep("parse", { status: "error", detail: errMsg });
+      await addStep("error", `Error: ${errMsg}`);
+      completeAllSteps();
       setMessages(prev => [...prev, { role: "assistant", content: `Build error: ${errMsg}. Please try again.` }]);
     }
 
     setIsLoading(false);
-    setIsThinking(false);
-    setIsBuildActive(false);
   };
 
   const handleRefreshPreview = () => {
-    if (Object.keys(files).length > 0) {
-      const html = buildPreviewHtml(files);
-      setPreviewHtml(html);
-    }
+    if (Object.keys(files).length > 0) setPreviewHtml(buildPreviewHtml(files));
   };
 
   const handleDownloadFiles = () => {
     if (Object.keys(files).length === 0) return;
-    const content = Object.entries(files)
-      .map(([path, code]) => `// ===== ${path} =====\n${code}`)
-      .join("\n\n");
+    const content = Object.entries(files).map(([p, c]) => `// ===== ${p} =====\n${c}`).join("\n\n");
     const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = "megsy-project.txt";
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   const handleGitHubPush = async () => {
-    if (Object.keys(files).length === 0) { toast.error("No files to push. Build first."); return; }
+    if (Object.keys(files).length === 0) { toast.error("No files to push."); return; }
     const connCheck = await callGithub({ action: "check-connection" });
     if (!connCheck.connected) { toast.error("GitHub not connected."); navigate("/settings/integrations"); return; }
     const repoName = `megsy-${prompt.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "project"}-${Date.now().toString(36)}`;
-    const createResult = await callGithub({ action: "create-repo", repo_name: repoName, description: `Created by Megsy Code` });
-    if (createResult.error) { toast.error("Failed to create repository"); return; }
-    const fileArray = Object.entries(files).map(([path, content]) => ({ path, content }));
-    await callGithub({ action: "push-files", repo_name: repoName, files: fileArray });
+    await callGithub({ action: "create-repo", repo_name: repoName, description: "Created by Megsy Code" });
+    await callGithub({ action: "push-files", repo_name: repoName, files: Object.entries(files).map(([path, content]) => ({ path, content })) });
     toast.success("Repository created on GitHub!");
   };
 
   const handleVercelDeploy = async () => {
-    if (Object.keys(files).length === 0) { toast.error("No files to deploy. Build first."); return; }
+    if (Object.keys(files).length === 0) { toast.error("No files to deploy."); return; }
     try {
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/vercel-deploy`, {
         method: "POST",
@@ -604,44 +501,41 @@ const CodeWorkspace = () => {
       });
       const data = await resp.json();
       if (data.success && data.url) {
-        setMessages(prev => [...prev, { role: "assistant", content: `Deployed to Vercel!\n\n[${data.url}](${data.url})`, type: "status" }]);
+        setMessages(prev => [...prev, { role: "assistant", content: `Deployed!\n\n[${data.url}](${data.url})`, type: "status" }]);
         toast.success("Deployed to Vercel!");
-      } else toast.error(data.error || "Vercel deployment failed");
+      } else toast.error(data.error || "Deploy failed");
     } catch { toast.error("Failed to deploy"); }
   };
 
-  // ── Chat Panel ──
   const chatPanel = (
     <div className="h-full flex flex-col bg-background">
       <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
         <button onClick={() => navigate("/code")} className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <span className="text-xs text-muted-foreground">{isBuildActive ? "Building..." : "Megsy Code"}</span>
+        <span className="text-xs text-muted-foreground font-mono">{isLoading ? "Building..." : "Megsy Code"}</span>
         <div className="w-8" />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 max-w-3xl mx-auto w-full space-y-4">
-        {messages.map((msg, i) => (
-          <div key={i} className={msg.role === "user" ? "flex justify-end" : ""}>
-            {msg.role === "user" ? (
-              <div className="max-w-[80%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-br-md text-sm">{msg.content}</div>
-            ) : msg.type === "timeline" ? (
-              buildSteps.length > 0 && <BuildTimeline steps={buildSteps} title="Building your project" />
-            ) : msg.type === "log" ? (
-              <div className="text-xs text-muted-foreground font-mono py-1 flex items-center gap-2">
-                <Loader2 className="w-3 h-3 animate-spin" />{msg.content}
-              </div>
-            ) : (
-              <div className="prose-chat text-foreground text-sm" dir="auto">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
-              </div>
-            )}
-          </div>
-        ))}
-        {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && <ThinkingLoader />}
-        <div ref={messagesEndRef} />
-      </div>
+      <CodeChatContainer
+        messages={messages}
+        steps={steps}
+        activeStepId={activeStepId}
+        isThinking={isLoading && steps.length === 0}
+      />
+
+      {showSupabaseConnect && (
+        <div className="px-4 pb-2">
+          <SupabaseConnectCard
+            projectId={projectId}
+            onConnected={(url, key) => {
+              setSupabaseConfig({ url, anon_key: key });
+              setShowSupabaseConnect(false);
+              setMessages(prev => [...prev, { role: "assistant", content: "Supabase connected! Now I can build backend features for your project." }]);
+            }}
+          />
+        </div>
+      )}
 
       <div className="shrink-0 px-4 py-3 max-w-3xl mx-auto w-full">
         <div className="relative">
@@ -651,7 +545,7 @@ const CodeWorkspace = () => {
             onGitHub={handleGitHubPush}
             onVercel={handleVercelDeploy}
             onDownload={handleDownloadFiles}
-            onSupabase={() => navigate("/settings/integrations")}
+            onSupabase={() => { setMenuOpen(false); setShowSupabaseConnect(true); }}
             hasFiles={Object.keys(files).length > 0}
           />
           <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
@@ -664,7 +558,7 @@ const CodeWorkspace = () => {
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder="Describe your project..."
               rows={1}
-              className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
+              className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32 font-mono"
               style={{ minHeight: "32px" }}
             />
             <button
@@ -680,22 +574,12 @@ const CodeWorkspace = () => {
     </div>
   );
 
-  // ── Preview Panel ──
   const previewPanel = (
     <div className="h-full relative bg-secondary">
       {previewHtml ? (
         <>
-          <iframe
-            ref={iframeRef}
-            className="w-full h-full border-none"
-            title="Project Preview"
-            sandbox="allow-scripts allow-same-origin"
-          />
-          <button
-            onClick={handleRefreshPreview}
-            className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm"
-            title="Reload preview"
-          >
+          <iframe ref={iframeRef} className="w-full h-full border-none" title="Preview" sandbox="allow-scripts allow-same-origin" />
+          <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm" title="Reload">
             <RefreshCw className="w-4 h-4" />
           </button>
         </>
@@ -711,7 +595,6 @@ const CodeWorkspace = () => {
     </div>
   );
 
-  // Desktop: side-by-side
   if (!isMobile) {
     return (
       <div className="h-[100dvh] flex bg-background">
@@ -721,12 +604,9 @@ const CodeWorkspace = () => {
     );
   }
 
-  // Mobile: tabbed
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
-      <div className="flex-1 overflow-hidden min-h-0">
-        {activeTab === "chat" ? chatPanel : previewPanel}
-      </div>
+      <div className="flex-1 overflow-hidden min-h-0">{activeTab === "chat" ? chatPanel : previewPanel}</div>
       <div className="flex border-t border-border">
         <button onClick={() => setActiveTab("chat")} className={`flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors ${activeTab === "chat" ? "text-primary border-t-2 border-primary" : "text-muted-foreground"}`}>Chat</button>
         <button onClick={() => setActiveTab("preview")} className={`flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors ${activeTab === "preview" ? "text-primary border-t-2 border-primary" : "text-muted-foreground"}`}>Preview</button>
@@ -735,7 +615,25 @@ const CodeWorkspace = () => {
   );
 };
 
-// ── Plus Menu ──
+// Pre/Post message generators
+function getPreMessage(prompt: string): string {
+  const isArabic = /[\u0600-\u06FF]/.test(prompt);
+  if (isArabic) {
+    return `تمام، هبدأ أبني المشروع دلوقتي. هعمل كل الملفات والصفحات اللي محتاجها وهخلي التصميم نظيف ومتجاوب.`;
+  }
+  return `Got it! I'll start building your project now. I'll create all the necessary files, components, and styles.`;
+}
+
+function getPostMessage(prompt: string, fileNames: string[]): string {
+  const isArabic = /[\u0600-\u06FF]/.test(prompt);
+  const count = fileNames.length;
+  if (isArabic) {
+    return `خلصت! عملت ${count} ملف:\n${fileNames.map(f => `- ${f}`).join("\n")}\n\nتقدر تشوف البريفيو دلوقتي. لو عايز تعدل حاجة قولي.`;
+  }
+  return `Done! Built ${count} files:\n${fileNames.map(f => `- ${f}`).join("\n")}\n\nCheck the preview. Let me know if you want changes.`;
+}
+
+// Plus Menu
 const AnimatedPlusMenu = ({ open, onClose, onGitHub, onVercel, onDownload, onSupabase, hasFiles }: {
   open: boolean; onClose: () => void; onGitHub: () => void; onVercel: () => void; onDownload: () => void; onSupabase: () => void; hasFiles: boolean;
 }) => (
@@ -743,12 +641,7 @@ const AnimatedPlusMenu = ({ open, onClose, onGitHub, onVercel, onDownload, onSup
     {open && (
       <>
         <div className="fixed inset-0 z-30" onClick={onClose} />
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56"
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56">
           <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Deploy</p>
           <button onClick={() => { onClose(); onVercel(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}>
             <Triangle className="w-4 h-4" /> Vercel
@@ -760,8 +653,8 @@ const AnimatedPlusMenu = ({ open, onClose, onGitHub, onVercel, onDownload, onSup
             <Download className="w-4 h-4" /> Download
           </button>
           <p className="text-[10px] text-muted-foreground uppercase px-3 py-1 mt-1">Connect</p>
-          <button onClick={() => { onClose(); onSupabase(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
-            <Globe className="w-4 h-4" /> Integrations
+          <button onClick={onSupabase} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
+            <Database className="w-4 h-4" /> Supabase
           </button>
         </motion.div>
       </>
