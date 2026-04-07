@@ -25,7 +25,7 @@ const TOOL_CONFIG: Record<string, ToolConfig> = {
   'headshot': { provider: "lemon", lemonModel: "nano-banana-pro", needsPrompt: true, needsImage: true },
   'bg-remover': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-background-remover", needsImage: true },
   'face-swap': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-face-swap", needsImage: true, needsTarget: true },
-  'relight': { provider: "fal", falModel: "fal-ai/ic-light", needsImage: true, needsPrompt: true },
+  'relight': { provider: "fal", falModel: "fal-ai/iclight-v2", needsImage: true, needsPrompt: true },
   'colorizer': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
   'character-swap': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-face-swap", needsImage: true, needsTarget: true },
   'storyboard': { provider: "lemon", lemonModel: "nano-banana-pro", needsPrompt: true },
