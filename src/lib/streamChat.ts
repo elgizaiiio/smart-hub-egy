@@ -14,6 +14,7 @@ export async function streamChat({
   onDone,
   onError,
   onImages,
+  onProducts,
   onStatus,
   signal,
 }: {
@@ -27,6 +28,7 @@ export async function streamChat({
   onDone: () => void;
   onError?: (error: string) => void;
   onImages?: (images: string[]) => void;
+  onProducts?: (products: any[]) => void;
   onStatus?: (status: string) => void;
   signal?: AbortSignal;
 }) {
@@ -65,6 +67,9 @@ export async function streamChat({
       }
       if (parsed.images && Array.isArray(parsed.images)) {
         onImages?.(parsed.images);
+      }
+      if (parsed.products && Array.isArray(parsed.products)) {
+        onProducts?.(parsed.products);
       }
       const content = parsed.choices?.[0]?.delta?.content as string | undefined;
       if (content) onDelta(content);

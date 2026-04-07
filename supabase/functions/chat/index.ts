@@ -29,7 +29,6 @@ function safeParseToolArgs(raw: string): Record<string, unknown> {
 // ── Smart Key Cache ──
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-// ── LemonData key cache ──
 let cachedKey: { id: string; api_key: string } | null = null;
 let cachedKeyExpiry = 0;
 
@@ -54,7 +53,6 @@ function markKeyUsed(sb: ReturnType<typeof createClient>, keyId: string) {
   sb.from("lemondata_keys").update({ last_used_at: new Date().toISOString() }).eq("id", keyId).then(() => {});
 }
 
-// Serper key from api_keys table
 const serperKeyCache: { id: string; api_key: string; expiry: number } = { id: "", api_key: "", expiry: 0 };
 
 async function getSerperKey(sb: ReturnType<typeof createClient>): Promise<string | null> {
@@ -78,7 +76,6 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 1
   }
 }
 
-// ── Complexity detection for model routing ──
 function detectComplexity(messages: any[], mode?: string): "simple" | "complex" {
   if (mode === "files") return "complex";
   const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
@@ -113,11 +110,14 @@ serve(async (req) => {
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-    // ── Get Serper key ──
     const SERPER_API_KEY = await getSerperKey(sb);
 
-    // ── Fetch user context for memory system ──
+    // Resolve effective chat mode
+    const effectiveMode = chatMode || mode || "normal";
+    const isShopping = effectiveMode === "shopping";
+    const isLearning = effectiveMode === "learning";
+
+    // ── Fetch user context ──
     let userContext = "";
     if (user_id) {
       try {
@@ -152,7 +152,6 @@ serve(async (req) => {
     }
 
     // ── Model routing ──
-    const complexity = detectComplexity(messages, mode);
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
     const isLovableGatewayModel = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
@@ -185,13 +184,11 @@ serve(async (req) => {
         }
         apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
         apiKey = LOVABLE_API_KEY;
-        if (!requestedModel) {
-          modelId = "google/gemini-2.5-flash";
-        }
+        if (!requestedModel) modelId = "google/gemini-2.5-flash";
       }
     }
 
-    // Build Composio tools for function calling
+    // Build Composio tools
     const composioTools = COMPOSIO_API_KEY ? [
       { type: "function", function: { name: "GMAIL_SEND_EMAIL", description: "Send an email using Gmail", parameters: { type: "object", properties: { to: { type: "string" }, subject: { type: "string" }, body: { type: "string" } }, required: ["to", "subject", "body"] } } },
       { type: "function", function: { name: "GMAIL_LIST_EMAILS", description: "List recent emails from Gmail inbox", parameters: { type: "object", properties: { max_results: { type: "number", default: 5 }, query: { type: "string" } } } } },
@@ -207,22 +204,42 @@ serve(async (req) => {
       { type: "function", function: { name: "YOUTUBE_LIST_VIDEOS", description: "List videos from a YouTube channel", parameters: { type: "object", properties: { query: { type: "string" }, max_results: { type: "number", default: 5 } } } } },
     ] : [];
 
-    // Build search tool
+    // Build search tools
     const searchTools = (((searchEnabled || isDeepResearch) || wantsHamzaProfile) && SERPER_API_KEY) ? [
       {
         type: "function",
         function: {
           name: "WEB_SEARCH",
           description: isDeepResearch
-            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 6-10 TIMES with different queries to gather exhaustive information from every possible angle."
-            : "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, product prices, news, weather, or anything that benefits from real-time data.",
-          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images in results" } }, required: ["query"] },
+            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 3-5 TIMES with different queries."
+            : "Search the web for current information. Use when the user asks about recent events, facts, product prices, news, or anything that benefits from real-time data.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images" } }, required: ["query"] },
+        },
+      },
+    ] : [];
+
+    // Shopping search tool
+    const shoppingTools = (isShopping && SERPER_API_KEY) ? [
+      {
+        type: "function",
+        function: {
+          name: "SHOPPING_SEARCH",
+          description: "Search for products across online stores. Returns product images, prices, sellers, ratings, and links. ALWAYS use this when the user asks about buying, prices, products, or shopping. You can call it multiple times with different queries to find the best deals.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Product search query" }, num: { type: "number", description: "Number of results (default 10)" } }, required: ["query"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "WEB_SEARCH",
+          description: "Search the web for product reviews, comparisons, or general information to help the user make better purchasing decisions.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean" } }, required: ["query"] },
         },
       },
     ] : [];
 
     // System prompt
-    const systemPrompt = buildSystemPrompt(mode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
+    const systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
 
     const body: any = {
       model: modelId,
@@ -231,7 +248,7 @@ serve(async (req) => {
       max_tokens: isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048),
     };
 
-    const allTools = [...composioTools, ...searchTools];
+    const allTools = [...composioTools, ...searchTools, ...shoppingTools];
     if (allTools.length > 0) {
       body.tools = allTools;
       body.tool_choice = "auto";
@@ -261,9 +278,7 @@ serve(async (req) => {
 
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
         if (LOVABLE_API_KEY) {
-          body.model = requestedModel && /^(google\/|openai\/)/.test(requestedModel)
-            ? requestedModel
-            : "google/gemini-2.5-flash";
+          body.model = requestedModel && /^(google\/|openai\/)/.test(requestedModel) ? requestedModel : "google/gemini-2.5-flash";
           const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -272,33 +287,21 @@ serve(async (req) => {
           if (fallbackResp.ok) {
             return new Response(fallbackResp.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
           }
-          const fallbackText = await fallbackResp.text();
-          console.error("Lovable AI fallback error:", fallbackResp.status, fallbackText);
+          console.error("Lovable AI fallback error:", fallbackResp.status);
         }
       }
       break;
     }
 
-    // Mark key as used on success
     if (response.ok && usedKeyId) markKeyUsed(sb, usedKeyId);
 
     if (!response.ok) {
       const status = response.status;
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "Credits depleted" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (status === 402) return new Response(JSON.stringify({ error: "Credits depleted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const t = await response.text();
       console.error("AI error:", status, t);
-      return new Response(JSON.stringify({ error: "AI service error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "AI service error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const reader = response.body?.getReader();
@@ -324,10 +327,9 @@ serve(async (req) => {
             if (!line.startsWith("data: ")) continue;
             const data = line.slice(6).trim();
             if (data === "[DONE]") {
-              // Handle tool calls
-                if (toolCalls.length > 0) {
-                  await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, 0);
-                }
+              if (toolCalls.length > 0) {
+                await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0);
+              }
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();
               return;
@@ -338,7 +340,6 @@ serve(async (req) => {
               const delta = parsed.choices?.[0]?.delta;
               if (!delta) continue;
 
-              // Accumulate tool calls
               if (delta.tool_calls) {
                 for (const tc of delta.tool_calls) {
                   const idx = tc.index ?? 0;
@@ -349,7 +350,6 @@ serve(async (req) => {
                 continue;
               }
 
-              // Forward content
               if (delta.content) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: delta.content } }] })}\n\n`));
               }
@@ -359,9 +359,8 @@ serve(async (req) => {
           }
         }
 
-        // Handle remaining tool calls
         if (toolCalls.length > 0) {
-          await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, 0);
+          await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0);
         }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
@@ -452,6 +451,92 @@ REPORT STRUCTURE:
 - End with 3-5 follow-up questions.
 ${userContext}`;
   }
+
+  // Learning mode
+  if (mode === "learning") {
+    return `You are Megsy, a smart AI Tutor made by Megsy AI. The current year is 2026.
+
+TEACHING MODE - You are an expert educator and tutor:
+
+TEACHING METHODOLOGY:
+1. Start with a simple, relatable analogy or real-world example
+2. Break complex topics into small, digestible steps
+3. Use the Feynman technique: explain as if to a complete beginner
+4. Progress from basic to advanced gradually
+5. Check understanding with quick questions after each concept
+
+RESPONSE FORMAT:
+- Use clear headers (##) for each concept/section
+- Number steps sequentially (Step 1, Step 2...)
+- Include practical examples with every concept
+- Use analogies and metaphors to make abstract ideas concrete
+- Add "💡 Key Insight" callouts for important points
+- Include "🤔 Think About It" prompts to encourage deeper thinking
+- End with a summary and practice questions
+
+SUBJECT HANDLING:
+- Math/Science: Show step-by-step solutions, explain WHY each step works
+- Programming: Write code with detailed comments, explain logic flow
+- Languages: Use contextual examples, grammar patterns, common mistakes
+- History/Social: Tell the story, connect events, explain cause and effect
+- General: Use structured breakdown with clear progression
+
+ENGAGEMENT RULES:
+- Match the user's language and dialect exactly
+- Adapt difficulty based on the user's apparent level
+- If the user seems confused, simplify further with a new analogy
+- Celebrate correct understanding naturally
+- Never skip steps or assume prior knowledge unless stated
+- Use tables for comparisons
+- Use diagrams described in text when helpful
+
+NEVER:
+- Give answers without explanation
+- Use jargon without defining it first
+- Skip the "why" behind any concept
+- Be condescending
+- Use emoji excessively
+${userContext}`;
+  }
+
+  // Shopping mode
+  if (mode === "shopping") {
+    return `You are Megsy, a smart AI Shopping Assistant made by Megsy AI. The current year is 2026.
+
+SHOPPING ASSISTANT MODE:
+
+YOUR CAPABILITIES:
+- You have SHOPPING_SEARCH tool to search across online stores for products with real prices, images, and links
+- You have WEB_SEARCH tool for product reviews and comparisons
+- ALWAYS use SHOPPING_SEARCH when the user asks about any product, price, or purchase
+
+RESPONSE FORMAT for products:
+When you get shopping results, format them as a clean product card format:
+\`\`\`json
+{"type":"products","items":[{"title":"Product Name","price":"$XX.XX","image":"url","link":"url","seller":"Store","rating":"4.5/5","delivery":"Free shipping"}]}
+\`\`\`
+
+BEHAVIOR:
+- When user mentions ANY product, immediately search for it
+- Compare prices across stores
+- Highlight best deals and value-for-money options
+- Warn about suspiciously low prices
+- Suggest alternatives in different price ranges
+- Consider user's location for shipping
+- Ask about budget, preferences, and requirements if unclear
+- For electronics: compare specs in a table
+- For clothing: mention sizing and return policies
+- Always include direct purchase links
+
+PROACTIVE SHOPPING:
+- Suggest complementary products (e.g., phone case with phone)
+- Mention ongoing sales or discounts if found
+- Compare new vs refurbished options when relevant
+
+Match the user's language and dialect exactly.
+Never use emoji. Never introduce yourself unless asked.
+${userContext}`;
+  }
   
   let prompt = `You are Megsy, a smart AI assistant made by Megsy AI. The current year is 2026.
 
@@ -499,7 +584,7 @@ ${userContext}`;
   return prompt;
 }
 
-// ── Handle tool calls (search, composio) ──
+// ── Handle tool calls ──
 async function handleToolCalls(
   controller: ReadableStreamDefaultController,
   encoder: TextEncoder,
@@ -511,6 +596,7 @@ async function handleToolCalls(
   SERPER_API_KEY: string | null,
   COMPOSIO_API_KEY: string | undefined,
   isDeepResearch: boolean,
+  isShopping: boolean,
   searchTools: any[],
   sb: ReturnType<typeof createClient>,
   depth: number = 0,
@@ -519,6 +605,8 @@ async function handleToolCalls(
   const validToolCalls = toolCalls.filter((tc) => tc?.function?.name);
   const allSearchResults: string[] = [];
   const allImages = new Set<string>();
+  const allProducts: any[] = [];
+  
   const pushStatus = (status: string) => {
     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status })}\n\n`));
   };
@@ -531,6 +619,51 @@ async function handleToolCalls(
     try {
       const toolName = tc.function?.name;
       const toolArgs = safeParseToolArgs(tc.function?.arguments || "{}");
+
+      // Shopping search
+      if (toolName === "SHOPPING_SEARCH" && SERPER_API_KEY) {
+        const searchQuery = String(toolArgs.query || "").trim();
+        if (!searchQuery) continue;
+
+        pushStatus(`يبحث عن منتجات: ${searchQuery}`);
+
+        const shopResp = await fetchWithTimeout("https://google.serper.dev/shopping", {
+          method: "POST",
+          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ q: searchQuery, num: Number(toolArgs.num) || 10 }),
+        }, 10000);
+
+        if (shopResp.ok) {
+          const shopData = await shopResp.json();
+          if (shopData.shopping?.length) {
+            const products = shopData.shopping.map((p: any) => ({
+              title: p.title || "",
+              price: p.price || "N/A",
+              image: p.imageUrl || p.thumbnailUrl || "",
+              link: p.link || "",
+              seller: p.source || "",
+              rating: p.rating ? `${p.rating}/5` : null,
+              delivery: p.delivery || null,
+            }));
+            allProducts.push(...products);
+
+            const context = `Shopping results for "${searchQuery}":\n` + 
+              products.map((p: any, i: number) => 
+                `[${i+1}] ${p.title} - ${p.price} from ${p.seller}${p.rating ? ` (${p.rating})` : ""}\nLink: ${p.link}`
+              ).join("\n\n");
+            allSearchResults.push(context);
+            
+            pushStatus(`تم العثور على ${products.length} منتج`);
+
+            // Send product images
+            const productImages = products.filter((p: any) => p.image).map((p: any) => p.image);
+            if (productImages.length > 0) {
+              productImages.forEach((img: string) => allImages.add(img));
+            }
+          }
+        }
+        continue;
+      }
 
       if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
         const searchQuery = String(toolArgs.query || "").trim();
@@ -558,12 +691,9 @@ async function handleToolCalls(
           ...(imageRequest ? [imageRequest] : []),
         ]);
 
-        if (searchResult.status !== "fulfilled") {
-          throw new Error("Search request timed out");
-        }
-        if (!searchResult.value.ok) {
-          const searchErrorText = await searchResult.value.text();
-          throw new Error(`Search request failed: ${searchResult.value.status} ${searchErrorText.slice(0, 200)}`);
+        if (searchResult.status !== "fulfilled" || !searchResult.value.ok) {
+          pushStatus("تعذر البحث، يكمل بالمعلومات المتاحة");
+          continue;
         }
 
         const searchData = await searchResult.value.json();
@@ -591,7 +721,7 @@ async function handleToolCalls(
         }
 
         const organicCount = searchData.organic?.length || 0;
-        pushStatus(organicCount > 0 ? `تم العثور على ${organicCount} نتائج ويجري تحليلها` : "تم البحث ويجري تحليل النتائج");
+        pushStatus(organicCount > 0 ? `تم العثور على ${organicCount} نتائج` : "تم البحث");
         allSearchResults.push(context);
         continue;
       }
@@ -641,38 +771,35 @@ async function handleToolCalls(
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ images })}\n\n`));
     }
 
-    pushStatus(isDeepResearch ? "يجمع المصادر ويكتب التقرير الآن" : "يجمع نتائج البحث ويكتب الرد الآن");
+    // Send products data
+    if (allProducts.length > 0) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ products: allProducts })}\n\n`));
+    }
+
+    pushStatus(isDeepResearch ? "يكتب التقرير الآن" : (isShopping ? "يحلل المنتجات ويكتب التوصيات" : "يكتب الرد الآن"));
     const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
 
     const searchMessages = [
       ...originalBody.messages,
-      {
-        role: "assistant",
-        content: "I searched the web and found the following information. Let me synthesize this into a comprehensive response.",
-      },
-      {
-        role: "user",
-        content: `Here are the search results to synthesize into your response:\n\n${combinedContext}\n\nNow write a comprehensive, well-structured response based on these search results. Cite sources with [Source Name](URL). ${isDeepResearch ? "Write a detailed research report with sections: Executive Summary, Key Findings, Detailed Analysis, Data & Statistics, Conclusion with Recommendations, and Sources." : "Synthesize the information naturally."}`,
-      },
+      { role: "assistant", content: "I searched and found the following information. Let me synthesize this into a comprehensive response." },
+      { role: "user", content: `Here are the search results:\n\n${combinedContext}\n\n${isShopping 
+        ? "Format the products nicely with prices, sellers, ratings, and purchase links. Compare options and give clear recommendations. Use tables for comparisons." 
+        : isDeepResearch 
+          ? "Write a detailed research report with sections: Executive Summary, Key Findings, Detailed Analysis, Data & Statistics, Conclusion with Recommendations, and Sources." 
+          : "Synthesize the information naturally and cite sources with [Source Name](URL)."}` },
     ];
 
-    const synthesisUrl = apiUrl;
-    const synthesisKey = apiKey;
-    const synthesisModel = "claude-haiku-4-5";
     const secondBody: any = {
-      model: synthesisModel,
+      model: "claude-haiku-4-5",
       messages: searchMessages,
       stream: true,
       max_tokens: isDeepResearch ? 3072 : 1536,
     };
 
-    // Synthesis must be fast and deterministic here — do not trigger more searches recursively.
-
-
     try {
-      const secondResp = await fetch(synthesisUrl, {
+      const secondResp = await fetch(apiUrl, {
         method: "POST",
-        headers: { Authorization: `Bearer ${synthesisKey}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify(secondBody),
       });
 
@@ -680,7 +807,6 @@ async function handleToolCalls(
         const secondReader = secondResp.body.getReader();
         const decoder = new TextDecoder();
         let buf2 = "";
-        let secondToolCalls: any[] = [];
 
         while (true) {
           const { done: d2, value: v2 } = await secondReader.read();
@@ -699,15 +825,8 @@ async function handleToolCalls(
               const delta2 = p.choices?.[0]?.delta;
               if (!delta2) continue;
 
-              if (delta2.tool_calls) {
-                for (const tc of delta2.tool_calls) {
-                  const idx = tc.index ?? 0;
-                  if (!secondToolCalls[idx]) secondToolCalls[idx] = { function: { name: "", arguments: "" } };
-                  if (tc.function?.name) secondToolCalls[idx].function.name = tc.function.name;
-                  if (tc.function?.arguments) secondToolCalls[idx].function.arguments += tc.function.arguments;
-                }
-                continue;
-              }
+              // Ignore nested tool calls in synthesis - prevents infinite loops
+              if (delta2.tool_calls) continue;
 
               const c = delta2.content;
               if (c) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`));
@@ -716,19 +835,13 @@ async function handleToolCalls(
             }
           }
         }
-
-        const nestedToolCalls = secondToolCalls.filter((tc) => tc?.function?.name);
-        if (nestedToolCalls.length > 0 && isDeepResearch && depth < MAX_DEPTH) {
-          pushStatus("يجري بحثًا إضافيًا لتدعيم التقرير");
-          await handleToolCalls(controller, encoder, nestedToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, depth + 1);
-        }
       } else {
-        console.error("Second AI call failed:", secondResp.status);
+        console.error("Synthesis call failed:", secondResp.status);
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\n" + combinedContext.slice(0, 3000) } }] })}\n\n`));
       }
     } catch (e) {
-      console.error("Second AI call error:", e);
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nتعذر تجميع نتائج البحث بالكامل، وهذه أبرز النتائج المتاحة:\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
+      console.error("Synthesis error:", e);
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nتعذر تجميع النتائج:\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
     }
   }
 }
