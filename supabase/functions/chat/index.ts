@@ -253,6 +253,18 @@ serve(async (req) => {
       },
     ] : [];
 
+    // Browser tool (Computer Use via Hyperbrowser)
+    const browserTools = HB_API_KEY ? [
+      {
+        type: "function",
+        function: {
+          name: "BROWSE_WEBSITE",
+          description: "Open a real browser and autonomously browse a website to extract data, fill forms, or perform actions. Use when: shopping comparisons need live prices, user asks to check a specific website, research needs real-time page content, or any task requiring actual web browsing. Returns extracted content and screenshots.",
+          parameters: { type: "object", properties: { goal: { type: "string", description: "What to accomplish (e.g., 'Find the cheapest iPhone 16 on amazon.eg')" }, url: { type: "string", description: "Optional specific URL to start from" } }, required: ["goal"] },
+        },
+      },
+    ] : [];
+
     // System prompt
     const systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
 
@@ -263,7 +275,7 @@ serve(async (req) => {
       max_tokens: isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048),
     };
 
-    const allTools = [...composioTools, ...searchTools, ...shoppingTools];
+    const allTools = [...composioTools, ...searchTools, ...shoppingTools, ...browserTools];
     if (allTools.length > 0) {
       body.tools = allTools;
       body.tool_choice = "auto";
