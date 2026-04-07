@@ -32,7 +32,8 @@ serve(async (req) => {
     if (!lemonKeys || lemonKeys.length === 0) throw new Error("No active API keys available");
     const key = lemonKeys[Math.floor(Math.random() * lemonKeys.length)];
 
-    const isMusic = model_id === "suno-music" || model_id === "ace-step-turbo" || model_id === "ace-step-base";
+    const normalizedModelId = String(model_id ?? "").replace(/-/g, "_").toLowerCase();
+    const isMusic = type === "music" || normalizedModelId === "suno_music" || normalizedModelId === "ace_step_turbo" || normalizedModelId === "ace_step_base";
 
     if (isMusic) {
       // ═══ MUSIC: async poll-based via /v1/music/generations ═══
