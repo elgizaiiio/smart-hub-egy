@@ -656,7 +656,7 @@ async function handleToolCalls(
         const searchQuery = String(toolArgs.query || "").trim();
         if (!searchQuery) continue;
 
-        pushStatus(`يبحث عن منتجات: ${searchQuery}`);
+        pushStatus(`Searching for products: ${searchQuery}`);
 
         const shopResp = await fetchWithTimeout("https://google.serper.dev/shopping", {
           method: "POST",
@@ -684,7 +684,7 @@ async function handleToolCalls(
               ).join("\n\n");
             allSearchResults.push(context);
             
-            pushStatus(`تم العثور على ${products.length} منتج`);
+            pushStatus(`Found ${products.length} products`);
 
             // Send product images
             const productImages = products.filter((p: any) => p.image).map((p: any) => p.image);
@@ -701,7 +701,7 @@ async function handleToolCalls(
         if (!searchQuery) continue;
 
         const includeImages = shouldIncludeImages(searchQuery, Boolean(toolArgs.include_images));
-        pushStatus(`يبحث في ${searchQuery}`);
+        pushStatus(`Searching: ${searchQuery}`);
 
         const searchRequest = fetchWithTimeout("https://google.serper.dev/search", {
           method: "POST",
@@ -723,7 +723,7 @@ async function handleToolCalls(
         ]);
 
         if (searchResult.status !== "fulfilled" || !searchResult.value.ok) {
-          pushStatus("تعذر البحث، يكمل بالمعلومات المتاحة");
+          pushStatus("Search failed, continuing with available info");
           continue;
         }
 
@@ -752,72 +752,95 @@ async function handleToolCalls(
         }
 
         const organicCount = searchData.organic?.length || 0;
-        pushStatus(organicCount > 0 ? `تم العثور على ${organicCount} نتائج` : "تم البحث");
+        pushStatus(organicCount > 0 ? `Found ${organicCount} results` : "Search completed");
         allSearchResults.push(context);
         continue;
       }
 
-      // Browser agent (Computer Use)
+      // Browser agent (Computer Use) via HyperAgent async API
       if (toolName === "BROWSE_WEBSITE" && HB_API_KEY) {
         const browseGoal = String(toolArgs.goal || "").trim();
         const browseUrl = String(toolArgs.url || "").trim();
         if (!browseGoal) continue;
 
-        pushStatus(`🌐 يفتح المتصفح الذكي...`);
-        if (browseUrl) pushStatus(`يتصفح ${browseUrl}`);
+        const HB_BASE = "https://api.hyperbrowser.ai";
+        const fullTask = browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal;
+
+        pushStatus(`Opening smart browser...`);
+        if (browseUrl) pushStatus(`Navigating to ${browseUrl}...`);
 
         try {
-          // Create session
-          const sessionResp = await fetchWithTimeout("https://app.hyperbrowser.ai/api/v2/sessions", {
+          // Start async task
+          const startResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent`, {
             method: "POST",
             headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({ screen: { width: 1280, height: 720 } }),
+            body: JSON.stringify({ task: fullTask, maxSteps: 15, keepBrowserOpen: false }),
           }, 15000);
 
-          if (!sessionResp.ok) {
-            pushStatus("تعذر فتح المتصفح");
+          if (!startResp.ok) {
+            pushStatus("Failed to open browser");
             continue;
           }
 
-          const session = await sessionResp.json();
-          pushStatus(`تم فتح المتصفح — ينفذ المهمة...`);
+          const startData = await startResp.json();
+          const jobId = startData.jobId;
+          if (!jobId) { pushStatus("No task ID returned"); continue; }
 
-          // Run autonomous agent
-          const agentResp = await fetchWithTimeout(`https://app.hyperbrowser.ai/api/v2/agents/browser-use`, {
-            method: "POST",
-            headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              task: browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal,
-              sessionId: session.id,
-              maxSteps: 15,
-            }),
-          }, 60000);
+          pushStatus("Browser opened — executing task...");
 
-          // Close session after
-          fetchWithTimeout(`https://app.hyperbrowser.ai/api/v2/sessions/${session.id}/stop`, {
-            method: "POST",
-            headers: { "x-api-key": HB_API_KEY },
-          }, 5000).catch(() => {});
+          // Poll for status with live step streaming
+          let lastStepCount = 0;
+          let pollCount = 0;
+          const MAX_POLLS = 45; // ~90 seconds
+          let finalResult: any = null;
 
-          if (agentResp.ok) {
-            const agentResult = await agentResp.json();
-            const output = agentResult.output || agentResult.result || JSON.stringify(agentResult);
-            
-            // Show steps
-            if (agentResult.steps && Array.isArray(agentResult.steps)) {
-              for (const step of agentResult.steps) {
-                if (step.description) pushStatus(step.description);
+          const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+          while (pollCount < MAX_POLLS) {
+            await sleep(2000);
+            pollCount++;
+
+            try {
+              const statusResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent/${jobId}/status`, {
+                headers: { "x-api-key": HB_API_KEY },
+              }, 8000);
+
+              if (!statusResp.ok) continue;
+
+              const statusData = await statusResp.json();
+
+              // Stream new steps live
+              if (statusData.steps && Array.isArray(statusData.steps)) {
+                const newSteps = statusData.steps.slice(lastStepCount);
+                for (const step of newSteps) {
+                  const desc = step.description || step.next_goal || step.action || "";
+                  const stepUrl = step.url || "";
+                  if (desc) pushStatus(stepUrl ? `${desc} — ${stepUrl}` : desc);
+                }
+                lastStepCount = statusData.steps.length;
               }
-            }
 
-            pushStatus("✅ تم الانتهاء من التصفح");
+              if (statusData.status === "completed" || statusData.status === "finished" || statusData.status === "done") {
+                finalResult = statusData;
+                break;
+              }
+              if (statusData.status === "failed" || statusData.status === "error") {
+                pushStatus("Browser task failed");
+                break;
+              }
+            } catch { continue; }
+          }
+
+          if (finalResult) {
+            const output = finalResult.output || finalResult.result || JSON.stringify(finalResult);
+            pushStatus("Browsing completed");
             allSearchResults.push(`Browser Agent Result for "${browseGoal}":\n${typeof output === 'string' ? output : JSON.stringify(output, null, 2)}`);
           } else {
-            pushStatus("تعذر تنفيذ المهمة في المتصفح");
+            pushStatus("Browser task timed out");
           }
         } catch (browserErr) {
           console.error("Browser agent error:", browserErr);
-          pushStatus("حدث خطأ في المتصفح الذكي");
+          pushStatus("Browser error occurred");
         }
         continue;
       }
@@ -857,7 +880,7 @@ async function handleToolCalls(
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
     } catch (toolErr) {
       console.error("Tool execution error:", toolErr);
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nحدث خطأ أثناء تنفيذ الأداة. سأكمل بما توفر لدي." } }] })}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nAn error occurred while executing the tool. Continuing with available information." } }] })}\n\n`));
     }
   }
 
@@ -872,7 +895,7 @@ async function handleToolCalls(
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ products: allProducts })}\n\n`));
     }
 
-    pushStatus(isDeepResearch ? "يكتب التقرير الآن" : (isShopping ? "يحلل المنتجات ويكتب التوصيات" : "يكتب الرد الآن"));
+    pushStatus(isDeepResearch ? "Writing the report now" : (isShopping ? "Analyzing products and writing recommendations" : "Writing response"));
     const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
 
     const searchMessages = [
@@ -937,7 +960,7 @@ async function handleToolCalls(
       }
     } catch (e) {
       console.error("Synthesis error:", e);
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nتعذر تجميع النتائج:\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nFailed to synthesize results:\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
     }
   }
 }
