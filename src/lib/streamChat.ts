@@ -14,6 +14,7 @@ export async function streamChat({
   onDone,
   onError,
   onImages,
+  onStatus,
   signal,
 }: {
   messages: Msg[];
@@ -26,6 +27,7 @@ export async function streamChat({
   onDone: () => void;
   onError?: (error: string) => void;
   onImages?: (images: string[]) => void;
+  onStatus?: (status: string) => void;
   signal?: AbortSignal;
 }) {
   try {
@@ -51,10 +53,22 @@ export async function streamChat({
       return;
     }
     if (!resp.ok || !resp.body) {
-      onError?.("Failed to connect to AI. Please try again.");
+      const errorText = await resp.text().catch(() => "");
+      onError?.(errorText || "Failed to connect to AI. Please try again.");
       onDone();
       return;
     }
+
+    const handlePayload = (parsed: any) => {
+      if (parsed.status && typeof parsed.status === "string") {
+        onStatus?.(parsed.status);
+      }
+      if (parsed.images && Array.isArray(parsed.images)) {
+        onImages?.(parsed.images);
+      }
+      const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+      if (content) onDelta(content);
+    };
 
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
@@ -76,18 +90,14 @@ export async function streamChat({
         if (!line.startsWith("data: ")) continue;
 
         const jsonStr = line.slice(6).trim();
-        if (jsonStr === "[DONE]") { streamDone = true; break; }
+        if (jsonStr === "[DONE]") {
+          streamDone = true;
+          break;
+        }
 
         try {
-          const parsed = JSON.parse(jsonStr);
-          // Check for images from search
-          if (parsed.images && Array.isArray(parsed.images)) {
-            onImages?.(parsed.images);
-          }
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) onDelta(content);
+          handlePayload(JSON.parse(jsonStr));
         } catch {
-          // Skip malformed JSON lines instead of re-adding to buffer (prevents infinite loop)
           continue;
         }
       }
@@ -102,13 +112,10 @@ export async function streamChat({
         const jsonStr = raw.slice(6).trim();
         if (jsonStr === "[DONE]") continue;
         try {
-          const parsed = JSON.parse(jsonStr);
-          if (parsed.images && Array.isArray(parsed.images)) {
-            onImages?.(parsed.images);
-          }
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) onDelta(content);
-        } catch { /* ignore */ }
+          handlePayload(JSON.parse(jsonStr));
+        } catch {
+          continue;
+        }
       }
     }
 

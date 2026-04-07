@@ -294,7 +294,7 @@ const ChatPage = () => {
       allMessages.unshift({ role: "user" as const, content: `[System instruction]: ${MODE_PROMPTS[chatMode]}` });
     }
     const isDeepResearch = chatMode === "deep-research";
-    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Deep Research in progress..." : "Agent is thinking...");
+    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "يبدأ البحث العميق..." : "يبدأ البحث...");
 
     await streamChat({
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
@@ -303,6 +303,7 @@ const ChatPage = () => {
       user_id: chatUserId || undefined,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
+      onStatus: (status) => { setSearchStatus(status); setIsThinking(true); },
       onDone: async () => {
         setIsLoading(false);setIsThinking(false);setSearchStatus("");
         if (convId && assistantContent) {

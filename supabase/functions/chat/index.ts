@@ -515,70 +515,95 @@ async function handleToolCalls(
   sb: ReturnType<typeof createClient>,
   depth: number = 0,
 ) {
-  const MAX_DEPTH = 2; // Limit recursion to prevent timeouts
+  const MAX_DEPTH = 2;
+  const validToolCalls = toolCalls.filter((tc) => tc?.function?.name);
   const allSearchResults: string[] = [];
-  const allImages: string[] = [];
+  const allImages = new Set<string>();
+  const pushStatus = (status: string) => {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status })}\n\n`));
+  };
   const shouldIncludeImages = (query: string, explicit: boolean) => {
     if (isDeepResearch || explicit) return true;
     return /(who is|biography|profile|photos|images|picture|person|celebrity|founder|actor|singer|player|president|ممثل|مطرب|لاعب|شخص|شخصية|صور|صورة|مؤسس)/i.test(query);
   };
 
-  for (const tc of toolCalls) {
+  for (const tc of validToolCalls) {
     try {
       const toolName = tc.function?.name;
       const toolArgs = safeParseToolArgs(tc.function?.arguments || "{}");
 
       if (toolName === "WEB_SEARCH" && SERPER_API_KEY) {
-        const searchQuery = toolArgs.query || "";
-        const includeImages = shouldIncludeImages(String(searchQuery), Boolean(toolArgs.include_images));
-        
-        const fetches: Promise<Response>[] = [
-          fetchWithTimeout("https://google.serper.dev/search", {
-            method: "POST",
-            headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 10 : 8 }),
-          }, 10000),
-        ];
-        if (includeImages) {
-          fetches.push(fetchWithTimeout("https://google.serper.dev/images", {
-            method: "POST",
-            headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 6 : 4 }),
-          }, 10000));
+        const searchQuery = String(toolArgs.query || "").trim();
+        if (!searchQuery) continue;
+
+        const includeImages = shouldIncludeImages(searchQuery, Boolean(toolArgs.include_images));
+        pushStatus(`يبحث في ${searchQuery}`);
+
+        const searchRequest = fetchWithTimeout("https://google.serper.dev/search", {
+          method: "POST",
+          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 8 : 6 }),
+        }, 8000);
+
+        const imageRequest = includeImages
+          ? fetchWithTimeout("https://google.serper.dev/images", {
+              method: "POST",
+              headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+              body: JSON.stringify({ q: searchQuery, num: isDeepResearch ? 4 : 3 }),
+            }, 8000)
+          : null;
+
+        const [searchResult, imageResult] = await Promise.allSettled([
+          searchRequest,
+          ...(imageRequest ? [imageRequest] : []),
+        ]);
+
+        if (searchResult.status !== "fulfilled") {
+          throw new Error("Search request timed out");
+        }
+        if (!searchResult.value.ok) {
+          const searchErrorText = await searchResult.value.text();
+          throw new Error(`Search request failed: ${searchResult.value.status} ${searchErrorText.slice(0, 200)}`);
         }
 
-        const responses = await Promise.all(fetches);
-        const searchData = await responses[0].json();
-        const imageData = includeImages && responses[1] ? await responses[1].json() : null;
+        const searchData = await searchResult.value.json();
+        const imageData = imageRequest && imageResult?.status === "fulfilled" && imageResult.value.ok
+          ? await imageResult.value.json()
+          : null;
 
         let context = `Search: "${searchQuery}"\n`;
-        if (searchData.organic) {
+        if (searchData.organic?.length) {
           context += searchData.organic.map((r: any, i: number) =>
             `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`
           ).join("\n\n");
         }
+
         if (searchData.knowledgeGraph) {
           const kg = searchData.knowledgeGraph;
           context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
-          if (kg.imageUrl) allImages.push(kg.imageUrl);
+          if (kg.imageUrl) allImages.add(kg.imageUrl);
         }
+
         if (imageData?.images) {
-          imageData.images.slice(0, isDeepResearch ? 6 : 4).forEach((img: any) => {
-            if (img.imageUrl) allImages.push(img.imageUrl);
+          imageData.images.slice(0, isDeepResearch ? 4 : 3).forEach((img: any) => {
+            if (img.imageUrl) allImages.add(img.imageUrl);
           });
         }
+
+        const organicCount = searchData.organic?.length || 0;
+        pushStatus(organicCount > 0 ? `تم العثور على ${organicCount} نتائج ويجري تحليلها` : "تم البحث ويجري تحليل النتائج");
         allSearchResults.push(context);
         continue;
       }
 
-      // Handle Composio tools
-      if (!COMPOSIO_API_KEY) continue;
+      if (!COMPOSIO_API_KEY || !toolName) continue;
+
       const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
         headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
       });
       const connData = await connResp.json();
       const accounts = connData.items || connData || [];
-      
+
       const appName = toolName.split("_")[0].toLowerCase();
       const account = accounts.find((a: any) =>
         (a.appName || "").toLowerCase().includes(appName) ||
@@ -606,19 +631,19 @@ async function handleToolCalls(
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
     } catch (toolErr) {
       console.error("Tool execution error:", toolErr);
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: `\n\nTool error: ${toolErr}` } }] })}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nحدث خطأ أثناء تنفيذ الأداة. سأكمل بما توفر لدي." } }] })}\n\n`));
     }
   }
 
-  // If we have search results, make a second AI call
   if (allSearchResults.length > 0) {
-    // Send images first if any
-    if (allImages.length > 0) {
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ images: allImages })}\n\n`));
+    const images = Array.from(allImages);
+    if (images.length > 0) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ images })}\n\n`));
     }
 
+    pushStatus(isDeepResearch ? "يجمع المصادر ويكتب التقرير الآن" : "يجمع نتائج البحث ويكتب الرد الآن");
     const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
-    
+
     const searchMessages = [
       ...originalBody.messages,
       {
@@ -631,13 +656,16 @@ async function handleToolCalls(
       },
     ];
 
-    // Use LemonData primarily, Lovable AI Gateway only as fallback
-    let synthesisUrl = apiUrl;
-    let synthesisKey = apiKey;
-    let synthesisModel = "claude-haiku-4-5";
+    const synthesisUrl = apiUrl;
+    const synthesisKey = apiKey;
+    const synthesisModel = "claude-haiku-4-5";
+    const secondBody: any = {
+      model: synthesisModel,
+      messages: searchMessages,
+      stream: true,
+      max_tokens: isDeepResearch ? 3072 : 1536,
+    };
 
-    const secondBody: any = { model: synthesisModel, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 4096 : 2048 };
-    // Only allow further tool calls if we haven't hit max depth
     if (isDeepResearch && searchTools.length > 0 && depth < MAX_DEPTH) {
       secondBody.tools = searchTools;
       secondBody.tool_choice = "auto";
@@ -662,14 +690,17 @@ async function handleToolCalls(
           buf2 += decoder.decode(v2, { stream: true });
           const lines2 = buf2.split("\n");
           buf2 = lines2.pop() || "";
+
           for (const l2 of lines2) {
             if (!l2.startsWith("data: ")) continue;
             const d = l2.slice(6).trim();
             if (d === "[DONE]") continue;
+
             try {
               const p = JSON.parse(d);
               const delta2 = p.choices?.[0]?.delta;
               if (!delta2) continue;
+
               if (delta2.tool_calls) {
                 for (const tc of delta2.tool_calls) {
                   const idx = tc.index ?? 0;
@@ -679,14 +710,19 @@ async function handleToolCalls(
                 }
                 continue;
               }
+
               const c = delta2.content;
               if (c) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`));
-            } catch { /* skip */ }
+            } catch {
+              continue;
+            }
           }
         }
-        // Handle recursive tool calls from deep research
-        if (secondToolCalls.length > 0 && isDeepResearch && depth < MAX_DEPTH) {
-          await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, depth + 1);
+
+        const nestedToolCalls = secondToolCalls.filter((tc) => tc?.function?.name);
+        if (nestedToolCalls.length > 0 && isDeepResearch && depth < MAX_DEPTH) {
+          pushStatus("يجري بحثًا إضافيًا لتدعيم التقرير");
+          await handleToolCalls(controller, encoder, nestedToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, depth + 1);
         }
       } else {
         console.error("Second AI call failed:", secondResp.status);
@@ -694,7 +730,7 @@ async function handleToolCalls(
       }
     } catch (e) {
       console.error("Second AI call error:", e);
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nSearch synthesis encountered an error. Showing raw results.\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nتعذر تجميع نتائج البحث بالكامل، وهذه أبرز النتائج المتاحة:\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
     }
   }
 }
