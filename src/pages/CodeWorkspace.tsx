@@ -8,6 +8,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { useIsMobile } from "@/hooks/use-mobile";
 import CodeChatContainer from "@/components/code/CodeChatContainer";
 import SupabaseConnectCard from "@/components/code/SupabaseConnectCard";
+import RunAIEngine from "@/components/engines/RunAIEngine";
 import { CodeStep, StepType } from "@/components/code/CodeStepMessage";
 import { AnimatePresence, motion } from "framer-motion";
 
