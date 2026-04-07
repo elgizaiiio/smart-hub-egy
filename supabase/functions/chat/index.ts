@@ -66,6 +66,20 @@ async function getSerperKey(sb: ReturnType<typeof createClient>): Promise<string
   return pick.api_key;
 }
 
+// Hyperbrowser key cache
+const hbKeyCache: { id: string; api_key: string; expiry: number } = { id: "", api_key: "", expiry: 0 };
+
+async function getHyperbrowserKey(sb: ReturnType<typeof createClient>): Promise<string | null> {
+  if (hbKeyCache.api_key && Date.now() < hbKeyCache.expiry) return hbKeyCache.api_key;
+  const { data } = await sb.from("api_keys").select("id, api_key").eq("service", "hyperbrowser").eq("is_active", true).eq("is_blocked", false).limit(10);
+  if (!data || data.length === 0) return null;
+  const pick = data[Math.floor(Math.random() * data.length)];
+  hbKeyCache.id = pick.id;
+  hbKeyCache.api_key = pick.api_key;
+  hbKeyCache.expiry = Date.now() + CACHE_TTL_MS;
+  return pick.api_key;
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -111,6 +125,7 @@ serve(async (req) => {
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const SERPER_API_KEY = await getSerperKey(sb);
+    const HB_API_KEY = await getHyperbrowserKey(sb);
 
     // Resolve effective chat mode
     const effectiveMode = chatMode || mode || "normal";
@@ -238,6 +253,18 @@ serve(async (req) => {
       },
     ] : [];
 
+    // Browser tool (Computer Use via Hyperbrowser)
+    const browserTools = HB_API_KEY ? [
+      {
+        type: "function",
+        function: {
+          name: "BROWSE_WEBSITE",
+          description: "Open a real browser and autonomously browse a website to extract data, fill forms, or perform actions. Use when: shopping comparisons need live prices, user asks to check a specific website, research needs real-time page content, or any task requiring actual web browsing. Returns extracted content and screenshots.",
+          parameters: { type: "object", properties: { goal: { type: "string", description: "What to accomplish (e.g., 'Find the cheapest iPhone 16 on amazon.eg')" }, url: { type: "string", description: "Optional specific URL to start from" } }, required: ["goal"] },
+        },
+      },
+    ] : [];
+
     // System prompt
     const systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
 
@@ -248,7 +275,7 @@ serve(async (req) => {
       max_tokens: isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048),
     };
 
-    const allTools = [...composioTools, ...searchTools, ...shoppingTools];
+    const allTools = [...composioTools, ...searchTools, ...shoppingTools, ...browserTools];
     if (allTools.length > 0) {
       body.tools = allTools;
       body.tool_choice = "auto";
@@ -328,7 +355,7 @@ serve(async (req) => {
             const data = line.slice(6).trim();
             if (data === "[DONE]") {
               if (toolCalls.length > 0) {
-                await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0);
+                await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
               }
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();
@@ -360,7 +387,7 @@ serve(async (req) => {
         }
 
         if (toolCalls.length > 0) {
-          await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0);
+          await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
         }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
@@ -508,7 +535,9 @@ SHOPPING ASSISTANT MODE:
 YOUR CAPABILITIES:
 - You have SHOPPING_SEARCH tool to search across online stores for products with real prices, images, and links
 - You have WEB_SEARCH tool for product reviews and comparisons
-- ALWAYS use SHOPPING_SEARCH when the user asks about any product, price, or purchase
+- You have BROWSE_WEBSITE tool to open a real browser and browse stores like Amazon, Noon, Jumia to get live prices and availability
+- ALWAYS use SHOPPING_SEARCH first, then use BROWSE_WEBSITE for specific product pages or when you need more details
+- Use BROWSE_WEBSITE to verify prices, check stock availability, or compare across specific stores
 
 RESPONSE FORMAT for products:
 When you get shopping results, format them as a clean product card format:
@@ -571,6 +600,7 @@ IMAGE & FILE HANDLING:
 
 TOOLS:
 - You have integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). Use them only when the user asks for an action that needs them.
+- You have BROWSE_WEBSITE tool for autonomous web browsing. Use it when the user asks you to check a website, extract specific data from a page, fill a form, compare products across stores, or any task that requires actually visiting and interacting with a website.
 - If a required integration is not connected, return a connect card.
 ${userContext}`;
 
@@ -600,6 +630,7 @@ async function handleToolCalls(
   searchTools: any[],
   sb: ReturnType<typeof createClient>,
   depth: number = 0,
+  HB_API_KEY: string | null = null,
 ) {
   const MAX_DEPTH = 2;
   const validToolCalls = toolCalls.filter((tc) => tc?.function?.name);
@@ -723,6 +754,71 @@ async function handleToolCalls(
         const organicCount = searchData.organic?.length || 0;
         pushStatus(organicCount > 0 ? `تم العثور على ${organicCount} نتائج` : "تم البحث");
         allSearchResults.push(context);
+        continue;
+      }
+
+      // Browser agent (Computer Use)
+      if (toolName === "BROWSE_WEBSITE" && HB_API_KEY) {
+        const browseGoal = String(toolArgs.goal || "").trim();
+        const browseUrl = String(toolArgs.url || "").trim();
+        if (!browseGoal) continue;
+
+        pushStatus(`🌐 يفتح المتصفح الذكي...`);
+        if (browseUrl) pushStatus(`يتصفح ${browseUrl}`);
+
+        try {
+          // Create session
+          const sessionResp = await fetchWithTimeout("https://app.hyperbrowser.ai/api/v2/sessions", {
+            method: "POST",
+            headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ screen: { width: 1280, height: 720 } }),
+          }, 15000);
+
+          if (!sessionResp.ok) {
+            pushStatus("تعذر فتح المتصفح");
+            continue;
+          }
+
+          const session = await sessionResp.json();
+          pushStatus(`تم فتح المتصفح — ينفذ المهمة...`);
+
+          // Run autonomous agent
+          const agentResp = await fetchWithTimeout(`https://app.hyperbrowser.ai/api/v2/agents/browser-use`, {
+            method: "POST",
+            headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              task: browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal,
+              sessionId: session.id,
+              maxSteps: 15,
+            }),
+          }, 60000);
+
+          // Close session after
+          fetchWithTimeout(`https://app.hyperbrowser.ai/api/v2/sessions/${session.id}/stop`, {
+            method: "POST",
+            headers: { "x-api-key": HB_API_KEY },
+          }, 5000).catch(() => {});
+
+          if (agentResp.ok) {
+            const agentResult = await agentResp.json();
+            const output = agentResult.output || agentResult.result || JSON.stringify(agentResult);
+            
+            // Show steps
+            if (agentResult.steps && Array.isArray(agentResult.steps)) {
+              for (const step of agentResult.steps) {
+                if (step.description) pushStatus(step.description);
+              }
+            }
+
+            pushStatus("✅ تم الانتهاء من التصفح");
+            allSearchResults.push(`Browser Agent Result for "${browseGoal}":\n${typeof output === 'string' ? output : JSON.stringify(output, null, 2)}`);
+          } else {
+            pushStatus("تعذر تنفيذ المهمة في المتصفح");
+          }
+        } catch (browserErr) {
+          console.error("Browser agent error:", browserErr);
+          pushStatus("حدث خطأ في المتصفح الذكي");
+        }
         continue;
       }
 
