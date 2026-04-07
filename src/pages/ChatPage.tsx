@@ -56,7 +56,7 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
   </svg>;
 
 
-const MEGSY_MODEL = "anthropic/claude-haiku-4.5";
+const MEGSY_MODEL = "claude-haiku-4-5";
 
 const ChatPage = () => {
   const navigate = useNavigate();
