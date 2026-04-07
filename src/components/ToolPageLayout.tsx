@@ -446,6 +446,7 @@ const ToolPageLayout = ({
                 onStart={handleLandingFileSelect}
                 uploadLabel={uploadLabel}
                 accept={acceptType}
+                toolId={toolId}
               />
             </motion.div>
           )}
