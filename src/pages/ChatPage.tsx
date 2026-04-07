@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, Monitor } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import AnimatedInput from "@/components/AnimatedInput";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
 import AgentBadge from "@/components/AgentBadge";
-import type { AgentDef } from "@/lib/agentRegistry";
+import type { AgentDef, AgentModel } from "@/lib/agentRegistry";
 
 import { streamChat } from "@/lib/streamChat";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
@@ -68,8 +68,8 @@ const ChatPage = () => {
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversationTitle, setConversationTitle] = useState("");
-  const [searchEnabled, setSearchEnabled] = useState(false);
-  const [computerUseEnabled, setComputerUseEnabled] = useState(false);
+  const [searchEnabled, setSearchEnabled] = useState(true);
+  const [computerUseEnabled, setComputerUseEnabled] = useState(true);
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
   const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
@@ -97,6 +97,7 @@ const ChatPage = () => {
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
   const [chatUserId, setChatUserId] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<AgentModel | null>(null);
 
   // Fetch user ID once for memory context
   useEffect(() => {
@@ -305,6 +306,8 @@ const ChatPage = () => {
       chatMode: chatMode,
       user_id: chatUserId || undefined,
       computerUseEnabled,
+      activeAgent: chatMode !== "normal" ? chatMode : (selectedModel ? undefined : undefined),
+      selectedModel: selectedModel ? { id: selectedModel.id, cost: selectedModel.cost } : undefined,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
       onStatus: (status) => {
@@ -339,7 +342,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(false);setComputerUseEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -641,10 +644,7 @@ Ask me anything to get started!`;
             </div>
           </button>
           <button onClick={() => { setComputerUseEnabled(!computerUseEnabled); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-2">
-              <Monitor className="w-4 h-4 text-violet-400" />
-              <span className="text-sm text-white/80">Megsy Computer</span>
-            </div>
+            <span className="text-sm text-white/80">Megsy Computer</span>
             <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${computerUseEnabled ? "bg-violet-500 justify-end" : "bg-white/20 justify-start"}`}>
               <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
             </div>
@@ -832,21 +832,7 @@ Ask me anything to get started!`;
         {/* Bottom input - floating with blur */}
         <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
-              <AnimatePresence>
-              {chatMode !== "normal" &&
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                className="flex items-center gap-2 w-fit"
-                style={{ touchAction: "none" }}>
-                    <span className="text-xs text-muted-foreground select-none">
-                      @{chatMode}
-                      <button onClick={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} className="ml-1.5 hover:text-foreground transition-colors">×</button>
-                    </span>
-                  </motion.div>
-              }
-              </AnimatePresence>
+              {/* Mode badge removed — agent modes shown inline in input */}
 
               {renderAttachments()}
 
@@ -870,22 +856,14 @@ Ask me anything to get started!`;
                     const modeMap: Record<string, ChatMode> = { learning: "learning", shopping: "shopping", "deep-research": "deep-research" };
                     if (modeMap[agent.id]) {
                       handleModeChange(modeMap[agent.id]);
-                    } else if (agent.category === "images") {
-                      navigate("/images");
-                    } else if (agent.category === "videos") {
-                      navigate("/videos");
-                    } else if (agent.category === "code") {
-                      navigate("/code");
-                    } else if (agent.category === "voice") {
-                      navigate("/voice");
-                    } else if (agent.category === "files") {
-                      navigate("/files");
-                      if (agent.id !== "document") {
-                        setTimeout(() => setInput(`@${agent.id} `), 100);
-                      }
                     }
+                    // All other agents (images, videos, voice, code, files, email) stay in chat
+                    // The agent is set as activeAgent and the user types their prompt
                   }}
-                  onAgentRemove={() => { setChatMode("normal"); if (chatMode === "deep-research") setSearchEnabled(false); }}
+                  onAgentRemove={() => { setChatMode("normal"); setSelectedModel(null); if (chatMode === "deep-research") setSearchEnabled(false); }}
+                  selectedModel={selectedModel}
+                  onModelSelect={(model: AgentModel) => setSelectedModel(model)}
+                  onModelRemove={() => setSelectedModel(null)}
                 />
               </div>
             </div>

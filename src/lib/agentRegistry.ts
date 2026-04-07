@@ -1,19 +1,26 @@
 import {
   GraduationCap, ShoppingCart, Search, Presentation, PenTool,
   FileSpreadsheet, ScrollText, ImageIcon, Video, Code, Mic,
-  FileText, Sparkles, Brain
+  FileText, Sparkles, Brain, Mail
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
+export interface AgentModel {
+  id: string;
+  label: string;
+  cost: number; // MC per unit
+}
 
 export interface AgentDef {
   id: string;
   label: string;
-  mention: string; // e.g. "@slides"
+  mention: string;
   icon: LucideIcon;
-  color: string; // tailwind text color token
-  bg: string; // tailwind bg token
+  color: string;
+  bg: string;
   description: string;
-  category: "chat" | "files" | "images" | "videos" | "voice" | "code";
+  category: "chat" | "files" | "images" | "videos" | "voice" | "code" | "integration";
+  models?: AgentModel[];
 }
 
 export const AGENTS: AgentDef[] = [
@@ -28,11 +35,50 @@ export const AGENTS: AgentDef[] = [
   { id: "spreadsheet", label: "Spreadsheet", mention: "@spreadsheet", icon: FileSpreadsheet, color: "text-green-400", bg: "bg-green-500/15", description: "Generate spreadsheets", category: "files" },
   { id: "document", label: "Document", mention: "@document", icon: ScrollText, color: "text-orange-400", bg: "bg-orange-500/15", description: "Write documents & reports", category: "files" },
 
-  // Cross-workspace
-  { id: "images", label: "Images", mention: "@images", icon: ImageIcon, color: "text-pink-400", bg: "bg-pink-500/15", description: "Generate AI images", category: "images" },
-  { id: "videos", label: "Videos", mention: "@videos", icon: Video, color: "text-red-400", bg: "bg-red-500/15", description: "Create AI videos", category: "videos" },
+  // Cross-workspace tools with models
+  {
+    id: "images", label: "Images", mention: "@images", icon: ImageIcon,
+    color: "text-pink-400", bg: "bg-pink-500/15",
+    description: "Generate AI images",
+    category: "images",
+    models: [
+      { id: "nano-banana", label: "Nano Banana", cost: 2 },
+      { id: "nano-banana-pro", label: "Nano Banana Pro", cost: 4 },
+      { id: "nano-banana-2", label: "Nano Banana 2", cost: 3 },
+      { id: "flux-schnell", label: "Flux Schnell", cost: 2 },
+      { id: "flux-pro", label: "Flux Pro", cost: 5 },
+    ],
+  },
+  {
+    id: "videos", label: "Videos", mention: "@videos", icon: Video,
+    color: "text-red-400", bg: "bg-red-500/15",
+    description: "Create AI videos",
+    category: "videos",
+    models: [
+      { id: "veo3", label: "Veo 3", cost: 20 },
+      { id: "wan-x", label: "Wan-X", cost: 10 },
+      { id: "hunyuan", label: "Hunyuan", cost: 15 },
+    ],
+  },
   { id: "code", label: "Code", mention: "@code", icon: Code, color: "text-sky-400", bg: "bg-sky-500/15", description: "Build apps & code", category: "code" },
-  { id: "voice", label: "Voice", mention: "@voice", icon: Mic, color: "text-purple-400", bg: "bg-purple-500/15", description: "Text-to-speech & voice", category: "voice" },
+  {
+    id: "voice", label: "Voice", mention: "@voice", icon: Mic,
+    color: "text-purple-400", bg: "bg-purple-500/15",
+    description: "Text-to-speech & voice",
+    category: "voice",
+    models: [
+      { id: "tts", label: "Text to Speech", cost: 2 },
+      { id: "voice-clone", label: "Voice Clone", cost: 5 },
+    ],
+  },
+
+  // Integrations
+  {
+    id: "email", label: "Email", mention: "@email", icon: Mail,
+    color: "text-teal-400", bg: "bg-teal-500/15",
+    description: "Send emails",
+    category: "integration",
+  },
 ];
 
 export const getAgentById = (id: string) => AGENTS.find(a => a.id === id);

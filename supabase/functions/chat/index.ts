@@ -96,7 +96,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model, mode, searchEnabled, deepResearch, chatMode, user_id, computerUseEnabled } = await req.json();
+    const { messages, model, mode, searchEnabled, deepResearch, chatMode, user_id, computerUseEnabled, activeAgent, selectedModel } = await req.json();
     const latestUserMessage = Array.isArray(messages)
       ? [...messages].reverse().find((message: any) => message?.role === "user")
       : null;
@@ -248,6 +248,34 @@ serve(async (req) => {
       },
     ] : [];
 
+    // Media generation tools (available when user uses @images, @videos, @voice in chat)
+    const mediaTools = [
+      {
+        type: "function",
+        function: {
+          name: "GENERATE_IMAGE",
+          description: "Generate an AI image from a text prompt. Use when the user asks to create, generate, or make an image/picture/photo. Returns the image URL.",
+          parameters: { type: "object", properties: { prompt: { type: "string", description: "Detailed image description" }, model: { type: "string", description: "Model to use (nano-banana, nano-banana-pro, nano-banana-2, flux-schnell, flux-pro). Default: nano-banana" }, count: { type: "number", description: "Number of images (1-4). Default: 1" } }, required: ["prompt"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GENERATE_VIDEO",
+          description: "Generate an AI video from a text prompt. Use when the user asks to create a video.",
+          parameters: { type: "object", properties: { prompt: { type: "string", description: "Video description" }, model: { type: "string", description: "Model: veo3, wan-x, hunyuan. Default: wan-x" } }, required: ["prompt"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GENERATE_VOICE",
+          description: "Convert text to speech audio. Use when the user asks to read text aloud, generate speech, or TTS.",
+          parameters: { type: "object", properties: { text: { type: "string", description: "Text to speak" }, voice: { type: "string", description: "Voice ID to use. Default: alloy" } }, required: ["text"] },
+        },
+      },
+    ];
+
     // System prompt
     let systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
     
@@ -260,6 +288,13 @@ serve(async (req) => {
 - Always use it when the user mentions a website, URL, or asks you to check/verify something online.`;
     }
 
+    // Add media tool instructions
+    systemPrompt += `\n\nMEDIA GENERATION TOOLS:
+- You have GENERATE_IMAGE, GENERATE_VIDEO, and GENERATE_VOICE tools.
+- Use them when the user asks to create images, videos, or speech.
+- If the user specifies @images, @videos, or @voice, use the corresponding tool.
+- Always enhance the user's prompt for better results before passing to the tool.`;
+
     const body: any = {
       model: modelId,
       messages: [{ role: "system", content: systemPrompt }, ...messages],
@@ -267,11 +302,12 @@ serve(async (req) => {
       max_tokens: isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048),
     };
 
-    const allTools = [...composioTools, ...searchTools, ...shoppingTools, ...browserTools];
+    const allTools = [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools];
     if (allTools.length > 0) {
       body.tools = allTools;
       body.tool_choice = "auto";
     }
+
 
     // Key rotation with retry
     let response: Response;
@@ -834,6 +870,82 @@ async function handleToolCalls(
           console.error("Browser agent error:", browserErr);
           pushStatus("Browser error occurred");
         }
+        continue;
+      }
+
+      // Media generation tools
+      if (toolName === "GENERATE_IMAGE") {
+        const prompt = String(toolArgs.prompt || "").trim();
+        if (!prompt) continue;
+        const imgModel = String(toolArgs.model || "nano-banana");
+        const count = Math.min(Number(toolArgs.count) || 1, 4);
+        pushStatus(`Generating ${count} image${count > 1 ? "s" : ""} with ${imgModel}...`);
+        try {
+          const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+          const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+          const imgResp = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/generate-image`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "apikey": SUPABASE_ANON_KEY },
+            body: JSON.stringify({ prompt, model: imgModel, count }),
+          }, 60000);
+          if (imgResp.ok) {
+            const imgData = await imgResp.json();
+            const urls = imgData.images || imgData.url ? [imgData.url] : [];
+            if (urls.length > 0) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ images: urls })}\n\n`));
+              pushStatus(`Image${urls.length > 1 ? "s" : ""} generated successfully`);
+              allSearchResults.push(`Generated ${urls.length} image(s) for: "${prompt}"`);
+            }
+          } else {
+            pushStatus("Image generation failed");
+          }
+        } catch { pushStatus("Image generation error"); }
+        continue;
+      }
+
+      if (toolName === "GENERATE_VIDEO") {
+        const prompt = String(toolArgs.prompt || "").trim();
+        if (!prompt) continue;
+        pushStatus(`Generating video...`);
+        try {
+          const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+          const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+          const vidResp = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/generate-video`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "apikey": SUPABASE_ANON_KEY },
+            body: JSON.stringify({ prompt, model: String(toolArgs.model || "wan-x") }),
+          }, 120000);
+          if (vidResp.ok) {
+            const vidData = await vidResp.json();
+            pushStatus("Video generation started");
+            allSearchResults.push(`Video generation initiated for: "${prompt}". ${vidData.taskId ? `Task ID: ${vidData.taskId}` : JSON.stringify(vidData)}`);
+          } else {
+            pushStatus("Video generation failed");
+          }
+        } catch { pushStatus("Video generation error"); }
+        continue;
+      }
+
+      if (toolName === "GENERATE_VOICE") {
+        const text = String(toolArgs.text || "").trim();
+        if (!text) continue;
+        pushStatus(`Generating speech...`);
+        try {
+          const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+          const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+          const voiceResp = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/generate-voice`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "apikey": SUPABASE_ANON_KEY },
+            body: JSON.stringify({ text, voice: String(toolArgs.voice || "alloy") }),
+          }, 30000);
+          if (voiceResp.ok) {
+            const voiceData = await voiceResp.json();
+            pushStatus("Speech generated");
+            allSearchResults.push(`Voice generated: ${voiceData.url || JSON.stringify(voiceData)}`);
+          } else {
+            pushStatus("Voice generation failed");
+          }
+        } catch { pushStatus("Voice generation error"); }
         continue;
       }
 
