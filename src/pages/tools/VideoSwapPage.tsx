@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2, Upload } from "lucide-react";
+import { ArrowLeft, Sparkles, Download, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCredits } from "@/hooks/useCredits";
-import { VideoUploadBox, ImageUploadBox, TemplateGrid } from "@/components/ToolPageLayout";
+import { VideoUploadBox, ImageUploadBox, TemplateGrid, SilkyToolLanding } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
@@ -19,16 +19,10 @@ const VideoSwapPage = () => {
   const [faceImage, setFaceImage] = useState<string | null>(null);
   const [resolution, setResolution] = useState<'720p' | '1080p'>('720p');
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [landingImage, setLandingImage] = useState<string | null>(null);
   const { templates } = useToolTemplates("swap-characters");
   const customInputRef = useRef<HTMLInputElement>(null);
 
   const cost = resolution === '720p' ? 4 : 5.5;
-
-  useEffect(() => {
-    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "swap-characters").maybeSingle()
-      .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
-  }, []);
 
   const handleVideoUpload = (v: string) => { setVideo(v); setStep("templates"); };
   const handleTemplateSelect = (t: ToolTemplate) => { if (t.preview_url) setFaceImage(t.preview_url); };
@@ -62,14 +56,8 @@ const VideoSwapPage = () => {
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {step === "landing" && (
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-center">
-              {landingImage ? <img src={landingImage} alt="Swap Characters" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-accent/10 to-background" />}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-              <div className="relative z-10 text-center px-6">
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setStep("upload")} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
-                  <Upload className="w-4 h-4 inline mr-2" />Upload Your Video
-                </motion.button>
-              </div>
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <SilkyToolLanding toolId="swap-characters" uploadLabel="Upload Your Video" onButtonClick={() => setStep("upload")} />
             </motion.div>
           )}
 

@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2, Plus, Upload } from "lucide-react";
+import { ArrowLeft, Sparkles, Download, Share2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 import { CLOTHES_STYLES, FOOTBALL_CLUBS, getFootballPrompt } from "@/lib/imageToolsData";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
+import { SilkyToolLanding } from "@/components/ToolPageLayout";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
 type Step = 'landing' | 'styles' | 'clubs' | 'generating' | 'result';
@@ -21,21 +22,13 @@ const ClothesChangerPage = () => {
   const [image, setImage] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [refImage, setRefImage] = useState<string | null>(null);
-  const [landingImage, setLandingImage] = useState<string | null>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { templates } = useToolTemplates("clothes-changer");
 
-  useEffect(() => {
-    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "clothes-changer").maybeSingle()
-      .then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
-  }, []);
-
-  const handleLandingUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+  const handleLandingUpload = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => { setImage(reader.result as string); setStep('styles'); };
-    reader.readAsDataURL(file); e.target.value = "";
+    reader.readAsDataURL(file);
   };
 
   const handleStyleSelect = (styleId: string) => {
@@ -78,15 +71,8 @@ const ClothesChangerPage = () => {
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {step === "landing" && (
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-center">
-              {landingImage ? <img src={landingImage} alt="Clothes Changer" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-accent/10 to-background" />}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-              <div className="relative z-10 text-center px-6">
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLandingUpload} />
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => fileInputRef.current?.click()} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
-                  <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
-                </motion.button>
-              </div>
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <SilkyToolLanding toolId="clothes-changer" onStart={handleLandingUpload} />
             </motion.div>
           )}
 
