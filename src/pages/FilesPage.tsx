@@ -523,8 +523,7 @@ Output ONLY the complete HTML code.`,
               {pendingQuestions.length > 0 && !isGenerating && (
                 <SmartQuestionCard
                   questions={pendingQuestions}
-                  onAnswer={handleQuestionAnswer}
-                  onSkip={() => setPendingQuestions([])}
+                  onAnswer={(answer) => { setPendingQuestions([]); setInput(answer); setTimeout(() => handleGenerate(answer), 50); }}
                 />
               )}
               {isGenerating && <ThinkingLoader />}
