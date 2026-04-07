@@ -64,6 +64,7 @@ import CloneVoicePage from "./pages/voice/CloneVoicePage";
 import TTSPage from "./pages/voice/TTSPage";
 import VoiceCallPage from "./pages/voice/VoiceCallPage";
 import MusicGeneratorPage from "./pages/voice/MusicGeneratorPage";
+import MusicPlayerPage from "./pages/voice/MusicPlayerPage";
 import VideoToTextPage from "./pages/tools/VideoToTextPage";
 import AIPersonalizationPage from "./pages/AIPersonalizationPage";
 
@@ -218,6 +219,7 @@ const App = () => {
                 <Route path="/voice/clone" element={<ProtectedRoute><CloneVoicePage /></ProtectedRoute>} />
                 <Route path="/voice/tts" element={<ProtectedRoute><TTSPage /></ProtectedRoute>} />
                 <Route path="/voice/music" element={<ProtectedRoute><MusicGeneratorPage /></ProtectedRoute>} />
+                <Route path="/voice/music/:id" element={<ProtectedRoute><MusicPlayerPage /></ProtectedRoute>} />
                 <Route path="/voice/call" element={<ProtectedRoute><VoiceCallPage /></ProtectedRoute>} />
                 <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
