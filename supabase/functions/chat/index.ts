@@ -90,24 +90,7 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 1
   }
 }
 
-function detectComplexity(messages: any[], mode?: string): "simple" | "complex" {
-  if (mode === "files") return "complex";
-  const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
-  if (!lastUser) return "simple";
-  const text = typeof lastUser.content === "string" ? lastUser.content :
-    Array.isArray(lastUser.content) ? lastUser.content.map((p: any) => p?.text || "").join(" ") : "";
-  const complexPatterns = [
-    /\b(code|program|script|function|algorithm|debug|develop|build|create|implement)\b/i,
-    /\b(analyze|analysis|compare|explain in detail|research|summarize|translate|write.*report)\b/i,
-    /\b(math|equation|calculate|solve|formula|proof)\b/i,
-    /```/,
-    /\b(step by step|detailed|comprehensive|in-depth)\b/i,
-  ];
-  if (text.length > 500) return "complex";
-  if (complexPatterns.some(p => p.test(text))) return "complex";
-  if (messages.length > 10) return "complex";
-  return "simple";
-}
+// detectComplexity removed — always use claude-haiku-4-5 for speed
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

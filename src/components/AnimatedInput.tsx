@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MentionDropdown from "./MentionDropdown";
-import AgentBadge from "./AgentBadge";
 import type { AgentDef } from "@/lib/agentRegistry";
 
 interface SmartQuestion {
@@ -202,7 +201,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           />
         )}
       </AnimatePresence>
-      <div className="rounded-[2rem] border border-border/50 bg-background/35 backdrop-blur-xl overflow-hidden shadow-[0_18px_60px_hsl(var(--foreground)/0.08)]">
+      <div className="rounded-2xl border border-border/40 bg-background/40 backdrop-blur-xl overflow-hidden shadow-[0_18px_60px_hsl(var(--foreground)/0.06)]">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
             <motion.div
@@ -274,7 +273,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               {activeAgent && (
-                <AgentBadge agentId={activeAgent} onRemove={onAgentRemove} size="sm" />
+                <span className="text-xs text-muted-foreground select-none shrink-0">@{activeAgent}</span>
               )}
               <textarea
                 ref={textareaRef}
@@ -284,7 +283,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                 placeholder={displayedPlaceholder || " "}
                 rows={1}
                 className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
-                style={{ minHeight: "36px" }}
+                style={{ minHeight: "44px" }}
               />
             </div>
           </div>
