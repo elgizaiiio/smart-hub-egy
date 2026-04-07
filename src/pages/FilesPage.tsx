@@ -184,7 +184,7 @@ const FilesPage = () => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           messages: [{ role: "user", content: `Generate a brief outline (5-8 bullet points) for a ${activeAgent || "document"} about: "${topic}". Return ONLY the bullet points, one per line, starting with "- ". No other text.` }],
-          model: "google/gemini-3-flash-preview"
+          model: "google/gemini-2.5-flash"
         }),
       });
       if (outlineResp.ok && outlineResp.body) {
@@ -340,7 +340,7 @@ Output ONLY the complete HTML code with no explanations.`,
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
           body: JSON.stringify({
             messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML ${activeAgent || "document"} for them. Write a brief, natural description of what was created. 1-2 sentences. No emoji. Respond in the user's language.` }],
-            model: "google/gemini-3-flash-preview"
+            model: "google/gemini-2.5-flash"
           }),
         });
         if (descResp.ok && descResp.body) {
