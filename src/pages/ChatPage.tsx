@@ -97,6 +97,7 @@ const ChatPage = () => {
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
   const [chatUserId, setChatUserId] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<AgentModel | null>(null);
 
   // Fetch user ID once for memory context
   useEffect(() => {
