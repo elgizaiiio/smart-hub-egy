@@ -11,6 +11,8 @@ export async function streamChat({
   chatMode,
   user_id,
   computerUseEnabled,
+  activeAgent,
+  selectedModel,
   onDelta,
   onDone,
   onError,
