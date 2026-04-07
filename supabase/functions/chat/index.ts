@@ -754,6 +754,71 @@ async function handleToolCalls(
         continue;
       }
 
+      // Browser agent (Computer Use)
+      if (toolName === "BROWSE_WEBSITE" && HB_API_KEY) {
+        const browseGoal = String(toolArgs.goal || "").trim();
+        const browseUrl = String(toolArgs.url || "").trim();
+        if (!browseGoal) continue;
+
+        pushStatus(`🌐 يفتح المتصفح الذكي...`);
+        if (browseUrl) pushStatus(`يتصفح ${browseUrl}`);
+
+        try {
+          // Create session
+          const sessionResp = await fetchWithTimeout("https://app.hyperbrowser.ai/api/v2/sessions", {
+            method: "POST",
+            headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ screen: { width: 1280, height: 720 } }),
+          }, 15000);
+
+          if (!sessionResp.ok) {
+            pushStatus("تعذر فتح المتصفح");
+            continue;
+          }
+
+          const session = await sessionResp.json();
+          pushStatus(`تم فتح المتصفح — ينفذ المهمة...`);
+
+          // Run autonomous agent
+          const agentResp = await fetchWithTimeout(`https://app.hyperbrowser.ai/api/v2/agents/browser-use`, {
+            method: "POST",
+            headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              task: browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal,
+              sessionId: session.id,
+              maxSteps: 15,
+            }),
+          }, 60000);
+
+          // Close session after
+          fetchWithTimeout(`https://app.hyperbrowser.ai/api/v2/sessions/${session.id}/stop`, {
+            method: "POST",
+            headers: { "x-api-key": HB_API_KEY },
+          }, 5000).catch(() => {});
+
+          if (agentResp.ok) {
+            const agentResult = await agentResp.json();
+            const output = agentResult.output || agentResult.result || JSON.stringify(agentResult);
+            
+            // Show steps
+            if (agentResult.steps && Array.isArray(agentResult.steps)) {
+              for (const step of agentResult.steps) {
+                if (step.description) pushStatus(step.description);
+              }
+            }
+
+            pushStatus("✅ تم الانتهاء من التصفح");
+            allSearchResults.push(`Browser Agent Result for "${browseGoal}":\n${typeof output === 'string' ? output : JSON.stringify(output, null, 2)}`);
+          } else {
+            pushStatus("تعذر تنفيذ المهمة في المتصفح");
+          }
+        } catch (browserErr) {
+          console.error("Browser agent error:", browserErr);
+          pushStatus("حدث خطأ في المتصفح الذكي");
+        }
+        continue;
+      }
+
       if (!COMPOSIO_API_KEY || !toolName) continue;
 
       const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
