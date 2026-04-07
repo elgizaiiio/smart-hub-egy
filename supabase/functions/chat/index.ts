@@ -283,9 +283,9 @@ serve(async (req) => {
     if (computerUseEnabled && HB_API_KEY) {
       systemPrompt += `\n\nCOMPUTER USE (Megsy Computer):
 - You have BROWSE_WEBSITE tool that opens a real browser to autonomously browse websites.
-- The user has explicitly enabled Computer Use mode, so PROACTIVELY use BROWSE_WEBSITE for any task that would benefit from real web browsing.
-- Use it for: checking live prices, extracting real-time data, verifying information, browsing stores, reading articles, and any task requiring actual web interaction.
-- Always use it when the user mentions a website, URL, or asks you to check/verify something online.`;
+- Use it ONLY when the task genuinely requires visiting a real website, extracting live page data, comparing store pages, or interacting with a web page.
+- Never use it for greetings, casual chat, writing, explanation, summarization, translation, or simple reasoning.
+- Think first: if the task can be answered without opening a browser, do not call BROWSE_WEBSITE.`;
     }
 
     // Add media tool instructions
@@ -294,6 +294,14 @@ serve(async (req) => {
 - Use them when the user asks to create images, videos, or speech.
 - If the user specifies @images, @videos, or @voice, use the corresponding tool.
 - Always enhance the user's prompt for better results before passing to the tool.`;
+
+    if (activeAgent === "integrations") {
+      if (selectedModel?.id) {
+        systemPrompt += `\n\nINTEGRATIONS AGENT:\n- The user selected @integrations with #${selectedModel.id}.\n- Use only tools relevant to ${selectedModel.id}.\n- If the integration account is not connected, do not fake execution; immediately ask the user to connect ${selectedModel.id} first.`;
+      } else {
+        systemPrompt += `\n\nINTEGRATIONS AGENT:\n- The user selected @integrations but no service after # yet.\n- Ask them to choose a service like Gmail, Outlook, Slack, Notion, Google Drive, or Google Calendar.`;
+      }
+    }
 
     const body: any = {
       model: modelId,
@@ -621,6 +629,7 @@ QUALITY RULES:
 - If something is ambiguous, ask one focused follow-up instead of giving a generic answer.
 - For comparisons, use a table only when it genuinely helps.
 - For technical answers, include examples only when relevant.
+- For greetings or very short casual messages, do not use WEB_SEARCH or BROWSE_WEBSITE.
 
 IMAGE & FILE HANDLING:
 - Analyze uploaded images and files carefully and incorporate them into the answer when relevant.
@@ -886,7 +895,7 @@ async function handleToolCalls(
           const imgResp = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/generate-image`, {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "apikey": SUPABASE_ANON_KEY },
-            body: JSON.stringify({ prompt, model: imgModel, count }),
+            body: JSON.stringify({ prompt, model: imgModel, num_images: count }),
           }, 60000);
           if (imgResp.ok) {
             const imgData = await imgResp.json();

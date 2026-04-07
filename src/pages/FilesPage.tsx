@@ -258,14 +258,15 @@ const FilesPage = () => {
 \`\`\`json
 {"type":"questions","questions":[{"title":"Question?","options":["Option 1","Option 2"],"allowText":true}]}
 \`\`\`
-If the request is clear enough, generate a complete HTML presentation using Nano Banana image model for slide backgrounds:
+If the request is clear enough, generate a complete HTML presentation using Nano Banana-generated visuals for the slides instead of stock images or Pexels:
 - DARK themed slideshow with 10+ slides
 - Full-viewport sections (100vh) with scroll-snap
 - Navigation buttons and slide counter
 - Professional typography, gradients, animations
 - Color: dark background (#0a0a0f), violet/purple accents, white text
 - JavaScript for keyboard navigation
-- Fetch images from Pexels for slide visuals using: https://api.pexels.com/v1/search
+- Use provided Nano Banana image URLs as the main visuals/backgrounds across the slides
+- Do not mention Pexels and do not use stock-photo APIs
 - Include comprehensive, well-researched content
 Output ONLY the complete HTML code with no explanations.`,
         resume: "Generate a professional HTML resume/CV. Modern dark theme. Output ONLY HTML.",
@@ -275,6 +276,22 @@ Output ONLY the complete HTML code with no explanations.`,
 
       const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted HTML document. Dark theme, professional. Output ONLY HTML.";
       let prompt = `${agentPrompt}\n\nUser request: ${userInput}`;
+      if (activeAgent === "slides") {
+        try {
+          const { data: slideImages } = await supabase.functions.invoke("generate-image", {
+            body: {
+              prompt: `${userInput}. Create cinematic presentation visuals for a professional slide deck with clean composition and strong focal subjects.`,
+              model: "nano-banana",
+              num_images: 3,
+              image_size: "1536x1024",
+            },
+          });
+          const urls = Array.isArray(slideImages?.images) ? slideImages.images : [];
+          if (urls.length > 0) {
+            prompt += `\n\nUse these Nano Banana visual URLs in the presentation:\n${urls.map((url: string, index: number) => `${index + 1}. ${url}`).join("\n")}`;
+          }
+        } catch {}
+      }
       const fileAttachments = files.filter(f => f.type !== "image");
       if (fileAttachments.length > 0) {
         prompt += "\n\n--- Attached Documents ---\n";

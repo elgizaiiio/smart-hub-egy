@@ -78,6 +78,17 @@ export const AGENTS: AgentDef[] = [
     color: "text-teal-400", bg: "bg-teal-500/15",
     description: "Gmail, Outlook, Slack & more",
     category: "integration",
+    models: [
+      { id: "gmail", label: "Gmail", cost: 0 },
+      { id: "outlook", label: "Outlook", cost: 0 },
+      { id: "slack", label: "Slack", cost: 0 },
+      { id: "notion", label: "Notion", cost: 0 },
+      { id: "googledrive", label: "Google Drive", cost: 0 },
+      { id: "googlecalendar", label: "Google Calendar", cost: 0 },
+      { id: "discord", label: "Discord", cost: 0 },
+      { id: "linkedin", label: "LinkedIn", cost: 0 },
+      { id: "github", label: "GitHub", cost: 0 },
+    ],
   },
 ];
 

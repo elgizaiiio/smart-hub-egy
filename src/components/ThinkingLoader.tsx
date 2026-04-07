@@ -29,7 +29,7 @@ const ThinkingLoader = ({ searchQuery, searchStatus, statusHistory = [] }: Think
   const actualComputerUse = detectComputerUse(statusHistory);
 
   const latestStatus = hasRealSteps ? statusHistory[statusHistory.length - 1] : null;
-  const displayText = searchStatus || latestStatus || (searchQuery ? `Searching for "${searchQuery}"` : "Thinking");
+  const displayText = searchStatus || latestStatus || "Thinking";
   const starColor = getStarColor(displayText, actualComputerUse);
 
   return (
