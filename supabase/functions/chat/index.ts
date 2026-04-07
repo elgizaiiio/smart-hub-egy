@@ -627,6 +627,7 @@ async function handleToolCalls(
   searchTools: any[],
   sb: ReturnType<typeof createClient>,
   depth: number = 0,
+  HB_API_KEY: string | null = null,
 ) {
   const MAX_DEPTH = 2;
   const validToolCalls = toolCalls.filter((tc) => tc?.function?.name);
