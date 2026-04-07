@@ -649,26 +649,27 @@ async function handleToolCalls(
     }
 
     const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
+    
+    // Build proper tool_calls with unique IDs
+    const webSearchCalls = toolCalls.filter(tc => tc.function?.name === "WEB_SEARCH");
+    const toolCallObjects = webSearchCalls.map((tc, i) => ({
+      id: `call_search_${Date.now()}_${i}`,
+      type: "function" as const,
+      function: { name: "WEB_SEARCH", arguments: tc.function.arguments }
+    }));
+
     const searchMessages = [
       ...originalBody.messages,
       {
         role: "assistant",
         content: null,
-        tool_calls: toolCalls
-          .filter(tc => tc.function?.name === "WEB_SEARCH")
-          .map((tc, i) => ({
-            id: `search_${i}`,
-            type: "function",
-            function: { name: "WEB_SEARCH", arguments: tc.function.arguments }
-          })),
+        tool_calls: toolCallObjects,
       },
-      ...toolCalls
-        .filter(tc => tc.function?.name === "WEB_SEARCH")
-        .map((tc, i) => ({
-          role: "tool",
-          tool_call_id: `search_${i}`,
-          content: allSearchResults[i] || "No results found.",
-        })),
+      ...toolCallObjects.map((tc, i) => ({
+        role: "tool",
+        tool_call_id: tc.id,
+        content: allSearchResults[i] || "No results found.",
+      })),
     ];
 
     const secondBody: any = { model: modelId, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
@@ -677,51 +678,55 @@ async function handleToolCalls(
       secondBody.tool_choice = "auto";
     }
 
-    const secondResp = await fetch(apiUrl, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(secondBody),
-    });
+    try {
+      const secondResp = await fetch(apiUrl, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(secondBody),
+      });
 
-    if (secondResp.ok && secondResp.body) {
-      const secondReader = secondResp.body.getReader();
-      const decoder = new TextDecoder();
-      let buf2 = "";
-      let secondToolCalls: any[] = [];
+      if (secondResp.ok && secondResp.body) {
+        const secondReader = secondResp.body.getReader();
+        const decoder = new TextDecoder();
+        let buf2 = "";
+        let secondToolCalls: any[] = [];
 
-      while (true) {
-        const { done: d2, value: v2 } = await secondReader.read();
-        if (d2) break;
-        buf2 += decoder.decode(v2, { stream: true });
-        const lines2 = buf2.split("\n");
-        buf2 = lines2.pop() || "";
-        for (const l2 of lines2) {
-          if (!l2.startsWith("data: ")) continue;
-          const d = l2.slice(6).trim();
-          if (d === "[DONE]") continue;
-          try {
-            const p = JSON.parse(d);
-            const delta2 = p.choices?.[0]?.delta;
-            if (!delta2) continue;
-            // Accumulate recursive tool calls (deep research does multiple searches)
-            if (delta2.tool_calls) {
-              for (const tc of delta2.tool_calls) {
-                const idx = tc.index ?? 0;
-                if (!secondToolCalls[idx]) secondToolCalls[idx] = { function: { name: "", arguments: "" } };
-                if (tc.function?.name) secondToolCalls[idx].function.name = tc.function.name;
-                if (tc.function?.arguments) secondToolCalls[idx].function.arguments += tc.function.arguments;
+        while (true) {
+          const { done: d2, value: v2 } = await secondReader.read();
+          if (d2) break;
+          buf2 += decoder.decode(v2, { stream: true });
+          const lines2 = buf2.split("\n");
+          buf2 = lines2.pop() || "";
+          for (const l2 of lines2) {
+            if (!l2.startsWith("data: ")) continue;
+            const d = l2.slice(6).trim();
+            if (d === "[DONE]") continue;
+            try {
+              const p = JSON.parse(d);
+              const delta2 = p.choices?.[0]?.delta;
+              if (!delta2) continue;
+              if (delta2.tool_calls) {
+                for (const tc of delta2.tool_calls) {
+                  const idx = tc.index ?? 0;
+                  if (!secondToolCalls[idx]) secondToolCalls[idx] = { function: { name: "", arguments: "" } };
+                  if (tc.function?.name) secondToolCalls[idx].function.name = tc.function.name;
+                  if (tc.function?.arguments) secondToolCalls[idx].function.arguments += tc.function.arguments;
+                }
+                continue;
               }
-              continue;
-            }
-            const c = delta2.content;
-            if (c) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`));
-          } catch { /* skip */ }
+              const c = delta2.content;
+              if (c) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`));
+            } catch { /* skip */ }
+          }
+        }
+        // Handle recursive tool calls from deep research
+        if (secondToolCalls.length > 0 && isDeepResearch) {
+          await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb);
         }
       }
-      // Handle recursive tool calls from deep research (up to 2 more rounds)
-      if (secondToolCalls.length > 0 && isDeepResearch) {
-        await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb);
-      }
+    } catch (e) {
+      console.error("Second AI call error:", e);
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nSearch synthesis encountered an error. Showing raw results.\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
     }
   }
 }
