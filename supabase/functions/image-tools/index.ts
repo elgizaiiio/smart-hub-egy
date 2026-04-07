@@ -9,9 +9,10 @@ const corsHeaders = {
 // Tool → provider mapping
 // "lemon" = LemonData image API, "wavespeed" = WaveSpeed API
 interface ToolConfig {
-  provider: "lemon" | "wavespeed";
+  provider: "lemon" | "wavespeed" | "fal";
   lemonModel?: string;
   wavespeedModel?: string;
+  falModel?: string;
   needsPrompt?: boolean;
   needsImage?: boolean;
   needsTarget?: boolean;
@@ -24,7 +25,7 @@ const TOOL_CONFIG: Record<string, ToolConfig> = {
   'headshot': { provider: "lemon", lemonModel: "nano-banana-pro", needsPrompt: true, needsImage: true },
   'bg-remover': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-background-remover", needsImage: true },
   'face-swap': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-face-swap", needsImage: true, needsTarget: true },
-  'relight': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'relight': { provider: "fal", falModel: "fal-ai/ic-light", needsImage: true, needsPrompt: true },
   'colorizer': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
   'character-swap': { provider: "wavespeed", wavespeedModel: "wavespeed-ai/image-face-swap", needsImage: true, needsTarget: true },
   'storyboard': { provider: "lemon", lemonModel: "nano-banana-pro", needsPrompt: true },
