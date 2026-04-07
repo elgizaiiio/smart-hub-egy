@@ -815,14 +815,9 @@ Ask me anything to get started!`;
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 backdrop-blur-md border border-primary/15 w-fit"
+                className="flex items-center gap-2 w-fit"
                 style={{ touchAction: "none" }}>
-                    <span className="text-xs text-primary font-medium">
-                      {chatMode === "learning" ? "Learning" : chatMode === "deep-research" ? "Deep Research" : "Shopping"} Mode
-                    </span>
-                    <button onClick={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors">
-                      <X className="w-3 h-3 text-primary" />
-                    </button>
+                    <AgentBadge agentId={chatMode} onRemove={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} />
                   </motion.div>
               }
               </AnimatePresence>
