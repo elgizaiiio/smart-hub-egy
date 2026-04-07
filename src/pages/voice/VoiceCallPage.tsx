@@ -95,14 +95,7 @@ const VoiceCallPage = () => {
           },
           agent: {
             language: "multi",
-            speak: {
-              provider: { type: "eleven_labs", model_id: "eleven_multilingual_v2", voice_id: "DtsPFCrhbCbbJkwZsb3d" },
-            },
-            listen: {
-              provider: { type: "deepgram", version: "v1", model: "nova-3" },
-            },
             think: {
-              provider: { type: "google", model: "gemini-2.5-flash" },
               prompt: `You are Megsy, a smart, friendly AI companion. Adapt your tone to the user. Match their language and dialect. Be natural, warm and helpful. Never say you're an AI unless asked. Keep responses concise for voice conversation. Current year is 2026.`,
             },
             greeting: "مرحبا! كيف أقدر أساعدك اليوم؟",
@@ -141,6 +134,11 @@ const VoiceCallPage = () => {
             const msg = JSON.parse(event.data);
             if (msg.type === "AgentStartedSpeaking") setStatusText("Megsy is speaking...");
             if (msg.type === "UserStartedSpeaking") setStatusText("Listening...");
+            if (msg.type === "Error") {
+              console.error("Deepgram agent error:", msg);
+              setStatusText(msg.description || msg.message || "Voice agent error");
+              toast.error(msg.description || msg.message || "Voice call failed");
+            }
           } catch {}
         }
       };

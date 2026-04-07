@@ -98,6 +98,7 @@ const ChatPage = () => {
   const [members, setMembers] = useState<{ id: string; email: string; role: string }[]>([]);
   const [chatUserId, setChatUserId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<AgentModel | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<AgentDef | null>(null);
 
   // Fetch user ID once for memory context
   useEffect(() => {
@@ -296,8 +297,6 @@ const ChatPage = () => {
 
     // Mode prompts are now handled server-side via chatMode parameter
     const isDeepResearch = chatMode === "deep-research";
-    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Starting deep research..." : "Starting search...");
-    if (chatMode === "shopping") setSearchStatus("Searching for products...");
 
     await streamChat({
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
@@ -305,7 +304,7 @@ const ChatPage = () => {
       chatMode: chatMode,
       user_id: chatUserId || undefined,
       computerUseEnabled,
-      activeAgent: chatMode !== "normal" ? chatMode : (selectedModel ? undefined : undefined),
+      activeAgent: chatMode !== "normal" ? chatMode : (selectedAgent?.id || undefined),
       selectedModel: selectedModel ? { id: selectedModel.id, cost: selectedModel.cost } : undefined,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
@@ -341,7 +340,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -806,7 +805,7 @@ Ask me anything to get started!`;
                   onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
               )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
-                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} statusHistory={statusHistory} />
+                <ThinkingLoader searchStatus={searchStatus} statusHistory={statusHistory} />
               }
               {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader statusHistory={statusHistory} />}
               <div ref={messagesEndRef} />
@@ -850,16 +849,20 @@ Ask me anything to get started!`;
                   pendingQuestions={pendingQuestions}
                   onQuestionAnswer={handleQuestionAnswer}
                   onQuestionSkip={handleQuestionSkip}
-                  activeAgent={chatMode !== "normal" ? chatMode : null}
+                  activeAgent={chatMode !== "normal" ? chatMode : (selectedAgent?.id || null)}
                   onAgentSelect={(agent: AgentDef) => {
                     const modeMap: Record<string, ChatMode> = { learning: "learning", shopping: "shopping", "deep-research": "deep-research" };
                     if (modeMap[agent.id]) {
+                      setSelectedAgent(null);
+                      setSelectedModel(null);
                       handleModeChange(modeMap[agent.id]);
+                      return;
                     }
-                    // All other agents (images, videos, voice, code, files, email) stay in chat
-                    // The agent is set as activeAgent and the user types their prompt
+                    setChatMode("normal");
+                    setSelectedAgent(agent);
+                    setSelectedModel(null);
                   }}
-                  onAgentRemove={() => { setChatMode("normal"); setSelectedModel(null); if (chatMode === "deep-research") setSearchEnabled(false); }}
+                  onAgentRemove={() => { setChatMode("normal"); setSelectedAgent(null); setSelectedModel(null); if (chatMode === "deep-research") setSearchEnabled(false); }}
                   selectedModel={selectedModel}
                   onModelSelect={(model: AgentModel) => setSelectedModel(model)}
                   onModelRemove={() => setSelectedModel(null)}
