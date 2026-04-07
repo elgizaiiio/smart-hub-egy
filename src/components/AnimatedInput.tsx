@@ -168,10 +168,24 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     const textBeforeCursor = value.slice(0, cursorPos);
     const cleanedBefore = textBeforeCursor.replace(/@\w*$/, "");
     const textAfter = value.slice(cursorPos);
-    onChange(cleanedBefore + textAfter);
+    // Keep @agent visible in input
+    const agentTag = `@${agent.label} `;
+    const newVal = cleanedBefore + agentTag + textAfter;
+    onChange(newVal);
     setMentionOpen(false);
     setMentionQuery("");
     onAgentSelect?.(agent);
+
+    // Auto-open model picker if agent has models
+    if (agent.models && agent.models.length > 0) {
+      setTimeout(() => {
+        // Insert # and open model picker
+        const pos = (cleanedBefore + agentTag).length;
+        onChange(cleanedBefore + agentTag + "#" + textAfter);
+        setModelPickerOpen(true);
+        setModelQuery("");
+      }, 50);
+    }
   };
 
   const handleModelSelect = (model: AgentModel) => {
