@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2 } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,9 +69,11 @@ const ChatPage = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversationTitle, setConversationTitle] = useState("");
   const [searchEnabled, setSearchEnabled] = useState(false);
+  const [computerUseEnabled, setComputerUseEnabled] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
   const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
+  const [statusHistory, setStatusHistory] = useState<string[]>([]);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareMode, setShareMode] = useState<"private" | "public">("public");
   const [isShared, setIsShared] = useState(false);
@@ -243,6 +245,7 @@ const ChatPage = () => {
     setAttachedFiles([]);
     setIsLoading(true);setIsThinking(true);
     setPendingQuestions([]); // Clear previous questions on new send
+    setStatusHistory([]); // Clear status history for new message
 
     const convId = await createOrUpdateConversation(userInput || "File analysis");
     if (convId) await saveMessage(convId, "user", userInput || `[${currentFiles.length} file(s) attached]`);
@@ -292,19 +295,30 @@ const ChatPage = () => {
 
     // Mode prompts are now handled server-side via chatMode parameter
     const isDeepResearch = chatMode === "deep-research";
-    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "يبدأ البحث العميق..." : "يبدأ البحث...");
-    if (chatMode === "shopping") setSearchStatus("يبحث عن منتجات...");
+    if (searchEnabled || isDeepResearch) setSearchStatus(isDeepResearch ? "Starting deep research..." : "Starting search...");
+    if (chatMode === "shopping") setSearchStatus("Searching for products...");
+    if (computerUseEnabled) setSearchStatus("Initializing Megsy Computer...");
 
     await streamChat({
       messages: allMessages, model: MEGSY_MODEL, searchEnabled: searchEnabled || isDeepResearch,
       deepResearch: isDeepResearch,
       chatMode: chatMode,
       user_id: chatUserId || undefined,
+      computerUseEnabled,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
-      onStatus: (status) => { setSearchStatus(status); setIsThinking(true); },
+      onStatus: (status) => {
+        setSearchStatus(status);
+        setIsThinking(true);
+        // Accumulate real status events into history
+        setStatusHistory(prev => {
+          // Avoid duplicates
+          if (prev.length > 0 && prev[prev.length - 1] === status) return prev;
+          return [...prev, status];
+        });
+      },
       onDone: async () => {
-        setIsLoading(false);setIsThinking(false);setSearchStatus("");
+        setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);
         if (convId && assistantContent) {
           await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (searchImages.length > 0) {
@@ -317,7 +331,7 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
         }
       },
-      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");},
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);},
       signal: controller.signal
     });
   };
@@ -325,7 +339,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(false);setComputerUseEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -626,6 +640,15 @@ Ask me anything to get started!`;
               <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
             </div>
           </button>
+          <button onClick={() => { setComputerUseEnabled(!computerUseEnabled); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-2">
+              <Monitor className="w-4 h-4 text-violet-400" />
+              <span className="text-sm text-white/80">Megsy Computer</span>
+            </div>
+            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${computerUseEnabled ? "bg-violet-500 justify-end" : "bg-white/20 justify-start"}`}>
+              <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+            </div>
+          </button>
           <div className="border-t border-white/10 mt-1 pt-1">
             <p className="text-[10px] text-white/30 uppercase px-3 py-1.5">Modes</p>
             <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
@@ -784,9 +807,9 @@ Ask me anything to get started!`;
                   onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
               )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
-                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
+                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} statusHistory={statusHistory} isComputerUse={computerUseEnabled} />
               }
-              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader />}
+              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader statusHistory={statusHistory} isComputerUse={computerUseEnabled} />}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -810,14 +833,21 @@ Ask me anything to get started!`;
         <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
               <AnimatePresence>
-                {chatMode !== "normal" &&
+                {(chatMode !== "normal" || computerUseEnabled) &&
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
                 className="flex items-center gap-2 w-fit"
                 style={{ touchAction: "none" }}>
-                    <AgentBadge agentId={chatMode} onRemove={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} />
+                    {chatMode !== "normal" && <AgentBadge agentId={chatMode} onRemove={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} />}
+                    {computerUseEnabled && (
+                      <button onClick={() => setComputerUseEnabled(false)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/30 text-xs font-medium text-violet-400 hover:bg-violet-500/25 transition-colors">
+                        <Monitor className="w-3 h-3" />
+                        Megsy Computer
+                        <X className="w-3 h-3 ml-0.5" />
+                      </button>
+                    )}
                   </motion.div>
               }
               </AnimatePresence>

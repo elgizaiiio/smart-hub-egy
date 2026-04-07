@@ -113,7 +113,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model, mode, searchEnabled, deepResearch, chatMode, user_id } = await req.json();
+    const { messages, model, mode, searchEnabled, deepResearch, chatMode, user_id, computerUseEnabled } = await req.json();
     const latestUserMessage = Array.isArray(messages)
       ? [...messages].reverse().find((message: any) => message?.role === "user")
       : null;
@@ -266,7 +266,16 @@ serve(async (req) => {
     ] : [];
 
     // System prompt
-    const systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
+    let systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
+    
+    // If computer use is explicitly enabled, add browser instructions
+    if (computerUseEnabled && HB_API_KEY) {
+      systemPrompt += `\n\nCOMPUTER USE (Megsy Computer):
+- You have BROWSE_WEBSITE tool that opens a real browser to autonomously browse websites.
+- The user has explicitly enabled Computer Use mode, so PROACTIVELY use BROWSE_WEBSITE for any task that would benefit from real web browsing.
+- Use it for: checking live prices, extracting real-time data, verifying information, browsing stores, reading articles, and any task requiring actual web interaction.
+- Always use it when the user mentions a website, URL, or asks you to check/verify something online.`;
+    }
 
     const body: any = {
       model: modelId,
