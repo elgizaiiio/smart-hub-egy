@@ -640,8 +640,15 @@ Ask me anything to get started!`;
               <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
             </div>
           </button>
-          <div className="border-t border-white/10 mt-1 pt-1">
-            <p className="text-[10px] text-white/30 uppercase px-3 py-1.5">Modes</p>
+          <button onClick={() => { setComputerUseEnabled(!computerUseEnabled); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-2">
+              <Monitor className="w-4 h-4 text-violet-400" />
+              <span className="text-sm text-white/80">Megsy Computer</span>
+            </div>
+            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${computerUseEnabled ? "bg-violet-500 justify-end" : "bg-white/20 justify-start"}`}>
+              <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+            </div>
+          </button>
             <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
               <span className="text-sm">Learning Mode</span>
               {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
