@@ -113,7 +113,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model, mode, searchEnabled, deepResearch, chatMode, user_id } = await req.json();
+    const { messages, model, mode, searchEnabled, deepResearch, chatMode, user_id, computerUseEnabled } = await req.json();
     const latestUserMessage = Array.isArray(messages)
       ? [...messages].reverse().find((message: any) => message?.role === "user")
       : null;
