@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import MentionDropdown from "./MentionDropdown";
+import AgentBadge from "./AgentBadge";
+import type { AgentDef } from "@/lib/agentRegistry";
 
 interface SmartQuestion {
   title: string;
@@ -20,6 +23,10 @@ interface AnimatedInputProps {
   pendingQuestions?: SmartQuestion[];
   onQuestionAnswer?: (answer: string) => void;
   onQuestionSkip?: () => void;
+  activeAgent?: string | null;
+  onAgentSelect?: (agent: AgentDef) => void;
+  onAgentRemove?: () => void;
+  mentionCategories?: string[];
 }
 
 const DEFAULT_PLACEHOLDERS = [
