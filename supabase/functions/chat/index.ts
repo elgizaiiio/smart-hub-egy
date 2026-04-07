@@ -963,12 +963,20 @@ async function handleToolCalls(
 
       if (!COMPOSIO_API_KEY || !toolName) continue;
 
-      const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
-        headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
-      });
-      const connData = await connResp.json();
-      const accounts = connData.items || connData || [];
+      pushStatus(`Executing ${toolName.split("_")[0]} action...`);
 
+      let connData: any;
+      try {
+        const connResp = await fetchWithTimeout(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
+          headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
+        }, 8000);
+        connData = await connResp.json();
+      } catch {
+        pushStatus("Integration service unavailable");
+        continue;
+      }
+
+      const accounts = connData.items || connData || [];
       const appName = toolName.split("_")[0].toLowerCase();
       const account = accounts.find((a: any) =>
         (a.appName || "").toLowerCase().includes(appName) ||
@@ -977,23 +985,38 @@ async function handleToolCalls(
 
       if (!account) {
         const serviceName = toolName.split("_")[0];
-        const connectCard = `\n\n\`\`\`json\n{"type":"cards","items":[{"title":"Connect ${serviceName}","description":"Requires connecting your ${serviceName} account first","action":"Connect"}]}\n\`\`\``;
+        const friendlyNames: Record<string, string> = {
+          GMAIL: "Gmail", GITHUB: "GitHub", SLACK: "Slack", GOOGLE: "Google",
+          NOTION: "Notion", DISCORD: "Discord", LINKEDIN: "LinkedIn", YOUTUBE: "YouTube",
+        };
+        const displayName = friendlyNames[serviceName] || serviceName;
+        const connectCard = `\n\n\`\`\`json\n{"type":"cards","items":[{"title":"Connect ${displayName}","description":"You need to connect your ${displayName} account to use this feature. Go to Integrations to set it up.","action":"Connect"}]}\n\`\`\`\n\nPlease connect your **${displayName}** account first from the Integrations page, then try again.`;
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: connectCard } }] })}\n\n`));
         continue;
       }
 
-      const execResp = await fetch(`${COMPOSIO_BASE}/actions/${encodeURIComponent(toolName)}/execute`, {
-        method: "POST",
-        headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ connectedAccountId: account.id, input: toolArgs }),
-      });
-      const execData = await execResp.json();
+      try {
+        pushStatus(`Running ${toolName}...`);
+        const execResp = await fetchWithTimeout(`${COMPOSIO_BASE}/actions/${encodeURIComponent(toolName)}/execute`, {
+          method: "POST",
+          headers: { "x-api-key": COMPOSIO_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ connectedAccountId: account.id, input: toolArgs }),
+        }, 15000);
+        const execData = await execResp.json();
 
-      const resultText = execResp.ok
-        ? `\n\n---\n**${toolName}** executed successfully.\n\`\`\`json\n${JSON.stringify(execData.data || execData, null, 2).slice(0, 1500)}\n\`\`\``
-        : `\n\n---\n**${toolName}** failed: ${JSON.stringify(execData).slice(0, 500)}`;
-
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
+        if (execResp.ok) {
+          pushStatus(`${toolName} completed successfully`);
+          const resultText = `\n\n---\n✅ **${toolName}** executed successfully.\n\`\`\`json\n${JSON.stringify(execData.data || execData, null, 2).slice(0, 1500)}\n\`\`\``;
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
+        } else {
+          pushStatus(`${toolName} failed`);
+          const resultText = `\n\n---\n❌ **${toolName}** failed: ${JSON.stringify(execData).slice(0, 500)}`;
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
+        }
+      } catch (execErr) {
+        pushStatus(`${toolName} timed out`);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: `\n\n---\n⚠️ **${toolName}** timed out. Please try again.` } }] })}\n\n`));
+      }
     } catch (toolErr) {
       console.error("Tool execution error:", toolErr);
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nAn error occurred while executing the tool. Continuing with available information." } }] })}\n\n`));
