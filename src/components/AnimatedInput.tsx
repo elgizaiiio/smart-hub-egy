@@ -176,6 +176,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     onChange(newVal);
     setMentionOpen(false);
     setMentionQuery("");
+    setLastSelectedAgent(agent);
     onAgentSelect?.(agent);
 
     // Auto-open model picker if agent has models
