@@ -14,6 +14,7 @@ export async function streamChat({
   onDone,
   onError,
   onImages,
+  onProducts,
   onStatus,
   signal,
 }: {
@@ -27,6 +28,7 @@ export async function streamChat({
   onDone: () => void;
   onError?: (error: string) => void;
   onImages?: (images: string[]) => void;
+  onProducts?: (products: any[]) => void;
   onStatus?: (status: string) => void;
   signal?: AbortSignal;
 }) {
