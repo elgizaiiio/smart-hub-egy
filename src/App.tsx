@@ -86,7 +86,10 @@ import RetouchingPage from "./pages/tools/RetouchingPage";
 import RemoverPage from "./pages/tools/RemoverPage";
 import HairChangerPage from "./pages/tools/HairChangerPage";
 import CartoonPage from "./pages/tools/CartoonPage";
-
+import AvatarGeneratorPage from "./pages/tools/AvatarGeneratorPage";
+import ProductPhotoPage from "./pages/tools/ProductPhotoPage";
+import LogoGeneratorPage from "./pages/tools/LogoGeneratorPage";
+import PerspectiveCorrectionPage from "./pages/tools/PerspectiveCorrectionPage";
 
 // Video tool pages
 import VideoSwapPage from "./pages/tools/VideoSwapPage";
@@ -95,6 +98,19 @@ import TalkingPhotoPage from "./pages/tools/TalkingPhotoPage";
 import VideoExtenderPage from "./pages/tools/VideoExtenderPage";
 import AutoCaptionPage from "./pages/tools/AutoCaptionPage";
 import LipSyncPage from "./pages/tools/LipSyncPage";
+import GreenScreenPage from "./pages/tools/GreenScreenPage";
+import VideoColorizerPage from "./pages/tools/VideoColorizerPage";
+import VideoWatermarkPage from "./pages/tools/VideoWatermarkPage";
+import VideoBgReplacerPage from "./pages/tools/VideoBgReplacerPage";
+import VideoIntroPage from "./pages/tools/VideoIntroPage";
+import VideoDenoisePage from "./pages/tools/VideoDenoisePage";
+import ThumbnailGeneratorPage from "./pages/tools/ThumbnailGeneratorPage";
+
+// Audio tool pages
+import KaraokeSeparatorPage from "./pages/voice/KaraokeSeparatorPage";
+import PodcastEditorPage from "./pages/voice/PodcastEditorPage";
+import AudioRestorationPage from "./pages/voice/AudioRestorationPage";
+import AudioTranscriptionPage from "./pages/voice/AudioTranscriptionPage";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
