@@ -103,10 +103,12 @@ const MusicGeneratorPage = () => {
                 transition={{ rotate: { duration: 2.2, repeat: Infinity, ease: "linear" }, scale: { duration: 1.4, repeat: Infinity } }}
                 className="mx-auto relative w-fit"
               >
-                <Sparkles className="w-10 h-10 text-primary" />
-                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl" />
+                <Sparkles className="w-10 h-10 text-blue-400" />
+                <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-blue-400/30 rounded-full" />
               </motion.div>
-              <p className="text-sm font-medium text-foreground">{LOADING_TEXTS[loadingIdx]}</p>
+              <AnimatePresence mode="wait">
+                <motion.p key={loadingIdx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-sm font-medium text-foreground">{LOADING_TEXTS[loadingIdx]}</motion.p>
+              </AnimatePresence>
             </div>
           )}
         </div>
