@@ -550,7 +550,7 @@ const CodeWorkspace = () => {
     <div className="h-full relative bg-secondary flex flex-col">
       {Object.keys(files).length > 0 ? (
         <div className="flex-1 h-full relative overflow-hidden">
-          <IframePreview files={files} previewKey={previewKey} />
+          <ReactRunnerPreview files={files} previewKey={previewKey} />
           <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10" title="Reload">
             <RefreshCw className="w-4 h-4" />
           </button>
