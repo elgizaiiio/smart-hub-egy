@@ -600,6 +600,7 @@ IMAGE & FILE HANDLING:
 
 TOOLS:
 - You have integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). Use them only when the user asks for an action that needs them.
+- You have BROWSE_WEBSITE tool for autonomous web browsing. Use it when the user asks you to check a website, extract specific data from a page, fill a form, compare products across stores, or any task that requires actually visiting and interacting with a website.
 - If a required integration is not connected, return a connect card.
 ${userContext}`;
 
