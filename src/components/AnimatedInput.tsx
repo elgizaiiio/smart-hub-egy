@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MentionDropdown from "./MentionDropdown";
-import type { AgentDef } from "@/lib/agentRegistry";
+import ModelPickerDropdown from "./ModelPickerDropdown";
+import type { AgentDef, AgentModel } from "@/lib/agentRegistry";
+import { getAgentById } from "@/lib/agentRegistry";
 
 interface SmartQuestion {
   title: string;
@@ -26,6 +28,9 @@ interface AnimatedInputProps {
   onAgentSelect?: (agent: AgentDef) => void;
   onAgentRemove?: () => void;
   mentionCategories?: string[];
+  selectedModel?: AgentModel | null;
+  onModelSelect?: (model: AgentModel) => void;
+  onModelRemove?: () => void;
 }
 
 const DEFAULT_PLACEHOLDERS = [
@@ -34,7 +39,7 @@ const DEFAULT_PLACEHOLDERS = [
   "Ask anything...",
 ];
 
-const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip, activeAgent, onAgentSelect, onAgentRemove, mentionCategories }: AnimatedInputProps) => {
+const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip, activeAgent, onAgentSelect, onAgentRemove, mentionCategories, selectedModel, onModelSelect, onModelRemove }: AnimatedInputProps) => {
   const items = useMemo(() => placeholders && placeholders.length > 0 ? placeholders : DEFAULT_PLACEHOLDERS, [placeholders]);
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
@@ -46,8 +51,9 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const valueRef = useRef(value);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [modelQuery, setModelQuery] = useState("");
 
-  // Keep valueRef in sync without triggering placeholder effect
   useEffect(() => {
     valueRef.current = value;
   }, [value]);
@@ -56,12 +62,18 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const safeQuestionIndex = hasQuestions ? Math.min(questionIndex, pendingQuestions!.length - 1) : 0;
   const currentQuestion = hasQuestions ? pendingQuestions![safeQuestionIndex] : null;
 
-  // Placeholder typing animation - only depends on placeholderIndex and items, NOT value
+  // Get models for active agent
+  const activeAgentModels = useMemo(() => {
+    if (!activeAgent) return [];
+    const agent = getAgentById(activeAgent);
+    return agent?.models || [];
+  }, [activeAgent]);
+
+  // Placeholder typing animation
   useEffect(() => {
     if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
     if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
 
-    // If there's text, don't animate
     if (valueRef.current) {
       setDisplayedPlaceholder("");
       return;
@@ -72,7 +84,6 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     setDisplayedPlaceholder("");
 
     placeholderIntervalRef.current = setInterval(() => {
-      // Stop if user started typing
       if (valueRef.current) {
         if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
         setDisplayedPlaceholder("");
@@ -95,50 +106,64 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     };
   }, [placeholderIndex, items]);
 
-  // Clear placeholder when user types
   useEffect(() => {
     if (value) {
       setDisplayedPlaceholder("");
       if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
       if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
     } else if (!value && !placeholderIntervalRef.current) {
-      // Restart animation when input becomes empty
       setPlaceholderIndex((prev) => (prev + 1) % items.length);
     }
   }, [value, items]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Escape" && mentionOpen) {
+    if (e.key === "Escape" && (mentionOpen || modelPickerOpen)) {
       setMentionOpen(false);
+      setModelPickerOpen(false);
       return;
     }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (mentionOpen) { setMentionOpen(false); return; }
+      if (mentionOpen || modelPickerOpen) { setMentionOpen(false); setModelPickerOpen(false); return; }
       if (value.trim() && !disabled && !isLoading) onSend();
     }
   };
 
-  // Detect @ mention typing
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newVal = e.target.value;
     onChange(newVal);
     
-    // Check for @ at cursor position
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = newVal.slice(0, cursorPos);
+
+    // Check for # model picker (only when agent is selected and has models)
+    if (activeAgent && activeAgentModels.length > 0) {
+      const hashMatch = textBeforeCursor.match(/#(\w*)$/);
+      if (hashMatch) {
+        setModelPickerOpen(true);
+        setModelQuery(hashMatch[1]);
+        setMentionOpen(false);
+        return;
+      }
+    }
+
+    // Check for @ mention
     const atMatch = textBeforeCursor.match(/@(\w*)$/);
     if (atMatch) {
       setMentionOpen(true);
       setMentionQuery(atMatch[1]);
+      setModelPickerOpen(false);
     } else {
       setMentionOpen(false);
       setMentionQuery("");
+      if (!textBeforeCursor.match(/#(\w*)$/)) {
+        setModelPickerOpen(false);
+        setModelQuery("");
+      }
     }
   };
 
   const handleMentionSelect = (agent: AgentDef) => {
-    // Remove the @query from input
     const cursorPos = textareaRef.current?.selectionStart || value.length;
     const textBeforeCursor = value.slice(0, cursorPos);
     const cleanedBefore = textBeforeCursor.replace(/@\w*$/, "");
@@ -147,6 +172,18 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     setMentionOpen(false);
     setMentionQuery("");
     onAgentSelect?.(agent);
+  };
+
+  const handleModelSelect = (model: AgentModel) => {
+    // Remove the #query from input
+    const cursorPos = textareaRef.current?.selectionStart || value.length;
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const cleanedBefore = textBeforeCursor.replace(/#\w*$/, "");
+    const textAfter = value.slice(cursorPos);
+    onChange(cleanedBefore + textAfter);
+    setModelPickerOpen(false);
+    setModelQuery("");
+    onModelSelect?.(model);
   };
 
   const autoResize = useCallback(() => {
@@ -198,6 +235,14 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             onClose={() => setMentionOpen(false)}
             visible={mentionOpen}
             categories={mentionCategories}
+          />
+        )}
+        {modelPickerOpen && activeAgentModels.length > 0 && (
+          <ModelPickerDropdown
+            models={activeAgentModels}
+            query={modelQuery}
+            onSelect={handleModelSelect}
+            onClose={() => setModelPickerOpen(false)}
           />
         )}
       </AnimatePresence>
@@ -273,7 +318,15 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               {activeAgent && (
-                <span className="text-xs text-muted-foreground select-none shrink-0">@{activeAgent}</span>
+                <span className="text-xs text-muted-foreground select-none shrink-0 flex items-center gap-1">
+                  @{activeAgent}
+                  {selectedModel && (
+                    <span className="text-[10px] text-muted-foreground/70">#{selectedModel.id}</span>
+                  )}
+                  <button onClick={() => { onAgentRemove?.(); onModelRemove?.(); }} className="hover:text-foreground transition-colors ml-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
               )}
               <textarea
                 ref={textareaRef}
