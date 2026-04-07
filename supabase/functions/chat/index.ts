@@ -66,6 +66,20 @@ async function getSerperKey(sb: ReturnType<typeof createClient>): Promise<string
   return pick.api_key;
 }
 
+// Hyperbrowser key cache
+const hbKeyCache: { id: string; api_key: string; expiry: number } = { id: "", api_key: "", expiry: 0 };
+
+async function getHyperbrowserKey(sb: ReturnType<typeof createClient>): Promise<string | null> {
+  if (hbKeyCache.api_key && Date.now() < hbKeyCache.expiry) return hbKeyCache.api_key;
+  const { data } = await sb.from("api_keys").select("id, api_key").eq("service", "hyperbrowser").eq("is_active", true).eq("is_blocked", false).limit(10);
+  if (!data || data.length === 0) return null;
+  const pick = data[Math.floor(Math.random() * data.length)];
+  hbKeyCache.id = pick.id;
+  hbKeyCache.api_key = pick.api_key;
+  hbKeyCache.expiry = Date.now() + CACHE_TTL_MS;
+  return pick.api_key;
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
