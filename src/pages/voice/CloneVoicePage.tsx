@@ -18,14 +18,42 @@ const CloneVoicePage = () => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState("");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setAudioFile(file);
     setStep("text");
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], "recording.webm", { type: "audio/webm" });
+        setAudioFile(file);
+        setStep("text");
+        stream.getTracks().forEach(t => t.stop());
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch {
+      toast.error("Microphone access denied");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
   };
 
   const handleGenerate = async () => {
@@ -66,8 +94,12 @@ const CloneVoicePage = () => {
               <p className="text-sm font-medium">Upload Voice Sample (10s+)</p>
               <p className="text-xs text-muted-foreground/50">MP3, WAV, M4A</p>
             </button>
-            <button onClick={() => toast("Recording coming soon")} className="w-full max-w-sm py-4 rounded-2xl bg-accent/30 flex items-center justify-center gap-2 text-sm font-medium text-foreground">
-              <Mic className="w-4 h-4" /> Record Audio
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`w-full max-w-sm py-4 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium ${isRecording ? "bg-red-500/20 text-red-400" : "bg-accent/30 text-foreground"}`}
+            >
+              <Mic className={`w-4 h-4 ${isRecording ? "animate-pulse" : ""}`} />
+              {isRecording ? "Stop Recording" : "Record Audio"}
             </button>
             <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileUpload} />
           </div>
@@ -79,7 +111,6 @@ const CloneVoicePage = () => {
             <h2 className="text-lg font-bold text-foreground">What should the clone say?</h2>
             <p className="text-sm text-muted-foreground">Enter the text you want spoken in the cloned voice</p>
             <textarea
-              ref={textareaRef}
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               placeholder="Type or paste your text here..."

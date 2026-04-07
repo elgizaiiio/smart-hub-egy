@@ -18,10 +18,15 @@ const VoiceChangerPage = () => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [customVoiceFile, setCustomVoiceFile] = useState<File | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const customVoiceInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     supabase.from("voice_templates").select("*").eq("is_active", true).order("display_order").then(({ data }) => {
@@ -36,6 +41,40 @@ const VoiceChangerPage = () => {
     setStep("select-voice");
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], "recording.webm", { type: "audio/webm" });
+        setAudioFile(file);
+        setStep("select-voice");
+        stream.getTracks().forEach(t => t.stop());
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch {
+      toast.error("Microphone access denied");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+  };
+
+  const handleCustomVoiceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCustomVoiceFile(file);
+    setSelectedTemplate({ id: "custom", name: "Custom Voice" });
+    setStep("confirm");
+  };
+
   const togglePreview = (t: any) => {
     if (playingId === t.id) { audioRef.current?.pause(); setPlayingId(null); }
     else if (audioRef.current) { audioRef.current.src = t.audio_file_url; audioRef.current.play(); setPlayingId(t.id); }
@@ -47,15 +86,26 @@ const VoiceChangerPage = () => {
 
     setStep("loading");
     try {
-      // Deduct credits
       await supabase.functions.invoke("deduct-credits", {
         body: { user_id: userId, amount: COST, action_type: "voice_changer", description: "Voice Changer" }
       });
 
       const reader = new FileReader();
       reader.onload = async () => {
+        let voiceRef = selectedTemplate.audio_file_url;
+
+        // If custom voice, read that too
+        if (customVoiceFile && selectedTemplate.id === "custom") {
+          const customReader = new FileReader();
+          const customData = await new Promise<string>((resolve) => {
+            customReader.onload = () => resolve(customReader.result as string);
+            customReader.readAsDataURL(customVoiceFile);
+          });
+          voiceRef = customData;
+        }
+
         const { data, error } = await supabase.functions.invoke("generate-voice", {
-          body: { model_id: "voice-changer", prompt: reader.result, type: "tts", settings: { voice_ref: selectedTemplate.audio_file_url } },
+          body: { model_id: "voice-changer", prompt: reader.result, type: "tts", settings: { voice_ref: voiceRef } },
         });
         if (error) throw error;
         if (data?.url) { setResultUrl(data.url); setStep("result"); toast.success("Voice changed!"); }
@@ -80,8 +130,12 @@ const VoiceChangerPage = () => {
               <p className="text-sm font-medium">Upload Audio File</p>
               <p className="text-xs text-muted-foreground/50">MP3, WAV, M4A</p>
             </button>
-            <button onClick={() => toast("Recording coming soon")} className="w-full max-w-sm py-4 rounded-2xl bg-accent/30 flex items-center justify-center gap-2 text-sm font-medium text-foreground">
-              <Mic className="w-4 h-4" /> Record Audio
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`w-full max-w-sm py-4 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium ${isRecording ? "bg-red-500/20 text-red-400" : "bg-accent/30 text-foreground"}`}
+            >
+              <Mic className={`w-4 h-4 ${isRecording ? "animate-pulse" : ""}`} />
+              {isRecording ? "Stop Recording" : "Record Audio"}
             </button>
             <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileUpload} />
           </div>
@@ -91,17 +145,27 @@ const VoiceChangerPage = () => {
         return (
           <div className="px-4 pt-4">
             <h2 className="text-lg font-bold text-foreground mb-1">Choose Target Voice</h2>
-            <p className="text-sm text-muted-foreground mb-4">Select a voice or upload your own</p>
+            <p className="text-sm text-muted-foreground mb-4">Select a template or upload your own voice</p>
+
+            {/* Custom voice upload */}
+            <button
+              onClick={() => customVoiceInputRef.current?.click()}
+              className="w-full mb-4 py-4 rounded-2xl border-2 border-dashed border-primary/30 flex items-center justify-center gap-2 text-sm font-medium text-primary hover:bg-primary/5 transition-colors"
+            >
+              <Upload className="w-4 h-4" /> Upload Custom Voice
+            </button>
+            <input ref={customVoiceInputRef} type="file" accept="audio/*" className="hidden" onChange={handleCustomVoiceUpload} />
+
             <div className="grid grid-cols-2 gap-3">
               {templates.map((t) => (
                 <motion.button
                   key={t.id}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => { setSelectedTemplate(t); setStep("confirm"); }}
+                  onClick={() => { setSelectedTemplate(t); setCustomVoiceFile(null); setStep("confirm"); }}
                   className={`relative rounded-2xl overflow-hidden text-left p-3 border-2 transition-colors ${selectedTemplate?.id === t.id ? "border-primary" : "border-border/20"}`}
                   style={{ background: "hsl(var(--card))" }}
                 >
-                  {t.preview_image_url && <img src={t.preview_image_url} alt="" className="w-full h-24 object-cover rounded-xl mb-2" />}
+                  {t.preview_image_url && <img src={t.preview_image_url} alt="" className="w-full h-24 object-cover rounded-xl mb-2" loading="lazy" />}
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-foreground">{t.name}</p>
                     {selectedTemplate?.id === t.id && <Check className="w-4 h-4 text-primary" />}
