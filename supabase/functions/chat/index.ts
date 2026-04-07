@@ -334,7 +334,7 @@ serve(async (req) => {
             if (data === "[DONE]") {
               // Handle tool calls
               if (toolCalls.length > 0) {
-                await handleToolCalls(controller, encoder, toolCalls, body, LEMONDATA_URL, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb);
+                await handleToolCalls(controller, encoder, toolCalls, body, LEMONDATA_URL, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, 0);
               }
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();
@@ -369,7 +369,7 @@ serve(async (req) => {
 
         // Handle remaining tool calls
         if (toolCalls.length > 0) {
-          await handleToolCalls(controller, encoder, toolCalls, body, LEMONDATA_URL, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb);
+          await handleToolCalls(controller, encoder, toolCalls, body, LEMONDATA_URL, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, 0);
         }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
@@ -521,7 +521,9 @@ async function handleToolCalls(
   isDeepResearch: boolean,
   searchTools: any[],
   sb: ReturnType<typeof createClient>,
+  depth: number = 0,
 ) {
+  const MAX_DEPTH = 2; // Limit recursion to prevent timeouts
   const allSearchResults: string[] = [];
   const allImages: string[] = [];
   const shouldIncludeImages = (query: string, explicit: boolean) => {
@@ -648,7 +650,8 @@ async function handleToolCalls(
     ];
 
     const secondBody: any = { model: modelId, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
-    if (isDeepResearch && searchTools.length > 0) {
+    // Only allow further tool calls if we haven't hit max depth
+    if (isDeepResearch && searchTools.length > 0 && depth < MAX_DEPTH) {
       secondBody.tools = searchTools;
       secondBody.tool_choice = "auto";
     }
@@ -695,8 +698,8 @@ async function handleToolCalls(
           }
         }
         // Handle recursive tool calls from deep research
-        if (secondToolCalls.length > 0 && isDeepResearch) {
-          await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb);
+        if (secondToolCalls.length > 0 && isDeepResearch && depth < MAX_DEPTH) {
+          await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, depth + 1);
         }
       }
     } catch (e) {

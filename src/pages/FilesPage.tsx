@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileText, Presentation, FileSpreadsheet, ScrollText, PenTool } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileText, Presentation, FileSpreadsheet, ScrollText, PenTool, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import ThinkingLoader from "@/components/ThinkingLoader";
 import ReactMarkdown from "react-markdown";
 import AgentBadge from "@/components/AgentBadge";
 import MentionDropdown from "@/components/MentionDropdown";
+import SmartQuestionCard from "@/components/SmartQuestionCard";
 import type { AgentDef } from "@/lib/agentRegistry";
 
 interface ChatMsg {
@@ -24,11 +25,16 @@ interface AttachedFile {
   data: string;
 }
 
+interface SmartQuestion {
+  title: string;
+  options: string[];
+  allowText?: boolean;
+}
 const FILE_SERVICES = [
-  { id: "slides", label: "Slides", icon: Presentation, gradient: "from-violet-500/20 to-purple-500/20", prompt: "Create a professional presentation about" },
-  { id: "resume", label: "Resume", icon: PenTool, gradient: "from-blue-500/20 to-cyan-500/20", prompt: "Create a professional resume for" },
-  { id: "spreadsheet", label: "Spreadsheet", icon: FileSpreadsheet, gradient: "from-emerald-500/20 to-green-500/20", prompt: "Create a spreadsheet for" },
-  { id: "document", label: "Document", icon: ScrollText, gradient: "from-amber-500/20 to-orange-500/20", prompt: "Write a professional document about" },
+  { id: "slides", label: "Slides", icon: Presentation, prompt: "Create a professional presentation about" },
+  { id: "resume", label: "Resume", icon: PenTool, prompt: "Create a professional resume for" },
+  { id: "spreadsheet", label: "Spreadsheet", icon: FileSpreadsheet, prompt: "Create a spreadsheet for" },
+  { id: "document", label: "Document", icon: ScrollText, prompt: "Write a professional document about" },
 ];
 
 const FILE_PLACEHOLDERS = [
@@ -46,6 +52,7 @@ const FilesPage = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewFullscreen, setPreviewFullscreen] = useState(false);
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
@@ -54,6 +61,9 @@ const FilesPage = () => {
   const [activeAgent, setActiveAgent] = useState<string | null>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
+  const [pendingQuestions, setPendingQuestions] = useState<SmartQuestion[]>([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [slideCount, setSlideCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -63,9 +73,6 @@ const FilesPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isGenerating]);
-
-
-
 
   const inputRef2 = useRef(input);
   useEffect(() => { inputRef2.current = input; }, [input]);
@@ -103,6 +110,31 @@ const FilesPage = () => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
+
+  // Parse smart questions from AI response
+  useEffect(() => {
+    if (isGenerating) return;
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role !== "assistant") return;
+    const jsonBlockRegex = /```json\s*\n?([\s\S]*?)\n?```/g;
+    let match;
+    const questions: SmartQuestion[] = [];
+    while ((match = jsonBlockRegex.exec(lastMsg.content)) !== null) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        if (parsed.type === "questions" && parsed.questions) {
+          questions.push(...parsed.questions);
+        }
+      } catch {}
+    }
+    if (questions.length > 0) setPendingQuestions(questions);
+  }, [messages, isGenerating]);
+
+  const handleQuestionAnswer = (answer: string) => {
+    setPendingQuestions([]);
+    setInput(answer);
+    setTimeout(() => handleGenerate(answer), 50);
+  };
 
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>, type: "file" | "image") => {
     const files = e.target.files;
@@ -155,29 +187,40 @@ const FilesPage = () => {
     await supabase.from("messages").insert({ conversation_id: convId, role, content, images });
   };
 
-  const handleGenerate = async () => {
-    if (!input.trim() && attachedFiles.length === 0) return;
-    const userContent = input || `[Attached ${attachedFiles.length} file(s)]`;
+  const handleGenerate = async (overrideInput?: string) => {
+    const userInput = overrideInput || input;
+    if (!userInput.trim() && attachedFiles.length === 0) return;
+    const userContent = userInput || `[Attached ${attachedFiles.length} file(s)]`;
     const userMsg: ChatMsg = { role: "user", content: userContent };
     setMessages(prev => [...prev, userMsg]);
-    const userInput = input;
     setInput("");
     const files = [...attachedFiles];
     setAttachedFiles([]);
     setIsGenerating(true);
+    setPendingQuestions([]);
 
     const convId = await createOrGetConversation(userContent);
     if (convId) await saveMessage(convId, "user", userContent);
 
     try {
       const AGENT_PROMPTS: Record<string, string> = {
-        slides: "Generate a complete HTML presentation/slideshow with multiple slides, navigation, transitions, and professional styling. Use a dark theme. Include slide numbers and navigation buttons.",
-        resume: "Generate a professional, well-structured HTML resume/CV. Include sections for contact info, summary, experience, education, skills. Use modern, clean styling with good typography.",
-        spreadsheet: "Generate a complete HTML table/spreadsheet with proper styling, alternating row colors, sortable headers, and professional formatting. Include sample data relevant to the request.",
-        document: "Generate a complete, well-formatted, comprehensive and detailed HTML document with proper headings, paragraphs, and professional styling.",
+        slides: `Generate a complete HTML presentation with these requirements:
+- Create a DARK themed slideshow with at least 10 slides
+- Each slide must be a full-viewport section (100vh) with smooth scroll-snap
+- Include navigation buttons (prev/next) and slide counter
+- Use professional typography, gradients, and subtle animations
+- Include a title slide, content slides with bullet points, data visualization slides, and a closing slide
+- Add CSS transitions between slides
+- Make it responsive
+- Use a color scheme: dark background (#0a0a0f), primary accent (violet/purple), white text
+- Include JavaScript for keyboard navigation (arrow keys)
+Output ONLY the complete HTML code.`,
+        resume: "Generate a professional, well-structured HTML resume/CV. Include sections for contact info, summary, experience, education, skills. Use modern, clean styling with good typography. Dark theme with accent colors. Output ONLY the HTML code.",
+        spreadsheet: "Generate a complete HTML table/spreadsheet with proper styling, alternating row colors, sortable headers, and professional formatting. Dark theme. Include sample data relevant to the request. Output ONLY the HTML code.",
+        document: "Generate a complete, well-formatted, comprehensive and detailed HTML document with proper headings, paragraphs, and professional styling. Dark theme. Output ONLY the HTML code.",
       };
-      const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished.";
-      let prompt = `${agentPrompt} Output ONLY the HTML code, no explanations:\n\n${userInput}`;
+      const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted, comprehensive and detailed HTML document. Include proper styling with CSS, dark theme, make it look professional. Output ONLY the HTML code, no explanations.";
+      let prompt = `${agentPrompt}\n\nUser request: ${userInput}`;
       const fileAttachments = files.filter(f => f.type !== "image");
       if (fileAttachments.length > 0) {
         prompt += "\n\n--- Attached Documents ---\n";
@@ -229,10 +272,14 @@ const FilesPage = () => {
       const htmlMatch = content.match(/```html\n([\s\S]*?)```/);
       if (htmlMatch) html = htmlMatch[1];
 
+      // Get natural AI description
       const descResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML document for them. Write a unique, contextual description of what was created. Be specific. Suggest 2-3 improvements. Keep it conversational, 2-4 sentences. No emoji. Respond in the user's language.` }], model: "claude-haiku-4-5" }),
+        body: JSON.stringify({
+          messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML ${activeAgent || "document"} for them. Write a natural, contextual description of what was created and suggest 2-3 specific improvements. Be conversational and specific to the content. 2-4 sentences. No emoji. Respond in the user's language.` }],
+          model: "claude-haiku-4-5"
+        }),
       });
 
       let description = "Your document is ready. Click Preview to view it.";
@@ -272,7 +319,7 @@ const FilesPage = () => {
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "document.html";
+    a.href = url; a.download = `${activeAgent || "document"}.html`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("File downloaded");
@@ -288,24 +335,121 @@ const FilesPage = () => {
 
   const hasMessages = messages.length > 0;
 
-  return (
-    <AppLayout onSelectConversation={loadOldConversation} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} activeConversationId={conversationId}>
-      <div className="h-full flex flex-col bg-background overflow-x-hidden">
-        <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} onSelectConversation={loadOldConversation} activeConversationId={conversationId} currentMode="files" />
+  // Input bar component (reused in empty + chat states)
+  const InputBar = ({ compact }: { compact?: boolean }) => (
+    <div className={compact ? "max-w-2xl mx-auto w-full" : "max-w-xl mx-auto w-full"}>
+      {attachedFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {attachedFiles.map((f, i) => (
+            <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs text-foreground">
+              {f.type === "image" ? <Image className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+              <span className="truncate max-w-[100px]">{f.name}</span>
+              <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="relative">
+        <AnimatePresence>
+          {mentionOpen && (
+            <MentionDropdown
+              query={mentionQuery}
+              onSelect={(agent: AgentDef) => {
+                const cursorPos = textareaRef.current?.selectionStart || input.length;
+                const before = input.slice(0, cursorPos).replace(/@\w*$/, "");
+                const after = input.slice(cursorPos);
+                setInput(before + after);
+                setActiveAgent(agent.id);
+                setMentionOpen(false);
+                setMentionQuery("");
+              }}
+              onClose={() => setMentionOpen(false)}
+              visible={mentionOpen}
+              categories={["files"]}
+            />
+          )}
+        </AnimatePresence>
+        <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-sm px-4 py-3">
+          <div className="relative" ref={menuRef}>
+            <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
+            <AnimatePresence>
+              {menuOpen && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-black/80 backdrop-blur-2xl border border-border/30 rounded-xl shadow-lg p-1">
+                  <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5"><Paperclip className="w-4 h-4" /> Attach file</button>
+                  <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5"><Image className="w-4 h-4" /> Attach image</button>
+                  <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5">
+                    <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {activeAgent && (
+                <AgentBadge agentId={activeAgent} onRemove={() => setActiveAgent(null)} size="sm" />
+              )}
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={e => {
+                  const val = e.target.value;
+                  setInput(val);
+                  const cursorPos = e.target.selectionStart;
+                  const before = val.slice(0, cursorPos);
+                  const atMatch = before.match(/@(\w*)$/);
+                  if (atMatch) { setMentionOpen(true); setMentionQuery(atMatch[1]); }
+                  else { setMentionOpen(false); setMentionQuery(""); }
+                }}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!mentionOpen) handleGenerate(); } }}
+                placeholder={displayedPlaceholder || "Describe what you need..."}
+                rows={compact ? 1 : 2}
+                className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1 max-h-32"
+                style={{ minHeight: compact ? "32px" : "48px" }}
+              />
+            </div>
+          </div>
+          <button
+            onClick={() => handleGenerate()}
+            disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
+            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
+          >
+            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
-        {/* Preview Modal */}
+  return (
+    <AppLayout onSelectConversation={loadOldConversation} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); setActiveAgent(null); setPendingQuestions([]); }} activeConversationId={conversationId}>
+      <div className="h-full flex flex-col bg-background overflow-x-hidden">
+        <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); setActiveAgent(null); setPendingQuestions([]); }} onSelectConversation={loadOldConversation} activeConversationId={conversationId} currentMode="files" />
+
+        {/* Enhanced Preview Modal */}
         <AnimatePresence>
           {previewHtml && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-background flex flex-col">
-              <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-                <p className="text-sm font-medium text-foreground">Preview</p>
-                <div className="flex gap-2">
-                  <button onClick={() => handleDownloadHtml(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-secondary text-foreground hover:bg-accent">HTML</button>
-                  <button onClick={() => handleDownloadPdf(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">PDF</button>
-                  <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/30 bg-secondary/30 backdrop-blur-sm">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><X className="w-4 h-4" /></button>
+                  <p className="text-sm font-medium text-foreground">
+                    {activeAgent === "slides" ? "Presentation" : "Document"} Preview
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setPreviewFullscreen(!previewFullscreen)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                    {previewFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  </button>
+                  <button onClick={() => handleDownloadHtml(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors">HTML</button>
+                  <button onClick={() => handleDownloadPdf(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">PDF</button>
                 </div>
               </div>
-              <iframe srcDoc={previewHtml} className="flex-1 w-full bg-white" sandbox="allow-scripts" />
+              <div className={`flex-1 ${previewFullscreen ? "" : "p-4 md:p-8"}`}>
+                <div className={`${previewFullscreen ? "w-full h-full" : "max-w-5xl mx-auto h-full rounded-xl overflow-hidden border border-border/20 shadow-2xl"}`}>
+                  <iframe srcDoc={previewHtml} className="w-full h-full bg-white" sandbox="allow-scripts" />
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -321,96 +465,14 @@ const FilesPage = () => {
           {!hasMessages ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-2xl w-full">
-                {/* Hero text */}
                 <h1 className="font-display text-3xl md:text-5xl font-black uppercase leading-[1.1] tracking-tight text-foreground">CREATE YOUR</h1>
                 <h1 className="font-display text-3xl md:text-5xl font-black uppercase leading-[1] tracking-tight bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">DOCUMENTS</h1>
                 <p className="text-sm text-muted-foreground mt-3 mb-8">Generate documents, presentations, spreadsheets and more</p>
 
-                {/* Centered Input - bigger */}
-                <div className="max-w-xl mx-auto mb-10">
-                  {attachedFiles.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {attachedFiles.map((f, i) => (
-                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs text-foreground">
-                          {f.type === "image" ? <Image className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
-                          <span className="truncate max-w-[100px]">{f.name}</span>
-                          <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="relative">
-                    <AnimatePresence>
-                      {mentionOpen && (
-                        <MentionDropdown
-                          query={mentionQuery}
-                          onSelect={(agent: AgentDef) => {
-                            const cursorPos = textareaRef.current?.selectionStart || input.length;
-                            const before = input.slice(0, cursorPos).replace(/@\w*$/, "");
-                            const after = input.slice(cursorPos);
-                            setInput(before + after);
-                            setActiveAgent(agent.id);
-                            setMentionOpen(false);
-                            setMentionQuery("");
-                          }}
-                          onClose={() => setMentionOpen(false)}
-                          visible={mentionOpen}
-                          categories={["files"]}
-                        />
-                      )}
-                    </AnimatePresence>
-                    <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-4 py-3">
-                      <div className="relative" ref={menuRef}>
-                        <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
-                        <AnimatePresence>
-                          {menuOpen && (
-                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-card border border-border rounded-xl shadow-lg p-1">
-                              <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Paperclip className="w-4 h-4" /> Attach file</button>
-                              <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Image className="w-4 h-4" /> Attach image</button>
-                              <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
-                                <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
-                              </button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {activeAgent && (
-                            <AgentBadge agentId={activeAgent} onRemove={() => setActiveAgent(null)} size="sm" />
-                          )}
-                          <textarea
-                            ref={textareaRef}
-                            value={input}
-                            onChange={e => {
-                              const val = e.target.value;
-                              setInput(val);
-                              const cursorPos = e.target.selectionStart;
-                              const before = val.slice(0, cursorPos);
-                              const atMatch = before.match(/@(\w*)$/);
-                              if (atMatch) { setMentionOpen(true); setMentionQuery(atMatch[1]); }
-                              else { setMentionOpen(false); setMentionQuery(""); }
-                            }}
-                            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!mentionOpen) handleGenerate(); } }}
-                            placeholder={displayedPlaceholder || "Describe what you need..."}
-                            rows={2}
-                            className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1 max-h-32"
-                            style={{ minHeight: "48px" }}
-                          />
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleGenerate}
-                        disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
-                        className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
-                      >
-                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
+                <div className="mb-8">
+                  <InputBar />
                 </div>
 
-                {/* Service cards - clean horizontal pills */}
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   {FILE_SERVICES.map((svc, i) => (
                     <motion.button
@@ -442,18 +504,27 @@ const FilesPage = () => {
                     </div>
                   ) : (
                     <div className="mb-4">
-                      <div className="prose-chat text-foreground text-sm mb-3"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                      <div className="prose-chat text-foreground text-sm mb-3">
+                        <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "")}</ReactMarkdown>
+                      </div>
                       {msg.htmlContent && (
-                        <div className="flex gap-2">
-                          <button onClick={() => setPreviewHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-foreground text-sm hover:bg-accent transition-colors"><Eye className="w-4 h-4" /> Preview</button>
+                        <div className="flex gap-2 flex-wrap">
+                          <button onClick={() => setPreviewHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm hover:bg-primary/20 transition-colors"><Eye className="w-4 h-4" /> Preview</button>
                           <button onClick={() => handleDownloadHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-foreground text-sm hover:bg-accent transition-colors"><Download className="w-4 h-4" /> HTML</button>
-                          <button onClick={() => handleDownloadPdf(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"><Download className="w-4 h-4" /> PDF</button>
+                          <button onClick={() => handleDownloadPdf(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-foreground text-sm hover:bg-accent transition-colors"><Download className="w-4 h-4" /> PDF</button>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
               ))}
+              {/* Smart Questions */}
+              {pendingQuestions.length > 0 && !isGenerating && (
+                <SmartQuestionCard
+                  questions={pendingQuestions}
+                  onAnswer={(answer) => { setPendingQuestions([]); setInput(answer); setTimeout(() => handleGenerate(answer), 50); }}
+                />
+              )}
               {isGenerating && <ThinkingLoader />}
               <div ref={messagesEndRef} />
             </div>
@@ -463,54 +534,7 @@ const FilesPage = () => {
         {/* Bottom Input - only when in chat mode */}
         {hasMessages && (
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
-            <div className="max-w-2xl mx-auto">
-              {attachedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {attachedFiles.map((f, i) => (
-                    <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs text-foreground">
-                      {f.type === "image" ? <Image className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
-                      <span className="truncate max-w-[100px]">{f.name}</span>
-                      <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
-                <div className="relative" ref={menuRef}>
-                  <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
-                  <AnimatePresence>
-                    {menuOpen && (
-                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-card border border-border rounded-xl shadow-lg p-1">
-                        <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Paperclip className="w-4 h-4" /> Attach file</button>
-                        <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Image className="w-4 h-4" /> Attach image</button>
-                        <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
-                          <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                    placeholder={displayedPlaceholder || "Describe what you need..."}
-                    rows={1}
-                    className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
-                    style={{ minHeight: "32px" }}
-                  />
-                </div>
-                <button
-                  onClick={handleGenerate}
-                  disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
-                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
-                >
-                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+            <InputBar compact />
           </div>
         )}
 
