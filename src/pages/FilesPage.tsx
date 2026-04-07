@@ -332,40 +332,74 @@ const FilesPage = () => {
                       ))}
                     </div>
                   )}
-                  <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-4 py-3">
-                    <div className="relative" ref={menuRef}>
-                      <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
-                      <AnimatePresence>
-                        {menuOpen && (
-                          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-card border border-border rounded-xl shadow-lg p-1">
-                            <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Paperclip className="w-4 h-4" /> Attach file</button>
-                            <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Image className="w-4 h-4" /> Attach image</button>
-                            <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
-                              <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                  <div className="relative">
+                    <AnimatePresence>
+                      {mentionOpen && (
+                        <MentionDropdown
+                          query={mentionQuery}
+                          onSelect={(agent: AgentDef) => {
+                            const cursorPos = textareaRef.current?.selectionStart || input.length;
+                            const before = input.slice(0, cursorPos).replace(/@\w*$/, "");
+                            const after = input.slice(cursorPos);
+                            setInput(before + after);
+                            setActiveAgent(agent.id);
+                            setMentionOpen(false);
+                            setMentionQuery("");
+                          }}
+                          onClose={() => setMentionOpen(false)}
+                          visible={mentionOpen}
+                          categories={["files"]}
+                        />
+                      )}
+                    </AnimatePresence>
+                    <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-4 py-3">
+                      <div className="relative" ref={menuRef}>
+                        <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
+                        <AnimatePresence>
+                          {menuOpen && (
+                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-card border border-border rounded-xl shadow-lg p-1">
+                              <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Paperclip className="w-4 h-4" /> Attach file</button>
+                              <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Image className="w-4 h-4" /> Attach image</button>
+                              <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
+                                <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {activeAgent && (
+                            <AgentBadge agentId={activeAgent} onRemove={() => setActiveAgent(null)} size="sm" />
+                          )}
+                          <textarea
+                            ref={textareaRef}
+                            value={input}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setInput(val);
+                              const cursorPos = e.target.selectionStart;
+                              const before = val.slice(0, cursorPos);
+                              const atMatch = before.match(/@(\w*)$/);
+                              if (atMatch) { setMentionOpen(true); setMentionQuery(atMatch[1]); }
+                              else { setMentionOpen(false); setMentionQuery(""); }
+                            }}
+                            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!mentionOpen) handleGenerate(); } }}
+                            placeholder={displayedPlaceholder || "Describe what you need..."}
+                            rows={2}
+                            className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1 max-h-32"
+                            style={{ minHeight: "48px" }}
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleGenerate}
+                        disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
+                        className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
+                      >
+                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                      </button>
                     </div>
-                    <div className="flex-1 relative">
-                      <textarea
-                        ref={textareaRef}
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                        placeholder={displayedPlaceholder || "Describe what you need..."}
-                        rows={2}
-                        className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1 max-h-32"
-                        style={{ minHeight: "48px" }}
-                      />
-                    </div>
-                    <button
-                      onClick={handleGenerate}
-                      disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
-                      className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
-                    >
-                      {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                    </button>
                   </div>
                 </div>
 
