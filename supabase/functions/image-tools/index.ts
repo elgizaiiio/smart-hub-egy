@@ -142,7 +142,8 @@ async function callFal(model: string, params: Record<string, any>): Promise<stri
   const falKey = Deno.env.get("FAL_API_KEY");
   if (!falKey) throw new Error("FAL_API_KEY not configured");
 
-  const submitResp = await fetch(`https://queue.fal.run/${model}`, {
+  // Try synchronous first
+  const submitResp = await fetch(`https://fal.run/${model}`, {
     method: "POST",
     headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
     body: JSON.stringify(params),
@@ -150,37 +151,50 @@ async function callFal(model: string, params: Record<string, any>): Promise<stri
 
   if (!submitResp.ok) {
     const t = await submitResp.text();
-    throw new Error(`fal.ai error: ${submitResp.status} ${t.slice(0, 200)}`);
-  }
-
-  const submitData = await submitResp.json();
-  const requestId = submitData.request_id;
-  if (!requestId) {
-    const url = submitData.images?.[0]?.url || submitData.image?.url;
-    if (url) return url;
-    throw new Error("No request_id from fal.ai");
-  }
-
-  // Poll for result
-  for (let i = 0; i < 60; i++) {
-    await new Promise(r => setTimeout(r, 2000));
-    const pollResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}/status`, {
-      headers: { Authorization: `Key ${falKey}` },
+    console.error("fal.ai sync error:", submitResp.status, t);
+    // Fallback to queue
+    const queueResp = await fetch(`https://queue.fal.run/${model}`, {
+      method: "POST",
+      headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(params),
     });
-    if (!pollResp.ok) continue;
-    const pollData = await pollResp.json();
-    if (pollData.status === "COMPLETED") {
-      const resultResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}`, {
+    if (!queueResp.ok) {
+      const qt = await queueResp.text();
+      throw new Error(`fal.ai error: ${queueResp.status} ${qt.slice(0, 200)}`);
+    }
+    const queueData = await queueResp.json();
+    const requestId = queueData.request_id;
+    if (!requestId) {
+      const url = queueData.images?.[0]?.url || queueData.image?.url;
+      if (url) return url;
+      throw new Error("No request_id from fal.ai");
+    }
+    // Poll
+    for (let i = 0; i < 45; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const pollResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}/status`, {
         headers: { Authorization: `Key ${falKey}` },
       });
-      const resultData = await resultResp.json();
-      const url = resultData.images?.[0]?.url || resultData.image?.url || resultData.relit_image?.url;
-      if (url) return url;
-      throw new Error("No image in fal.ai result");
+      if (!pollResp.ok) continue;
+      const pollData = await pollResp.json();
+      if (pollData.status === "COMPLETED") {
+        const resultResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}`, {
+          headers: { Authorization: `Key ${falKey}` },
+        });
+        const resultData = await resultResp.json();
+        const url = resultData.images?.[0]?.url || resultData.image?.url || resultData.relit_image?.url;
+        if (url) return url;
+        throw new Error("No image in fal.ai result");
+      }
+      if (pollData.status === "FAILED") throw new Error("fal.ai generation failed");
     }
-    if (pollData.status === "FAILED") throw new Error("fal.ai generation failed");
+    throw new Error("fal.ai generation timed out");
   }
-  throw new Error("fal.ai generation timed out");
+
+  const data = await submitResp.json();
+  const url = data.images?.[0]?.url || data.image?.url || data.relit_image?.url;
+  if (url) return url;
+  throw new Error("No image URL in fal.ai response");
 }
 
 // ── WaveSpeed call ──
