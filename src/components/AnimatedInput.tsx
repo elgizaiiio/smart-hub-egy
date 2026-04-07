@@ -109,10 +109,45 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   }, [value, items]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Escape" && mentionOpen) {
+      setMentionOpen(false);
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (mentionOpen) { setMentionOpen(false); return; }
       if (value.trim() && !disabled && !isLoading) onSend();
     }
+  };
+
+  // Detect @ mention typing
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newVal = e.target.value;
+    onChange(newVal);
+    
+    // Check for @ at cursor position
+    const cursorPos = e.target.selectionStart;
+    const textBeforeCursor = newVal.slice(0, cursorPos);
+    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionOpen(true);
+      setMentionQuery(atMatch[1]);
+    } else {
+      setMentionOpen(false);
+      setMentionQuery("");
+    }
+  };
+
+  const handleMentionSelect = (agent: AgentDef) => {
+    // Remove the @query from input
+    const cursorPos = textareaRef.current?.selectionStart || value.length;
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const cleanedBefore = textBeforeCursor.replace(/@\w*$/, "");
+    const textAfter = value.slice(cursorPos);
+    onChange(cleanedBefore + textAfter);
+    setMentionOpen(false);
+    setMentionQuery("");
+    onAgentSelect?.(agent);
   };
 
   const autoResize = useCallback(() => {
