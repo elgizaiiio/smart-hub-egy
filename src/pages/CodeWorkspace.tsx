@@ -123,9 +123,11 @@ const NodepodPreview = ({ files, previewKey }: { files: FileTree; previewKey: nu
 
       nodepodRef.current = nodepod;
 
-      // Install dependencies
+      // Install dependencies from package.json
       setLogs(prev => [...prev, "Installing dependencies..."]);
-      await nodepod.install(["react", "react-dom", "@vitejs/plugin-react", "vite", "tailwindcss", "postcss", "autoprefixer"]);
+      await nodepod.packages.installFromManifest("/package.json", {
+        onProgress: (msg: string) => setLogs(prev => [...prev.slice(-15), msg]),
+      });
       setLogs(prev => [...prev, "Dependencies installed"]);
 
       // Run vite dev server
