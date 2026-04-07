@@ -807,7 +807,6 @@ Ask me anything to get started!`;
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
                 <ThinkingLoader searchStatus={searchStatus} statusHistory={statusHistory} />
               }
-              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader statusHistory={statusHistory} />}
               <div ref={messagesEndRef} />
             </div>
           )}
