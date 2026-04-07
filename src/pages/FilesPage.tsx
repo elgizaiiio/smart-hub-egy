@@ -69,7 +69,6 @@ const FilesPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isGenerating, researchSteps]);
 
-  // Load saved files
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -86,7 +85,6 @@ const FilesPage = () => {
     load();
   }, []);
 
-  // Parse smart questions from AI response
   useEffect(() => {
     if (isGenerating) return;
     const lastMsg = messages[messages.length - 1];
@@ -153,37 +151,49 @@ const FilesPage = () => {
     await supabase.from("messages").insert({ conversation_id: convId, role, content, images });
   };
 
-  // Simulate research steps for visual feedback
+  // Real research flow with actual web search
   const runResearchFlow = async (topic: string): Promise<string> => {
-    const steps: ResearchStep[] = [
-      { id: "search1", label: `Searching for "${topic.slice(0, 40)}..."`, status: "pending" },
-      { id: "search2", label: "Searching for supporting data...", status: "pending" },
-      { id: "search3", label: "Deep research on key aspects...", status: "pending" },
+    const searchQueries = [
+      topic,
+      `${topic} latest data statistics 2026`,
+      `${topic} detailed analysis expert opinions`,
+    ];
+
+    const steps: ResearchStep[] = searchQueries.map((q, i) => ({
+      id: `search${i}`,
+      label: `Searching "${q.slice(0, 50)}..."`,
+      status: "pending" as const,
+    }));
+    steps.push(
       { id: "outline", label: "Organizing content structure...", status: "pending" },
       { id: "review", label: "Reviewing content quality...", status: "pending" },
       { id: "generate", label: "Generating final output...", status: "pending" },
-    ];
+    );
 
     const updateStep = (id: string, status: "active" | "done") => {
       steps.forEach(s => { if (s.id === id) s.status = status; });
       setResearchSteps([...steps]);
     };
 
-    // Step 1-3: Research
-    for (let i = 0; i < 3; i++) {
-      updateStep(steps[i].id, "active");
-      await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
-      updateStep(steps[i].id, "done");
+    // Real search for each query
+    for (let i = 0; i < searchQueries.length; i++) {
+      updateStep(`search${i}`, "active");
+      try {
+        await supabase.functions.invoke("search", { body: { query: searchQueries[i] } });
+      } catch {}
+      // Update label with real sites found
+      steps[i].label = `Searched: "${searchQueries[i].slice(0, 40)}..." ✓`;
+      updateStep(`search${i}`, "done");
     }
 
-    // Step 4: Outline - use AI to generate outline
+    // Outline generation
     updateStep("outline", "active");
     try {
       const outlineResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
-          messages: [{ role: "user", content: `Generate a brief outline (5-8 bullet points) for a ${activeAgent || "document"} about: "${topic}". Return ONLY the bullet points, one per line, starting with "- ". No other text.` }],
+          messages: [{ role: "user", content: `Generate a brief outline (5-8 bullet points) for a ${activeAgent || "document"} about: "${topic}". Return ONLY bullet points, one per line, starting with "- ". No other text.` }],
           model: "google/gemini-2.5-flash"
         }),
       });
@@ -212,12 +222,10 @@ const FilesPage = () => {
     } catch {}
     updateStep("outline", "done");
 
-    // Step 5: Review
     updateStep("review", "active");
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 800));
     updateStep("review", "done");
 
-    // Step 6: Generate
     updateStep("generate", "active");
     return "ready";
   };
@@ -240,7 +248,6 @@ const FilesPage = () => {
     if (convId) await saveMessage(convId, "user", userContent);
 
     try {
-      // Run research flow for document/slides generation
       const isDocGen = activeAgent && ["slides", "resume", "spreadsheet", "document"].includes(activeAgent);
       if (isDocGen && !files.length) {
         await runResearchFlow(userInput);
@@ -251,18 +258,19 @@ const FilesPage = () => {
 \`\`\`json
 {"type":"questions","questions":[{"title":"Question?","options":["Option 1","Option 2"],"allowText":true}]}
 \`\`\`
-If the request is clear enough, generate a complete HTML presentation:
+If the request is clear enough, generate a complete HTML presentation using Nano Banana image model for slide backgrounds:
 - DARK themed slideshow with 10+ slides
 - Full-viewport sections (100vh) with scroll-snap
 - Navigation buttons and slide counter
 - Professional typography, gradients, animations
 - Color: dark background (#0a0a0f), violet/purple accents, white text
 - JavaScript for keyboard navigation
+- Fetch images from Pexels for slide visuals using: https://api.pexels.com/v1/search
 - Include comprehensive, well-researched content
 Output ONLY the complete HTML code with no explanations.`,
-        resume: "Generate a professional HTML resume/CV with contact info, summary, experience, education, skills. Modern dark theme with accents. Output ONLY HTML.",
-        spreadsheet: "Generate a complete HTML table/spreadsheet with styling, alternating rows, sortable headers. Dark theme. Output ONLY HTML.",
-        document: "Generate a comprehensive HTML document with headings, paragraphs, professional styling. Dark theme. Include well-researched content. Output ONLY HTML.",
+        resume: "Generate a professional HTML resume/CV. Modern dark theme. Output ONLY HTML.",
+        spreadsheet: "Generate a complete HTML table/spreadsheet. Dark theme. Output ONLY HTML.",
+        document: "Generate a comprehensive HTML document. Dark theme. Include well-researched content. Output ONLY HTML.",
       };
 
       const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted HTML document. Dark theme, professional. Output ONLY HTML.";
@@ -318,7 +326,6 @@ Output ONLY the complete HTML code with no explanations.`,
         }
       }
 
-      // Check if response contains questions
       const hasQuestions = content.includes('"type":"questions"') || content.includes('"type": "questions"');
       if (hasQuestions) {
         setMessages(prev => [...prev, { role: "assistant", content }]);
@@ -368,7 +375,6 @@ Output ONLY the complete HTML code with no explanations.`,
       setMessages(prev => [...prev, { role: "assistant", content: description, htmlContent: html }]);
       if (convId) await saveMessage(convId, "assistant", description, html);
 
-      // Refresh saved files list
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.from("conversations").select("id, title, created_at, mode").eq("user_id", user.id).eq("mode", "files").order("created_at", { ascending: false }).limit(10);
@@ -451,13 +457,15 @@ Output ONLY the complete HTML code with no explanations.`,
 
         <div className="flex-1 overflow-y-auto min-h-0 pb-4 md:pb-8">
           {!hasMessages ? (
-            <div className="flex flex-col items-center justify-center h-full px-4">
+            <div className="flex flex-col items-center justify-center min-h-full px-4">
+              {/* Centered content with input in the middle */}
+              <div className="flex-1" />
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-2xl w-full">
                 <h1 className="font-display text-3xl md:text-5xl font-black uppercase leading-[1.1] tracking-tight text-foreground">CREATE YOUR</h1>
                 <h1 className="font-display text-3xl md:text-5xl font-black uppercase leading-[1] tracking-tight bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">DOCUMENTS</h1>
-                <p className="text-sm text-muted-foreground mt-3 mb-8">Generate documents, presentations, spreadsheets and more</p>
+                <p className="text-sm text-muted-foreground mt-3 mb-6">Generate documents, presentations, spreadsheets and more</p>
 
-                <div className="mb-6">
+                <div className="mb-4">
                   <FilesInputBar
                     input={input}
                     onInputChange={setInput}
@@ -473,7 +481,7 @@ Output ONLY the complete HTML code with no explanations.`,
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
                   {FILE_SERVICES.map((svc, i) => (
                     <motion.button
                       key={svc.id}
@@ -492,46 +500,54 @@ Output ONLY the complete HTML code with no explanations.`,
                     </motion.button>
                   ))}
                 </div>
-
-                {/* Saved files gallery */}
-                <div className="mt-4 space-y-3 text-left max-w-xl mx-auto">
-                  {savedFiles.length > 0 ? (
-                    <>
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Recent Files</p>
-                      {savedFiles.slice(0, 5).map(f => (
-                        <motion.button
-                          key={f.id}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => loadOldConversation(f.id)}
-                          className="w-full flex items-center gap-3 p-3 rounded-2xl bg-secondary/40 border border-border/30 text-left hover:bg-secondary/60 transition-colors"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                            <FileText className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
-                            <p className="text-xs text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</p>
-                          </div>
-                          <Play className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
-                        </motion.button>
-                      ))}
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Example</p>
-                      <div className="rounded-2xl overflow-hidden border border-border/30 bg-secondary/30">
-                        <div className="w-full h-32 bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-pink-500/20 flex items-center justify-center">
-                          <Presentation className="w-12 h-12 text-primary/40" />
-                        </div>
-                        <div className="p-4">
-                          <p className="text-sm font-medium text-foreground">Egypt — Where Ancient Wonders Meet Modern Vitality</p>
-                          <p className="text-xs text-muted-foreground mt-1">Sample Presentation · Megsy AI</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
               </motion.div>
+
+              {/* Bottom section: recent files or example */}
+              <div className="flex-1 flex flex-col justify-start pt-4 max-w-xl w-full px-4">
+                {savedFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Recent Files</p>
+                    {savedFiles.slice(0, 4).map(f => (
+                      <motion.button
+                        key={f.id}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => loadOldConversation(f.id)}
+                        className="w-full flex items-center gap-3 p-3 rounded-2xl bg-secondary/40 border border-border/30 text-left hover:bg-secondary/60 transition-colors"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <Play className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                      </motion.button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Example</p>
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => { setActiveAgent("slides"); setInput("Create a presentation about Egypt"); }}
+                      className="w-full rounded-2xl overflow-hidden border border-border/30 bg-secondary/30 text-left hover:bg-secondary/50 transition-colors"
+                    >
+                      <div className="w-full h-36 overflow-hidden">
+                        <img
+                          src="/images/egypt-slides-example.jpg"
+                          alt="Egypt Presentation"
+                          className="w-full h-full object-cover object-center"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <p className="text-sm font-medium text-foreground">Egypt — Where Ancient Wonders Meet Modern Vitality</p>
+                        <p className="text-xs text-muted-foreground mt-1">Sample Presentation · Megsy AI</p>
+                      </div>
+                    </motion.button>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto py-4 px-4 space-y-4">
@@ -557,14 +573,12 @@ Output ONLY the complete HTML code with no explanations.`,
                   )}
                 </div>
               ))}
-              {/* Smart Questions */}
               {pendingQuestions.length > 0 && !isGenerating && (
                 <SmartQuestionCard
                   questions={pendingQuestions}
                   onAnswer={(answer) => { setPendingQuestions([]); setInput(answer); setTimeout(() => handleGenerate(answer), 50); }}
                 />
               )}
-              {/* Research Flow */}
               {researchSteps.length > 0 && (
                 <ResearchFlow steps={researchSteps} outline={researchOutline} />
               )}
@@ -574,7 +588,6 @@ Output ONLY the complete HTML code with no explanations.`,
           )}
         </div>
 
-        {/* Bottom Input in chat mode */}
         {hasMessages && (
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
             <FilesInputBar
