@@ -284,7 +284,7 @@ function mainMenuKB() {
     [{ text: "🎨 معرض العرض (Showcase)", callback_data: "showcase_menu" }],
     [{ text: "⚙️ إعدادات الصفحات", callback_data: "pagesettings_menu" }],
     [{ text: "♾️ Unlimited (LemonData)", callback_data: "lemon_menu" }],
-    [{ text: "🔐 API Keys (AgentRouter/Serper/WaveSpeed)", callback_data: "apikeys_menu" }],
+    [{ text: "🔐 API Keys (AgentRouter/Serper/WaveSpeed/HB)", callback_data: "apikeys_menu" }],
     [{ text: "🖼 Landing Page Photos", callback_data: "tools_menu" }],
     [{ text: "📋 Tool Templates (قوالب)", callback_data: "tool_templates_menu" }],
     [{ text: "📷 Headshot (قوالب)", callback_data: "headshot_menu" }],

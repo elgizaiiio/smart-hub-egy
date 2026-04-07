@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.oauth-check-credits]
 verify_jwt = false
+
+[functions.computer-use]
+verify_jwt = false
