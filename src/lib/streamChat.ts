@@ -10,6 +10,7 @@ export async function streamChat({
   deepResearch,
   chatMode,
   user_id,
+  computerUseEnabled,
   onDelta,
   onDone,
   onError,
@@ -24,6 +25,7 @@ export async function streamChat({
   deepResearch?: boolean;
   chatMode?: string;
   user_id?: string;
+  computerUseEnabled?: boolean;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError?: (error: string) => void;
