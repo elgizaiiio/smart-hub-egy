@@ -70,6 +70,10 @@ const TOOL_SILK: Record<string, { bg: string; s1: string; s2: string; s3: string
   "tts": { bg: "linear-gradient(135deg, #1e3a5f 0%, #10b981 40%, #059669 100%)", s1: "rgba(52,211,153,0.5)", s2: "rgba(16,185,129,0.4)", s3: "rgba(110,231,183,0.2)" },
   "noise-remover": { bg: "linear-gradient(135deg, #1c1917 0%, #f59e0b 40%, #d97706 100%)", s1: "rgba(251,191,36,0.5)", s2: "rgba(245,158,11,0.4)", s3: "rgba(253,224,71,0.2)" },
   "voice-translate": { bg: "linear-gradient(135deg, #1e1b4b 0%, #e11d48 40%, #be123c 100%)", s1: "rgba(251,113,133,0.5)", s2: "rgba(225,29,72,0.4)", s3: "rgba(253,164,175,0.2)" },
+  "karaoke-separator": { bg: "linear-gradient(135deg, #3a1e5f 0%, #d946ef 40%, #a21caf 100%)", s1: "rgba(232,121,249,0.5)", s2: "rgba(217,70,239,0.4)", s3: "rgba(240,171,252,0.2)" },
+  "podcast-editor": { bg: "linear-gradient(135deg, #1e4a4a 0%, #0d9488 40%, #0f766e 100%)", s1: "rgba(94,234,212,0.5)", s2: "rgba(13,148,136,0.4)", s3: "rgba(153,246,228,0.2)" },
+  "audio-restoration": { bg: "linear-gradient(135deg, #5f3a1e 0%, #d97706 40%, #b45309 100%)", s1: "rgba(251,191,36,0.5)", s2: "rgba(217,119,6,0.4)", s3: "rgba(253,224,71,0.2)" },
+  "transcription": { bg: "linear-gradient(135deg, #1e2a5f 0%, #4f46e5 40%, #4338ca 100%)", s1: "rgba(129,140,248,0.5)", s2: "rgba(79,70,229,0.4)", s3: "rgba(165,180,252,0.2)" },
 };
 
 const TOOL_SERVICES = [
@@ -78,6 +82,10 @@ const TOOL_SERVICES = [
   { id: "tts", title: "Text to Speech", route: "/voice/tts", icon: <Volume2 className="w-5 h-5" /> },
   { id: "noise-remover", title: "Noise Remover", route: "/voice/noise-remover", icon: <Eraser className="w-5 h-5" /> },
   { id: "voice-translate", title: "Voice Translation", route: "/voice/translate", icon: <Languages className="w-5 h-5" /> },
+  { id: "karaoke-separator", title: "Karaoke Separator", route: "/voice/karaoke-separator", icon: <Music className="w-5 h-5" /> },
+  { id: "podcast-editor", title: "Podcast Editor", route: "/voice/podcast-editor", icon: <Mic className="w-5 h-5" /> },
+  { id: "audio-restoration", title: "Audio Restoration", route: "/voice/audio-restoration", icon: <Volume2 className="w-5 h-5" /> },
+  { id: "transcription", title: "Transcription", route: "/voice/transcription", icon: <AudioLines className="w-5 h-5" /> },
 ];
 
 const VoicePage = () => {
