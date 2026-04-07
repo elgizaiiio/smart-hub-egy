@@ -649,6 +649,8 @@ Ask me anything to get started!`;
               <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
             </div>
           </button>
+          <div className="border-t border-white/10 mt-1 pt-1">
+            <p className="text-[10px] text-white/30 uppercase px-3 py-1.5">Modes</p>
             <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
               <span className="text-sm">Learning Mode</span>
               {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
