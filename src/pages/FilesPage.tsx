@@ -58,10 +58,8 @@ const FilesPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isGenerating]);
 
-  useEffect(() => {
-    const t = setInterval(() => setHeroIdx(p => (p + 1) % HERO_WORDS.length), 4000);
-    return () => clearInterval(t);
-  }, []);
+
+
 
   const inputRef2 = useRef(input);
   useEffect(() => { inputRef2.current = input; }, [input]);
@@ -276,7 +274,6 @@ const FilesPage = () => {
   };
 
   const hasMessages = messages.length > 0;
-  const hero = HERO_WORDS[heroIdx];
 
   return (
     <AppLayout onSelectConversation={loadOldConversation} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} activeConversationId={conversationId}>
