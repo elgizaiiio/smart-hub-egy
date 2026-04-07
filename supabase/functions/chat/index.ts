@@ -125,6 +125,7 @@ serve(async (req) => {
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const SERPER_API_KEY = await getSerperKey(sb);
+    const HB_API_KEY = await getHyperbrowserKey(sb);
 
     // Resolve effective chat mode
     const effectiveMode = chatMode || mode || "normal";
