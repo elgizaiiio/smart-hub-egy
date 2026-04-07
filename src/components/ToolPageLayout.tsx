@@ -253,7 +253,7 @@ const ToolPageLayout = ({
   const [showLanding, setShowLanding] = useState(true);
 
   const defaultBack = toolId && (
-    ["swap-characters", "talking-photo", "upscale", "video-upscale", "auto-caption", "lip-sync", "video-extender", "video-to-text"].includes(toolId)
+    ["swap-characters", "talking-photo", "upscale", "video-upscale", "auto-caption", "lip-sync", "video-extender", "video-to-text", "green-screen", "video-colorizer", "video-watermark", "video-bg-replacer", "video-intro", "video-denoise", "thumbnail-generator"].includes(toolId)
   ) ? "/videos" : "/images";
   const goBack = backTo || defaultBack;
 

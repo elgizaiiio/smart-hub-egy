@@ -86,7 +86,10 @@ import RetouchingPage from "./pages/tools/RetouchingPage";
 import RemoverPage from "./pages/tools/RemoverPage";
 import HairChangerPage from "./pages/tools/HairChangerPage";
 import CartoonPage from "./pages/tools/CartoonPage";
-
+import AvatarGeneratorPage from "./pages/tools/AvatarGeneratorPage";
+import ProductPhotoPage from "./pages/tools/ProductPhotoPage";
+import LogoGeneratorPage from "./pages/tools/LogoGeneratorPage";
+import PerspectiveCorrectionPage from "./pages/tools/PerspectiveCorrectionPage";
 
 // Video tool pages
 import VideoSwapPage from "./pages/tools/VideoSwapPage";
@@ -95,6 +98,19 @@ import TalkingPhotoPage from "./pages/tools/TalkingPhotoPage";
 import VideoExtenderPage from "./pages/tools/VideoExtenderPage";
 import AutoCaptionPage from "./pages/tools/AutoCaptionPage";
 import LipSyncPage from "./pages/tools/LipSyncPage";
+import GreenScreenPage from "./pages/tools/GreenScreenPage";
+import VideoColorizerPage from "./pages/tools/VideoColorizerPage";
+import VideoWatermarkPage from "./pages/tools/VideoWatermarkPage";
+import VideoBgReplacerPage from "./pages/tools/VideoBgReplacerPage";
+import VideoIntroPage from "./pages/tools/VideoIntroPage";
+import VideoDenoisePage from "./pages/tools/VideoDenoisePage";
+import ThumbnailGeneratorPage from "./pages/tools/ThumbnailGeneratorPage";
+
+// Audio tool pages
+import KaraokeSeparatorPage from "./pages/voice/KaraokeSeparatorPage";
+import PodcastEditorPage from "./pages/voice/PodcastEditorPage";
+import AudioRestorationPage from "./pages/voice/AudioRestorationPage";
+import AudioTranscriptionPage from "./pages/voice/AudioTranscriptionPage";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -208,6 +224,10 @@ const App = () => {
                 <Route path="/images/tools/remover" element={<ProtectedRoute><RemoverPage /></ProtectedRoute>} />
                 <Route path="/images/tools/hair-changer" element={<ProtectedRoute><HairChangerPage /></ProtectedRoute>} />
                 <Route path="/images/tools/cartoon" element={<ProtectedRoute><CartoonPage /></ProtectedRoute>} />
+                <Route path="/images/tools/avatar-generator" element={<ProtectedRoute><AvatarGeneratorPage /></ProtectedRoute>} />
+                <Route path="/images/tools/product-photo" element={<ProtectedRoute><ProductPhotoPage /></ProtectedRoute>} />
+                <Route path="/images/tools/logo-generator" element={<ProtectedRoute><LogoGeneratorPage /></ProtectedRoute>} />
+                <Route path="/images/tools/perspective-correction" element={<ProtectedRoute><PerspectiveCorrectionPage /></ProtectedRoute>} />
                 
                 {/* Video tool routes */}
                 <Route path="/videos/tools/swap-characters" element={<ProtectedRoute><VideoSwapPage /></ProtectedRoute>} />
@@ -217,6 +237,13 @@ const App = () => {
                 <Route path="/videos/tools/auto-caption" element={<ProtectedRoute><AutoCaptionPage /></ProtectedRoute>} />
                 <Route path="/videos/tools/lip-sync" element={<ProtectedRoute><LipSyncPage /></ProtectedRoute>} />
                 <Route path="/videos/tools/video-to-text" element={<ProtectedRoute><VideoToTextPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/green-screen" element={<ProtectedRoute><GreenScreenPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-colorizer" element={<ProtectedRoute><VideoColorizerPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-watermark" element={<ProtectedRoute><VideoWatermarkPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-bg-replacer" element={<ProtectedRoute><VideoBgReplacerPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-intro" element={<ProtectedRoute><VideoIntroPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-denoise" element={<ProtectedRoute><VideoDenoisePage /></ProtectedRoute>} />
+                <Route path="/videos/tools/thumbnail-generator" element={<ProtectedRoute><ThumbnailGeneratorPage /></ProtectedRoute>} />
                 <Route path="/voice" element={<ProtectedRoute><VoicePage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/voice/changer" element={<ProtectedRoute><VoiceChangerPage /></ProtectedRoute>} />
                 <Route path="/voice/clone" element={<ProtectedRoute><CloneVoicePage /></ProtectedRoute>} />
@@ -227,6 +254,10 @@ const App = () => {
                 <Route path="/voice/noise-remover" element={<ProtectedRoute><NoiseRemoverPage /></ProtectedRoute>} />
                 <Route path="/voice/translate" element={<ProtectedRoute><VoiceTranslatePage /></ProtectedRoute>} />
                 <Route path="/voice/studio" element={<ProtectedRoute><VoiceStudioPage /></ProtectedRoute>} />
+                <Route path="/voice/karaoke-separator" element={<ProtectedRoute><KaraokeSeparatorPage /></ProtectedRoute>} />
+                <Route path="/voice/podcast-editor" element={<ProtectedRoute><PodcastEditorPage /></ProtectedRoute>} />
+                <Route path="/voice/audio-restoration" element={<ProtectedRoute><AudioRestorationPage /></ProtectedRoute>} />
+                <Route path="/voice/transcription" element={<ProtectedRoute><AudioTranscriptionPage /></ProtectedRoute>} />
                 <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

@@ -33,6 +33,10 @@ const TOOL_CONFIG: Record<string, ToolConfig> = {
   'remover': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true, needsMask: true },
   'hair-changer': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
   'cartoon': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'avatar-generator': { provider: "lemon", lemonModel: "nano-banana-pro", needsPrompt: true, needsImage: true },
+  'product-photo': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
+  'logo-generator': { provider: "lemon", lemonModel: "nano-banana-pro", needsPrompt: true },
+  'perspective-correction': { provider: "lemon", lemonModel: "nano-banana-edit", needsPrompt: true, needsImage: true },
 };
 
 const TOOL_PROMPTS: Record<string, string> = {
@@ -46,6 +50,10 @@ const TOOL_PROMPTS: Record<string, string> = {
   'hair-changer': "Change the hairstyle of this person to: ",
   'cartoon': "Transform this photo into a high-quality cartoon/anime style illustration, preserving the person's features",
   'inpaint': "Fill the masked area naturally: ",
+  'avatar-generator': "Generate a stylized personal avatar from this photo, keeping facial features recognizable: ",
+  'product-photo': "Place this product in a professional photography studio setting with clean white background and studio lighting: ",
+  'logo-generator': "Design a modern, clean, minimalist professional logo for: ",
+  'perspective-correction': "Correct the perspective distortion in this image, straighten lines and fix the viewing angle to appear natural and properly aligned",
 };
 
 // ── LemonData key cache ──
