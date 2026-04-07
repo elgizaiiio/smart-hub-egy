@@ -8,12 +8,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import CodeChatContainer from "@/components/code/CodeChatContainer";
 import SupabaseConnectCard from "@/components/code/SupabaseConnectCard";
 import { CodeStep, StepType } from "@/components/code/CodeStepMessage";
-import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  SandpackProvider,
-  SandpackPreview,
-} from "@codesandbox/sandpack-react";
+import LiveCodes from "livecodes/react";
 
 const BUILD_CREDIT_COST = 5;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -52,14 +48,68 @@ const parseJsonFallback = (raw: string): FileTree => {
   return {};
 };
 
-// Convert AI file paths to Sandpack format (must start with /)
-const toSandpackFiles = (files: FileTree): Record<string, string> => {
-  const result: Record<string, string> = {};
-  for (const [path, content] of Object.entries(files)) {
-    const key = path.startsWith("/") ? path : `/${path}`;
-    result[key] = content;
+// Build LiveCodes config from generated files
+const buildLiveCodesConfig = (files: FileTree) => {
+  // Find the App component
+  const appCandidates = ["src/App.jsx", "src/App.js", "src/App.tsx", "App.jsx", "App.js"];
+  let appCode = "";
+  for (const c of appCandidates) {
+    if (files[c]) { appCode = files[c]; break; }
   }
-  return result;
+
+  // Collect all CSS
+  const cssContent = Object.entries(files)
+    .filter(([p]) => p.endsWith(".css"))
+    .map(([, c]) => c.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+[^;]+;/g, ""))
+    .join("\n");
+
+  // Collect component files (non-App, non-main, non-config)
+  const componentCode: string[] = [];
+  for (const [path, content] of Object.entries(files)) {
+    if (!path.match(/\.(jsx|js|tsx|ts)$/)) continue;
+    if (path.includes("vite.config") || path.includes("postcss") || path.includes("tailwind.config")) continue;
+    if (path.includes("main.jsx") || path.includes("main.js") || path.includes("main.tsx")) continue;
+    if (appCandidates.includes(path)) continue;
+    // Strip imports/exports for inline bundling
+    let code = content;
+    code = code.replace(/import\s+.*?from\s+['"][^'"]+['"]\s*;?/g, "");
+    code = code.replace(/import\s+['"][^'"]+['"]\s*;?/g, "");
+    code = code.replace(/export\s+default\s+function\s+(\w+)/g, "function $1");
+    code = code.replace(/export\s+default\s+/g, "");
+    code = code.replace(/export\s+(const|let|var|function|class)\s+/g, "$1 ");
+    componentCode.push(`// --- ${path} ---\n${code}`);
+  }
+
+  // Build combined script: components first, then App
+  let combinedApp = appCode;
+  combinedApp = combinedApp.replace(/import\s+.*?from\s+['"][^'"]+['"]\s*;?/g, "");
+  combinedApp = combinedApp.replace(/import\s+['"][^'"]+['"]\s*;?/g, "");
+  combinedApp = combinedApp.replace(/export\s+default\s+function\s+(\w+)/g, "function $1");
+  combinedApp = combinedApp.replace(/export\s+default\s+/g, "");
+  combinedApp = combinedApp.replace(/export\s+(const|let|var|function|class)\s+/g, "$1 ");
+
+  const fullScript = `${componentCode.join("\n\n")}\n\n// --- App ---\n${combinedApp}\n\n// Render\nconst root = ReactDOM.createRoot(document.getElementById('root'));\nroot.render(React.createElement(App));`;
+
+  return {
+    markup: {
+      language: "html" as const,
+      content: `<div id="root"></div>`,
+    },
+    style: {
+      language: "css" as const,
+      content: `* { margin: 0; padding: 0; box-sizing: border-box; }\nbody { font-family: system-ui, -apple-system, sans-serif; }\n${cssContent}`,
+    },
+    script: {
+      language: "jsx" as const,
+      content: fullScript,
+    },
+    scripts: [
+      "https://cdn.tailwindcss.com",
+      "https://unpkg.com/react@18/umd/react.production.min.js",
+      "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js",
+      "https://unpkg.com/react-router-dom@6/dist/umd/react-router-dom.production.min.js",
+    ],
+  };
 };
 
 const VITE_TEMPLATE: FileTree = {
@@ -77,20 +127,12 @@ const callGithub = async (body: Record<string, unknown>) => {
   return resp.json();
 };
 
-// Step delays for realism
 const stepDelay = (type: StepType): number => {
   const base: Record<string, [number, number]> = {
-    thinking: [400, 800],
-    reading: [300, 600],
-    writing: [500, 900],
-    editing: [500, 900],
-    creating: [600, 1000],
-    searching: [400, 700],
-    saving: [200, 400],
-    done: [100, 200],
-    pre_message: [100, 200],
-    post_message: [100, 200],
-    error: [100, 200],
+    thinking: [400, 800], reading: [300, 600], writing: [500, 900],
+    editing: [500, 900], creating: [600, 1000], searching: [400, 700],
+    saving: [200, 400], done: [100, 200], pre_message: [100, 200],
+    post_message: [100, 200], error: [100, 200],
   };
   const [min, max] = base[type] || [200, 500];
   return min + Math.random() * (max - min);
@@ -98,11 +140,7 @@ const stepDelay = (type: StepType): number => {
 
 let stepCounter = 0;
 const makeStep = (type: StepType, text: string, file?: string): CodeStep => ({
-  id: `step-${++stepCounter}`,
-  type,
-  text,
-  file,
-  status: "active",
+  id: `step-${++stepCounter}`, type, text, file, status: "active",
 });
 
 const CodeWorkspace = () => {
@@ -120,13 +158,12 @@ const CodeWorkspace = () => {
   const [showSupabaseConnect, setShowSupabaseConnect] = useState(false);
   const [loadedConversation, setLoadedConversation] = useState(false);
 
-  // Step-by-step system
   const [steps, setSteps] = useState<CodeStep[]>([]);
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
 
   const [files, setFiles] = useState<FileTree>({});
-  const [sandpackFiles, setSandpackFiles] = useState<Record<string, string> | null>(null);
-  const [sandpackKey, setSandpackKey] = useState(0);
+  const [liveCodesConfig, setLiveCodesConfig] = useState<any>(null);
+  const [liveCodesKey, setLiveCodesKey] = useState(0);
   const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
   const [supabaseConfig, setSupabaseConfig] = useState<{ url: string; anon_key: string } | null>(null);
@@ -159,15 +196,13 @@ const CodeWorkspace = () => {
         .single();
       if (data?.files_snapshot && typeof data.files_snapshot === "object") {
         const snap = data.files_snapshot as any;
-        if (snap.__supabase_config) {
-          setSupabaseConfig(snap.__supabase_config);
-        }
+        if (snap.__supabase_config) setSupabaseConfig(snap.__supabase_config);
         const loadedFiles = { ...snap };
         delete loadedFiles.__supabase_config;
         setFiles(loadedFiles);
         const allFiles = { ...VITE_TEMPLATE, ...loadedFiles };
-        setSandpackFiles(toSandpackFiles(allFiles));
-        setSandpackKey(k => k + 1);
+        setLiveCodesConfig(buildLiveCodesConfig(allFiles));
+        setLiveCodesKey(k => k + 1);
       }
     };
     loadProject();
@@ -203,7 +238,7 @@ const CodeWorkspace = () => {
     const title = firstMessage.slice(0, 50) || "Code Project";
     const { data } = await supabase
       .from("conversations")
-      .insert({ title, mode: "code", model: "claude-sonnet", user_id: user.id } as any)
+      .insert({ title, mode: "code", model: "claude-haiku", user_id: user.id } as any)
       .select("id")
       .single();
     if (data) { setConversationId(data.id); return data.id; }
@@ -232,32 +267,20 @@ const CodeWorkspace = () => {
 
     const convId = await createOrGetConversation(msgText);
 
-    // Deduct credits
     if (userId && retryCount === 0) {
       const deductResp = await fetch(`${SUPABASE_URL}/functions/v1/deduct-credits`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-        body: JSON.stringify({
-          user_id: userId, amount: BUILD_CREDIT_COST,
-          action_type: "code_build", description: "Code workspace build",
-        }),
+        body: JSON.stringify({ user_id: userId, amount: BUILD_CREDIT_COST, action_type: "code_build", description: "Code workspace build" }),
       });
       const deductData = await deductResp.json();
-      if (!deductData.success) {
-        toast.error(deductData.error || "MC deduction failed");
-        setIsLoading(false);
-        return;
-      }
+      if (!deductData.success) { toast.error(deductData.error || "MC deduction failed"); setIsLoading(false); return; }
       refreshCredits();
     }
 
-    // Step 1: Pre-message
     await addStep("pre_message", getPreMessage(msgText));
-
-    // Step 2: Thinking
     const thinkStep = await addStep("thinking", "Analyzing request...");
 
-    // Step 3: AI Generation
     try {
       const buildResp = await fetch(`${SUPABASE_URL}/functions/v1/code-generate`, {
         method: "POST",
@@ -273,7 +296,6 @@ const CodeWorkspace = () => {
       completeStep(thinkStep.id);
       const searchStep = await addStep("searching", "Searching docs...");
 
-      // Stream response
       const reader = buildResp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -303,7 +325,6 @@ const CodeWorkspace = () => {
                 if (newCount > detectedFileCount) {
                   const newFileNames = Object.keys(currentFiles).slice(detectedFileCount);
                   for (const fname of newFileNames) {
-                    completeStep(steps[steps.length - 1]?.id || "");
                     await addStep("creating", "Creating", fname);
                   }
                   detectedFileCount = newCount;
@@ -316,58 +337,39 @@ const CodeWorkspace = () => {
 
       completeStep(searchStep.id);
       const writeStep = await addStep("writing", "Generating code...");
-
       await readStream();
       completeStep(writeStep.id);
 
-      // Parse files
       const parseStep = await addStep("reading", "Parsing files...");
       let parsedFiles = parseFileMarkers(fullContent);
       if (Object.keys(parsedFiles).length === 0) parsedFiles = parseJsonFallback(fullContent);
 
       if (Object.keys(parsedFiles).length === 0) {
-        if (retryCount < 1) {
-          completeAllSteps();
-          setIsLoading(false);
-          return handleSend(msgText, retryCount + 1);
-        }
+        if (retryCount < 1) { completeAllSteps(); setIsLoading(false); return handleSend(msgText, retryCount + 1); }
         throw new Error("Could not parse generated files");
       }
-
       completeStep(parseStep.id);
 
-      // Save & render with Sandpack
       const saveStep = await addStep("saving", "Saving changes...");
       const allFiles = { ...VITE_TEMPLATE, ...parsedFiles };
       setFiles(allFiles);
-      setSandpackFiles(toSandpackFiles(allFiles));
-      setSandpackKey(k => k + 1);
+      setLiveCodesConfig(buildLiveCodesConfig(allFiles));
+      setLiveCodesKey(k => k + 1);
       completeStep(saveStep.id);
 
-      // Done
       await addStep("done", "Done");
       completeAllSteps();
 
-      // Post message
       const postMsg = getPostMessage(msgText, Object.keys(parsedFiles));
       setMessages(prev => [...prev, { role: "assistant", content: postMsg, type: "build" }]);
 
-      // Save project
       if (userId) {
         const { data: proj } = await supabase.from("projects")
-          .insert({
-            user_id: userId,
-            name: msgText.slice(0, 50) || "Untitled Project",
-            status: "ready",
-            files_snapshot: { ...allFiles, ...(supabaseConfig ? { __supabase_config: supabaseConfig } : {}) } as any,
-            conversation_id: conversationId,
-          })
-          .select("id")
-          .single();
+          .insert({ user_id: userId, name: msgText.slice(0, 50) || "Untitled Project", status: "ready", files_snapshot: { ...allFiles, ...(supabaseConfig ? { __supabase_config: supabaseConfig } : {}) } as any, conversation_id: conversationId })
+          .select("id").single();
         if (proj) setProjectId(proj.id);
       }
 
-      // Save messages
       if (convId) {
         supabase.from("messages").insert([
           { conversation_id: convId, role: "user", content: msgText },
@@ -388,7 +390,7 @@ const CodeWorkspace = () => {
   };
 
   const handleRefreshPreview = () => {
-    if (sandpackFiles) setSandpackKey(k => k + 1);
+    if (liveCodesConfig) setLiveCodesKey(k => k + 1);
   };
 
   const handleDownloadFiles = () => {
@@ -437,55 +439,27 @@ const CodeWorkspace = () => {
         <div className="w-8" />
       </div>
 
-      <CodeChatContainer
-        messages={messages}
-        steps={steps}
-        activeStepId={activeStepId}
-        isThinking={isLoading && steps.length === 0}
-      />
+      <CodeChatContainer messages={messages} steps={steps} activeStepId={activeStepId} isThinking={isLoading && steps.length === 0} />
 
       {showSupabaseConnect && (
         <div className="px-4 pb-2">
-          <SupabaseConnectCard
-            projectId={projectId}
-            onConnected={(url, key) => {
-              setSupabaseConfig({ url, anon_key: key });
-              setShowSupabaseConnect(false);
-              setMessages(prev => [...prev, { role: "assistant", content: "Supabase connected! Now I can build backend features for your project." }]);
-            }}
-          />
+          <SupabaseConnectCard projectId={projectId} onConnected={(url, key) => {
+            setSupabaseConfig({ url, anon_key: key });
+            setShowSupabaseConnect(false);
+            setMessages(prev => [...prev, { role: "assistant", content: "Supabase connected!" }]);
+          }} />
         </div>
       )}
 
       <div className="shrink-0 px-4 py-3 max-w-3xl mx-auto w-full">
         <div className="relative">
-          <AnimatedPlusMenu
-            open={menuOpen}
-            onClose={() => setMenuOpen(false)}
-            onGitHub={handleGitHubPush}
-            onVercel={handleVercelDeploy}
-            onDownload={handleDownloadFiles}
-            onSupabase={() => { setMenuOpen(false); setShowSupabaseConnect(true); }}
-            hasFiles={Object.keys(files).length > 0}
-          />
+          <AnimatedPlusMenu open={menuOpen} onClose={() => setMenuOpen(false)} onGitHub={handleGitHubPush} onVercel={handleVercelDeploy} onDownload={handleDownloadFiles} onSupabase={() => { setMenuOpen(false); setShowSupabaseConnect(true); }} hasFiles={Object.keys(files).length > 0} />
           <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
             <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
               <Plus className="w-5 h-5" />
             </button>
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder="Describe your project..."
-              rows={1}
-              className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32 font-mono"
-              style={{ minHeight: "32px" }}
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={!input.trim() || isLoading}
-              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
-            >
+            <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Describe your project..." rows={1} className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32 font-mono" style={{ minHeight: "32px" }} />
+            <button onClick={() => handleSend()} disabled={!input.trim() || isLoading} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20">
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
             </button>
           </div>
@@ -496,39 +470,19 @@ const CodeWorkspace = () => {
 
   const previewPanel = (
     <div className="h-full relative bg-secondary flex flex-col">
-      {sandpackFiles ? (
-        <SandpackProvider
-          key={sandpackKey}
-          template="react"
-          files={sandpackFiles}
-          theme="dark"
-          options={{
-            externalResources: ["https://cdn.tailwindcss.com"],
-            autoReload: true,
-          }}
-          customSetup={{
-            dependencies: {
-              "react-router-dom": "^6.20.0",
-              "lucide-react": "^0.400.0",
-              "framer-motion": "^11.0.0",
-            },
-          }}
-        >
-          <div className="flex-1 h-full relative">
-            <SandpackPreview
-              showNavigator={false}
-              showRefreshButton={false}
-              style={{ height: "100%", width: "100%" }}
-            />
-            <button
-              onClick={handleRefreshPreview}
-              className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10"
-              title="Reload"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
-        </SandpackProvider>
+      {liveCodesConfig ? (
+        <div className="flex-1 h-full relative">
+          <LiveCodes
+            key={liveCodesKey}
+            config={liveCodesConfig}
+            view="result"
+            loading="eager"
+            style={{ height: "100%", width: "100%", border: "none" }}
+          />
+          <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10" title="Reload">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       ) : (
         <div className="h-full flex items-center justify-center">
           <div className="text-center space-y-2">
@@ -561,25 +515,21 @@ const CodeWorkspace = () => {
   );
 };
 
-// Pre/Post message generators
 function getPreMessage(prompt: string): string {
   const isArabic = /[\u0600-\u06FF]/.test(prompt);
-  if (isArabic) {
-    return `تمام، هبدأ أبني المشروع دلوقتي. هعمل كل الملفات والصفحات اللي محتاجها وهخلي التصميم نظيف ومتجاوب.`;
-  }
-  return `Got it! I'll start building your project now. I'll create all the necessary files, components, and styles.`;
+  return isArabic
+    ? `تمام، هبدأ أبني المشروع دلوقتي. هعمل كل الملفات والصفحات اللي محتاجها وهخلي التصميم نظيف ومتجاوب.`
+    : `Got it! I'll start building your project now. I'll create all the necessary files, components, and styles.`;
 }
 
 function getPostMessage(prompt: string, fileNames: string[]): string {
   const isArabic = /[\u0600-\u06FF]/.test(prompt);
   const count = fileNames.length;
-  if (isArabic) {
-    return `خلصت! عملت ${count} ملف:\n${fileNames.map(f => `- ${f}`).join("\n")}\n\nتقدر تشوف البريفيو دلوقتي. لو عايز تعدل حاجة قولي.`;
-  }
-  return `Done! Built ${count} files:\n${fileNames.map(f => `- ${f}`).join("\n")}\n\nCheck the preview. Let me know if you want changes.`;
+  return isArabic
+    ? `خلصت! عملت ${count} ملف:\n${fileNames.map(f => `- ${f}`).join("\n")}\n\nتقدر تشوف البريفيو دلوقتي. لو عايز تعدل حاجة قولي.`
+    : `Done! Built ${count} files:\n${fileNames.map(f => `- ${f}`).join("\n")}\n\nCheck the preview. Let me know if you want changes.`;
 }
 
-// Plus Menu
 const AnimatedPlusMenu = ({ open, onClose, onGitHub, onVercel, onDownload, onSupabase, hasFiles }: {
   open: boolean; onClose: () => void; onGitHub: () => void; onVercel: () => void; onDownload: () => void; onSupabase: () => void; hasFiles: boolean;
 }) => (
@@ -589,19 +539,11 @@ const AnimatedPlusMenu = ({ open, onClose, onGitHub, onVercel, onDownload, onSup
         <div className="fixed inset-0 z-30" onClick={onClose} />
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 z-40 glass-panel p-2 w-56">
           <p className="text-[10px] text-muted-foreground uppercase px-3 py-1">Deploy</p>
-          <button onClick={() => { onClose(); onVercel(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}>
-            <Triangle className="w-4 h-4" /> Vercel
-          </button>
-          <button onClick={() => { onClose(); onGitHub(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}>
-            <Github className="w-4 h-4" /> GitHub
-          </button>
-          <button onClick={() => { onClose(); onDownload(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}>
-            <Download className="w-4 h-4" /> Download
-          </button>
+          <button onClick={() => { onClose(); onVercel(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}><Triangle className="w-4 h-4" /> Vercel</button>
+          <button onClick={() => { onClose(); onGitHub(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}><Github className="w-4 h-4" /> GitHub</button>
+          <button onClick={() => { onClose(); onDownload(); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm ${hasFiles ? "text-foreground hover:bg-accent" : "text-muted-foreground opacity-50 cursor-not-allowed"}`} disabled={!hasFiles}><Download className="w-4 h-4" /> Download</button>
           <p className="text-[10px] text-muted-foreground uppercase px-3 py-1 mt-1">Connect</p>
-          <button onClick={onSupabase} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent">
-            <Database className="w-4 h-4" /> Supabase
-          </button>
+          <button onClick={onSupabase} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent"><Database className="w-4 h-4" /> Supabase</button>
         </motion.div>
       </>
     )}

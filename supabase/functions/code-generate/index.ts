@@ -96,7 +96,7 @@ Rules:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "anthropic/claude-haiku-4.5",
           messages: allMessages,
           stream: true,
           max_tokens: 12000,
