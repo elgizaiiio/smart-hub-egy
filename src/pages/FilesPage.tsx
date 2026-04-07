@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileText } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileText, Presentation, FileSpreadsheet, ScrollText, PenTool } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,16 +21,11 @@ interface AttachedFile {
   data: string;
 }
 
-const SUGGESTIONS = [
-  "Write a professional report",
-  "Create a presentation",
-  "Summarize this document",
-];
-
-const HERO_WORDS = [
-  { top: "CREATE WITH", bottom: "FILES" },
-  { top: "GENERATE YOUR", bottom: "DOCS" },
-  { top: "ANALYZE YOUR", bottom: "DATA" },
+const FILE_SERVICES = [
+  { id: "slides", label: "Slides", icon: Presentation, gradient: "from-violet-500/20 to-purple-500/20", prompt: "Create a professional presentation about" },
+  { id: "resume", label: "Resume", icon: PenTool, gradient: "from-blue-500/20 to-cyan-500/20", prompt: "Create a professional resume for" },
+  { id: "spreadsheet", label: "Spreadsheet", icon: FileSpreadsheet, gradient: "from-emerald-500/20 to-green-500/20", prompt: "Create a spreadsheet for" },
+  { id: "document", label: "Document", icon: ScrollText, gradient: "from-amber-500/20 to-orange-500/20", prompt: "Write a professional document about" },
 ];
 
 const FILE_PLACEHOLDERS = [
@@ -53,7 +48,6 @@ const FilesPage = () => {
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [heroIdx, setHeroIdx] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
