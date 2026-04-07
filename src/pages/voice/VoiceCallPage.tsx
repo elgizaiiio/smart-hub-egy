@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, PhoneOff, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,64 +12,167 @@ const VoiceCallPage = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [statusText, setStatusText] = useState("Tap to start call");
-  const wsRef = useRef<WebSocket | null>(null);
+  const [liveTranscript, setLiveTranscript] = useState("");
+
+  const sttWsRef = useRef<WebSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const audioQueueRef = useRef<ArrayBuffer[]>([]);
-  const isPlayingRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isMutedRef = useRef(false);
+  const isProcessingRef = useRef(false);
+  const conversationRef = useRef<{ role: string; content: string }[]>([]);
+  const audioQueueRef = useRef<string[]>([]);
+  const isPlayingAudioRef = useRef(false);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const interimRef = useRef("");
+  const finalTranscriptRef = useRef("");
 
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
+  // ─── Play queued TTS audio ───
   const playNextAudio = useCallback(async () => {
-    if (audioQueueRef.current.length === 0) { isPlayingRef.current = false; return; }
-    isPlayingRef.current = true;
-    const buffer = audioQueueRef.current.shift()!;
+    if (audioQueueRef.current.length === 0) {
+      isPlayingAudioRef.current = false;
+      setStatusText("Listening...");
+      return;
+    }
+    isPlayingAudioRef.current = true;
+    const audioUrl = audioQueueRef.current.shift()!;
     try {
-      const ctx = audioContextRef.current || new AudioContext({ sampleRate: 24000 });
-      if (!audioContextRef.current) audioContextRef.current = ctx;
-      if (ctx.state === "suspended") await ctx.resume();
-      const int16 = new Int16Array(buffer);
-      const float32 = new Float32Array(int16.length);
-      for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
-      const ab = ctx.createBuffer(1, float32.length, 24000);
-      ab.getChannelData(0).set(float32);
-      const source = ctx.createBufferSource();
-      source.buffer = ab;
-      source.connect(ctx.destination);
-      source.onended = () => playNextAudio();
-      source.start();
-    } catch { playNextAudio(); }
+      const audio = new Audio(audioUrl);
+      audio.onended = () => playNextAudio();
+      audio.onerror = () => playNextAudio();
+      await audio.play();
+    } catch {
+      playNextAudio();
+    }
   }, []);
 
+  // ─── Send transcript to our chat + TTS ───
+  const processUserSpeech = useCallback(async (text: string) => {
+    if (!text.trim() || isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    setStatusText("Thinking...");
+    setLiveTranscript("");
+
+    conversationRef.current.push({ role: "user", content: text.trim() });
+
+    try {
+      // 1. Get AI response from our chat function
+      const chatResp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "system",
+                content: `You are Megsy, a smart, friendly AI voice assistant. Rules:
+- Adapt your tone and language to the user automatically. If they speak Arabic, reply in Arabic. If English, reply in English.
+- Be natural, warm, helpful, and concise — this is a voice conversation, keep responses short (1-3 sentences max).
+- Never say you're an AI unless directly asked.
+- Never use markdown, code blocks, or formatting — plain text only.
+- Current year is 2026. Your creator is Megsy AI.`,
+              },
+              ...conversationRef.current.slice(-10),
+            ],
+            model: "anthropic/claude-haiku-4.5",
+          }),
+        }
+      );
+
+      if (!chatResp.ok || !chatResp.body) {
+        throw new Error("Chat failed");
+      }
+
+      // Parse SSE stream to get full text
+      let fullText = "";
+      const reader = chatResp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf("\n")) !== -1) {
+          let line = buf.slice(0, nl);
+          buf = buf.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") break;
+          try {
+            const p = JSON.parse(json);
+            const c = p.choices?.[0]?.delta?.content;
+            if (c) fullText += c;
+          } catch {}
+        }
+      }
+
+      if (!fullText.trim()) {
+        fullText = "Sorry, I didn't catch that.";
+      }
+
+      conversationRef.current.push({ role: "assistant", content: fullText.trim() });
+
+      // 2. Convert to speech via our TTS
+      setStatusText("Speaking...");
+      const { data: ttsData, error: ttsErr } = await supabase.functions.invoke("generate-voice", {
+        body: {
+          prompt: fullText.trim(),
+          model_id: "tts-1-hd",
+          settings: { voice: "nova", speed: 1.1 },
+        },
+      });
+
+      if (ttsErr || !ttsData?.url) {
+        console.error("TTS error:", ttsErr);
+        setStatusText("Listening...");
+        isProcessingRef.current = false;
+        return;
+      }
+
+      // 3. Play audio
+      audioQueueRef.current.push(ttsData.url);
+      if (!isPlayingAudioRef.current) playNextAudio();
+    } catch (err) {
+      console.error("Process speech error:", err);
+      setStatusText("Listening...");
+    } finally {
+      isProcessingRef.current = false;
+    }
+  }, [playNextAudio]);
+
+  // ─── Start call: Deepgram STT WebSocket + mic ───
   const startCall = useCallback(async () => {
     setPhase("connecting");
     setStatusText("Getting access...");
 
     try {
-      // 1. Request mic permission
+      // 1. Mic permission
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+          audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
         });
       } catch (micErr: any) {
         setPhase("idle");
-        if (micErr.name === "NotAllowedError" || micErr.name === "PermissionDeniedError") {
-          setStatusText("Microphone permission denied.");
-          toast.error("Please allow microphone access");
-        } else {
-          setStatusText("Microphone not available");
-          toast.error("Could not access microphone");
-        }
+        setStatusText(micErr.name === "NotAllowedError" ? "Microphone permission denied." : "Microphone not available");
+        toast.error("Please allow microphone access");
         return;
       }
       mediaStreamRef.current = stream;
 
-      // 2. Get Deepgram API key
-      setStatusText("Connecting to AI...");
+      // 2. Get Deepgram key
+      setStatusText("Connecting...");
       const { data: tokenData, error: tokenError } = await supabase.functions.invoke("deepgram-token", {
         body: { ttl_seconds: 60 },
       });
@@ -81,121 +184,126 @@ const VoiceCallPage = () => {
         return;
       }
 
-      // 3. Connect WebSocket — use Authorization header via subprotocol
-      setStatusText("Starting voice agent...");
-      const ws = new WebSocket("wss://agent.deepgram.com/v1/agent/converse", ["token", tokenData.token]);
-      wsRef.current = ws;
+      // 3. Deepgram STT WebSocket (listen-only, our own pipeline)
+      setStatusText("Starting...");
+      const sttUrl = `wss://api.deepgram.com/v1/listen?model=nova-2&language=multi&smart_format=true&interim_results=true&utterance_end_ms=1500&endpointing=300&encoding=linear16&sample_rate=16000`;
+      const sttWs = new WebSocket(sttUrl, ["token", tokenData.token]);
+      sttWsRef.current = sttWs;
 
-      ws.onopen = () => {
-        // Send Settings configuration matching Deepgram Agent API spec
-        ws.send(JSON.stringify({
-          type: "Settings",
-          audio: {
-            input: { encoding: "linear16", sample_rate: 16000 },
-            output: { encoding: "linear16", sample_rate: 24000, container: "none" },
-          },
-          agent: {
-            language: "en",
-            listen: {
-              provider: { type: "deepgram", model: "nova-3" }
-            },
-            think: {
-              provider: { type: "open_ai", model: "gpt-4o-mini" },
-              instructions: `You are Megsy, a smart, friendly AI companion. Rules:
-- Adapt your tone and language to the user automatically. If they speak Arabic, reply in Arabic. If English, reply in English.
-- Be natural, warm, helpful, and concise — this is a voice conversation, keep responses short (1-3 sentences).
-- Never say you're an AI unless directly asked.
-- Current year is 2026.
-- Your creator is Megsy AI.`,
-            },
-            speak: {
-              provider: { type: "deepgram", model: "aura-2-asteria-en" }
-            },
-            greeting: "Hey! How can I help you today?",
-          },
-        }));
-
+      sttWs.onopen = () => {
         setPhase("connected");
-        setStatusText("Connected");
+        setStatusText("Listening...");
         timerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000);
 
-        // Create audio context at 16kHz to match input config
-        const audioContext = new AudioContext({ sampleRate: 16000 });
-        const source = audioContext.createMediaStreamSource(stream);
-        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        // Send greeting
+        conversationRef.current = [];
+        processUserSpeech("Hello");
+
+        // Audio capture → send raw PCM to Deepgram STT
+        const audioCtx = new AudioContext({ sampleRate: 16000 });
+        audioContextRef.current = audioCtx;
+        const source = audioCtx.createMediaStreamSource(stream);
+        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
 
         processor.onaudioprocess = (e) => {
-          if (isMutedRef.current || ws.readyState !== WebSocket.OPEN) return;
+          if (isMutedRef.current || sttWs.readyState !== WebSocket.OPEN || isPlayingAudioRef.current) return;
           const input = e.inputBuffer.getChannelData(0);
           const buf = new Int16Array(input.length);
-          for (let i = 0; i < input.length; i++) buf[i] = Math.max(-32768, Math.min(32767, Math.floor(input[i] * 32768)));
-          ws.send(buf.buffer);
+          for (let i = 0; i < input.length; i++) {
+            buf[i] = Math.max(-32768, Math.min(32767, Math.floor(input[i] * 32768)));
+          }
+          sttWs.send(buf.buffer);
         };
 
         source.connect(processor);
-        processor.connect(audioContext.destination);
+        processor.connect(audioCtx.destination);
       };
 
-      ws.onmessage = async (event) => {
-        if (event.data instanceof Blob) {
-          const arrayBuffer = await event.data.arrayBuffer();
-          audioQueueRef.current.push(arrayBuffer);
-          if (!isPlayingRef.current) playNextAudio();
-        } else {
-          try {
-            const msg = JSON.parse(event.data);
-            if (msg.type === "AgentStartedSpeaking") setStatusText("Megsy is speaking...");
-            else if (msg.type === "UserStartedSpeaking") setStatusText("Listening...");
-            else if (msg.type === "AgentAudioDone") setStatusText("Listening...");
-            else if (msg.type === "Error" || msg.type === "error") {
-              console.error("Deepgram agent error:", msg);
-              toast.error(msg.description || msg.message || "Voice agent error");
+      sttWs.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+
+          // Deepgram STT transcript result
+          if (msg.type === "Results" && msg.channel?.alternatives?.[0]) {
+            const alt = msg.channel.alternatives[0];
+            const transcript = alt.transcript || "";
+
+            if (msg.is_final && transcript) {
+              finalTranscriptRef.current += " " + transcript;
+              interimRef.current = "";
+              setLiveTranscript(finalTranscriptRef.current.trim());
+
+              // Reset silence timer
+              if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+              silenceTimerRef.current = setTimeout(() => {
+                const full = finalTranscriptRef.current.trim();
+                if (full && !isProcessingRef.current) {
+                  finalTranscriptRef.current = "";
+                  interimRef.current = "";
+                  processUserSpeech(full);
+                }
+              }, 1500);
+            } else if (transcript) {
+              interimRef.current = transcript;
+              setLiveTranscript((finalTranscriptRef.current + " " + transcript).trim());
             }
-          } catch {}
-        }
+          }
+
+          // UtteranceEnd event — user stopped speaking
+          if (msg.type === "UtteranceEnd") {
+            const full = finalTranscriptRef.current.trim();
+            if (full && !isProcessingRef.current) {
+              if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+              finalTranscriptRef.current = "";
+              interimRef.current = "";
+              processUserSpeech(full);
+            }
+          }
+        } catch {}
       };
 
-      ws.onclose = (e) => { 
-        console.log("WS closed:", e.code, e.reason);
+      sttWs.onclose = () => {
         if (phase !== "ended") {
-          setPhase("ended"); 
+          setPhase("ended");
           setStatusText("Call ended");
         }
       };
-      ws.onerror = (e) => { 
-        console.error("WS error:", e);
-        setPhase("ended"); 
-        setStatusText("Connection lost"); 
+      sttWs.onerror = () => {
+        setPhase("ended");
+        setStatusText("Connection lost");
       };
     } catch (err) {
       console.error("Call error:", err);
       setPhase("idle");
       setStatusText("Something went wrong. Try again.");
     }
-  }, [playNextAudio]);
+  }, [processUserSpeech]);
 
   const endCall = () => {
-    wsRef.current?.close();
+    sttWsRef.current?.close();
     mediaStreamRef.current?.getTracks().forEach(t => t.stop());
     processorRef.current?.disconnect();
     audioContextRef.current?.close().catch(() => {});
     if (timerRef.current) clearInterval(timerRef.current);
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     setPhase("ended");
     navigate("/voice");
   };
 
   useEffect(() => {
     return () => {
-      wsRef.current?.close();
+      sttWsRef.current?.close();
       mediaStreamRef.current?.getTracks().forEach(t => t.stop());
       processorRef.current?.disconnect();
       audioContextRef.current?.close().catch(() => {});
       if (timerRef.current) clearInterval(timerRef.current);
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     };
   }, []);
 
-  const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+  const formatTime = (s: number) =>
+    `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background relative overflow-hidden">
@@ -226,6 +334,19 @@ const VoiceCallPage = () => {
             {statusText}
           </motion.p>
         )}
+
+        <AnimatePresence>
+          {liveTranscript && phase === "connected" && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-4 text-xs text-foreground/50 text-center px-8 max-w-xs italic"
+            >
+              "{liveTranscript}"
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="pb-12 flex items-center justify-center gap-8">
@@ -250,7 +371,9 @@ const VoiceCallPage = () => {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsMuted(!isMuted)}
-              className={`w-14 h-14 flex items-center justify-center rounded-full transition-colors ${isMuted ? "bg-destructive/20 text-destructive" : "bg-secondary text-foreground"}`}
+              className={`w-14 h-14 flex items-center justify-center rounded-full transition-colors ${
+                isMuted ? "bg-destructive/20 text-destructive" : "bg-secondary text-foreground"
+              }`}
             >
               {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
             </motion.button>
