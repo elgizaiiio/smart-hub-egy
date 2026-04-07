@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, UserRound, Sparkles, Download, Share2, Upload } from "lucide-react";
+import { ArrowLeft, User, UserRound, Sparkles, Download, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
+import { SilkyToolLanding } from "@/components/ToolPageLayout";
 
 interface HeadshotTemplate { id: string; name: string; gender: string; prompt: string; preview_url: string | null; }
 
@@ -19,29 +20,20 @@ const HeadshotPage = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("landing");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [landingImage, setLandingImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.from("headshot_templates").select("*").eq("is_active", true).order("display_order").then(({ data }) => { if (data && data.length > 0) setTemplates(data as HeadshotTemplate[]); });
-    supabase.from("tool_landing_images").select("image_url").eq("tool_id", "headshot").maybeSingle().then(({ data }) => { if (data?.image_url) setLandingImage(data.image_url); });
   }, []);
 
   const filteredTemplates = templates.filter(t => t.gender === "both" || t.gender === gender);
 
-  const handleLandingUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+  const handleLandingUpload = (file: File) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      setUploadedImage(reader.result as string);
-      setStep("browse");
-    };
-    reader.readAsDataURL(file); e.target.value = "";
+    reader.onload = () => { setUploadedImage(reader.result as string); setStep("browse"); };
+    reader.readAsDataURL(file);
   };
 
-  const handleTemplateSelect = (t: HeadshotTemplate) => {
-    setSelectedTemplate(t);
-  };
+  const handleTemplateSelect = (t: HeadshotTemplate) => { setSelectedTemplate(t); };
 
   const generateHeadshot = async () => {
     if (!uploadedImage || !selectedTemplate) return;
@@ -58,12 +50,7 @@ const HeadshotPage = () => {
     } catch (e: any) { toast.error(e.message || "Generation failed"); setStep("browse"); }
   };
 
-  const handleShare = () => {
-    if (resultUrl) {
-      navigator.clipboard.writeText(resultUrl);
-      toast.success("Link copied!");
-    }
-  };
+  const handleShare = () => { if (resultUrl) { navigator.clipboard.writeText(resultUrl); toast.success("Link copied!"); } };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -72,19 +59,11 @@ const HeadshotPage = () => {
         <h1 className="text-base font-semibold text-foreground flex-1">AI Headshot</h1>
       </div>
 
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLandingUpload} />
-
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {step === "landing" && (
-            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative min-h-[75vh] flex flex-col items-center justify-center">
-              {landingImage ? <img src={landingImage} alt="AI Headshot" className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-accent/10 to-background" />}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-              <div className="relative z-10 text-center px-6">
-                <motion.button whileTap={{ scale: 0.96 }} onClick={() => fileInputRef.current?.click()} className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20">
-                  <Upload className="w-4 h-4 inline mr-2" />Upload Your Photo
-                </motion.button>
-              </div>
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <SilkyToolLanding toolId="headshot" onStart={handleLandingUpload} />
             </motion.div>
           )}
 
