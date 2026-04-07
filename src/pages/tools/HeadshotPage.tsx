@@ -50,7 +50,7 @@ const HeadshotPage = () => {
     try {
       const genderPrefix = gender === "male" ? "A handsome man" : "A beautiful woman";
       const fullPrompt = `${genderPrefix}, ${selectedTemplate.prompt}. Keep the exact facial features from the uploaded photo.`;
-      const { data, error } = await supabase.functions.invoke("generate-image", { body: { prompt: fullPrompt, image: uploadedImage, model: "nano-banana", aspectRatio: "2:3" } });
+      const { data, error } = await supabase.functions.invoke("generate-image", { body: { prompt: fullPrompt, image_url: uploadedImage, model: "nano-banana", image_size: { width: 768, height: 1152 } } });
       if (error) throw error;
       const url = data?.images?.[0] || data?.image_urls?.[0] || data?.image_url || data?.url;
       if (!url) throw new Error("No image generated");
