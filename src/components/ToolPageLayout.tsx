@@ -30,6 +30,7 @@ interface ToolPageLayoutProps {
   hideHeaderCost?: boolean;
   backTo?: string;
   onFileSelected?: (dataUrl: string) => void;
+  skipLanding?: boolean;
 }
 
 const TOOL_LOADING_TEXTS = [
@@ -245,12 +246,12 @@ export const TemplateGrid = ({
 
 // ==================== Main Layout ====================
 const ToolPageLayout = ({
-  title, cost, costLabel, toolId, children, onGenerate, isGenerating, resultUrl, resultType = "image", autoProcess, hideHeaderCost = true, backTo, onFileSelected,
+  title, cost, costLabel, toolId, children, onGenerate, isGenerating, resultUrl, resultType = "image", autoProcess, hideHeaderCost = true, backTo, onFileSelected, skipLanding = false,
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
   const { hasEnoughCredits } = useCredits();
   const [landingImage, setLandingImage] = useState<string | null>(null);
-  const [showLanding, setShowLanding] = useState(true);
+  const [showLanding, setShowLanding] = useState(!skipLanding);
 
   const defaultBack = toolId && (
     ["swap-characters", "talking-photo", "upscale", "video-upscale", "auto-caption", "lip-sync", "video-extender", "video-to-text", "green-screen", "video-colorizer", "video-watermark", "video-bg-replacer", "video-intro", "video-denoise", "thumbnail-generator"].includes(toolId)
