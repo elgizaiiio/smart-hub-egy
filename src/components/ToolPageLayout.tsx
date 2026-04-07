@@ -33,10 +33,10 @@ interface ToolPageLayoutProps {
 }
 
 const TOOL_LOADING_TEXTS = [
-  { text: "Creating", accent: "magic" },
-  { text: "Processing", accent: "your image" },
-  { text: "Refining", accent: "details" },
-  { text: "Almost", accent: "ready" },
+  { text: "CREATING", accent: "MAGIC" },
+  { text: "PROCESSING", accent: "YOUR IMAGE" },
+  { text: "REFINING", accent: "DETAILS" },
+  { text: "ALMOST", accent: "READY" },
 ];
 
 const StarLoader = () => {
@@ -47,20 +47,44 @@ const StarLoader = () => {
   }, []);
   const current = TOOL_LOADING_TEXTS[idx];
   return (
-    <div className="flex flex-col items-center justify-center py-16 gap-4">
-      <motion.div
-        animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-        transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }}
-        className="relative"
+    <div className="flex flex-col items-center justify-center py-16 gap-5">
+      <motion.svg
+        width="36"
+        height="36"
+        viewBox="0 0 100 100"
+        xmlns="http://www.w3.org/2000/svg"
+        animate={{
+          y: [0, -8, 0],
+          rotate: [0, 180, 360],
+          scale: [1, 1.2, 1],
+        }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
       >
-        <Sparkles className="w-12 h-12 text-blue-400" />
-        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-blue-400/30 rounded-full" />
-      </motion.div>
+        <path
+          d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z"
+          fill="url(#toolStarGrad)"
+        />
+        <defs>
+          <linearGradient id="toolStarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="50%" stopColor="#8b5cf6" />
+            <stop offset="100%" stopColor="#ec4899" />
+          </linearGradient>
+        </defs>
+      </motion.svg>
       <AnimatePresence mode="wait">
-        <motion.p key={idx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-sm">
-          <span className="text-foreground">{current.text} </span>
-          <span className="text-blue-400 font-medium">{current.accent}</span>
-        </motion.p>
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          className="text-center"
+        >
+          <p className="text-2xl font-black text-foreground">{current.text}</p>
+          <p className="text-2xl font-black bg-gradient-to-r from-blue-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">
+            {current.accent}
+          </p>
+        </motion.div>
       </AnimatePresence>
     </div>
   );
