@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileText } from "lucide-react";
+import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileText, Presentation, FileSpreadsheet, ScrollText, PenTool } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,16 +21,11 @@ interface AttachedFile {
   data: string;
 }
 
-const SUGGESTIONS = [
-  "Write a professional report",
-  "Create a presentation",
-  "Summarize this document",
-];
-
-const HERO_WORDS = [
-  { top: "CREATE WITH", bottom: "FILES" },
-  { top: "GENERATE YOUR", bottom: "DOCS" },
-  { top: "ANALYZE YOUR", bottom: "DATA" },
+const FILE_SERVICES = [
+  { id: "slides", label: "Slides", icon: Presentation, gradient: "from-violet-500/20 to-purple-500/20", prompt: "Create a professional presentation about" },
+  { id: "resume", label: "Resume", icon: PenTool, gradient: "from-blue-500/20 to-cyan-500/20", prompt: "Create a professional resume for" },
+  { id: "spreadsheet", label: "Spreadsheet", icon: FileSpreadsheet, gradient: "from-emerald-500/20 to-green-500/20", prompt: "Create a spreadsheet for" },
+  { id: "document", label: "Document", icon: ScrollText, gradient: "from-amber-500/20 to-orange-500/20", prompt: "Write a professional document about" },
 ];
 
 const FILE_PLACEHOLDERS = [
@@ -53,7 +48,6 @@ const FilesPage = () => {
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [heroIdx, setHeroIdx] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -64,10 +58,8 @@ const FilesPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isGenerating]);
 
-  useEffect(() => {
-    const t = setInterval(() => setHeroIdx(p => (p + 1) % HERO_WORDS.length), 4000);
-    return () => clearInterval(t);
-  }, []);
+
+
 
   const inputRef2 = useRef(input);
   useEffect(() => { inputRef2.current = input; }, [input]);
@@ -282,7 +274,6 @@ const FilesPage = () => {
   };
 
   const hasMessages = messages.length > 0;
-  const hero = HERO_WORDS[heroIdx];
 
   return (
     <AppLayout onSelectConversation={loadOldConversation} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); }} activeConversationId={conversationId}>
@@ -316,32 +307,27 @@ const FilesPage = () => {
         <div className="flex-1 overflow-y-auto min-h-0 pb-44 md:pb-52">
           {!hasMessages ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
-                {/* Landing-style hero */}
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={heroIdx}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <h1 className="font-display text-[7vw] md:text-[3vw] uppercase leading-[1.1] tracking-tight text-foreground">{hero.top}</h1>
-                    <h1 className="font-display text-[9vw] md:text-[4vw] uppercase leading-[1] tracking-tight text-primary">{hero.bottom}</h1>
-                  </motion.div>
-                </AnimatePresence>
-                <p className="text-sm text-muted-foreground mt-4 mb-6">Generate documents, analyze files, create presentations and more</p>
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  {SUGGESTIONS.map((s, i) => (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg w-full">
+                {/* Hero text */}
+                <h1 className="font-display text-3xl md:text-4xl font-black uppercase leading-[1.1] tracking-tight text-foreground">CREATE YOUR</h1>
+                <h1 className="font-display text-3xl md:text-4xl font-black uppercase leading-[1] tracking-tight bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">DOCUMENTS</h1>
+                <p className="text-sm text-muted-foreground mt-3 mb-6">Generate documents, presentations, spreadsheets and more</p>
+
+                {/* Service cards */}
+                <div className="grid grid-cols-4 gap-3 mb-6">
+                  {FILE_SERVICES.map((svc, i) => (
                     <motion.button
-                      key={i}
+                      key={svc.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 + i * 0.08 }}
-                      onClick={() => setInput(s)}
-                      className="px-5 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
+                      transition={{ delay: 0.2 + i * 0.08 }}
+                      onClick={() => setInput(svc.prompt + " ")}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-2xl bg-gradient-to-br ${svc.gradient} border border-border/30 hover:border-border/60 transition-all`}
                     >
-                      {s}
+                      <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                        <svc.icon className="w-5 h-5 text-foreground/80" />
+                      </div>
+                      <span className="text-[11px] font-medium text-foreground/80">{svc.label}</span>
                     </motion.button>
                   ))}
                 </div>
