@@ -807,9 +807,9 @@ Ask me anything to get started!`;
                   onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
               )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
-                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} />
+                <ThinkingLoader searchQuery={searchEnabled ? input : undefined} searchStatus={searchStatus} statusHistory={statusHistory} isComputerUse={computerUseEnabled} />
               }
-              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader />}
+              {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content && <ThinkingLoader statusHistory={statusHistory} isComputerUse={computerUseEnabled} />}
               <div ref={messagesEndRef} />
             </div>
           )}
