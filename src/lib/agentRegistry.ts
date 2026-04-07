@@ -1,6 +1,6 @@
 import {
   GraduationCap, ShoppingCart, Search, Presentation, PenTool,
-  FileSpreadsheet, ScrollText, ImageIcon, Video, Code, Mic,
+  FileSpreadsheet, ScrollText, ImageIcon, Video, Mic,
   FileText, Sparkles, Brain, Mail
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
