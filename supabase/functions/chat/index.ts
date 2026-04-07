@@ -619,26 +619,18 @@ async function handleToolCalls(
 
     const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
     
-    // Build proper tool_calls with unique IDs
-    const webSearchCalls = toolCalls.filter(tc => tc.function?.name === "WEB_SEARCH");
-    const toolCallObjects = webSearchCalls.map((tc, i) => ({
-      id: `call_search_${Date.now()}_${i}`,
-      type: "function" as const,
-      function: { name: "WEB_SEARCH", arguments: tc.function.arguments }
-    }));
-
+    // Use simplified message format for models that may not support tool_calls format
+    // This is more compatible across all providers (LemonData, Lovable Gateway)
     const searchMessages = [
       ...originalBody.messages,
       {
         role: "assistant",
-        content: null,
-        tool_calls: toolCallObjects,
+        content: "I searched the web and found the following information. Let me synthesize this into a comprehensive response.",
       },
-      ...toolCallObjects.map((tc, i) => ({
-        role: "tool",
-        tool_call_id: tc.id,
-        content: allSearchResults[i] || "No results found.",
-      })),
+      {
+        role: "user",
+        content: `Here are the search results to synthesize into your response:\n\n${combinedContext}\n\nNow write a comprehensive, well-structured response based on these search results. Cite sources with [Source Name](URL). ${isDeepResearch ? "Write a detailed research report with sections: Executive Summary, Key Findings, Detailed Analysis, Data & Statistics, Conclusion with Recommendations, and Sources." : "Synthesize the information naturally."}`,
+      },
     ];
 
     const secondBody: any = { model: modelId, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
@@ -693,6 +685,9 @@ async function handleToolCalls(
         if (secondToolCalls.length > 0 && isDeepResearch && depth < MAX_DEPTH) {
           await handleToolCalls(controller, encoder, secondToolCalls, { ...originalBody, messages: searchMessages }, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, searchTools, sb, depth + 1);
         }
+      } else {
+        console.error("Second AI call failed:", secondResp.status);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\n" + combinedContext.slice(0, 3000) } }] })}\n\n`));
       }
     } catch (e) {
       console.error("Second AI call error:", e);
