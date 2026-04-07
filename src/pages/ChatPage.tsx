@@ -187,7 +187,7 @@ const ChatPage = () => {
 
   const handleStructuredAction = (text: string) => {
     if (text.startsWith("Connect:")) {
-      navigate("/settings/integrations");
+      setConnectorsOpen(true);
       return;
     }
     setInput(text);
