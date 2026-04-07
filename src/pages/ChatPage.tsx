@@ -56,7 +56,7 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
   </svg>;
 
 
-const MEGSY_MODEL = "auto"; // Routes to gemini-2.5-flash-lite (simple) or deepseek-v3-2 (complex) via LemonData
+const MEGSY_MODEL = "anthropic/claude-haiku-4.5";
 
 const ChatPage = () => {
   const navigate = useNavigate();
@@ -833,21 +833,17 @@ Ask me anything to get started!`;
         <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
               <AnimatePresence>
-                {(chatMode !== "normal" || computerUseEnabled) &&
+              {chatMode !== "normal" &&
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
                 className="flex items-center gap-2 w-fit"
                 style={{ touchAction: "none" }}>
-                    {chatMode !== "normal" && <AgentBadge agentId={chatMode} onRemove={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} />}
-                    {computerUseEnabled && (
-                      <button onClick={() => setComputerUseEnabled(false)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/30 text-xs font-medium text-violet-400 hover:bg-violet-500/25 transition-colors">
-                        <Monitor className="w-3 h-3" />
-                        Megsy Computer
-                        <X className="w-3 h-3 ml-0.5" />
-                      </button>
-                    )}
+                    <span className="text-xs text-muted-foreground select-none">
+                      @{chatMode}
+                      <button onClick={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} className="ml-1.5 hover:text-foreground transition-colors">×</button>
+                    </span>
                   </motion.div>
               }
               </AnimatePresence>
