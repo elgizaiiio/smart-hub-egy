@@ -37,6 +37,10 @@ export const IMAGE_TOOLS: ImageTool[] = [
   { id: 'hair-changer', name: 'Hair Changer', description: 'Change hairstyles with AI', model: 'fal-ai/image-apps-v2/hair-change', cost: 1, inputType: 'image', route: '/images/tools/hair-changer' },
   { id: 'cartoon', name: 'Cartoon', description: 'Cartoonify your photos', model: 'fal-ai/image-editing/cartoonify', cost: 1, inputType: 'image', route: '/images/tools/cartoon' },
   { id: 'avatar-maker', name: 'Avatar Maker 3D', description: 'Create 3D avatars from photos', model: 'fal-ai/hunyuan-3d/v3.1/rapid/image-to-3d', cost: 4, inputType: 'image', route: '/images/tools/avatar-maker', badge: 'PRO' },
+  { id: 'avatar-generator', name: 'AI Avatar Generator', description: 'Generate personal AI avatars', model: 'nano-banana-pro', cost: 3, inputType: 'image', route: '/images/tools/avatar-generator', badge: 'NEW' },
+  { id: 'product-photo', name: 'Product Photography', description: 'Professional product photos', model: 'nano-banana-edit', cost: 2, inputType: 'image-text', route: '/images/tools/product-photo', badge: 'NEW' },
+  { id: 'logo-generator', name: 'AI Logo Generator', description: 'Design logos with AI', model: 'nano-banana-pro', cost: 2, inputType: 'text', route: '/images/tools/logo-generator', badge: 'NEW' },
+  { id: 'perspective-correction', name: 'Perspective Correction', description: 'Fix image perspective', model: 'nano-banana-edit', cost: 1, inputType: 'image', route: '/images/tools/perspective-correction' },
 ];
 
 export const NEW_IMAGE_MODELS: ImageModel[] = [
