@@ -757,67 +757,90 @@ async function handleToolCalls(
         continue;
       }
 
-      // Browser agent (Computer Use)
+      // Browser agent (Computer Use) via HyperAgent async API
       if (toolName === "BROWSE_WEBSITE" && HB_API_KEY) {
         const browseGoal = String(toolArgs.goal || "").trim();
         const browseUrl = String(toolArgs.url || "").trim();
         if (!browseGoal) continue;
 
-        pushStatus(`🌐 يفتح المتصفح الذكي...`);
-        if (browseUrl) pushStatus(`يتصفح ${browseUrl}`);
+        const HB_BASE = "https://api.hyperbrowser.ai";
+        const fullTask = browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal;
+
+        pushStatus(`Opening smart browser...`);
+        if (browseUrl) pushStatus(`Navigating to ${browseUrl}...`);
 
         try {
-          // Create session
-          const sessionResp = await fetchWithTimeout("https://app.hyperbrowser.ai/api/v2/sessions", {
+          // Start async task
+          const startResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent`, {
             method: "POST",
             headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({ screen: { width: 1280, height: 720 } }),
+            body: JSON.stringify({ task: fullTask, maxSteps: 15, keepBrowserOpen: false }),
           }, 15000);
 
-          if (!sessionResp.ok) {
-            pushStatus("تعذر فتح المتصفح");
+          if (!startResp.ok) {
+            pushStatus("Failed to open browser");
             continue;
           }
 
-          const session = await sessionResp.json();
-          pushStatus(`تم فتح المتصفح — ينفذ المهمة...`);
+          const startData = await startResp.json();
+          const jobId = startData.jobId;
+          if (!jobId) { pushStatus("No task ID returned"); continue; }
 
-          // Run autonomous agent
-          const agentResp = await fetchWithTimeout(`https://app.hyperbrowser.ai/api/v2/agents/browser-use`, {
-            method: "POST",
-            headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              task: browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal,
-              sessionId: session.id,
-              maxSteps: 15,
-            }),
-          }, 60000);
+          pushStatus("Browser opened — executing task...");
 
-          // Close session after
-          fetchWithTimeout(`https://app.hyperbrowser.ai/api/v2/sessions/${session.id}/stop`, {
-            method: "POST",
-            headers: { "x-api-key": HB_API_KEY },
-          }, 5000).catch(() => {});
+          // Poll for status with live step streaming
+          let lastStepCount = 0;
+          let pollCount = 0;
+          const MAX_POLLS = 45; // ~90 seconds
+          let finalResult: any = null;
 
-          if (agentResp.ok) {
-            const agentResult = await agentResp.json();
-            const output = agentResult.output || agentResult.result || JSON.stringify(agentResult);
-            
-            // Show steps
-            if (agentResult.steps && Array.isArray(agentResult.steps)) {
-              for (const step of agentResult.steps) {
-                if (step.description) pushStatus(step.description);
+          const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+          while (pollCount < MAX_POLLS) {
+            await sleep(2000);
+            pollCount++;
+
+            try {
+              const statusResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent/${jobId}/status`, {
+                headers: { "x-api-key": HB_API_KEY },
+              }, 8000);
+
+              if (!statusResp.ok) continue;
+
+              const statusData = await statusResp.json();
+
+              // Stream new steps live
+              if (statusData.steps && Array.isArray(statusData.steps)) {
+                const newSteps = statusData.steps.slice(lastStepCount);
+                for (const step of newSteps) {
+                  const desc = step.description || step.next_goal || step.action || "";
+                  const stepUrl = step.url || "";
+                  if (desc) pushStatus(stepUrl ? `${desc} — ${stepUrl}` : desc);
+                }
+                lastStepCount = statusData.steps.length;
               }
-            }
 
-            pushStatus("✅ تم الانتهاء من التصفح");
+              if (statusData.status === "completed" || statusData.status === "finished" || statusData.status === "done") {
+                finalResult = statusData;
+                break;
+              }
+              if (statusData.status === "failed" || statusData.status === "error") {
+                pushStatus("Browser task failed");
+                break;
+              }
+            } catch { continue; }
+          }
+
+          if (finalResult) {
+            const output = finalResult.output || finalResult.result || JSON.stringify(finalResult);
+            pushStatus("Browsing completed");
             allSearchResults.push(`Browser Agent Result for "${browseGoal}":\n${typeof output === 'string' ? output : JSON.stringify(output, null, 2)}`);
           } else {
-            pushStatus("تعذر تنفيذ المهمة في المتصفح");
+            pushStatus("Browser task timed out");
           }
         } catch (browserErr) {
           console.error("Browser agent error:", browserErr);
-          pushStatus("حدث خطأ في المتصفح الذكي");
+          pushStatus("Browser error occurred");
         }
         continue;
       }
