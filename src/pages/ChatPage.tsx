@@ -828,7 +828,39 @@ Ask me anything to get started!`;
                 <AnimatePresence>
                   {plusMenuOpen && renderPlusMenu()}
                 </AnimatePresence>
-                <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
+                <AnimatedInput
+                  value={input}
+                  onChange={setInput}
+                  onSend={handleSend}
+                  onCancel={handleCancel}
+                  onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)}
+                  disabled={isLoading}
+                  isLoading={isLoading}
+                  pendingQuestions={pendingQuestions}
+                  onQuestionAnswer={handleQuestionAnswer}
+                  onQuestionSkip={handleQuestionSkip}
+                  activeAgent={chatMode !== "normal" ? chatMode : null}
+                  onAgentSelect={(agent: AgentDef) => {
+                    const modeMap: Record<string, ChatMode> = { learning: "learning", shopping: "shopping", "deep-research": "deep-research" };
+                    if (modeMap[agent.id]) {
+                      handleModeChange(modeMap[agent.id]);
+                    } else if (agent.category === "images") {
+                      navigate("/images");
+                    } else if (agent.category === "videos") {
+                      navigate("/videos");
+                    } else if (agent.category === "code") {
+                      navigate("/code");
+                    } else if (agent.category === "voice") {
+                      navigate("/voice");
+                    } else if (agent.category === "files") {
+                      navigate("/files");
+                      if (agent.id !== "document") {
+                        setTimeout(() => setInput(`@${agent.id} `), 100);
+                      }
+                    }
+                  }}
+                  onAgentRemove={() => { setChatMode("normal"); if (chatMode === "deep-research") setSearchEnabled(false); }}
+                />
               </div>
             </div>
           </div>
