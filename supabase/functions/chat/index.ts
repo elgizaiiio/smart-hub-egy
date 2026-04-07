@@ -248,6 +248,34 @@ serve(async (req) => {
       },
     ] : [];
 
+    // Media generation tools (available when user uses @images, @videos, @voice in chat)
+    const mediaTools = [
+      {
+        type: "function",
+        function: {
+          name: "GENERATE_IMAGE",
+          description: "Generate an AI image from a text prompt. Use when the user asks to create, generate, or make an image/picture/photo. Returns the image URL.",
+          parameters: { type: "object", properties: { prompt: { type: "string", description: "Detailed image description" }, model: { type: "string", description: "Model to use (nano-banana, nano-banana-pro, nano-banana-2, flux-schnell, flux-pro). Default: nano-banana" }, count: { type: "number", description: "Number of images (1-4). Default: 1" } }, required: ["prompt"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GENERATE_VIDEO",
+          description: "Generate an AI video from a text prompt. Use when the user asks to create a video.",
+          parameters: { type: "object", properties: { prompt: { type: "string", description: "Video description" }, model: { type: "string", description: "Model: veo3, wan-x, hunyuan. Default: wan-x" } }, required: ["prompt"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "GENERATE_VOICE",
+          description: "Convert text to speech audio. Use when the user asks to read text aloud, generate speech, or TTS.",
+          parameters: { type: "object", properties: { text: { type: "string", description: "Text to speak" }, voice: { type: "string", description: "Voice ID to use. Default: alloy" } }, required: ["text"] },
+        },
+      },
+    ];
+
     // System prompt
     let systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
     
@@ -260,6 +288,13 @@ serve(async (req) => {
 - Always use it when the user mentions a website, URL, or asks you to check/verify something online.`;
     }
 
+    // Add media tool instructions
+    systemPrompt += `\n\nMEDIA GENERATION TOOLS:
+- You have GENERATE_IMAGE, GENERATE_VIDEO, and GENERATE_VOICE tools.
+- Use them when the user asks to create images, videos, or speech.
+- If the user specifies @images, @videos, or @voice, use the corresponding tool.
+- Always enhance the user's prompt for better results before passing to the tool.`;
+
     const body: any = {
       model: modelId,
       messages: [{ role: "system", content: systemPrompt }, ...messages],
@@ -267,11 +302,12 @@ serve(async (req) => {
       max_tokens: isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048),
     };
 
-    const allTools = [...composioTools, ...searchTools, ...shoppingTools, ...browserTools];
+    const allTools = [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools];
     if (allTools.length > 0) {
       body.tools = allTools;
       body.tool_choice = "auto";
     }
+
 
     // Key rotation with retry
     let response: Response;
