@@ -8,6 +8,9 @@ import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import ReactMarkdown from "react-markdown";
+import AgentBadge from "@/components/AgentBadge";
+import MentionDropdown from "@/components/MentionDropdown";
+import type { AgentDef } from "@/lib/agentRegistry";
 
 interface ChatMsg {
   role: "user" | "assistant";
