@@ -54,11 +54,38 @@ const MusicGeneratorPage = () => {
         body: { model_id: "suno_music", prompt: fullPrompt, type: "music", settings: { duration } },
       });
       if (error) throw error;
-      if (data?.url) {
+
+      if (data?.status === "completed" && data?.url) {
         setResults(prev => [{ url: data.url, prompt: prompt.trim() }, ...prev]);
         toast.success("Music generated");
         setPrompt("");
-      } else toast.error("No audio returned");
+        setGenerating(false);
+        return;
+      }
+
+      if (data?.task_id) {
+        // Client-side polling
+        const taskId = data.task_id;
+        for (let i = 0; i < 60; i++) {
+          await new Promise(r => setTimeout(r, 3000));
+          const { data: pollData } = await supabase.functions.invoke("generate-voice", {
+            body: { poll_task_id: taskId },
+          });
+          if (pollData?.status === "completed" && pollData?.url) {
+            setResults(prev => [{ url: pollData.url, prompt: prompt.trim() }, ...prev]);
+            toast.success("Music generated");
+            setPrompt("");
+            setGenerating(false);
+            return;
+          }
+          if (pollData?.status === "failed") {
+            throw new Error(pollData.error || "Generation failed");
+          }
+        }
+        throw new Error("Generation timed out");
+      }
+
+      toast.error("No audio returned");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
