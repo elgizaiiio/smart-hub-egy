@@ -666,10 +666,8 @@ async function handleToolCalls(
       max_tokens: isDeepResearch ? 3072 : 1536,
     };
 
-    if (isDeepResearch && searchTools.length > 0 && depth < MAX_DEPTH) {
-      secondBody.tools = searchTools;
-      secondBody.tool_choice = "auto";
-    }
+    // Synthesis must be fast and deterministic here — do not trigger more searches recursively.
+
 
     try {
       const secondResp = await fetch(synthesisUrl, {
