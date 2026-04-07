@@ -402,7 +402,6 @@ const ToolPageLayout = ({
           {showLanding && !resultUrl && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ToolLanding
-                landingImage={landingImage}
                 onStart={handleLandingFileSelect}
                 uploadLabel={uploadLabel}
                 accept={acceptType}
