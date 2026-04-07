@@ -20,8 +20,12 @@ serve(async (req) => {
     }));
 
     if (action === "build") {
-      // Direct build - no plan phase needed
       const buildPrompt = `You are Megsy Code, an expert full-stack AI programming agent. Generate a complete React+Vite project with Tailwind CSS.
+
+IMPORTANT BEHAVIOR:
+- Mirror the user's language and dialect exactly. If they write in Egyptian Arabic, respond in Egyptian Arabic. If English, respond in English.
+- Before generating code, mentally plan which pages, components, and features to build.
+- Generate clean, production-ready, fully responsive code.
 
 OUTPUT FORMAT (CRITICAL - follow exactly):
 For each file, output:
@@ -39,11 +43,9 @@ Rules:
 - Make the UI modern, clean, and fully responsive
 - Include all necessary components, pages, hooks, and utilities
 - Use semantic HTML and accessible patterns
-- Respond in the user's language for any text content
 - Do NOT wrap output in markdown code blocks
 - Output ONLY the ===FILE=== blocks, no other text`;
 
-      // Define tools for web search during build
       const tools = SERPER_API_KEY ? [
         {
           name: "web_search",
@@ -58,7 +60,6 @@ Rules:
         }
       ] : [];
 
-      // Agentic loop - handle tool calls then stream final response
       let currentMessages = [...claudeMessages, { role: "user", content: "Build the project now. Output only ===FILE: path=== blocks." }];
       let maxIterations = 5;
       let finalStream: ReadableStream | null = null;
@@ -125,7 +126,6 @@ Rules:
         const toolUseBlocks = (result.content || []).filter((b: any) => b.type === "tool_use");
 
         if (toolUseBlocks.length === 0) {
-          // No tool calls - wrap text as SSE
           const textContent = (result.content || [])
             .filter((b: any) => b.type === "text")
             .map((b: any) => b.text)
@@ -161,17 +161,9 @@ Rules:
                   `[${i + 1}] ${r.title}\n${r.snippet}\nSource: ${r.link}`
                 ).join("\n\n");
               }
-              toolResults.push({
-                type: "tool_result",
-                tool_use_id: toolBlock.id,
-                content: context || "No results found.",
-              });
+              toolResults.push({ type: "tool_result", tool_use_id: toolBlock.id, content: context || "No results found." });
             } catch (e) {
-              toolResults.push({
-                type: "tool_result",
-                tool_use_id: toolBlock.id,
-                content: `Search error: ${e}`,
-              });
+              toolResults.push({ type: "tool_result", tool_use_id: toolBlock.id, content: `Search error: ${e}` });
             }
           }
         }

@@ -931,6 +931,110 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ==================== Voice Templates ====================
+      if (d === "voice_templates_menu") {
+        const { data: templates, count } = await sb.from("voice_templates").select("id, name, is_active, audio_file_url", { count: "exact" });
+        const total = count || 0;
+        const rows: { text: string; callback_data: string }[][] = [
+          [{ text: "➕ إضافة قالب صوتي", callback_data: "vt_add" }],
+        ];
+        if (templates && templates.length > 0) {
+          templates.forEach((t: any) => {
+            rows.push([{ text: `${t.is_active ? "✅" : "⏸"} ${t.name}`, callback_data: `vt_view_${t.id}` }]);
+          });
+        }
+        rows.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `🎤 *قوالب الصوت* (${total})`, rows);
+        return new Response("OK");
+      }
+
+      if (d === "vt_add") {
+        await saveSession(sb, chatId, { adminAction: "vt_awaiting_name" } as any);
+        await send(BOT_TOKEN, chatId, msgId, "🎤 *إضافة قالب صوتي*\n\nأرسل اسم القالب:", [[{ text: "❌ إلغاء", callback_data: "voice_templates_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("vt_view_")) {
+        const tid = d.replace("vt_view_", "");
+        const { data: t } = await sb.from("voice_templates").select("*").eq("id", tid).single();
+        if (!t) { await send(BOT_TOKEN, chatId, msgId, "❌ غير موجود", [[{ text: "🔙", callback_data: "voice_templates_menu" }]]); return new Response("OK"); }
+        await send(BOT_TOKEN, chatId, msgId,
+          `🎤 *${t.name}*\nالحالة: ${t.is_active ? "✅ نشط" : "⏸ معطل"}`,
+          [
+            [{ text: t.is_active ? "⏸ تعطيل" : "✅ تفعيل", callback_data: `vt_toggle_${tid}` }, { text: "🗑 حذف", callback_data: `vt_del_${tid}` }],
+            [{ text: "🔙 رجوع", callback_data: "voice_templates_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("vt_toggle_")) {
+        const tid = d.replace("vt_toggle_", "");
+        const { data: t } = await sb.from("voice_templates").select("is_active").eq("id", tid).single();
+        if (t) await sb.from("voice_templates").update({ is_active: !t.is_active }).eq("id", tid);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم التحديث", [[{ text: "🔙", callback_data: "voice_templates_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("vt_del_")) {
+        const tid = d.replace("vt_del_", "");
+        await sb.from("voice_templates").delete().eq("id", tid);
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم الحذف", [[{ text: "🔙", callback_data: "voice_templates_menu" }]]);
+        return new Response("OK");
+      }
+
+      // ==================== TTS Voices ====================
+      if (d === "tts_voices_menu") {
+        const { data: voices, count } = await sb.from("tts_voices").select("id, name, is_active, voice_id", { count: "exact" });
+        const total = count || 0;
+        const rows: { text: string; callback_data: string }[][] = [
+          [{ text: "➕ إضافة صوت TTS", callback_data: "tv_add" }],
+        ];
+        if (voices && voices.length > 0) {
+          voices.forEach((v: any) => {
+            rows.push([{ text: `${v.is_active ? "✅" : "⏸"} ${v.name}`, callback_data: `tv_view_${v.id}` }]);
+          });
+        }
+        rows.push([{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `🔊 *أصوات TTS* (${total})`, rows);
+        return new Response("OK");
+      }
+
+      if (d === "tv_add") {
+        await saveSession(sb, chatId, { adminAction: "tv_awaiting_name" } as any);
+        await send(BOT_TOKEN, chatId, msgId, "🔊 *إضافة صوت TTS*\n\nأرسل اسم الصوت:", [[{ text: "❌ إلغاء", callback_data: "tts_voices_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tv_view_")) {
+        const vid = d.replace("tv_view_", "");
+        const { data: v } = await sb.from("tts_voices").select("*").eq("id", vid).single();
+        if (!v) { await send(BOT_TOKEN, chatId, msgId, "❌ غير موجود", [[{ text: "🔙", callback_data: "tts_voices_menu" }]]); return new Response("OK"); }
+        await send(BOT_TOKEN, chatId, msgId,
+          `🔊 *${v.name}*\nVoice ID: \`${v.voice_id || "—"}\`\nالحالة: ${v.is_active ? "✅" : "⏸"}`,
+          [
+            [{ text: v.is_active ? "⏸ تعطيل" : "✅ تفعيل", callback_data: `tv_toggle_${vid}` }, { text: "🗑 حذف", callback_data: `tv_del_${vid}` }],
+            [{ text: "🔙 رجوع", callback_data: "tts_voices_menu" }],
+          ]
+        );
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tv_toggle_")) {
+        const vid = d.replace("tv_toggle_", "");
+        const { data: v } = await sb.from("tts_voices").select("is_active").eq("id", vid).single();
+        if (v) await sb.from("tts_voices").update({ is_active: !v.is_active }).eq("id", vid);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم التحديث", [[{ text: "🔙", callback_data: "tts_voices_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("tv_del_")) {
+        const vid = d.replace("tv_del_", "");
+        await sb.from("tts_voices").delete().eq("id", vid);
+        await send(BOT_TOKEN, chatId, msgId, "🗑 تم الحذف", [[{ text: "🔙", callback_data: "tts_voices_menu" }]]);
+        return new Response("OK");
+      }
+
       // ==================== رفع الوسائط ====================
       if (d === "upload_menu") {
         await send(BOT_TOKEN, chatId, msgId, "📤 *رفع الوسائط*\n\nاختر القسم:", [
@@ -2845,6 +2949,76 @@ serve(async (req) => {
             reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: `ak_svc_${service}` }]] }),
           });
         }
+        return new Response("OK");
+      }
+
+      // Voice template text handlers
+      if ((session as any)?.adminAction === "vt_awaiting_name" && text) {
+        (session as any).vtName = text.trim();
+        (session as any).adminAction = "vt_awaiting_audio";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `✅ الاسم: *${text.trim()}*\n\nأرسل ملف الصوت (audio) للقالب:`, parse_mode: "Markdown", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "voice_templates_menu" }]] }) });
+        return new Response("OK");
+      }
+
+      if ((session as any)?.adminAction === "vt_awaiting_audio") {
+        let fileId: string | null = null;
+        if (message.audio) fileId = message.audio.file_id;
+        else if (message.voice) fileId = message.voice.file_id;
+        else if (message.document?.mime_type?.startsWith("audio/")) fileId = message.document.file_id;
+        if (!fileId) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "أرسل ملف صوتي فقط." }); return new Response("OK"); }
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل." }); return new Response("OK"); }
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || "ogg";
+        const storagePath = `voice-templates/${crypto.randomUUID()}.${ext}`;
+        await sb.storage.from("model-media").upload(storagePath, fileBuffer, { contentType: `audio/${ext}`, upsert: true });
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        await sb.from("voice_templates").insert({ name: (session as any).vtName || "Untitled", audio_file_url: urlData.publicUrl });
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `✅ تم إضافة قالب *${(session as any).vtName}*`, parse_mode: "Markdown", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "➕ آخر", callback_data: "vt_add" }], [{ text: "🔙", callback_data: "voice_templates_menu" }]] }) });
+        return new Response("OK");
+      }
+
+      // TTS voice text handlers
+      if ((session as any)?.adminAction === "tv_awaiting_name" && text) {
+        (session as any).tvName = text.trim();
+        (session as any).adminAction = "tv_awaiting_voice_id";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `✅ الاسم: *${text.trim()}*\n\nأرسل Voice ID:`, parse_mode: "Markdown", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "tts_voices_menu" }]] }) });
+        return new Response("OK");
+      }
+
+      if ((session as any)?.adminAction === "tv_awaiting_voice_id" && text) {
+        (session as any).tvVoiceId = text.trim();
+        (session as any).adminAction = "tv_awaiting_preview_audio";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "أرسل ملف صوتي للمعاينة:", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "tts_voices_menu" }]] }) });
+        return new Response("OK");
+      }
+
+      if ((session as any)?.adminAction === "tv_awaiting_preview_audio") {
+        let fileId: string | null = null;
+        if (message.audio) fileId = message.audio.file_id;
+        else if (message.voice) fileId = message.voice.file_id;
+        else if (message.document?.mime_type?.startsWith("audio/")) fileId = message.document.file_id;
+        if (!fileId) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "أرسل ملف صوتي." }); return new Response("OK"); }
+        const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+        const filePath = fileInfo.result?.file_path;
+        if (!filePath) { await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: "فشل." }); return new Response("OK"); }
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+        const fileResp = await fetch(fileUrl);
+        const fileBuffer = await fileResp.arrayBuffer();
+        const ext = filePath.split(".").pop() || "ogg";
+        const storagePath = `tts-voices/${crypto.randomUUID()}.${ext}`;
+        await sb.storage.from("model-media").upload(storagePath, fileBuffer, { contentType: `audio/${ext}`, upsert: true });
+        const { data: urlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+        await sb.from("tts_voices").insert({ name: (session as any).tvName || "Untitled", voice_id: (session as any).tvVoiceId || null, preview_audio_url: urlData.publicUrl });
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", { chat_id: chatId, text: `✅ تم إضافة صوت TTS *${(session as any).tvName}*`, parse_mode: "Markdown", reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "➕ آخر", callback_data: "tv_add" }], [{ text: "🔙", callback_data: "tts_voices_menu" }]] }) });
         return new Response("OK");
       }
 
