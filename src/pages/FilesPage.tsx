@@ -30,7 +30,6 @@ interface SmartQuestion {
   options: string[];
   allowText?: boolean;
 }
-
 const FILE_SERVICES = [
   { id: "slides", label: "Slides", icon: Presentation, prompt: "Create a professional presentation about" },
   { id: "resume", label: "Resume", icon: PenTool, prompt: "Create a professional resume for" },
