@@ -6,6 +6,28 @@ import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 
+// Local landing images
+const LOCAL_LANDING: Record<string, () => Promise<{ default: string }>> = {
+  'inpaint': () => import('@/assets/tool-landing/inpaint.jpg'),
+  'clothes-changer': () => import('@/assets/tool-landing/clothes-changer.jpg'),
+  'headshot': () => import('@/assets/tool-landing/headshot.jpg'),
+  'bg-remover': () => import('@/assets/tool-landing/bg-remover.jpg'),
+  'face-swap': () => import('@/assets/tool-landing/face-swap.jpg'),
+  'relight': () => import('@/assets/tool-landing/relight.jpg'),
+  'colorizer': () => import('@/assets/tool-landing/colorizer.jpg'),
+  'sketch-to-image': () => import('@/assets/tool-landing/sketch-to-image.jpg'),
+  'retouching': () => import('@/assets/tool-landing/retouching.jpg'),
+  'remover': () => import('@/assets/tool-landing/remover.jpg'),
+  'hair-changer': () => import('@/assets/tool-landing/hair-changer.jpg'),
+  'cartoon': () => import('@/assets/tool-landing/cartoon.jpg'),
+  'avatar-generator': () => import('@/assets/tool-landing/avatar-generator.jpg'),
+  'product-photo': () => import('@/assets/tool-landing/product-photo.jpg'),
+  'logo-generator': () => import('@/assets/tool-landing/logo-generator.jpg'),
+  'perspective-correction': () => import('@/assets/tool-landing/perspective-correction.jpg'),
+  'storyboard': () => import('@/assets/tool-landing/storyboard.jpg'),
+  'character-swap': () => import('@/assets/tool-landing/character-swap.jpg'),
+};
+
 // ==================== Types ====================
 export interface ToolTemplate {
   id: string;
@@ -30,6 +52,7 @@ interface ToolPageLayoutProps {
   hideHeaderCost?: boolean;
   backTo?: string;
   onFileSelected?: (dataUrl: string) => void;
+  skipLanding?: boolean;
 }
 
 const TOOL_LOADING_TEXTS = [
@@ -245,12 +268,12 @@ export const TemplateGrid = ({
 
 // ==================== Main Layout ====================
 const ToolPageLayout = ({
-  title, cost, costLabel, toolId, children, onGenerate, isGenerating, resultUrl, resultType = "image", autoProcess, hideHeaderCost = true, backTo, onFileSelected,
+  title, cost, costLabel, toolId, children, onGenerate, isGenerating, resultUrl, resultType = "image", autoProcess, hideHeaderCost = true, backTo, onFileSelected, skipLanding = false,
 }: ToolPageLayoutProps) => {
   const navigate = useNavigate();
   const { hasEnoughCredits } = useCredits();
   const [landingImage, setLandingImage] = useState<string | null>(null);
-  const [showLanding, setShowLanding] = useState(true);
+  const [showLanding, setShowLanding] = useState(!skipLanding);
 
   const defaultBack = toolId && (
     ["swap-characters", "talking-photo", "upscale", "video-upscale", "auto-caption", "lip-sync", "video-extender", "video-to-text", "green-screen", "video-colorizer", "video-watermark", "video-bg-replacer", "video-intro", "video-denoise", "thumbnail-generator"].includes(toolId)
@@ -263,7 +286,9 @@ const ToolPageLayout = ({
   useEffect(() => {
     supabase.from("tool_landing_images").select("image_url").eq("tool_id", toolId).maybeSingle()
       .then(({ data }) => {
-        if (data?.image_url) setLandingImage(data.image_url);
+        if (data?.image_url) { setLandingImage(data.image_url); return; }
+        const loader = LOCAL_LANDING[toolId];
+        if (loader) loader().then(m => setLandingImage(m.default));
       });
   }, [toolId]);
 
