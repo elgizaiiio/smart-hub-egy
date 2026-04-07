@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Paperclip, ArrowUp, Loader2, Eye, Download, X, Globe, Image, FileText, Presentation, FileSpreadsheet, ScrollText, PenTool, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
+import { Menu, Eye, Download, X, Presentation, FileSpreadsheet, ScrollText, PenTool, Maximize2, Minimize2, FileText, Play } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,10 +8,10 @@ import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import ReactMarkdown from "react-markdown";
-import AgentBadge from "@/components/AgentBadge";
-import MentionDropdown from "@/components/MentionDropdown";
 import SmartQuestionCard from "@/components/SmartQuestionCard";
-import type { AgentDef } from "@/lib/agentRegistry";
+import FilesInputBar from "@/components/files/FilesInputBar";
+import ResearchFlow from "@/components/files/ResearchFlow";
+import type { ResearchStep } from "@/components/files/ResearchFlow";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -30,6 +30,14 @@ interface SmartQuestion {
   options: string[];
   allowText?: boolean;
 }
+
+interface SavedFile {
+  id: string;
+  title: string;
+  created_at: string;
+  mode: string;
+}
+
 const FILE_SERVICES = [
   { id: "slides", label: "Slides", icon: Presentation, prompt: "Create a professional presentation about" },
   { id: "resume", label: "Resume", icon: PenTool, prompt: "Create a professional resume for" },
@@ -37,79 +45,46 @@ const FILE_SERVICES = [
   { id: "document", label: "Document", icon: ScrollText, prompt: "Write a professional document about" },
 ];
 
-const FILE_PLACEHOLDERS = [
-  "Write a professional business proposal...",
-  "Create a detailed report about...",
-  "Create a structured presentation about...",
-  "Summarize this document for me...",
-];
-
 const FilesPage = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
   const [searchEnabled, setSearchEnabled] = useState(false);
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [activeAgent, setActiveAgent] = useState<string | null>(null);
-  const [mentionOpen, setMentionOpen] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState("");
   const [pendingQuestions, setPendingQuestions] = useState<SmartQuestion[]>([]);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [slideCount, setSlideCount] = useState(0);
+  const [savedFiles, setSavedFiles] = useState<SavedFile[]>([]);
+  const [researchSteps, setResearchSteps] = useState<ResearchStep[]>([]);
+  const [researchOutline, setResearchOutline] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isGenerating]);
+  }, [messages, isGenerating, researchSteps]);
 
-  const inputRef2 = useRef(input);
-  useEffect(() => { inputRef2.current = input; }, [input]);
-
+  // Load saved files
   useEffect(() => {
-    if (inputRef2.current) { setDisplayedPlaceholder(""); return; }
-    const target = FILE_PLACEHOLDERS[placeholderIdx];
-    let i = 0;
-    setDisplayedPlaceholder("");
-    const t = setInterval(() => {
-      if (inputRef2.current) { clearInterval(t); setDisplayedPlaceholder(""); return; }
-      if (i < target.length) { setDisplayedPlaceholder(target.slice(0, i + 1)); i++; }
-      else { clearInterval(t); setTimeout(() => setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length), 2500); }
-    }, 50);
-    return () => clearInterval(t);
-  }, [placeholderIdx]);
-
-  useEffect(() => {
-    if (input) setDisplayedPlaceholder("");
-    else setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length);
-  }, [input]);
-
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "32px";
-    el.style.height = Math.min(el.scrollHeight, 128) + "px";
-  }, [input]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("conversations")
+        .select("id, title, created_at, mode")
+        .eq("user_id", user.id)
+        .eq("mode", "files")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (data) setSavedFiles(data as SavedFile[]);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [menuOpen]);
+    load();
+  }, []);
 
   // Parse smart questions from AI response
   useEffect(() => {
@@ -130,31 +105,22 @@ const FilesPage = () => {
     if (questions.length > 0) setPendingQuestions(questions);
   }, [messages, isGenerating]);
 
-  const handleQuestionAnswer = (answer: string) => {
-    setPendingQuestions([]);
-    setInput(answer);
-    setTimeout(() => handleGenerate(answer), 50);
-  };
-
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>, type: "file" | "image") => {
     const files = e.target.files;
     if (!files) return;
     Array.from(files).forEach(file => {
       if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name} is too large (max 10MB)`); return; }
+      const reader = new FileReader();
       if (type === "image") {
-        const reader = new FileReader();
-        reader.onload = () => { setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]); toast.success(`${file.name} attached`); };
+        reader.onload = () => { setAttachedFiles(prev => [...prev, { name: file.name, type: "image", data: reader.result as string }]); };
         reader.readAsDataURL(file);
       } else {
-        const reader = new FileReader();
-        reader.onload = () => { setAttachedFiles(prev => [...prev, { name: file.name, type: file.type, data: (reader.result as string).slice(0, 10000) }]); toast.success(`${file.name} attached`); };
+        reader.onload = () => { setAttachedFiles(prev => [...prev, { name: file.name, type: file.type, data: (reader.result as string).slice(0, 10000) }]); };
         reader.readAsText(file);
       }
     });
     e.target.value = "";
   };
-
-  const removeAttachment = (index: number) => setAttachedFiles(prev => prev.filter((_, i) => i !== index));
 
   const createOrGetConversation = async (firstMessage: string) => {
     if (conversationId) return conversationId;
@@ -187,7 +153,76 @@ const FilesPage = () => {
     await supabase.from("messages").insert({ conversation_id: convId, role, content, images });
   };
 
-  const handleGenerate = async (overrideInput?: string) => {
+  // Simulate research steps for visual feedback
+  const runResearchFlow = async (topic: string): Promise<string> => {
+    const steps: ResearchStep[] = [
+      { id: "search1", label: `Searching for "${topic.slice(0, 40)}..."`, status: "pending" },
+      { id: "search2", label: "Searching for supporting data...", status: "pending" },
+      { id: "search3", label: "Deep research on key aspects...", status: "pending" },
+      { id: "outline", label: "Organizing content structure...", status: "pending" },
+      { id: "review", label: "Reviewing content quality...", status: "pending" },
+      { id: "generate", label: "Generating final output...", status: "pending" },
+    ];
+
+    const updateStep = (id: string, status: "active" | "done") => {
+      steps.forEach(s => { if (s.id === id) s.status = status; });
+      setResearchSteps([...steps]);
+    };
+
+    // Step 1-3: Research
+    for (let i = 0; i < 3; i++) {
+      updateStep(steps[i].id, "active");
+      await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
+      updateStep(steps[i].id, "done");
+    }
+
+    // Step 4: Outline - use AI to generate outline
+    updateStep("outline", "active");
+    try {
+      const outlineResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: `Generate a brief outline (5-8 bullet points) for a ${activeAgent || "document"} about: "${topic}". Return ONLY the bullet points, one per line, starting with "- ". No other text.` }],
+          model: "google/gemini-3-flash-preview"
+        }),
+      });
+      if (outlineResp.ok && outlineResp.body) {
+        const reader = outlineResp.body.getReader();
+        const decoder = new TextDecoder();
+        let outlineText = "";
+        let buf = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          let ni: number;
+          while ((ni = buf.indexOf("\n")) !== -1) {
+            let ln = buf.slice(0, ni); buf = buf.slice(ni + 1);
+            if (ln.endsWith("\r")) ln = ln.slice(0, -1);
+            if (!ln.startsWith("data: ")) continue;
+            const js = ln.slice(6).trim();
+            if (js === "[DONE]") break;
+            try { const p = JSON.parse(js); const c = p.choices?.[0]?.delta?.content; if (c) outlineText += c; } catch {}
+          }
+        }
+        const items = outlineText.split("\n").filter(l => l.trim().startsWith("-")).map(l => l.trim().replace(/^-\s*/, ""));
+        if (items.length > 0) setResearchOutline(items);
+      }
+    } catch {}
+    updateStep("outline", "done");
+
+    // Step 5: Review
+    updateStep("review", "active");
+    await new Promise(r => setTimeout(r, 1000));
+    updateStep("review", "done");
+
+    // Step 6: Generate
+    updateStep("generate", "active");
+    return "ready";
+  };
+
+  const handleGenerate = useCallback(async (overrideInput?: string) => {
     const userInput = overrideInput || input;
     if (!userInput.trim() && attachedFiles.length === 0) return;
     const userContent = userInput || `[Attached ${attachedFiles.length} file(s)]`;
@@ -198,28 +233,39 @@ const FilesPage = () => {
     setAttachedFiles([]);
     setIsGenerating(true);
     setPendingQuestions([]);
+    setResearchSteps([]);
+    setResearchOutline(null);
 
     const convId = await createOrGetConversation(userContent);
     if (convId) await saveMessage(convId, "user", userContent);
 
     try {
+      // Run research flow for document/slides generation
+      const isDocGen = activeAgent && ["slides", "resume", "spreadsheet", "document"].includes(activeAgent);
+      if (isDocGen && !files.length) {
+        await runResearchFlow(userInput);
+      }
+
       const AGENT_PROMPTS: Record<string, string> = {
-        slides: `Generate a complete HTML presentation with these requirements:
-- Create a DARK themed slideshow with at least 10 slides
-- Each slide must be a full-viewport section (100vh) with smooth scroll-snap
-- Include navigation buttons (prev/next) and slide counter
-- Use professional typography, gradients, and subtle animations
-- Include a title slide, content slides with bullet points, data visualization slides, and a closing slide
-- Add CSS transitions between slides
-- Make it responsive
-- Use a color scheme: dark background (#0a0a0f), primary accent (violet/purple), white text
-- Include JavaScript for keyboard navigation (arrow keys)
-Output ONLY the complete HTML code.`,
-        resume: "Generate a professional, well-structured HTML resume/CV. Include sections for contact info, summary, experience, education, skills. Use modern, clean styling with good typography. Dark theme with accent colors. Output ONLY the HTML code.",
-        spreadsheet: "Generate a complete HTML table/spreadsheet with proper styling, alternating row colors, sortable headers, and professional formatting. Dark theme. Include sample data relevant to the request. Output ONLY the HTML code.",
-        document: "Generate a complete, well-formatted, comprehensive and detailed HTML document with proper headings, paragraphs, and professional styling. Dark theme. Output ONLY the HTML code.",
+        slides: `You are an expert presentation designer. The user wants a presentation. First, if the request is vague, respond with smart questions in this JSON format:
+\`\`\`json
+{"type":"questions","questions":[{"title":"Question?","options":["Option 1","Option 2"],"allowText":true}]}
+\`\`\`
+If the request is clear enough, generate a complete HTML presentation:
+- DARK themed slideshow with 10+ slides
+- Full-viewport sections (100vh) with scroll-snap
+- Navigation buttons and slide counter
+- Professional typography, gradients, animations
+- Color: dark background (#0a0a0f), violet/purple accents, white text
+- JavaScript for keyboard navigation
+- Include comprehensive, well-researched content
+Output ONLY the complete HTML code with no explanations.`,
+        resume: "Generate a professional HTML resume/CV with contact info, summary, experience, education, skills. Modern dark theme with accents. Output ONLY HTML.",
+        spreadsheet: "Generate a complete HTML table/spreadsheet with styling, alternating rows, sortable headers. Dark theme. Output ONLY HTML.",
+        document: "Generate a comprehensive HTML document with headings, paragraphs, professional styling. Dark theme. Include well-researched content. Output ONLY HTML.",
       };
-      const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted, comprehensive and detailed HTML document. Include proper styling with CSS, dark theme, make it look professional. Output ONLY the HTML code, no explanations.";
+
+      const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted HTML document. Dark theme, professional. Output ONLY HTML.";
       let prompt = `${agentPrompt}\n\nUser request: ${userInput}`;
       const fileAttachments = files.filter(f => f.type !== "image");
       if (fileAttachments.length > 0) {
@@ -238,14 +284,18 @@ Output ONLY the complete HTML code.`,
         userMessage = { role: "user", content: prompt };
       }
 
-      const allMessages = [...historyMessages, userMessage];
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ messages: allMessages, model: "claude-haiku-4-5", mode: "files", searchEnabled }),
+        body: JSON.stringify({ messages: [...historyMessages, userMessage], model: "claude-haiku-4-5", mode: "files", searchEnabled }),
       });
 
-      if (!resp.ok || !resp.body) { setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]); setIsGenerating(false); return; }
+      if (!resp.ok || !resp.body) {
+        setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]);
+        setIsGenerating(false);
+        setResearchSteps([]);
+        return;
+      }
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -268,58 +318,73 @@ Output ONLY the complete HTML code.`,
         }
       }
 
+      // Check if response contains questions
+      const hasQuestions = content.includes('"type":"questions"') || content.includes('"type": "questions"');
+      if (hasQuestions) {
+        setMessages(prev => [...prev, { role: "assistant", content }]);
+        if (convId) await saveMessage(convId, "assistant", content);
+        setIsGenerating(false);
+        setResearchSteps([]);
+        return;
+      }
+
       let html = content;
       const htmlMatch = content.match(/```html\n([\s\S]*?)```/);
       if (htmlMatch) html = htmlMatch[1];
 
       // Get natural AI description
-      const descResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML ${activeAgent || "document"} for them. Write a natural, contextual description of what was created and suggest 2-3 specific improvements. Be conversational and specific to the content. 2-4 sentences. No emoji. Respond in the user's language.` }],
-          model: "claude-haiku-4-5"
-        }),
-      });
-
       let description = "Your document is ready. Click Preview to view it.";
-      if (descResp.ok && descResp.body) {
-        const descReader = descResp.body.getReader();
-        let descContent = "";
-        let descBuffer = "";
-        while (true) {
-          const { done, value } = await descReader.read();
-          if (done) break;
-          descBuffer += decoder.decode(value, { stream: true });
-          let ni: number;
-          while ((ni = descBuffer.indexOf("\n")) !== -1) {
-            let ln = descBuffer.slice(0, ni);
-            descBuffer = descBuffer.slice(ni + 1);
-            if (ln.endsWith("\r")) ln = ln.slice(0, -1);
-            if (!ln.startsWith("data: ")) continue;
-            const js = ln.slice(6).trim();
-            if (js === "[DONE]") break;
-            try { const p = JSON.parse(js); const c = p.choices?.[0]?.delta?.content; if (c) descContent += c; } catch {}
+      try {
+        const descResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: `The user asked: "${userInput}". I created an HTML ${activeAgent || "document"} for them. Write a brief, natural description of what was created. 1-2 sentences. No emoji. Respond in the user's language.` }],
+            model: "google/gemini-3-flash-preview"
+          }),
+        });
+        if (descResp.ok && descResp.body) {
+          const descReader = descResp.body.getReader();
+          let descContent = "";
+          let descBuffer = "";
+          while (true) {
+            const { done, value } = await descReader.read();
+            if (done) break;
+            descBuffer += decoder.decode(value, { stream: true });
+            let ni: number;
+            while ((ni = descBuffer.indexOf("\n")) !== -1) {
+              let ln = descBuffer.slice(0, ni); descBuffer = descBuffer.slice(ni + 1);
+              if (ln.endsWith("\r")) ln = ln.slice(0, -1);
+              if (!ln.startsWith("data: ")) continue;
+              const js = ln.slice(6).trim();
+              if (js === "[DONE]") break;
+              try { const p = JSON.parse(js); const c = p.choices?.[0]?.delta?.content; if (c) descContent += c; } catch {}
+            }
           }
+          if (descContent.trim()) description = descContent.trim();
         }
-        if (descContent.trim()) description = descContent.trim();
-      }
+      } catch {}
 
       setMessages(prev => [...prev, { role: "assistant", content: description, htmlContent: html }]);
       if (convId) await saveMessage(convId, "assistant", description, html);
+
+      // Refresh saved files list
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from("conversations").select("id, title, created_at, mode").eq("user_id", user.id).eq("mode", "files").order("created_at", { ascending: false }).limit(10);
+        if (data) setSavedFiles(data as SavedFile[]);
+      }
     } catch {
-      const failMsg = "Generation failed. Please try again.";
-      setMessages(prev => [...prev, { role: "assistant", content: failMsg }]);
-      if (convId) await saveMessage(convId, "assistant", failMsg);
+      setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]);
     }
     setIsGenerating(false);
-  };
+    setResearchSteps([]);
+  }, [input, attachedFiles, messages, activeAgent, searchEnabled, conversationId]);
 
   const handleDownloadHtml = (html: string) => {
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `${activeAgent || "document"}.html`;
+    const a = document.createElement("a"); a.href = url; a.download = `${activeAgent || "document"}.html`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("File downloaded");
@@ -333,109 +398,32 @@ Output ONLY the complete HTML code.`,
     setTimeout(() => printWindow.print(), 500);
   };
 
+  const handleAttach = (type: "file" | "image") => {
+    if (type === "file") fileInputRef.current?.click();
+    else imageInputRef.current?.click();
+  };
+
+  const newChat = () => {
+    setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]);
+    setConversationId(null); setActiveAgent(null); setPendingQuestions([]);
+    setResearchSteps([]); setResearchOutline(null);
+  };
+
   const hasMessages = messages.length > 0;
 
-  // Input bar component (reused in empty + chat states)
-  const InputBar = ({ compact }: { compact?: boolean }) => (
-    <div className={compact ? "max-w-2xl mx-auto w-full" : "max-w-xl mx-auto w-full"}>
-      {attachedFiles.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
-          {attachedFiles.map((f, i) => (
-            <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs text-foreground">
-              {f.type === "image" ? <Image className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
-              <span className="truncate max-w-[100px]">{f.name}</span>
-              <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="relative">
-        <AnimatePresence>
-          {mentionOpen && (
-            <MentionDropdown
-              query={mentionQuery}
-              onSelect={(agent: AgentDef) => {
-                const cursorPos = textareaRef.current?.selectionStart || input.length;
-                const before = input.slice(0, cursorPos).replace(/@\w*$/, "");
-                const after = input.slice(cursorPos);
-                setInput(before + after);
-                setActiveAgent(agent.id);
-                setMentionOpen(false);
-                setMentionQuery("");
-              }}
-              onClose={() => setMentionOpen(false)}
-              visible={mentionOpen}
-              categories={["files"]}
-            />
-          )}
-        </AnimatePresence>
-        <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 backdrop-blur-sm px-4 py-3">
-          <div className="relative" ref={menuRef}>
-            <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
-            <AnimatePresence>
-              {menuOpen && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-black/80 backdrop-blur-2xl border border-border/30 rounded-xl shadow-lg p-1">
-                  <button onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5"><Paperclip className="w-4 h-4" /> Attach file</button>
-                  <button onClick={() => { setMenuOpen(false); imageInputRef.current?.click(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5"><Image className="w-4 h-4" /> Attach image</button>
-                  <button onClick={() => { setMenuOpen(false); setSearchEnabled(!searchEnabled); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5">
-                    <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {activeAgent && (
-                <AgentBadge agentId={activeAgent} onRemove={() => setActiveAgent(null)} size="sm" />
-              )}
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={e => {
-                  const val = e.target.value;
-                  setInput(val);
-                  const cursorPos = e.target.selectionStart;
-                  const before = val.slice(0, cursorPos);
-                  const atMatch = before.match(/@(\w*)$/);
-                  if (atMatch) { setMentionOpen(true); setMentionQuery(atMatch[1]); }
-                  else { setMentionOpen(false); setMentionQuery(""); }
-                }}
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!mentionOpen) handleGenerate(); } }}
-                placeholder={displayedPlaceholder || "Describe what you need..."}
-                rows={compact ? 1 : 2}
-                className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1 max-h-32"
-                style={{ minHeight: compact ? "32px" : "48px" }}
-              />
-            </div>
-          </div>
-          <button
-            onClick={() => handleGenerate()}
-            disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
-            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
-          >
-            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <AppLayout onSelectConversation={loadOldConversation} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); setActiveAgent(null); setPendingQuestions([]); }} activeConversationId={conversationId}>
+    <AppLayout onSelectConversation={loadOldConversation} onNewChat={newChat} activeConversationId={conversationId}>
       <div className="h-full flex flex-col bg-background overflow-x-hidden">
-        <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => { setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]); setConversationId(null); setActiveAgent(null); setPendingQuestions([]); }} onSelectConversation={loadOldConversation} activeConversationId={conversationId} currentMode="files" />
+        <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={newChat} onSelectConversation={loadOldConversation} activeConversationId={conversationId} currentMode="files" />
 
-        {/* Enhanced Preview Modal */}
+        {/* Preview Modal */}
         <AnimatePresence>
           {previewHtml && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-background flex flex-col">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/30 bg-secondary/30 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
                   <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><X className="w-4 h-4" /></button>
-                  <p className="text-sm font-medium text-foreground">
-                    {activeAgent === "slides" ? "Presentation" : "Document"} Preview
-                  </p>
+                  <p className="text-sm font-medium text-foreground">{activeAgent === "slides" ? "Presentation" : "Document"} Preview</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => setPreviewFullscreen(!previewFullscreen)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
@@ -446,7 +434,7 @@ Output ONLY the complete HTML code.`,
                 </div>
               </div>
               <div className={`flex-1 ${previewFullscreen ? "" : "p-4 md:p-8"}`}>
-                <div className={`${previewFullscreen ? "w-full h-full" : "max-w-5xl mx-auto h-full rounded-xl overflow-hidden border border-border/20 shadow-2xl"}`}>
+                <div className={previewFullscreen ? "w-full h-full" : "max-w-5xl mx-auto h-full rounded-xl overflow-hidden border border-border/20 shadow-2xl"}>
                   <iframe srcDoc={previewHtml} className="w-full h-full bg-white" sandbox="allow-scripts" />
                 </div>
               </div>
@@ -469,11 +457,23 @@ Output ONLY the complete HTML code.`,
                 <h1 className="font-display text-3xl md:text-5xl font-black uppercase leading-[1] tracking-tight bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">DOCUMENTS</h1>
                 <p className="text-sm text-muted-foreground mt-3 mb-8">Generate documents, presentations, spreadsheets and more</p>
 
-                <div className="mb-8">
-                  <InputBar />
+                <div className="mb-6">
+                  <FilesInputBar
+                    input={input}
+                    onInputChange={setInput}
+                    onSubmit={() => handleGenerate()}
+                    isGenerating={isGenerating}
+                    activeAgent={activeAgent}
+                    onAgentChange={setActiveAgent}
+                    attachedFiles={attachedFiles}
+                    onAttach={handleAttach}
+                    onRemoveAttachment={(i) => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))}
+                    searchEnabled={searchEnabled}
+                    onToggleSearch={() => setSearchEnabled(!searchEnabled)}
+                  />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-center gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
                   {FILE_SERVICES.map((svc, i) => (
                     <motion.button
                       key={svc.id}
@@ -491,6 +491,45 @@ Output ONLY the complete HTML code.`,
                       <span className="font-medium">{svc.label}</span>
                     </motion.button>
                   ))}
+                </div>
+
+                {/* Saved files gallery */}
+                <div className="mt-4 space-y-3 text-left max-w-xl mx-auto">
+                  {savedFiles.length > 0 ? (
+                    <>
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Recent Files</p>
+                      {savedFiles.slice(0, 5).map(f => (
+                        <motion.button
+                          key={f.id}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => loadOldConversation(f.id)}
+                          className="w-full flex items-center gap-3 p-3 rounded-2xl bg-secondary/40 border border-border/30 text-left hover:bg-secondary/60 transition-colors"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</p>
+                          </div>
+                          <Play className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                        </motion.button>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Example</p>
+                      <div className="rounded-2xl overflow-hidden border border-border/30 bg-secondary/30">
+                        <div className="w-full h-32 bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-pink-500/20 flex items-center justify-center">
+                          <Presentation className="w-12 h-12 text-primary/40" />
+                        </div>
+                        <div className="p-4">
+                          <p className="text-sm font-medium text-foreground">Egypt — Where Ancient Wonders Meet Modern Vitality</p>
+                          <p className="text-xs text-muted-foreground mt-1">Sample Presentation · Megsy AI</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </motion.div>
             </div>
@@ -525,16 +564,33 @@ Output ONLY the complete HTML code.`,
                   onAnswer={(answer) => { setPendingQuestions([]); setInput(answer); setTimeout(() => handleGenerate(answer), 50); }}
                 />
               )}
-              {isGenerating && <ThinkingLoader />}
+              {/* Research Flow */}
+              {researchSteps.length > 0 && (
+                <ResearchFlow steps={researchSteps} outline={researchOutline} />
+              )}
+              {isGenerating && researchSteps.length === 0 && <ThinkingLoader />}
               <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
-        {/* Bottom Input - only when in chat mode */}
+        {/* Bottom Input in chat mode */}
         {hasMessages && (
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
-            <InputBar compact />
+            <FilesInputBar
+              compact
+              input={input}
+              onInputChange={setInput}
+              onSubmit={() => handleGenerate()}
+              isGenerating={isGenerating}
+              activeAgent={activeAgent}
+              onAgentChange={setActiveAgent}
+              attachedFiles={attachedFiles}
+              onAttach={handleAttach}
+              onRemoveAttachment={(i) => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))}
+              searchEnabled={searchEnabled}
+              onToggleSearch={() => setSearchEnabled(!searchEnabled)}
+            />
           </div>
         )}
 

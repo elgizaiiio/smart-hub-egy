@@ -22,7 +22,8 @@ const LogoGeneratorPage = () => {
     if (!brandName.trim()) { toast.error("Enter your brand name"); return; }
     setIsGenerating(true);
     try {
-      const prompt = `Design a ${style.id} style professional logo for a brand called "${brandName}". ${style.id === "minimal" ? "Use clean lines, minimal elements, modern sans-serif typography" : style.id === "bold" ? "Use strong typography, bold shapes, high contrast colors" : style.id === "vintage" ? "Use retro typography, worn textures, classic color palette" : style.id === "tech" ? "Use geometric shapes, gradient colors, modern futuristic font" : style.id === "playful" ? "Use rounded shapes, vibrant colors, fun typography" : "Use gold accents, serif font, premium sophisticated aesthetic"}. White background, vector-style, scalable.`;
+      const styleDesc = style.id === "minimal" ? "Clean lines, minimal elements, modern sans-serif typography" : style.id === "bold" ? "Strong typography, bold shapes, high contrast colors" : style.id === "vintage" ? "Retro typography, worn textures, classic color palette" : style.id === "tech" ? "Geometric shapes, gradient colors, modern futuristic font" : style.id === "playful" ? "Rounded shapes, vibrant colors, fun typography" : "Gold accents, serif font, premium sophisticated aesthetic";
+      const prompt = `Design a professional logo for a brand called "${brandName}". Style direction: ${styleDesc}. White background, vector-style, scalable. Do NOT write the style name or any label text below or around the logo. The logo should contain ONLY the brand name "${brandName}" stylized as a logo.`;
       const { data, error } = await supabase.functions.invoke("image-tools", {
         body: { tool: "logo-generator", prompt },
       });
