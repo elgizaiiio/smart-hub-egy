@@ -138,8 +138,8 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = newVal.slice(0, cursorPos);
 
-    // Check for # model picker (only when agent is selected and has models)
-    if (activeAgent && activeAgentModels.length > 0) {
+    // Check for # model picker (when agent with models is selected)
+    if ((activeAgent || lastSelectedAgent) && activeAgentModels.length > 0) {
       const hashMatch = textBeforeCursor.match(/#(\w*)$/);
       if (hashMatch) {
         setModelPickerOpen(true);
