@@ -53,6 +53,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const [mentionQuery, setMentionQuery] = useState("");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelQuery, setModelQuery] = useState("");
+  const [lastSelectedAgent, setLastSelectedAgent] = useState<AgentDef | null>(null);
 
   useEffect(() => {
     valueRef.current = value;
@@ -62,12 +63,13 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const safeQuestionIndex = hasQuestions ? Math.min(questionIndex, pendingQuestions!.length - 1) : 0;
   const currentQuestion = hasQuestions ? pendingQuestions![safeQuestionIndex] : null;
 
-  // Get models for active agent
+  // Get models for active agent OR last selected agent
   const activeAgentModels = useMemo(() => {
+    if (lastSelectedAgent?.models?.length) return lastSelectedAgent.models;
     if (!activeAgent) return [];
     const agent = getAgentById(activeAgent);
     return agent?.models || [];
-  }, [activeAgent]);
+  }, [activeAgent, lastSelectedAgent]);
 
   // Placeholder typing animation
   useEffect(() => {
