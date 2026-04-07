@@ -656,7 +656,7 @@ async function handleToolCalls(
         const searchQuery = String(toolArgs.query || "").trim();
         if (!searchQuery) continue;
 
-        pushStatus(`يبحث عن منتجات: ${searchQuery}`);
+        pushStatus(`Searching for products: ${searchQuery}`);
 
         const shopResp = await fetchWithTimeout("https://google.serper.dev/shopping", {
           method: "POST",
@@ -684,7 +684,7 @@ async function handleToolCalls(
               ).join("\n\n");
             allSearchResults.push(context);
             
-            pushStatus(`تم العثور على ${products.length} منتج`);
+            pushStatus(`Found ${products.length} products`);
 
             // Send product images
             const productImages = products.filter((p: any) => p.image).map((p: any) => p.image);
@@ -701,7 +701,7 @@ async function handleToolCalls(
         if (!searchQuery) continue;
 
         const includeImages = shouldIncludeImages(searchQuery, Boolean(toolArgs.include_images));
-        pushStatus(`يبحث في ${searchQuery}`);
+        pushStatus(`Searching: ${searchQuery}`);
 
         const searchRequest = fetchWithTimeout("https://google.serper.dev/search", {
           method: "POST",
@@ -723,7 +723,7 @@ async function handleToolCalls(
         ]);
 
         if (searchResult.status !== "fulfilled" || !searchResult.value.ok) {
-          pushStatus("تعذر البحث، يكمل بالمعلومات المتاحة");
+          pushStatus("Search failed, continuing with available info");
           continue;
         }
 
@@ -752,7 +752,7 @@ async function handleToolCalls(
         }
 
         const organicCount = searchData.organic?.length || 0;
-        pushStatus(organicCount > 0 ? `تم العثور على ${organicCount} نتائج` : "تم البحث");
+        pushStatus(organicCount > 0 ? `Found ${organicCount} results` : "Search completed");
         allSearchResults.push(context);
         continue;
       }
@@ -880,7 +880,7 @@ async function handleToolCalls(
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\n`));
     } catch (toolErr) {
       console.error("Tool execution error:", toolErr);
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nحدث خطأ أثناء تنفيذ الأداة. سأكمل بما توفر لدي." } }] })}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nAn error occurred while executing the tool. Continuing with available information." } }] })}\n\n`));
     }
   }
 
@@ -895,7 +895,7 @@ async function handleToolCalls(
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ products: allProducts })}\n\n`));
     }
 
-    pushStatus(isDeepResearch ? "يكتب التقرير الآن" : (isShopping ? "يحلل المنتجات ويكتب التوصيات" : "يكتب الرد الآن"));
+    pushStatus(isDeepResearch ? "Writing the report now" : (isShopping ? "Analyzing products and writing recommendations" : "Writing response"));
     const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
 
     const searchMessages = [
@@ -960,7 +960,7 @@ async function handleToolCalls(
       }
     } catch (e) {
       console.error("Synthesis error:", e);
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nتعذر تجميع النتائج:\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "\n\nFailed to synthesize results:\n\n" + combinedContext.slice(0, 2000) } }] })}\n\n`));
     }
   }
 }
