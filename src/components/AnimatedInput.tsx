@@ -189,12 +189,13 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   };
 
   const handleModelSelect = (model: AgentModel) => {
-    // Remove the #query from input
+    // Replace #query with #model-label and keep it visible
     const cursorPos = textareaRef.current?.selectionStart || value.length;
     const textBeforeCursor = value.slice(0, cursorPos);
     const cleanedBefore = textBeforeCursor.replace(/#\w*$/, "");
     const textAfter = value.slice(cursorPos);
-    onChange(cleanedBefore + textAfter);
+    const modelTag = `#${model.label} `;
+    onChange(cleanedBefore + modelTag + textAfter);
     setModelPickerOpen(false);
     setModelQuery("");
     onModelSelect?.(model);
@@ -331,17 +332,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              {activeAgent && (
-                <span className="text-xs text-muted-foreground select-none shrink-0 flex items-center gap-1">
-                  @{activeAgent}
-                  {selectedModel && (
-                    <span className="text-[10px] text-muted-foreground/70">#{selectedModel.id}</span>
-                  )}
-                  <button onClick={() => { onAgentRemove?.(); onModelRemove?.(); }} className="hover:text-foreground transition-colors ml-0.5">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
+              {/* Agent and model shown inline in text, no separate badges */}
               <textarea
                 ref={textareaRef}
                 value={value}
