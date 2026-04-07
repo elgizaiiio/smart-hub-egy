@@ -307,14 +307,14 @@ const FilesPage = () => {
         <div className="flex-1 overflow-y-auto min-h-0 pb-4 md:pb-8">
           {!hasMessages ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-xl w-full">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-2xl w-full">
                 {/* Hero text */}
-                <h1 className="font-display text-3xl md:text-4xl font-black uppercase leading-[1.1] tracking-tight text-foreground">CREATE YOUR</h1>
-                <h1 className="font-display text-3xl md:text-4xl font-black uppercase leading-[1] tracking-tight bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">DOCUMENTS</h1>
-                <p className="text-sm text-muted-foreground mt-3 mb-6">Generate documents, presentations, spreadsheets and more</p>
+                <h1 className="font-display text-3xl md:text-5xl font-black uppercase leading-[1.1] tracking-tight text-foreground">CREATE YOUR</h1>
+                <h1 className="font-display text-3xl md:text-5xl font-black uppercase leading-[1] tracking-tight bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">DOCUMENTS</h1>
+                <p className="text-sm text-muted-foreground mt-3 mb-8">Generate documents, presentations, spreadsheets and more</p>
 
-                {/* Centered Input */}
-                <div className="max-w-lg mx-auto mb-8">
+                {/* Centered Input - bigger */}
+                <div className="max-w-xl mx-auto mb-10">
                   {attachedFiles.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
                       {attachedFiles.map((f, i) => (
@@ -326,9 +326,9 @@ const FilesPage = () => {
                       ))}
                     </div>
                   )}
-                  <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-3 py-2">
+                  <div className="flex items-end gap-2 rounded-2xl border border-border/50 bg-secondary/80 px-4 py-3">
                     <div className="relative" ref={menuRef}>
-                      <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
+                      <button onClick={() => setMenuOpen(!menuOpen)} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><Plus className="w-5 h-5" /></button>
                       <AnimatePresence>
                         {menuOpen && (
                           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-card border border-border rounded-xl shadow-lg p-1">
@@ -348,23 +348,23 @@ const FilesPage = () => {
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
                         placeholder={displayedPlaceholder || "Describe what you need..."}
-                        rows={1}
-                        className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1.5 max-h-32"
-                        style={{ minHeight: "32px" }}
+                        rows={2}
+                        className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-1 max-h-32"
+                        style={{ minHeight: "48px" }}
                       />
                     </div>
                     <button
                       onClick={handleGenerate}
                       disabled={(!input.trim() && attachedFiles.length === 0) || isGenerating}
-                      className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
+                      className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-20"
                     >
                       {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
-                {/* Service cards */}
-                <div className="grid grid-cols-4 gap-3">
+                {/* Service cards - clean horizontal pills */}
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   {FILE_SERVICES.map((svc, i) => (
                     <motion.button
                       key={svc.id}
@@ -372,12 +372,10 @@ const FilesPage = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 + i * 0.08 }}
                       onClick={() => setInput(svc.prompt + " ")}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-2xl bg-gradient-to-br ${svc.gradient} border border-border/30 hover:border-border/60 transition-all`}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/60 border border-border/30 hover:border-primary/30 hover:bg-secondary transition-all text-sm"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                        <svc.icon className="w-5 h-5 text-foreground/80" />
-                      </div>
-                      <span className="text-[11px] font-medium text-foreground/80">{svc.label}</span>
+                      <svc.icon className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground/80">{svc.label}</span>
                     </motion.button>
                   ))}
                 </div>
