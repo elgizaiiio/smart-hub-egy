@@ -48,7 +48,8 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
     return THEME_PALETTES[Math.floor(Math.random() * THEME_PALETTES.length)];
   }, [open]);
 
-  const showRecent = ["chat", "files"].includes(currentMode);
+  const showRecent = currentMode === "chat" || currentMode === "files";
+  const hideStudioAndHistory = ["images", "videos", "code"].includes(currentMode);
 
   useEffect(() => {
     if (open) {

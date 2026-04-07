@@ -50,7 +50,7 @@ const HeadshotPage = () => {
     try {
       const genderPrefix = gender === "male" ? "A handsome man" : "A beautiful woman";
       const fullPrompt = `${genderPrefix}, ${selectedTemplate.prompt}. Keep the exact facial features from the uploaded photo.`;
-      const { data, error } = await supabase.functions.invoke("generate-image", { body: { prompt: fullPrompt, image: uploadedImage, model: "nano-banana", aspectRatio: "2:3" } });
+      const { data, error } = await supabase.functions.invoke("generate-image", { body: { prompt: fullPrompt, image_url: uploadedImage, model: "nano-banana", image_size: { width: 768, height: 1152 } } });
       if (error) throw error;
       const url = data?.images?.[0] || data?.image_urls?.[0] || data?.image_url || data?.url;
       if (!url) throw new Error("No image generated");
@@ -114,9 +114,10 @@ const HeadshotPage = () => {
           {step === "generating" && (
             <motion.div key="gen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
               <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }} className="relative">
-                <Sparkles className="w-12 h-12 text-yellow-400" />
+                <Sparkles className="w-12 h-12 text-blue-400" />
+                <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-blue-400/30 rounded-full" />
               </motion.div>
-              <p className="text-sm text-muted-foreground animate-pulse">Generating your headshot...</p>
+              <p className="text-sm"><span className="text-foreground">Creating </span><span className="text-blue-400 font-medium">your headshot</span></p>
             </motion.div>
           )}
 

@@ -32,20 +32,39 @@ interface ToolPageLayoutProps {
   onFileSelected?: (dataUrl: string) => void;
 }
 
-// ==================== Star Loading Animation ====================
-const StarLoader = () => (
-  <div className="flex flex-col items-center justify-center py-16 gap-4">
-    <motion.div
-      animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-      transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }}
-      className="relative"
-    >
-      <Sparkles className="w-12 h-12 text-yellow-400" />
-      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-yellow-400/30 rounded-full" />
-    </motion.div>
-    <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
-  </div>
-);
+const TOOL_LOADING_TEXTS = [
+  { text: "Creating", accent: "magic" },
+  { text: "Processing", accent: "your image" },
+  { text: "Refining", accent: "details" },
+  { text: "Almost", accent: "ready" },
+];
+
+const StarLoader = () => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % TOOL_LOADING_TEXTS.length), 2400);
+    return () => clearInterval(t);
+  }, []);
+  const current = TOOL_LOADING_TEXTS[idx];
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-4">
+      <motion.div
+        animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+        transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }}
+        className="relative"
+      >
+        <Sparkles className="w-12 h-12 text-blue-400" />
+        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 blur-xl bg-blue-400/30 rounded-full" />
+      </motion.div>
+      <AnimatePresence mode="wait">
+        <motion.p key={idx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-sm">
+          <span className="text-foreground">{current.text} </span>
+          <span className="text-blue-400 font-medium">{current.accent}</span>
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  );
+};
 
 // ==================== Landing Page ====================
 const ToolLanding = ({
