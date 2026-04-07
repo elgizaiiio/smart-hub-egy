@@ -224,12 +224,8 @@ const MusicGeneratorPage = () => {
                   whileTap={{ scale: 0.98 }}
                   className="rounded-2xl overflow-hidden border border-white/10 bg-white/5"
                 >
-                  <div className="w-full h-48 overflow-hidden">
-                    <img
-                      src="/images/sample-music-cover.png"
-                      alt="Sample track"
-                      className="w-full h-full object-cover object-center"
-                    />
+                  <div className="w-full h-48 overflow-hidden bg-gradient-to-br from-violet-600/30 via-fuchsia-500/20 to-pink-500/30 flex items-center justify-center">
+                    <Music className="w-16 h-16 text-white/20" />
                   </div>
                   <div className="p-4 flex items-center gap-3">
                     <button

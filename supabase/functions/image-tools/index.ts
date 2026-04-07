@@ -250,11 +250,17 @@ serve(async (req) => {
     let resultUrl: string;
 
     if (config.provider === "fal") {
-      // fal.ai tools (relight via IC-Light)
+      // fal.ai tools (relight via IC-Light V2)
       const params: Record<string, any> = {};
       if (tool === 'relight') {
         params.image_url = image;
-        params.prompt = prompt || "Professional studio lighting";
+        params.prompt = prompt || "Professional studio lighting, dramatic";
+        params.num_inference_steps = 28;
+        params.guidance_scale = 5;
+        if (direction) {
+          const dirMap: Record<string, string> = { left: "Left", right: "Right", top: "Top", bottom: "Bottom", center: "None" };
+          params.initial_latent = dirMap[direction] || "None";
+        }
       }
       resultUrl = await callFal(config.falModel!, params);
     } else if (config.provider === "wavespeed") {
