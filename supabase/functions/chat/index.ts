@@ -873,6 +873,82 @@ async function handleToolCalls(
         continue;
       }
 
+      // Media generation tools
+      if (toolName === "GENERATE_IMAGE") {
+        const prompt = String(toolArgs.prompt || "").trim();
+        if (!prompt) continue;
+        const imgModel = String(toolArgs.model || "nano-banana");
+        const count = Math.min(Number(toolArgs.count) || 1, 4);
+        pushStatus(`Generating ${count} image${count > 1 ? "s" : ""} with ${imgModel}...`);
+        try {
+          const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+          const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+          const imgResp = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/generate-image`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "apikey": SUPABASE_ANON_KEY },
+            body: JSON.stringify({ prompt, model: imgModel, count }),
+          }, 60000);
+          if (imgResp.ok) {
+            const imgData = await imgResp.json();
+            const urls = imgData.images || imgData.url ? [imgData.url] : [];
+            if (urls.length > 0) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ images: urls })}\n\n`));
+              pushStatus(`Image${urls.length > 1 ? "s" : ""} generated successfully`);
+              allSearchResults.push(`Generated ${urls.length} image(s) for: "${prompt}"`);
+            }
+          } else {
+            pushStatus("Image generation failed");
+          }
+        } catch { pushStatus("Image generation error"); }
+        continue;
+      }
+
+      if (toolName === "GENERATE_VIDEO") {
+        const prompt = String(toolArgs.prompt || "").trim();
+        if (!prompt) continue;
+        pushStatus(`Generating video...`);
+        try {
+          const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+          const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+          const vidResp = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/generate-video`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "apikey": SUPABASE_ANON_KEY },
+            body: JSON.stringify({ prompt, model: String(toolArgs.model || "wan-x") }),
+          }, 120000);
+          if (vidResp.ok) {
+            const vidData = await vidResp.json();
+            pushStatus("Video generation started");
+            allSearchResults.push(`Video generation initiated for: "${prompt}". ${vidData.taskId ? `Task ID: ${vidData.taskId}` : JSON.stringify(vidData)}`);
+          } else {
+            pushStatus("Video generation failed");
+          }
+        } catch { pushStatus("Video generation error"); }
+        continue;
+      }
+
+      if (toolName === "GENERATE_VOICE") {
+        const text = String(toolArgs.text || "").trim();
+        if (!text) continue;
+        pushStatus(`Generating speech...`);
+        try {
+          const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+          const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+          const voiceResp = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/generate-voice`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "apikey": SUPABASE_ANON_KEY },
+            body: JSON.stringify({ text, voice: String(toolArgs.voice || "alloy") }),
+          }, 30000);
+          if (voiceResp.ok) {
+            const voiceData = await voiceResp.json();
+            pushStatus("Speech generated");
+            allSearchResults.push(`Voice generated: ${voiceData.url || JSON.stringify(voiceData)}`);
+          } else {
+            pushStatus("Voice generation failed");
+          }
+        } catch { pushStatus("Voice generation error"); }
+        continue;
+      }
+
       if (!COMPOSIO_API_KEY || !toolName) continue;
 
       const connResp = await fetch(`${COMPOSIO_BASE}/connectedAccounts?user_uuid=default`, {
