@@ -411,11 +411,15 @@ const FilesPage = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 + i * 0.08 }}
-                      onClick={() => setInput(svc.prompt + " ")}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/60 border border-border/30 hover:border-primary/30 hover:bg-secondary transition-all text-sm"
+                      onClick={() => { setActiveAgent(svc.id); setInput(svc.prompt + " "); }}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all text-sm ${
+                        activeAgent === svc.id
+                          ? "bg-primary/10 border-primary/30 text-primary"
+                          : "bg-secondary/60 border-border/30 hover:border-primary/30 hover:bg-secondary text-foreground/80"
+                      }`}
                     >
-                      <svc.icon className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-foreground/80">{svc.label}</span>
+                      <svc.icon className="w-4 h-4" />
+                      <span className="font-medium">{svc.label}</span>
                     </motion.button>
                   ))}
                 </div>
