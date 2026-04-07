@@ -34,7 +34,7 @@ const ResearchFlow = ({ steps, outline }: ResearchFlowProps) => {
     >
       {steps.map((step, i) => {
         const iconKey = step.id.includes("search") ? "search" : step.id.includes("outline") ? "outline" : step.id.includes("review") ? "review" : "generate";
-        const Icon = ICONS[iconKey] || Search;
+        const Icon = ICONS[iconKey] || StarIcon;
         return (
           <motion.div
             key={step.id}
