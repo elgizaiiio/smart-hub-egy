@@ -51,7 +51,7 @@ const MusicGeneratorPage = () => {
     try {
       const fullPrompt = `${prompt.trim()}. Style: ${style}. Duration: ${duration}s`;
       const { data, error } = await supabase.functions.invoke("generate-voice", {
-        body: { model_id: "ace-step-turbo", prompt: fullPrompt, type: "music", settings: { duration } },
+        body: { model_id: "suno_music", prompt: fullPrompt, type: "music", settings: { duration } },
       });
       if (error) throw error;
       if (data?.url) {
