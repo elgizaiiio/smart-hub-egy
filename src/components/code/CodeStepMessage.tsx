@@ -104,7 +104,6 @@ const CodeStepMessage = ({ step, isActive }: Props) => {
           <span className={`text-xs font-mono ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
             {step.text}
             {step.file && <span className="text-muted-foreground/70 ml-1">{step.file}</span>}
-            {isActive && step.status === "active" && <TypingDots />}
           </span>
         )}
       </div>
