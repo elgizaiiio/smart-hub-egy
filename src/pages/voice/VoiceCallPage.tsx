@@ -49,17 +49,17 @@ const VoiceCallPage = () => {
     setStatusText("Getting access...");
 
     try {
-      // 1. Request mic permission first
+      // 1. Request mic permission
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: { sampleRate: 48000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+          audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
         });
       } catch (micErr: any) {
         setPhase("idle");
         if (micErr.name === "NotAllowedError" || micErr.name === "PermissionDeniedError") {
-          setStatusText("Microphone permission denied. Please allow access.");
-          toast.error("Please allow microphone access in your browser settings");
+          setStatusText("Microphone permission denied.");
+          toast.error("Please allow microphone access");
         } else {
           setStatusText("Microphone not available");
           toast.error("Could not access microphone");
@@ -68,7 +68,7 @@ const VoiceCallPage = () => {
       }
       mediaStreamRef.current = stream;
 
-      // 2. Get Deepgram token
+      // 2. Get Deepgram API key
       setStatusText("Connecting to AI...");
       const { data: tokenData, error: tokenError } = await supabase.functions.invoke("deepgram-token", {
         body: { ttl_seconds: 60 },
@@ -81,24 +81,37 @@ const VoiceCallPage = () => {
         return;
       }
 
-      // 3. Connect WebSocket
+      // 3. Connect WebSocket — use Authorization header via subprotocol
       setStatusText("Starting voice agent...");
       const ws = new WebSocket("wss://agent.deepgram.com/v1/agent/converse", ["token", tokenData.token]);
       wsRef.current = ws;
 
       ws.onopen = () => {
+        // Send Settings configuration matching Deepgram Agent API spec
         ws.send(JSON.stringify({
           type: "Settings",
           audio: {
-            input: { encoding: "linear16", sample_rate: 48000 },
+            input: { encoding: "linear16", sample_rate: 16000 },
             output: { encoding: "linear16", sample_rate: 24000, container: "none" },
           },
           agent: {
-            language: "multi",
-            think: {
-              prompt: `You are Megsy, a smart, friendly AI companion. Adapt your tone to the user. Match their language and dialect. Be natural, warm and helpful. Never say you're an AI unless asked. Keep responses concise for voice conversation. Current year is 2026.`,
+            language: "en",
+            listen: {
+              provider: { type: "deepgram", model: "nova-3" }
             },
-            greeting: "مرحبا! كيف أقدر أساعدك اليوم؟",
+            think: {
+              provider: { type: "open_ai", model: "gpt-4o-mini" },
+              instructions: `You are Megsy, a smart, friendly AI companion. Rules:
+- Adapt your tone and language to the user automatically. If they speak Arabic, reply in Arabic. If English, reply in English.
+- Be natural, warm, helpful, and concise — this is a voice conversation, keep responses short (1-3 sentences).
+- Never say you're an AI unless directly asked.
+- Current year is 2026.
+- Your creator is Megsy AI.`,
+            },
+            speak: {
+              provider: { type: "deepgram", model: "aura-2-asteria-en" }
+            },
+            greeting: "Hey! How can I help you today?",
           },
         }));
 
@@ -106,8 +119,8 @@ const VoiceCallPage = () => {
         setStatusText("Connected");
         timerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000);
 
-        const audioContext = new AudioContext({ sampleRate: 48000 });
-        audioContextRef.current = audioContext;
+        // Create audio context at 16kHz to match input config
+        const audioContext = new AudioContext({ sampleRate: 16000 });
         const source = audioContext.createMediaStreamSource(stream);
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
@@ -133,18 +146,28 @@ const VoiceCallPage = () => {
           try {
             const msg = JSON.parse(event.data);
             if (msg.type === "AgentStartedSpeaking") setStatusText("Megsy is speaking...");
-            if (msg.type === "UserStartedSpeaking") setStatusText("Listening...");
-            if (msg.type === "Error") {
+            else if (msg.type === "UserStartedSpeaking") setStatusText("Listening...");
+            else if (msg.type === "AgentAudioDone") setStatusText("Listening...");
+            else if (msg.type === "Error" || msg.type === "error") {
               console.error("Deepgram agent error:", msg);
-              setStatusText(msg.description || msg.message || "Voice agent error");
-              toast.error(msg.description || msg.message || "Voice call failed");
+              toast.error(msg.description || msg.message || "Voice agent error");
             }
           } catch {}
         }
       };
 
-      ws.onclose = () => { setPhase("ended"); setStatusText("Call ended"); };
-      ws.onerror = () => { setPhase("ended"); setStatusText("Connection lost"); };
+      ws.onclose = (e) => { 
+        console.log("WS closed:", e.code, e.reason);
+        if (phase !== "ended") {
+          setPhase("ended"); 
+          setStatusText("Call ended");
+        }
+      };
+      ws.onerror = (e) => { 
+        console.error("WS error:", e);
+        setPhase("ended"); 
+        setStatusText("Connection lost"); 
+      };
     } catch (err) {
       console.error("Call error:", err);
       setPhase("idle");
@@ -158,6 +181,7 @@ const VoiceCallPage = () => {
     processorRef.current?.disconnect();
     audioContextRef.current?.close().catch(() => {});
     if (timerRef.current) clearInterval(timerRef.current);
+    setPhase("ended");
     navigate("/voice");
   };
 
@@ -192,6 +216,16 @@ const VoiceCallPage = () => {
         >
           {phase === "connected" ? formatTime(callDuration) : statusText}
         </motion.p>
+
+        {phase === "connected" && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-1 text-xs text-muted-foreground/60"
+          >
+            {statusText}
+          </motion.p>
+        )}
       </div>
 
       <div className="pb-12 flex items-center justify-center gap-8">
