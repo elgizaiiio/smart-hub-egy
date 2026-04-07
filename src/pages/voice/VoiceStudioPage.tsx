@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Pause, Disc3 } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Play, Pause, Disc3, LayoutGrid, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/layouts/AppLayout";
 
 const VoiceStudioPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [songs, setSongs] = useState<any[]>([]);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -42,13 +43,10 @@ const VoiceStudioPage = () => {
     <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
       <div className="h-full flex flex-col bg-background">
         <div className="sticky top-0 z-10 px-4 py-3 bg-background/80 backdrop-blur-xl flex items-center gap-3">
-          <button onClick={() => navigate("/voice")} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
           <h1 className="text-base font-bold text-foreground">Voice Studio</h1>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-8">
+        <div className="flex-1 overflow-y-auto px-4 pb-24">
           {songs.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
               <Disc3 className="w-12 h-12 text-muted-foreground/30 mb-3" />
@@ -79,6 +77,18 @@ const VoiceStudioPage = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Bottom Navigation - same pill style */}
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20">
+          <div className="flex items-center gap-8 px-8 py-3 rounded-full bg-card/90 backdrop-blur-xl border border-border/30 shadow-lg">
+            <button onClick={() => navigate("/voice")} className="flex flex-col items-center gap-0.5">
+              <LayoutGrid className={`w-5 h-5 ${location.pathname === "/voice" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={location.pathname === "/voice" ? 2.5 : 1.8} />
+            </button>
+            <button onClick={() => navigate("/voice/studio")} className="flex flex-col items-center gap-0.5">
+              <Wand2 className={`w-5 h-5 ${location.pathname === "/voice/studio" ? "text-primary" : "text-muted-foreground"}`} strokeWidth={location.pathname === "/voice/studio" ? 2.5 : 1.8} />
+            </button>
+          </div>
         </div>
 
         <audio ref={audioRef} onEnded={() => setPlayingId(null)} className="hidden" />
