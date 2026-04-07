@@ -84,196 +84,139 @@ const makeStep = (type: StepType, text: string, file?: string): CodeStep => ({
   id: `step-${++stepCounter}`, type, text, file, status: "active",
 });
 
-// Build a self-contained HTML document from the generated files
-const buildPreviewHtml = (files: FileTree): string => {
-  // Extract CSS
-  const cssFiles = Object.entries(files).filter(([p]) => p.endsWith(".css"));
-  const allCss = cssFiles.map(([, c]) => c).join("\n");
-
-  // Extract JSX/JS component files (skip config files)
+// Build combined code string from generated files for react-runner
+const buildRunnerCode = (files: FileTree): string => {
   const skipFiles = ["package.json", "vite.config.js", "tailwind.config.js", "postcss.config.js", "index.html"];
   const jsxFiles = Object.entries(files)
     .filter(([p]) => !skipFiles.includes(p) && !p.endsWith(".css") && (p.endsWith(".jsx") || p.endsWith(".tsx") || p.endsWith(".js") || p.endsWith(".ts")))
     .sort(([a], [b]) => {
-      // main entry last
       if (a.includes("main")) return 1;
       if (b.includes("main")) return -1;
-      // App before pages
       if (a.includes("App")) return 1;
       if (b.includes("App")) return -1;
       return a.localeCompare(b);
     });
 
-  // Build a single combined JSX that defines all components then renders App
   const componentDefs: string[] = [];
   let appComponent = "";
 
   for (const [path, content] of jsxFiles) {
-    if (path.includes("main")) continue; // skip main entry
-    // Clean imports and exports
+    if (path.includes("main")) continue;
     let cleaned = content
-      .replace(/^import\s+.*?['";]\s*$/gm, "") // remove imports
+      .replace(/^import\s+.*?['";]\s*$/gm, "")
       .replace(/^export\s+default\s+/gm, "const __EXPORT__ = ")
       .replace(/^export\s+/gm, "const ");
-    
-    // Get component name from filename
+
     const fileName = path.split("/").pop()?.replace(/\.(jsx|tsx|js|ts)$/, "") || "Component";
     const componentName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
-    
-    // Replace __EXPORT__ with the component name
     cleaned = cleaned.replace(/__EXPORT__/g, componentName);
-    
+
     if (path.includes("App")) {
       appComponent = cleaned;
     } else {
-      componentDefs.push(`// --- ${path} ---\n${cleaned}`);
+      componentDefs.push(cleaned);
     }
   }
 
-  // Simple stub for react-router-dom used in generated code
-  const routerStub = `
-    const BrowserRouter = ({children}) => React.createElement('div', null, children);
-    const Router = BrowserRouter;
-    const Routes = ({children}) => {
-      const childArr = React.Children.toArray(children);
-      return childArr.length > 0 ? childArr[0].props.element : null;
-    };
-    const Route = ({element}) => element;
-    const Link = ({to, children, className, onClick, ...rest}) => 
-      React.createElement('a', {href: to || '#', className, onClick: (e) => { e.preventDefault(); onClick?.(); }, ...rest}, children);
-    const useNavigate = () => () => {};
-    const useParams = () => ({});
-    const useLocation = () => ({pathname: '/'});
-    const NavLink = Link;
-  `;
+  return `
+const BrowserRouter = ({children}) => <div>{children}</div>;
+const Router = BrowserRouter;
+const Routes = ({children}) => {
+  const childArr = React.Children.toArray(children);
+  return childArr.length > 0 ? childArr[0].props.element : null;
+};
+const Route = ({element}) => element;
+const Link = ({to, children, className, onClick, ...rest}) => 
+  <a href={to || '#'} className={className} onClick={(e) => { e.preventDefault(); onClick?.(); }} {...rest}>{children}</a>;
+const useNavigate = () => () => {};
+const useParams = () => ({});
+const useLocation = () => ({pathname: '/'});
+const NavLink = Link;
 
-  // Lucide icons stub
-  const iconStub = `
-    const createIcon = (name) => ({size = 24, className = '', ...props}) => 
-      React.createElement('span', {className: 'inline-flex ' + className, style: {width: size, height: size, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.6}, ...props}, '');
-    const Menu = createIcon('Menu');
-    const X = createIcon('X');
-    const ArrowRight = createIcon('ArrowRight');
-    const ArrowLeft = createIcon('ArrowLeft');
-    const ChevronRight = createIcon('ChevronRight');
-    const ChevronLeft = createIcon('ChevronLeft');
-    const ChevronDown = createIcon('ChevronDown');
-    const Star = createIcon('Star');
-    const Heart = createIcon('Heart');
-    const Search = createIcon('Search');
-    const Mail = createIcon('Mail');
-    const Phone = createIcon('Phone');
-    const MapPin = createIcon('MapPin');
-    const Clock = createIcon('Clock');
-    const Calendar = createIcon('Calendar');
-    const User = createIcon('User');
-    const Settings = createIcon('Settings');
-    const Home = createIcon('Home');
-    const Image = createIcon('Image');
-    const Camera = createIcon('Camera');
-    const Globe = createIcon('Globe');
-    const ExternalLink = createIcon('ExternalLink');
-    const Info = createIcon('Info');
-    const Check = createIcon('Check');
-    const Plus = createIcon('Plus');
-    const Minus = createIcon('Minus');
-    const Eye = createIcon('Eye');
-    const Download = createIcon('Download');
-    const Upload = createIcon('Upload');
-    const Share2 = createIcon('Share2');
-    const Facebook = createIcon('Facebook');
-    const Twitter = createIcon('Twitter');
-    const Instagram = createIcon('Instagram');
-    const Youtube = createIcon('Youtube');
-    const Linkedin = createIcon('Linkedin');
-    const Send = createIcon('Send');
-  `;
+const createIcon = (name) => ({size = 24, className = '', ...props}) => 
+  <span className={'inline-flex ' + className} style={{width: size, height: size, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.6}} {...props}></span>;
+const Menu = createIcon('Menu');
+const X = createIcon('X');
+const ArrowRight = createIcon('ArrowRight');
+const ArrowLeft = createIcon('ArrowLeft');
+const ChevronRight = createIcon('ChevronRight');
+const ChevronLeft = createIcon('ChevronLeft');
+const ChevronDown = createIcon('ChevronDown');
+const Star = createIcon('Star');
+const Heart = createIcon('Heart');
+const Search = createIcon('Search');
+const Mail = createIcon('Mail');
+const Phone = createIcon('Phone');
+const MapPin = createIcon('MapPin');
+const Clock = createIcon('Clock');
+const Calendar = createIcon('Calendar');
+const User = createIcon('User');
+const Settings = createIcon('Settings');
+const Home = createIcon('Home');
+const Globe = createIcon('Globe');
+const Check = createIcon('Check');
+const Plus = createIcon('Plus');
+const Minus = createIcon('Minus');
+const Eye = createIcon('Eye');
+const Send = createIcon('Send');
+const Share2 = createIcon('Share2');
+const ExternalLink = createIcon('ExternalLink');
+const Download = createIcon('Download');
+const Upload = createIcon('Upload');
 
-  const combinedJsx = `
-    ${routerStub}
-    ${iconStub}
-    const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext } = React;
-    ${componentDefs.join("\n\n")}
-    ${appComponent}
-  `;
+${componentDefs.join("\n\n")}
 
-  return `<!DOCTYPE html>
-<html lang="en" dir="auto">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Preview</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin><\/script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin><\/script>
-<script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin><\/script>
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.17/dist/tailwind.min.css" rel="stylesheet" crossorigin />
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; }
-${allCss.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+.*?;/g, "")}
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel" data-type="module">
-try {
-  ${combinedJsx}
-  const root = ReactDOM.createRoot(document.getElementById('root'));
-  root.render(React.createElement(App));
-} catch(e) {
-  document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#ef4444;font-family:monospace"><h2>Preview Error</h2><pre style="white-space:pre-wrap;margin-top:1rem">' + e.message + '</pre></div>';
-  console.error(e);
+${appComponent}
+
+export default function Preview() {
+  return <App />;
 }
-<\/script>
-</body>
-</html>`;
+`;
 };
 
-// Preview component using iframe with blob URL
-const IframePreview = ({ files, previewKey }: { files: FileTree; previewKey: number }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+// Extract CSS from files
+const extractCss = (files: FileTree): string => {
+  return Object.entries(files)
+    .filter(([p]) => p.endsWith(".css"))
+    .map(([, c]) => c.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+.*?;/g, ""))
+    .join("\n");
+};
 
-  useEffect(() => {
-    if (Object.keys(files).length === 0) return;
-    try {
-      const html = buildPreviewHtml(files);
-      const blob = new Blob([html], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      setBlobUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to build preview");
-    }
-    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
-  }, [files, previewKey]);
+// Preview component using react-runner
+const ReactRunnerPreview = forwardRef<HTMLDivElement, { files: FileTree; previewKey: number }>(
+  ({ files, previewKey }, ref) => {
+    const code = useMemo(() => {
+      if (Object.keys(files).length === 0) return "";
+      return buildRunnerCode(files);
+    }, [files, previewKey]);
 
-  if (error) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center gap-3 px-6">
-        <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-          <span className="text-destructive text-lg">!</span>
+    const css = useMemo(() => extractCss(files), [files, previewKey]);
+
+    const { element, error } = useRunner({ code, scope: { React } });
+
+    if (!code) return null;
+
+    if (error) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center gap-3 px-6">
+          <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+            <span className="text-destructive text-lg">!</span>
+          </div>
+          <p className="text-sm text-foreground font-medium">Preview Error</p>
+          <p className="text-xs text-muted-foreground text-center max-w-sm font-mono">{error}</p>
         </div>
-        <p className="text-sm text-foreground font-medium">Preview Error</p>
-        <p className="text-xs text-muted-foreground text-center max-w-sm">{error}</p>
+      );
+    }
+
+    return (
+      <div ref={ref} className="h-full w-full bg-white overflow-auto">
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.17/dist/tailwind.min.css" rel="stylesheet" />
+        {css && <style>{css}</style>}
+        <div id="runner-root">{element}</div>
       </div>
     );
   }
-
-  if (!blobUrl) return null;
-
-  return (
-    <iframe
-      ref={iframeRef}
-      key={previewKey}
-      src={blobUrl}
-      className="w-full h-full border-none bg-white"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      title="Preview"
-    />
-  );
-};
+);
 
 const CodeWorkspace = () => {
   const navigate = useNavigate();
