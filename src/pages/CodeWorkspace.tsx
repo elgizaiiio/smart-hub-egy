@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, Github, RefreshCw, Triangle, Download, Database } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,7 +9,6 @@ import CodeChatContainer from "@/components/code/CodeChatContainer";
 import SupabaseConnectCard from "@/components/code/SupabaseConnectCard";
 import { CodeStep, StepType } from "@/components/code/CodeStepMessage";
 import { AnimatePresence, motion } from "framer-motion";
-import { LiveProvider, LivePreview, LiveError } from "react-live";
 
 const BUILD_CREDIT_COST = 5;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -48,52 +47,15 @@ const parseJsonFallback = (raw: string): FileTree => {
   return {};
 };
 
-// Build react-live code from generated files
-const buildReactLiveCode = (files: FileTree): string => {
-  const appCandidates = ["src/App.jsx", "src/App.js", "src/App.tsx", "App.jsx", "App.js"];
-  let appCode = "";
-  for (const c of appCandidates) {
-    if (files[c]) { appCode = files[c]; break; }
-  }
-
-  // Collect component files
-  const componentCode: string[] = [];
-  for (const [path, content] of Object.entries(files)) {
-    if (!path.match(/\.(jsx|js|tsx|ts)$/)) continue;
-    if (path.includes("vite.config") || path.includes("postcss") || path.includes("tailwind.config")) continue;
-    if (path.includes("main.jsx") || path.includes("main.js") || path.includes("main.tsx")) continue;
-    if (appCandidates.includes(path)) continue;
-    let code = content;
-    code = code.replace(/import\s+.*?from\s+['"][^'"]+['"]\s*;?/g, "");
-    code = code.replace(/import\s+['"][^'"]+['"]\s*;?/g, "");
-    code = code.replace(/export\s+default\s+function\s+(\w+)/g, "function $1");
-    code = code.replace(/export\s+default\s+/g, "");
-    code = code.replace(/export\s+(const|let|var|function|class)\s+/g, "$1 ");
-    componentCode.push(code);
-  }
-
-  let combinedApp = appCode;
-  combinedApp = combinedApp.replace(/import\s+.*?from\s+['"][^'"]+['"]\s*;?/g, "");
-  combinedApp = combinedApp.replace(/import\s+['"][^'"]+['"]\s*;?/g, "");
-  combinedApp = combinedApp.replace(/export\s+default\s+function\s+(\w+)/g, "function $1");
-  combinedApp = combinedApp.replace(/export\s+default\s+/g, "");
-  combinedApp = combinedApp.replace(/export\s+(const|let|var|function|class)\s+/g, "$1 ");
-
-  return `${componentCode.join("\n\n")}\n\n${combinedApp}\n\nrender(<App />)`;
-};
-
-// Extract CSS from files
-const extractCSS = (files: FileTree): string => {
-  return Object.entries(files)
-    .filter(([p]) => p.endsWith(".css"))
-    .map(([, c]) => c.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+[^;]+;/g, ""))
-    .join("\n");
-};
-
 const VITE_TEMPLATE: FileTree = {
   "src/main.jsx": `import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App'\nimport './index.css'\nReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)`,
   "src/App.jsx": `export default function App() { return <div className="min-h-screen flex items-center justify-center bg-gray-50"><h1 className="text-4xl font-bold text-gray-900">Hello from Megsy!</h1></div> }`,
   "src/index.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\nbody { font-family: system-ui, sans-serif; margin: 0; }`,
+  "index.html": `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Megsy App</title></head>\n<body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>\n</html>`,
+  "package.json": `{"name":"megsy-app","private":true,"version":"0.0.1","type":"module","scripts":{"dev":"vite","build":"vite build"},"dependencies":{"react":"^18.3.1","react-dom":"^18.3.1"},"devDependencies":{"@vitejs/plugin-react":"^4.3.0","vite":"^5.4.0","tailwindcss":"^3.4.0","postcss":"^8.4.0","autoprefixer":"^10.4.0"}}`,
+  "vite.config.js": `import { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\nexport default defineConfig({ plugins: [react()] })`,
+  "tailwind.config.js": `/** @type {import('tailwindcss').Config} */\nexport default { content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"], theme: { extend: {} }, plugins: [] }`,
+  "postcss.config.js": `export default { plugins: { tailwindcss: {}, autoprefixer: {} } }`,
 };
 
 const callGithub = async (body: Record<string, unknown>) => {
@@ -121,6 +83,139 @@ const makeStep = (type: StepType, text: string, file?: string): CodeStep => ({
   id: `step-${++stepCounter}`, type, text, file, status: "active",
 });
 
+// Nodepod preview component
+const NodepodPreview = ({ files, previewKey }: { files: FileTree; previewKey: number }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const nodepodRef = useRef<any>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const bootAndRun = useCallback(async () => {
+    if (Object.keys(files).length === 0) return;
+    setLoading(true);
+    setError(null);
+    setLogs([]);
+
+    try {
+      const { Nodepod } = await import("@scelar/nodepod");
+
+      // Destroy previous instance
+      if (nodepodRef.current) {
+        try { nodepodRef.current = null; } catch {}
+      }
+
+      const nodepod = await Nodepod.boot({
+        files: Object.fromEntries(
+          Object.entries(files).map(([path, content]) => [
+            path.startsWith("/") ? path : `/${path}`,
+            content,
+          ])
+        ),
+        watermark: false,
+        onServerReady: (port: number, url: string) => {
+          setLogs(prev => [...prev, `Server ready on port ${port}`]);
+          setPreviewUrl(url);
+          setLoading(false);
+        },
+      });
+
+      nodepodRef.current = nodepod;
+
+      // Install dependencies from package.json
+      setLogs(prev => [...prev, "Installing dependencies..."]);
+      await nodepod.packages.installFromManifest("/package.json", {
+        onProgress: (msg: string) => setLogs(prev => [...prev.slice(-15), msg]),
+      });
+      setLogs(prev => [...prev, "Dependencies installed"]);
+
+      // Run vite dev server
+      setLogs(prev => [...prev, "Starting dev server..."]);
+      const proc = await nodepod.spawn("npx", ["vite", "--host", "0.0.0.0", "--port", "5173"]);
+      
+      proc.on("output", (text: string) => {
+        setLogs(prev => [...prev.slice(-20), text]);
+      });
+      proc.on("error", (text: string) => {
+        setLogs(prev => [...prev.slice(-20), `stderr: ${text}`]);
+      });
+
+      // Timeout fallback
+      setTimeout(() => {
+        if (!previewUrl) {
+          const url = nodepod.port(5173);
+          if (url) {
+            setPreviewUrl(url);
+            setLoading(false);
+          }
+        }
+      }, 15000);
+
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to boot preview";
+      setError(msg);
+      setLoading(false);
+      console.error("Nodepod boot error:", e);
+    }
+  }, [files]);
+
+  useEffect(() => {
+    bootAndRun();
+    return () => {
+      nodepodRef.current = null;
+    };
+  }, [previewKey]);
+
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-4">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-sm text-foreground font-medium">Booting preview...</p>
+          <p className="text-xs text-muted-foreground">Installing packages & starting Vite</p>
+        </div>
+        {logs.length > 0 && (
+          <div className="max-w-md w-full mx-4 mt-2 max-h-32 overflow-y-auto rounded-lg bg-secondary/80 border border-border p-3">
+            {logs.slice(-5).map((log, i) => (
+              <p key={i} className="text-[10px] font-mono text-muted-foreground truncate">{log}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-3 px-6">
+        <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+          <span className="text-destructive text-lg">!</span>
+        </div>
+        <p className="text-sm text-foreground font-medium">Preview Error</p>
+        <p className="text-xs text-muted-foreground text-center max-w-sm">{error}</p>
+        <button onClick={bootAndRun} className="text-xs text-primary hover:underline mt-2">Retry</button>
+      </div>
+    );
+  }
+
+  if (previewUrl) {
+    return (
+      <iframe
+        ref={iframeRef}
+        src={previewUrl}
+        className="w-full h-full border-none"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        title="Preview"
+      />
+    );
+  }
+
+  return null;
+};
+
 const CodeWorkspace = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -140,8 +235,6 @@ const CodeWorkspace = () => {
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
 
   const [files, setFiles] = useState<FileTree>({});
-  const [liveCode, setLiveCode] = useState<string>("");
-  const [liveCSS, setLiveCSS] = useState<string>("");
   const [previewKey, setPreviewKey] = useState(0);
   const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
@@ -178,10 +271,7 @@ const CodeWorkspace = () => {
         if (snap.__supabase_config) setSupabaseConfig(snap.__supabase_config);
         const loadedFiles = { ...snap };
         delete loadedFiles.__supabase_config;
-        setFiles(loadedFiles);
-        const allFiles = { ...VITE_TEMPLATE, ...loadedFiles };
-        setLiveCode(buildReactLiveCode(allFiles));
-        setLiveCSS(extractCSS(allFiles));
+        setFiles({ ...VITE_TEMPLATE, ...loadedFiles });
         setPreviewKey(k => k + 1);
       }
     };
@@ -333,8 +423,6 @@ const CodeWorkspace = () => {
       const saveStep = await addStep("saving", "Saving changes...");
       const allFiles = { ...VITE_TEMPLATE, ...parsedFiles };
       setFiles(allFiles);
-      setLiveCode(buildReactLiveCode(allFiles));
-      setLiveCSS(extractCSS(allFiles));
       setPreviewKey(k => k + 1);
       completeStep(saveStep.id);
 
@@ -371,7 +459,7 @@ const CodeWorkspace = () => {
   };
 
   const handleRefreshPreview = () => {
-    if (liveCode) setPreviewKey(k => k + 1);
+    setPreviewKey(k => k + 1);
   };
 
   const handleDownloadFiles = () => {
@@ -386,12 +474,19 @@ const CodeWorkspace = () => {
 
   const handleGitHubPush = async () => {
     if (Object.keys(files).length === 0) { toast.error("No files to push."); return; }
-    const connCheck = await callGithub({ action: "check-connection" });
-    if (!connCheck.connected) { toast.error("GitHub not connected."); navigate("/settings/integrations"); return; }
-    const repoName = `megsy-${prompt.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "project"}-${Date.now().toString(36)}`;
-    await callGithub({ action: "create-repo", repo_name: repoName, description: "Created by Megsy Code" });
-    await callGithub({ action: "push-files", repo_name: repoName, files: Object.entries(files).map(([path, content]) => ({ path, content })) });
-    toast.success("Repository created on GitHub!");
+    toast.loading("Creating GitHub repo...");
+    try {
+      const result = await callGithub({ action: "auto-create-push", files: Object.entries(files).map(([path, content]) => ({ path, content })), project_name: prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase() || "megsy-project" });
+      if (result.error) throw new Error(result.error);
+      toast.dismiss();
+      toast.success(`Repository created: ${result.repo_url || "Success!"}`);
+      if (result.repo_url) {
+        setMessages(prev => [...prev, { role: "assistant", content: `✅ GitHub repo created!\n\n[${result.repo_url}](${result.repo_url})` }]);
+      }
+    } catch (e) {
+      toast.dismiss();
+      toast.error(e instanceof Error ? e.message : "Failed to push to GitHub");
+    }
   };
 
   const handleVercelDeploy = async () => {
@@ -451,13 +546,9 @@ const CodeWorkspace = () => {
 
   const previewPanel = (
     <div className="h-full relative bg-secondary flex flex-col">
-      {liveCode ? (
-        <div className="flex-1 h-full relative overflow-auto">
-          {liveCSS && <style dangerouslySetInnerHTML={{ __html: liveCSS }} />}
-          <LiveProvider key={previewKey} code={liveCode} noInline scope={{ React, useState: React.useState, useEffect: React.useEffect, useRef: React.useRef, useCallback: React.useCallback, useMemo: React.useMemo }}>
-            <LiveError className="p-4 text-xs text-red-400 bg-red-950/30 font-mono" />
-            <LivePreview className="min-h-full" />
-          </LiveProvider>
+      {Object.keys(files).length > 0 ? (
+        <div className="flex-1 h-full relative overflow-hidden">
+          <NodepodPreview files={files} previewKey={previewKey} />
           <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10" title="Reload">
             <RefreshCw className="w-4 h-4" />
           </button>
