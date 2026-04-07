@@ -858,7 +858,10 @@ Ask me anything to get started!`;
                     // All other agents (images, videos, voice, code, files, email) stay in chat
                     // The agent is set as activeAgent and the user types their prompt
                   }}
-                  onAgentRemove={() => { setChatMode("normal"); if (chatMode === "deep-research") setSearchEnabled(false); }}
+                  onAgentRemove={() => { setChatMode("normal"); setSelectedModel(null); if (chatMode === "deep-research") setSearchEnabled(false); }}
+                  selectedModel={selectedModel}
+                  onModelSelect={(model: AgentModel) => setSelectedModel(model)}
+                  onModelRemove={() => setSelectedModel(null)}
                 />
               </div>
             </div>
