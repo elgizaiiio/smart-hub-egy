@@ -121,11 +121,7 @@ serve(async (req) => {
       const ttsBody: Record<string, any> = { input: prompt };
 
       // Map model_id to LemonData TTS model
-      if (model_id === "tts-1-hd" || model_id === "tts-hd") {
-        ttsBody.model = "tts-1-hd";
-      } else {
-        ttsBody.model = "tts-1";
-      }
+      ttsBody.model = "tts-1-hd";
 
       // Voice selection
       if (settings?.voice) ttsBody.voice = settings.voice;
