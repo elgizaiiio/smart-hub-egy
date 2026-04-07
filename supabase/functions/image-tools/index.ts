@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Tool → provider mapping
-// "lemon" = LemonData image API, "wavespeed" = WaveSpeed API
 interface ToolConfig {
   provider: "lemon" | "wavespeed" | "fal";
   lemonModel?: string;
@@ -142,64 +140,67 @@ async function callFal(model: string, params: Record<string, any>): Promise<stri
   const falKey = Deno.env.get("FAL_API_KEY");
   if (!falKey) throw new Error("FAL_API_KEY not configured");
 
-  // Try synchronous first
-  const submitResp = await fetch(`https://fal.run/${model}`, {
+  console.log("fal.ai call:", model, JSON.stringify(Object.keys(params)));
+
+  // Try queue-based approach (more reliable for heavy models)
+  const queueResp = await fetch(`https://queue.fal.run/${model}`, {
     method: "POST",
     headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
 
-  if (!submitResp.ok) {
-    const t = await submitResp.text();
-    console.error("fal.ai sync error:", submitResp.status, t);
-    // Fallback to queue
-    const queueResp = await fetch(`https://queue.fal.run/${model}`, {
-      method: "POST",
-      headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
-    if (!queueResp.ok) {
-      const qt = await queueResp.text();
-      throw new Error(`fal.ai error: ${queueResp.status} ${qt.slice(0, 200)}`);
-    }
-    const queueData = await queueResp.json();
-    const requestId = queueData.request_id;
-    if (!requestId) {
-      const url = queueData.images?.[0]?.url || queueData.image?.url;
-      if (url) return url;
-      throw new Error("No request_id from fal.ai");
-    }
-    // Poll
-    for (let i = 0; i < 45; i++) {
-      await new Promise(r => setTimeout(r, 2000));
-      const pollResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}/status`, {
-        headers: { Authorization: `Key ${falKey}` },
-      });
-      if (!pollResp.ok) continue;
-      const pollData = await pollResp.json();
-      if (pollData.status === "COMPLETED") {
-        const resultResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}`, {
-          headers: { Authorization: `Key ${falKey}` },
-        });
-        const resultData = await resultResp.json();
-        const url = resultData.images?.[0]?.url || resultData.image?.url || resultData.relit_image?.url;
-        if (url) return url;
-        throw new Error("No image in fal.ai result");
-      }
-      if (pollData.status === "FAILED") throw new Error("fal.ai generation failed");
-    }
-    throw new Error("fal.ai generation timed out");
+  if (!queueResp.ok) {
+    const qt = await queueResp.text();
+    console.error("fal.ai queue submit error:", queueResp.status, qt);
+    throw new Error(`fal.ai error: ${queueResp.status} ${qt.slice(0, 300)}`);
   }
 
-  const data = await submitResp.json();
-  const url = data.images?.[0]?.url || data.image?.url || data.relit_image?.url;
-  if (url) return url;
-  throw new Error("No image URL in fal.ai response");
+  const queueData = await queueResp.json();
+  console.log("fal.ai queue response:", JSON.stringify(queueData).slice(0, 500));
+  
+  // Check if we got a direct result
+  const directUrl = queueData.images?.[0]?.url || queueData.image?.url || queueData.relit_image?.url || queueData.output?.url;
+  if (directUrl) return directUrl;
+  
+  const requestId = queueData.request_id;
+  if (!requestId) throw new Error("No request_id from fal.ai: " + JSON.stringify(queueData).slice(0, 300));
+
+  // Poll for result
+  for (let i = 0; i < 45; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const pollResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}/status`, {
+      headers: { Authorization: `Key ${falKey}` },
+    });
+    if (!pollResp.ok) continue;
+    const pollData = await pollResp.json();
+    console.log(`fal.ai poll ${i}:`, pollData.status);
+    
+    if (pollData.status === "COMPLETED") {
+      const resultResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}`, {
+        headers: { Authorization: `Key ${falKey}` },
+      });
+      const resultData = await resultResp.json();
+      console.log("fal.ai result keys:", Object.keys(resultData));
+      const url = resultData.images?.[0]?.url || resultData.image?.url || resultData.relit_image?.url || resultData.output?.url;
+      if (url) return url;
+      // Try to find any URL in the result
+      const jsonStr = JSON.stringify(resultData);
+      const urlMatch = jsonStr.match(/https:\/\/[^"]+\.(png|jpg|jpeg|webp)/);
+      if (urlMatch) return urlMatch[0];
+      throw new Error("No image in fal.ai result: " + jsonStr.slice(0, 300));
+    }
+    if (pollData.status === "FAILED") {
+      throw new Error("fal.ai generation failed: " + JSON.stringify(pollData).slice(0, 300));
+    }
+  }
+  throw new Error("fal.ai generation timed out");
 }
 
 // ── WaveSpeed call ──
 async function callWaveSpeed(sb: ReturnType<typeof createClient>, model: string, params: Record<string, any>): Promise<string> {
   const key = await getWaveSpeedKey(sb);
+  
+  console.log("WaveSpeed call:", model, JSON.stringify(Object.keys(params)));
   
   const submitResp = await fetch(`https://api.wavespeed.ai/api/v3/${model}`, {
     method: "POST",
@@ -209,15 +210,18 @@ async function callWaveSpeed(sb: ReturnType<typeof createClient>, model: string,
 
   if (!submitResp.ok) {
     const t = await submitResp.text();
-    throw new Error(`WaveSpeed error: ${submitResp.status} ${t.slice(0, 200)}`);
+    console.error("WaveSpeed submit error:", submitResp.status, t);
+    throw new Error(`WaveSpeed error: ${submitResp.status} ${t.slice(0, 300)}`);
   }
 
   const submitData = await submitResp.json();
+  console.log("WaveSpeed submit response:", JSON.stringify(submitData).slice(0, 500));
+  
   const taskId = submitData.data?.id || submitData.id;
   if (!taskId) {
     const url = submitData.data?.outputs?.[0] || submitData.data?.output?.url || submitData.output?.url;
     if (url) return url;
-    throw new Error("No task ID returned from WaveSpeed");
+    throw new Error("No task ID returned from WaveSpeed: " + JSON.stringify(submitData).slice(0, 300));
   }
 
   for (let i = 0; i < 60; i++) {
@@ -239,10 +243,8 @@ async function callWaveSpeed(sb: ReturnType<typeof createClient>, model: string,
 
 // Upload base64 to Supabase storage and return public URL
 async function uploadBase64ToStorage(sb: ReturnType<typeof createClient>, base64Data: string, prefix: string): Promise<string> {
-  // If it's already a URL, return as-is
   if (base64Data.startsWith("http://") || base64Data.startsWith("https://")) return base64Data;
   
-  // Extract the actual base64 content
   const matches = base64Data.match(/^data:image\/(\w+);base64,(.+)$/);
   if (!matches) throw new Error("Invalid base64 image data");
   
@@ -272,35 +274,36 @@ serve(async (req) => {
     if (!config) throw new Error(`Unknown tool: ${tool}`);
 
     let resultUrl: string;
-
-    // For providers that need public URLs (fal.ai, WaveSpeed), upload base64 first
     const needsPublicUrl = config.provider === "fal" || config.provider === "wavespeed";
 
     if (config.provider === "fal") {
       const params: Record<string, any> = {};
       if (tool === 'relight') {
-        // Upload base64 to get a public URL for fal.ai
         const imageUrl = needsPublicUrl && image ? await uploadBase64ToStorage(sb, image, "relight") : image;
         params.image_url = imageUrl;
-        params.prompt = prompt || "Professional studio lighting, dramatic";
-        params.num_inference_steps = 28;
-        params.guidance_scale = 5;
+        params.prompt = prompt || "Professional studio lighting, dramatic and cinematic";
+        // iclight-v2 params
+        params.light_source = direction || "Left Light";
         if (direction) {
-          const dirMap: Record<string, string> = { left: "Left", right: "Right", top: "Top", bottom: "Bottom", center: "None" };
-          params.initial_latent = dirMap[direction] || "None";
+          const dirMap: Record<string, string> = {
+            left: "Left Light",
+            right: "Right Light", 
+            top: "Top Light",
+            bottom: "Bottom Light",
+            center: "Ambient"
+          };
+          params.light_source = dirMap[direction] || "Left Light";
         }
       }
       resultUrl = await callFal(config.falModel!, params);
     } else if (config.provider === "wavespeed") {
       const params: Record<string, any> = {};
       if (tool === 'face-swap' || tool === 'character-swap') {
-        // Upload base64 images to get public URLs for WaveSpeed
+        // WaveSpeed face-swap expects swap_image (source face) and target_image (destination)
         const sourceUrl = image ? await uploadBase64ToStorage(sb, image, "swap-src") : image;
         const targetUrl = target ? await uploadBase64ToStorage(sb, target, "swap-tgt") : sourceUrl;
-        params.source_image = sourceUrl;
-        params.target_image = targetUrl;
-        params.target_index = 0;
-        params.output_format = "jpeg";
+        params.swap_image = sourceUrl;  // The face to take FROM
+        params.target_image = targetUrl; // The image to put the face ON
       } else if (tool === 'bg-remover') {
         const imageUrl = image ? await uploadBase64ToStorage(sb, image, "bgrem") : image;
         params.image = imageUrl;
@@ -309,7 +312,6 @@ serve(async (req) => {
       
       resultUrl = await callWaveSpeed(sb, config.wavespeedModel!, params);
     } else {
-      // LemonData tools - supports base64 directly
       let fullPrompt = prompt || "";
       const toolPrompt = TOOL_PROMPTS[tool];
       if (toolPrompt) {
