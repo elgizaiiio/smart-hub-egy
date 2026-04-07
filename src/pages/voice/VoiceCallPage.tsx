@@ -19,6 +19,33 @@ const VoiceCallPage = () => {
   const audioQueueRef = useRef<ArrayBuffer[]>([]);
   const isPlayingRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMutedRef = useRef(false);
+
+  // Keep ref in sync with state
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+
+  const playNextAudio = useCallback(async () => {
+    if (audioQueueRef.current.length === 0) { isPlayingRef.current = false; return; }
+    isPlayingRef.current = true;
+    const buffer = audioQueueRef.current.shift()!;
+    try {
+      const audioContext = audioContextRef.current || new AudioContext({ sampleRate: 24000 });
+      if (!audioContextRef.current) audioContextRef.current = audioContext;
+      if (audioContext.state === "suspended") await audioContext.resume();
+      const int16 = new Int16Array(buffer);
+      const float32 = new Float32Array(int16.length);
+      for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
+      const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
+      audioBuffer.getChannelData(0).set(float32);
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.onended = () => playNextAudio();
+      source.start();
+    } catch {
+      playNextAudio();
+    }
+  }, []);
 
   const startCall = useCallback(async () => {
     try {
@@ -27,7 +54,7 @@ const VoiceCallPage = () => {
       });
       if (tokenError) throw tokenError;
       const apiKey = tokenData?.token;
-      if (!apiKey) throw new Error("Failed to create Deepgram token");
+      if (!apiKey) throw new Error("Failed to get Deepgram token");
 
       setStatusText("Requesting microphone...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 48000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
@@ -73,7 +100,7 @@ const VoiceCallPage = () => {
         processorRef.current = processor;
 
         processor.onaudioprocess = (e) => {
-          if (isMuted || ws.readyState !== WebSocket.OPEN) return;
+          if (isMutedRef.current || ws.readyState !== WebSocket.OPEN) return;
           const input = e.inputBuffer.getChannelData(0);
           const buffer = new Int16Array(input.length);
           for (let i = 0; i < input.length; i++) {
@@ -106,7 +133,8 @@ const VoiceCallPage = () => {
         setStatusText("Call ended");
       };
 
-      ws.onerror = () => {
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
         setIsConnected(false);
         setIsConnecting(false);
         setStatusText("Connection failed");
@@ -116,34 +144,7 @@ const VoiceCallPage = () => {
       setIsConnecting(false);
       setStatusText(err instanceof Error ? err.message : "Connection failed");
     }
-  }, []);
-
-  const playNextAudio = async () => {
-    if (audioQueueRef.current.length === 0) { isPlayingRef.current = false; return; }
-    isPlayingRef.current = true;
-    const buffer = audioQueueRef.current.shift()!;
-
-    try {
-      const audioContext = audioContextRef.current || new AudioContext({ sampleRate: 24000 });
-      if (!audioContextRef.current) audioContextRef.current = audioContext;
-      if (audioContext.state === "suspended") await audioContext.resume();
-
-      const int16 = new Int16Array(buffer);
-      const float32 = new Float32Array(int16.length);
-      for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
-
-      const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
-      audioBuffer.getChannelData(0).set(float32);
-
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-      source.onended = () => playNextAudio();
-      source.start();
-    } catch {
-      playNextAudio();
-    }
-  };
+  }, [playNextAudio]);
 
   const endCall = () => {
     if (wsRef.current) wsRef.current.close();

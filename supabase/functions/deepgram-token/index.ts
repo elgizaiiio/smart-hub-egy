@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,39 +10,35 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const ttl = Math.min(Math.max(Number(body?.ttl_seconds) || 60, 30), 300);
-    const deepgramKey = Deno.env.get("DEEPGRAM_APIKEY");
+    // Try getting key from api_keys table first
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    
+    const { data: keys } = await sb.from("api_keys")
+      .select("api_key")
+      .eq("service", "deepgram")
+      .eq("is_active", true)
+      .limit(5);
+    
+    let apiKey: string | undefined;
+    if (keys && keys.length > 0) {
+      apiKey = keys[Math.floor(Math.random() * keys.length)].api_key;
+    } else {
+      apiKey = Deno.env.get("DEEPGRAM_APIKEY");
+    }
 
-    if (!deepgramKey) {
-      return new Response(JSON.stringify({ error: "Deepgram secret is not configured" }), {
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "Deepgram key not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const tokenResp = await fetch("https://api.deepgram.com/v1/auth/grant", {
-      method: "POST",
-      headers: {
-        "Authorization": `Token ${deepgramKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ttl_seconds: ttl }),
-    });
-
-    const raw = await tokenResp.text();
-    if (!tokenResp.ok) {
-      return new Response(JSON.stringify({ error: `Deepgram token error: ${raw}` }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const parsed = JSON.parse(raw);
-    const token = parsed?.access_token || parsed?.token || parsed?.key;
-    if (!token) throw new Error("No temporary token returned from Deepgram");
-
-    return new Response(JSON.stringify({ token, expires_in: parsed?.expires_in || ttl }), {
+    // Return the API key directly - it's used client-side only for the WebSocket subprotocol
+    // This is the recommended pattern from Deepgram docs for agent API
+    return new Response(JSON.stringify({ token: apiKey, expires_in: 3600 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
