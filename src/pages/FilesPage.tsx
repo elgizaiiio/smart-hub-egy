@@ -170,7 +170,14 @@ const FilesPage = () => {
     if (convId) await saveMessage(convId, "user", userContent);
 
     try {
-      let prompt = `Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished. Output ONLY the HTML code, no explanations:\n\n${userInput}`;
+      const AGENT_PROMPTS: Record<string, string> = {
+        slides: "Generate a complete HTML presentation/slideshow with multiple slides, navigation, transitions, and professional styling. Use a dark theme. Include slide numbers and navigation buttons.",
+        resume: "Generate a professional, well-structured HTML resume/CV. Include sections for contact info, summary, experience, education, skills. Use modern, clean styling with good typography.",
+        spreadsheet: "Generate a complete HTML table/spreadsheet with proper styling, alternating row colors, sortable headers, and professional formatting. Include sample data relevant to the request.",
+        document: "Generate a complete, well-formatted, comprehensive and detailed HTML document with proper headings, paragraphs, and professional styling.",
+      };
+      const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted, comprehensive and detailed HTML document for the following request. Include proper styling with CSS, make it look professional and polished.";
+      let prompt = `${agentPrompt} Output ONLY the HTML code, no explanations:\n\n${userInput}`;
       const fileAttachments = files.filter(f => f.type !== "image");
       if (fileAttachments.length > 0) {
         prompt += "\n\n--- Attached Documents ---\n";
