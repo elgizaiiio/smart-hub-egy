@@ -157,7 +157,7 @@ serve(async (req) => {
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
     const isLovableGatewayModel = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
 
-    let modelId: string = requestedModel ?? (isDeepResearch ? "deepseek-v3-2" : "claude-haiku-4-5");
+    let modelId: string = requestedModel ?? "claude-haiku-4-5";
     let apiUrl = LEMONDATA_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
@@ -228,7 +228,7 @@ serve(async (req) => {
       model: modelId,
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
-      max_tokens: isDeepResearch ? 8192 : (mode === "files" ? 8192 : 4096),
+      max_tokens: isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048),
     };
 
     const allTools = [...composioTools, ...searchTools];
@@ -427,8 +427,8 @@ ${userContext}`;
 CRITICAL: Never introduce yourself. Never say "I'm Megsy" unless directly asked.
 
 DEEP RESEARCH MODE:
-- You MUST use the WEB_SEARCH tool AT LEAST 6-10 TIMES with different queries.
-- Divide research into: 1) General overview 2) Latest developments 3) Expert opinions 4) Data & statistics 5) Case studies 6) Counterarguments 7) Future outlook 8) Visual references
+- You MUST use the WEB_SEARCH tool 3-5 TIMES with different focused queries to gather comprehensive information.
+- Cover: 1) General overview 2) Latest developments 3) Key data & expert opinions 4) Visual references
 - For at least half your searches, set include_images=true.
 - While researching people, brands, founders, celebrities, athletes, politicians, or public figures, always gather relevant images too.
 - After gathering all information, synthesize into a comprehensive, well-structured research report.
@@ -634,9 +634,9 @@ async function handleToolCalls(
     // Use LemonData primarily, Lovable AI Gateway only as fallback
     let synthesisUrl = apiUrl;
     let synthesisKey = apiKey;
-    let synthesisModel = isDeepResearch ? "deepseek-v3-2" : modelId;
+    let synthesisModel = "claude-haiku-4-5";
 
-    const secondBody: any = { model: synthesisModel, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
+    const secondBody: any = { model: synthesisModel, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 4096 : 2048 };
     // Only allow further tool calls if we haven't hit max depth
     if (isDeepResearch && searchTools.length > 0 && depth < MAX_DEPTH) {
       secondBody.tools = searchTools;
