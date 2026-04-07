@@ -12,6 +12,12 @@ const TOOL_MODELS: Record<string, string> = {
   'video-extender': 'fal-ai/veo3.1/extend-video',
   'auto-caption': 'fal-ai/auto-caption',
   'lip-sync': 'veed/lipsync',
+  'green-screen': 'fal-ai/bria/background/remove/video',
+  'video-colorizer': 'fal-ai/video-colorizer',
+  'video-bg-replacer': 'fal-ai/bria/background/replace/video',
+  'video-denoise': 'fal-ai/video-enhance',
+  'video-intro': 'fal-ai/veo3.1',
+  'music-separator': 'fal-ai/music-separator',
 };
 
 serve(async (req) => {
