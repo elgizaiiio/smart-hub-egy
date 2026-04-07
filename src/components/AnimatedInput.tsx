@@ -45,6 +45,8 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const placeholderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const placeholderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const valueRef = useRef(value);
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
 
   // Keep valueRef in sync without triggering placeholder effect
   useEffect(() => {
