@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import MentionDropdown from "./MentionDropdown";
+import AgentBadge from "./AgentBadge";
+import type { AgentDef } from "@/lib/agentRegistry";
 
 interface SmartQuestion {
   title: string;
@@ -20,6 +23,10 @@ interface AnimatedInputProps {
   pendingQuestions?: SmartQuestion[];
   onQuestionAnswer?: (answer: string) => void;
   onQuestionSkip?: () => void;
+  activeAgent?: string | null;
+  onAgentSelect?: (agent: AgentDef) => void;
+  onAgentRemove?: () => void;
+  mentionCategories?: string[];
 }
 
 const DEFAULT_PLACEHOLDERS = [
@@ -28,7 +35,7 @@ const DEFAULT_PLACEHOLDERS = [
   "Ask anything...",
 ];
 
-const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip }: AnimatedInputProps) => {
+const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip, activeAgent, onAgentSelect, onAgentRemove, mentionCategories }: AnimatedInputProps) => {
   const items = useMemo(() => placeholders && placeholders.length > 0 ? placeholders : DEFAULT_PLACEHOLDERS, [placeholders]);
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
@@ -38,6 +45,8 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   const placeholderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const placeholderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const valueRef = useRef(value);
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
 
   // Keep valueRef in sync without triggering placeholder effect
   useEffect(() => {
@@ -100,10 +109,45 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
   }, [value, items]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Escape" && mentionOpen) {
+      setMentionOpen(false);
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (mentionOpen) { setMentionOpen(false); return; }
       if (value.trim() && !disabled && !isLoading) onSend();
     }
+  };
+
+  // Detect @ mention typing
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newVal = e.target.value;
+    onChange(newVal);
+    
+    // Check for @ at cursor position
+    const cursorPos = e.target.selectionStart;
+    const textBeforeCursor = newVal.slice(0, cursorPos);
+    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionOpen(true);
+      setMentionQuery(atMatch[1]);
+    } else {
+      setMentionOpen(false);
+      setMentionQuery("");
+    }
+  };
+
+  const handleMentionSelect = (agent: AgentDef) => {
+    // Remove the @query from input
+    const cursorPos = textareaRef.current?.selectionStart || value.length;
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const cleanedBefore = textBeforeCursor.replace(/@\w*$/, "");
+    const textAfter = value.slice(cursorPos);
+    onChange(cleanedBefore + textAfter);
+    setMentionOpen(false);
+    setMentionQuery("");
+    onAgentSelect?.(agent);
   };
 
   const autoResize = useCallback(() => {
@@ -147,6 +191,17 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
   return (
     <div className="relative">
+      <AnimatePresence>
+        {mentionOpen && (
+          <MentionDropdown
+            query={mentionQuery}
+            onSelect={handleMentionSelect}
+            onClose={() => setMentionOpen(false)}
+            visible={mentionOpen}
+            categories={mentionCategories}
+          />
+        )}
+      </AnimatePresence>
       <div className="rounded-[2rem] border border-border/50 bg-background/35 backdrop-blur-xl overflow-hidden shadow-[0_18px_60px_hsl(var(--foreground)/0.08)]">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
@@ -217,16 +272,21 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </button>
 
           <div className="flex-1 min-w-0">
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={displayedPlaceholder || " "}
-              rows={1}
-              className="w-full bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
-              style={{ minHeight: "36px" }}
-            />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {activeAgent && (
+                <AgentBadge agentId={activeAgent} onRemove={onAgentRemove} size="sm" />
+              )}
+              <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                placeholder={displayedPlaceholder || " "}
+                rows={1}
+                className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
+                style={{ minHeight: "36px" }}
+              />
+            </div>
           </div>
 
           {isLoading ? (

@@ -10,6 +10,8 @@ import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
+import AgentBadge from "@/components/AgentBadge";
+import type { AgentDef } from "@/lib/agentRegistry";
 
 import { streamChat } from "@/lib/streamChat";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
@@ -813,14 +815,9 @@ Ask me anything to get started!`;
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 backdrop-blur-md border border-primary/15 w-fit"
+                className="flex items-center gap-2 w-fit"
                 style={{ touchAction: "none" }}>
-                    <span className="text-xs text-primary font-medium">
-                      {chatMode === "learning" ? "Learning" : chatMode === "deep-research" ? "Deep Research" : "Shopping"} Mode
-                    </span>
-                    <button onClick={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} className="ml-1 p-0.5 rounded-full hover:bg-primary/15 transition-colors">
-                      <X className="w-3 h-3 text-primary" />
-                    </button>
+                    <AgentBadge agentId={chatMode} onRemove={() => {setChatMode("normal");if (chatMode === "deep-research") setSearchEnabled(false);}} />
                   </motion.div>
               }
               </AnimatePresence>
@@ -831,7 +828,39 @@ Ask me anything to get started!`;
                 <AnimatePresence>
                   {plusMenuOpen && renderPlusMenu()}
                 </AnimatePresence>
-                <AnimatedInput value={input} onChange={setInput} onSend={handleSend} onCancel={handleCancel} onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)} disabled={isLoading} isLoading={isLoading} pendingQuestions={pendingQuestions} onQuestionAnswer={handleQuestionAnswer} onQuestionSkip={handleQuestionSkip} />
+                <AnimatedInput
+                  value={input}
+                  onChange={setInput}
+                  onSend={handleSend}
+                  onCancel={handleCancel}
+                  onPlusClick={() => setPlusMenuOpen(!plusMenuOpen)}
+                  disabled={isLoading}
+                  isLoading={isLoading}
+                  pendingQuestions={pendingQuestions}
+                  onQuestionAnswer={handleQuestionAnswer}
+                  onQuestionSkip={handleQuestionSkip}
+                  activeAgent={chatMode !== "normal" ? chatMode : null}
+                  onAgentSelect={(agent: AgentDef) => {
+                    const modeMap: Record<string, ChatMode> = { learning: "learning", shopping: "shopping", "deep-research": "deep-research" };
+                    if (modeMap[agent.id]) {
+                      handleModeChange(modeMap[agent.id]);
+                    } else if (agent.category === "images") {
+                      navigate("/images");
+                    } else if (agent.category === "videos") {
+                      navigate("/videos");
+                    } else if (agent.category === "code") {
+                      navigate("/code");
+                    } else if (agent.category === "voice") {
+                      navigate("/voice");
+                    } else if (agent.category === "files") {
+                      navigate("/files");
+                      if (agent.id !== "document") {
+                        setTimeout(() => setInput(`@${agent.id} `), 100);
+                      }
+                    }
+                  }}
+                  onAgentRemove={() => { setChatMode("normal"); if (chatMode === "deep-research") setSearchEnabled(false); }}
+                />
               </div>
             </div>
           </div>
