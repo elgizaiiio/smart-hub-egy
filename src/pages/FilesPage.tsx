@@ -51,6 +51,9 @@ const FilesPage = () => {
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [activeAgent, setActiveAgent] = useState<string | null>(null);
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
