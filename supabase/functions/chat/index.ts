@@ -177,7 +177,7 @@ serve(async (req) => {
       }
       // Use Lovable AI gateway as fallback
       const apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      modelId = "google/gemini-3-flash-preview";
+      modelId = "google/gemini-2.5-flash";
       
       // Build system prompt and body, then make request
       const systemPrompt = buildSystemPrompt(mode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
@@ -278,7 +278,7 @@ serve(async (req) => {
         // Fallback to Lovable AI
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
         if (LOVABLE_API_KEY) {
-          body.model = "google/gemini-3-flash-preview";
+          body.model = "google/gemini-2.5-flash";
           const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
