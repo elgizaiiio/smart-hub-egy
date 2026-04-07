@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ArrowLeft, Plus, ArrowUp, Loader2, Globe, Github, RefreshCw, Triangle, Download, Database } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -83,110 +83,170 @@ const makeStep = (type: StepType, text: string, file?: string): CodeStep => ({
   id: `step-${++stepCounter}`, type, text, file, status: "active",
 });
 
-// Nodepod preview component
-const NodepodPreview = ({ files, previewKey }: { files: FileTree; previewKey: number }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const nodepodRef = useRef<any>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+// Build a self-contained HTML document from the generated files
+const buildPreviewHtml = (files: FileTree): string => {
+  // Extract CSS
+  const cssFiles = Object.entries(files).filter(([p]) => p.endsWith(".css"));
+  const allCss = cssFiles.map(([, c]) => c).join("\n");
 
-  const bootAndRun = useCallback(async () => {
-    if (Object.keys(files).length === 0) return;
-    setLoading(true);
-    setError(null);
-    setLogs([]);
+  // Extract JSX/JS component files (skip config files)
+  const skipFiles = ["package.json", "vite.config.js", "tailwind.config.js", "postcss.config.js", "index.html"];
+  const jsxFiles = Object.entries(files)
+    .filter(([p]) => !skipFiles.includes(p) && !p.endsWith(".css") && (p.endsWith(".jsx") || p.endsWith(".tsx") || p.endsWith(".js") || p.endsWith(".ts")))
+    .sort(([a], [b]) => {
+      // main entry last
+      if (a.includes("main")) return 1;
+      if (b.includes("main")) return -1;
+      // App before pages
+      if (a.includes("App")) return 1;
+      if (b.includes("App")) return -1;
+      return a.localeCompare(b);
+    });
 
-    try {
-      const { Nodepod } = await import("@scelar/nodepod");
+  // Build a single combined JSX that defines all components then renders App
+  const componentDefs: string[] = [];
+  let appComponent = "";
 
-      // Destroy previous instance
-      if (nodepodRef.current) {
-        try { nodepodRef.current = null; } catch {}
-      }
-
-      const nodepod = await Nodepod.boot({
-        files: Object.fromEntries(
-          Object.entries(files).map(([path, content]) => [
-            path.startsWith("/") ? path : `/${path}`,
-            content,
-          ])
-        ),
-        watermark: false,
-        onServerReady: (port: number, url: string) => {
-          setLogs(prev => [...prev, `Server ready on port ${port}`]);
-          setPreviewUrl(url);
-          setLoading(false);
-        },
-      });
-
-      nodepodRef.current = nodepod;
-
-      // Install dependencies from package.json
-      setLogs(prev => [...prev, "Installing dependencies..."]);
-      await nodepod.packages.installFromManifest("/package.json", {
-        onProgress: (msg: string) => setLogs(prev => [...prev.slice(-15), msg]),
-      });
-      setLogs(prev => [...prev, "Dependencies installed"]);
-
-      // Run vite dev server
-      setLogs(prev => [...prev, "Starting dev server..."]);
-      const proc = await nodepod.spawn("npx", ["vite", "--host", "0.0.0.0", "--port", "5173"]);
-      
-      proc.on("output", (text: string) => {
-        setLogs(prev => [...prev.slice(-20), text]);
-      });
-      proc.on("error", (text: string) => {
-        setLogs(prev => [...prev.slice(-20), `stderr: ${text}`]);
-      });
-
-      // Timeout fallback
-      setTimeout(() => {
-        if (!previewUrl) {
-          const url = nodepod.port(5173);
-          if (url) {
-            setPreviewUrl(url);
-            setLoading(false);
-          }
-        }
-      }, 15000);
-
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to boot preview";
-      setError(msg);
-      setLoading(false);
-      console.error("Nodepod boot error:", e);
+  for (const [path, content] of jsxFiles) {
+    if (path.includes("main")) continue; // skip main entry
+    // Clean imports and exports
+    let cleaned = content
+      .replace(/^import\s+.*?['";]\s*$/gm, "") // remove imports
+      .replace(/^export\s+default\s+/gm, "const __EXPORT__ = ")
+      .replace(/^export\s+/gm, "const ");
+    
+    // Get component name from filename
+    const fileName = path.split("/").pop()?.replace(/\.(jsx|tsx|js|ts)$/, "") || "Component";
+    const componentName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
+    
+    // Replace __EXPORT__ with the component name
+    cleaned = cleaned.replace(/__EXPORT__/g, componentName);
+    
+    if (path.includes("App")) {
+      appComponent = cleaned;
+    } else {
+      componentDefs.push(`// --- ${path} ---\n${cleaned}`);
     }
-  }, [files]);
+  }
+
+  // Simple stub for react-router-dom used in generated code
+  const routerStub = `
+    const BrowserRouter = ({children}) => React.createElement('div', null, children);
+    const Router = BrowserRouter;
+    const Routes = ({children}) => {
+      const childArr = React.Children.toArray(children);
+      return childArr.length > 0 ? childArr[0].props.element : null;
+    };
+    const Route = ({element}) => element;
+    const Link = ({to, children, className, onClick, ...rest}) => 
+      React.createElement('a', {href: to || '#', className, onClick: (e) => { e.preventDefault(); onClick?.(); }, ...rest}, children);
+    const useNavigate = () => () => {};
+    const useParams = () => ({});
+    const useLocation = () => ({pathname: '/'});
+    const NavLink = Link;
+  `;
+
+  // Lucide icons stub
+  const iconStub = `
+    const createIcon = (name) => ({size = 24, className = '', ...props}) => 
+      React.createElement('span', {className: 'inline-flex ' + className, style: {width: size, height: size, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.6}, ...props}, '');
+    const Menu = createIcon('Menu');
+    const X = createIcon('X');
+    const ArrowRight = createIcon('ArrowRight');
+    const ArrowLeft = createIcon('ArrowLeft');
+    const ChevronRight = createIcon('ChevronRight');
+    const ChevronLeft = createIcon('ChevronLeft');
+    const ChevronDown = createIcon('ChevronDown');
+    const Star = createIcon('Star');
+    const Heart = createIcon('Heart');
+    const Search = createIcon('Search');
+    const Mail = createIcon('Mail');
+    const Phone = createIcon('Phone');
+    const MapPin = createIcon('MapPin');
+    const Clock = createIcon('Clock');
+    const Calendar = createIcon('Calendar');
+    const User = createIcon('User');
+    const Settings = createIcon('Settings');
+    const Home = createIcon('Home');
+    const Image = createIcon('Image');
+    const Camera = createIcon('Camera');
+    const Globe = createIcon('Globe');
+    const ExternalLink = createIcon('ExternalLink');
+    const Info = createIcon('Info');
+    const Check = createIcon('Check');
+    const Plus = createIcon('Plus');
+    const Minus = createIcon('Minus');
+    const Eye = createIcon('Eye');
+    const Download = createIcon('Download');
+    const Upload = createIcon('Upload');
+    const Share2 = createIcon('Share2');
+    const Facebook = createIcon('Facebook');
+    const Twitter = createIcon('Twitter');
+    const Instagram = createIcon('Instagram');
+    const Youtube = createIcon('Youtube');
+    const Linkedin = createIcon('Linkedin');
+    const Send = createIcon('Send');
+  `;
+
+  const combinedJsx = `
+    ${routerStub}
+    ${iconStub}
+    const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext } = React;
+    ${componentDefs.join("\n\n")}
+    ${appComponent}
+  `;
+
+  return `<!DOCTYPE html>
+<html lang="en" dir="auto">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Preview</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin><\/script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin><\/script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin><\/script>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.17/dist/tailwind.min.css" rel="stylesheet" crossorigin />
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; }
+${allCss.replace(/@tailwind\s+\w+;/g, "").replace(/@import\s+.*?;/g, "")}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-type="module">
+try {
+  ${combinedJsx}
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(React.createElement(App));
+} catch(e) {
+  document.getElementById('root').innerHTML = '<div style="padding:2rem;color:#ef4444;font-family:monospace"><h2>Preview Error</h2><pre style="white-space:pre-wrap;margin-top:1rem">' + e.message + '</pre></div>';
+  console.error(e);
+}
+<\/script>
+</body>
+</html>`;
+};
+
+// Preview component using iframe with blob URL
+const IframePreview = ({ files, previewKey }: { files: FileTree; previewKey: number }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    bootAndRun();
-    return () => {
-      nodepodRef.current = null;
-    };
-  }, [previewKey]);
-
-  if (loading) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-        </div>
-        <div className="text-center space-y-1">
-          <p className="text-sm text-foreground font-medium">Booting preview...</p>
-          <p className="text-xs text-muted-foreground">Installing packages & starting Vite</p>
-        </div>
-        {logs.length > 0 && (
-          <div className="max-w-md w-full mx-4 mt-2 max-h-32 overflow-y-auto rounded-lg bg-secondary/80 border border-border p-3">
-            {logs.slice(-5).map((log, i) => (
-              <p key={i} className="text-[10px] font-mono text-muted-foreground truncate">{log}</p>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
+    if (Object.keys(files).length === 0) return;
+    try {
+      const html = buildPreviewHtml(files);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      setBlobUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to build preview");
+    }
+    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
+  }, [files, previewKey]);
 
   if (error) {
     return (
@@ -196,24 +256,22 @@ const NodepodPreview = ({ files, previewKey }: { files: FileTree; previewKey: nu
         </div>
         <p className="text-sm text-foreground font-medium">Preview Error</p>
         <p className="text-xs text-muted-foreground text-center max-w-sm">{error}</p>
-        <button onClick={bootAndRun} className="text-xs text-primary hover:underline mt-2">Retry</button>
       </div>
     );
   }
 
-  if (previewUrl) {
-    return (
-      <iframe
-        ref={iframeRef}
-        src={previewUrl}
-        className="w-full h-full border-none"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-        title="Preview"
-      />
-    );
-  }
+  if (!blobUrl) return null;
 
-  return null;
+  return (
+    <iframe
+      ref={iframeRef}
+      key={previewKey}
+      src={blobUrl}
+      className="w-full h-full border-none bg-white"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      title="Preview"
+    />
+  );
 };
 
 const CodeWorkspace = () => {
@@ -548,7 +606,7 @@ const CodeWorkspace = () => {
     <div className="h-full relative bg-secondary flex flex-col">
       {Object.keys(files).length > 0 ? (
         <div className="flex-1 h-full relative overflow-hidden">
-          <NodepodPreview files={files} previewKey={previewKey} />
+          <IframePreview files={files} previewKey={previewKey} />
           <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10" title="Reload">
             <RefreshCw className="w-4 h-4" />
           </button>
