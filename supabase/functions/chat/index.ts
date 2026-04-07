@@ -631,18 +631,10 @@ async function handleToolCalls(
       },
     ];
 
-    // For the synthesis call, prefer Lovable Gateway for reliability
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    // Use LemonData primarily, Lovable AI Gateway only as fallback
     let synthesisUrl = apiUrl;
     let synthesisKey = apiKey;
-    let synthesisModel = modelId;
-    
-    // If using LemonData and it's deep research, switch to Lovable for synthesis
-    if (LOVABLE_API_KEY && isDeepResearch) {
-      synthesisUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      synthesisKey = LOVABLE_API_KEY;
-      synthesisModel = "google/gemini-2.5-flash";
-    }
+    let synthesisModel = isDeepResearch ? "deepseek-v3-2" : modelId;
 
     const secondBody: any = { model: synthesisModel, messages: searchMessages, stream: true, max_tokens: isDeepResearch ? 8192 : 4096 };
     // Only allow further tool calls if we haven't hit max depth
