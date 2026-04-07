@@ -137,6 +137,52 @@ async function callLemonImage(sb: ReturnType<typeof createClient>, model: string
   throw new Error("All LemonData attempts failed");
 }
 
+// ── fal.ai call ──
+async function callFal(model: string, params: Record<string, any>): Promise<string> {
+  const falKey = Deno.env.get("FAL_API_KEY");
+  if (!falKey) throw new Error("FAL_API_KEY not configured");
+
+  const submitResp = await fetch(`https://queue.fal.run/${model}`, {
+    method: "POST",
+    headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  if (!submitResp.ok) {
+    const t = await submitResp.text();
+    throw new Error(`fal.ai error: ${submitResp.status} ${t.slice(0, 200)}`);
+  }
+
+  const submitData = await submitResp.json();
+  const requestId = submitData.request_id;
+  if (!requestId) {
+    const url = submitData.images?.[0]?.url || submitData.image?.url;
+    if (url) return url;
+    throw new Error("No request_id from fal.ai");
+  }
+
+  // Poll for result
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const pollResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}/status`, {
+      headers: { Authorization: `Key ${falKey}` },
+    });
+    if (!pollResp.ok) continue;
+    const pollData = await pollResp.json();
+    if (pollData.status === "COMPLETED") {
+      const resultResp = await fetch(`https://queue.fal.run/${model}/requests/${requestId}`, {
+        headers: { Authorization: `Key ${falKey}` },
+      });
+      const resultData = await resultResp.json();
+      const url = resultData.images?.[0]?.url || resultData.image?.url || resultData.relit_image?.url;
+      if (url) return url;
+      throw new Error("No image in fal.ai result");
+    }
+    if (pollData.status === "FAILED") throw new Error("fal.ai generation failed");
+  }
+  throw new Error("fal.ai generation timed out");
+}
+
 // ── WaveSpeed call ──
 async function callWaveSpeed(sb: ReturnType<typeof createClient>, model: string, params: Record<string, any>): Promise<string> {
   const key = await getWaveSpeedKey(sb);
@@ -155,13 +201,11 @@ async function callWaveSpeed(sb: ReturnType<typeof createClient>, model: string,
   const submitData = await submitResp.json();
   const taskId = submitData.data?.id || submitData.id;
   if (!taskId) {
-    // Check if result is already available (sync mode)
     const url = submitData.data?.outputs?.[0] || submitData.data?.output?.url || submitData.output?.url;
     if (url) return url;
     throw new Error("No task ID returned from WaveSpeed");
   }
 
-  // Poll for result
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 2000));
     const pollResp = await fetch(`https://api.wavespeed.ai/api/v3/predictions/${taskId}/result`, {
@@ -191,7 +235,15 @@ serve(async (req) => {
 
     let resultUrl: string;
 
-    if (config.provider === "wavespeed") {
+    if (config.provider === "fal") {
+      // fal.ai tools (relight via IC-Light)
+      const params: Record<string, any> = {};
+      if (tool === 'relight') {
+        params.image_url = image;
+        params.prompt = prompt || "Professional studio lighting";
+      }
+      resultUrl = await callFal(config.falModel!, params);
+    } else if (config.provider === "wavespeed") {
       // WaveSpeed tools (face-swap, bg-remover, character-swap)
       const params: Record<string, any> = {};
       if (tool === 'face-swap' || tool === 'character-swap') {
