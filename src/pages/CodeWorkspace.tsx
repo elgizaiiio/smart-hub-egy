@@ -140,8 +140,9 @@ const CodeWorkspace = () => {
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
 
   const [files, setFiles] = useState<FileTree>({});
-  const [liveCodesConfig, setLiveCodesConfig] = useState<any>(null);
-  const [liveCodesKey, setLiveCodesKey] = useState(0);
+  const [liveCode, setLiveCode] = useState<string>("");
+  const [liveCSS, setLiveCSS] = useState<string>("");
+  const [previewKey, setPreviewKey] = useState(0);
   const [conversationId, setConversationId] = useState<string | null>(paramConversationId || null);
   const [projectId, setProjectId] = useState<string | null>(paramProjectId || null);
   const [supabaseConfig, setSupabaseConfig] = useState<{ url: string; anon_key: string } | null>(null);
@@ -179,8 +180,9 @@ const CodeWorkspace = () => {
         delete loadedFiles.__supabase_config;
         setFiles(loadedFiles);
         const allFiles = { ...VITE_TEMPLATE, ...loadedFiles };
-        setLiveCodesConfig(buildLiveCodesConfig(allFiles));
-        setLiveCodesKey(k => k + 1);
+        setLiveCode(buildReactLiveCode(allFiles));
+        setLiveCSS(extractCSS(allFiles));
+        setPreviewKey(k => k + 1);
       }
     };
     loadProject();
@@ -331,8 +333,9 @@ const CodeWorkspace = () => {
       const saveStep = await addStep("saving", "Saving changes...");
       const allFiles = { ...VITE_TEMPLATE, ...parsedFiles };
       setFiles(allFiles);
-      setLiveCodesConfig(buildLiveCodesConfig(allFiles));
-      setLiveCodesKey(k => k + 1);
+      setLiveCode(buildReactLiveCode(allFiles));
+      setLiveCSS(extractCSS(allFiles));
+      setPreviewKey(k => k + 1);
       completeStep(saveStep.id);
 
       await addStep("done", "Done");
@@ -368,7 +371,7 @@ const CodeWorkspace = () => {
   };
 
   const handleRefreshPreview = () => {
-    if (liveCodesConfig) setLiveCodesKey(k => k + 1);
+    if (liveCode) setPreviewKey(k => k + 1);
   };
 
   const handleDownloadFiles = () => {
@@ -448,15 +451,13 @@ const CodeWorkspace = () => {
 
   const previewPanel = (
     <div className="h-full relative bg-secondary flex flex-col">
-      {liveCodesConfig ? (
-        <div className="flex-1 h-full relative">
-          <LiveCodes
-            key={liveCodesKey}
-            config={liveCodesConfig}
-            view="result"
-            loading="eager"
-            style={{ height: "100%", width: "100%", border: "none" }}
-          />
+      {liveCode ? (
+        <div className="flex-1 h-full relative overflow-auto">
+          {liveCSS && <style dangerouslySetInnerHTML={{ __html: liveCSS }} />}
+          <LiveProvider key={previewKey} code={liveCode} noInline scope={{ React, useState: React.useState, useEffect: React.useEffect, useRef: React.useRef, useCallback: React.useCallback, useMemo: React.useMemo }}>
+            <LiveError className="p-4 text-xs text-red-400 bg-red-950/30 font-mono" />
+            <LivePreview className="min-h-full" />
+          </LiveProvider>
           <button onClick={handleRefreshPreview} className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-background transition-all shadow-sm z-10" title="Reload">
             <RefreshCw className="w-4 h-4" />
           </button>
