@@ -352,9 +352,9 @@ serve(async (req) => {
         return new Response("OK");
       }
 
-      // ==================== API Keys Management (AgentRouter / Serper / WaveSpeed) ====================
+      // ==================== API Keys Management ====================
       if (d === "apikeys_menu") {
-        const services = ["agentrouter", "serper", "wavespeed", "deepgram"];
+        const services = ["agentrouter", "serper", "wavespeed", "deepgram", "hyperbrowser"];
         const stats: string[] = [];
         for (const svc of services) {
           const { data: keys } = await sb.from("api_keys").select("id, is_active, is_blocked, usage_count").eq("service", svc);
@@ -370,6 +370,7 @@ serve(async (req) => {
             [{ text: "🔍 Serper", callback_data: "ak_svc_serper" }],
             [{ text: "🌊 WaveSpeed", callback_data: "ak_svc_wavespeed" }],
             [{ text: "🎙️ Deepgram", callback_data: "ak_svc_deepgram" }],
+            [{ text: "🌐 Hyperbrowser", callback_data: "ak_svc_hyperbrowser" }],
             [{ text: "🔙 القائمة الرئيسية", callback_data: "main_menu" }],
           ]
         );
@@ -381,7 +382,7 @@ serve(async (req) => {
         const { data: keys } = await sb.from("api_keys").select("id, api_key, is_active, is_blocked, usage_count, label").eq("service", service);
         const total = keys?.length || 0;
         const active = keys?.filter((k: any) => k.is_active && !k.is_blocked).length || 0;
-        const svcNames: Record<string, string> = { agentrouter: "AgentRouter", serper: "Serper", wavespeed: "WaveSpeed", deepgram: "Deepgram" };
+        const svcNames: Record<string, string> = { agentrouter: "AgentRouter", serper: "Serper", wavespeed: "WaveSpeed", deepgram: "Deepgram", hyperbrowser: "Hyperbrowser" };
         await send(BOT_TOKEN, chatId, msgId,
           `🔐 *${svcNames[service] || service}*\n\nإجمالي: *${total}* | نشط: *${active}*`,
           [
