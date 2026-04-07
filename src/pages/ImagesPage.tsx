@@ -37,6 +37,10 @@ const ALL_TOOLS = [
   { id: "character-swap", name: "Character Swap", route: "/images/tools/character-swap" },
   { id: "storyboard", name: "Storyboard", route: "/images/tools/storyboard" },
   { id: "hair-changer", name: "Hair Changer", route: "/images/tools/hair-changer" },
+  { id: "avatar-generator", name: "Avatar Generator", route: "/images/tools/avatar-generator" },
+  { id: "product-photo", name: "Product Photo", route: "/images/tools/product-photo" },
+  { id: "logo-generator", name: "Logo Generator", route: "/images/tools/logo-generator" },
+  { id: "perspective-correction", name: "Fix Perspective", route: "/images/tools/perspective-correction" },
 ];
 
 const TOOL_ROWS = [
@@ -60,6 +64,10 @@ const TOOL_SILK: Record<string, { bg: string; s1: string; s2: string; s3: string
   "character-swap": { bg: "linear-gradient(135deg, #4a1e5f 0%, #c026d3 40%, #a21caf 100%)", s1: "rgba(232,121,249,0.5)", s2: "rgba(192,38,211,0.4)", s3: "rgba(240,171,252,0.15)", s4: "rgba(168,85,247,0.25)" },
   "storyboard": { bg: "linear-gradient(135deg, #1e2a5f 0%, #4f46e5 40%, #4338ca 100%)", s1: "rgba(129,140,248,0.5)", s2: "rgba(79,70,229,0.4)", s3: "rgba(165,180,252,0.15)", s4: "rgba(99,102,241,0.25)" },
   "hair-changer": { bg: "linear-gradient(135deg, #1e4a4f 0%, #06b6d4 40%, #0891b2 100%)", s1: "rgba(34,211,238,0.5)", s2: "rgba(6,182,212,0.4)", s3: "rgba(103,232,249,0.15)", s4: "rgba(8,145,178,0.25)" },
+  "avatar-generator": { bg: "linear-gradient(135deg, #2d1b69 0%, #8b5cf6 40%, #7c3aed 100%)", s1: "rgba(167,139,250,0.5)", s2: "rgba(139,92,246,0.4)", s3: "rgba(196,181,253,0.15)", s4: "rgba(124,58,237,0.25)" },
+  "product-photo": { bg: "linear-gradient(135deg, #1e3a3a 0%, #14b8a6 40%, #0d9488 100%)", s1: "rgba(94,234,212,0.5)", s2: "rgba(20,184,166,0.4)", s3: "rgba(153,246,228,0.15)", s4: "rgba(13,148,136,0.25)" },
+  "logo-generator": { bg: "linear-gradient(135deg, #3a1e1e 0%, #ef4444 40%, #dc2626 100%)", s1: "rgba(248,113,113,0.5)", s2: "rgba(239,68,68,0.4)", s3: "rgba(254,202,202,0.15)", s4: "rgba(220,38,38,0.25)" },
+  "perspective-correction": { bg: "linear-gradient(135deg, #1e2a4a 0%, #6366f1 40%, #4f46e5 100%)", s1: "rgba(129,140,248,0.5)", s2: "rgba(99,102,241,0.4)", s3: "rgba(165,180,252,0.15)", s4: "rgba(79,70,229,0.25)" },
 };
 
 const IMAGE_PLACEHOLDERS = [

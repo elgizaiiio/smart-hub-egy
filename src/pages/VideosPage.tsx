@@ -29,6 +29,13 @@ const ALL_TOOLS = [
   { id: "auto-caption", name: "Auto Caption", route: "/videos/tools/auto-caption" },
   { id: "lip-sync", name: "Lip Sync", route: "/videos/tools/lip-sync" },
   { id: "video-extender", name: "Video Extender", route: "/videos/tools/video-extender" },
+  { id: "green-screen", name: "Green Screen", route: "/videos/tools/green-screen" },
+  { id: "video-colorizer", name: "Video Colorizer", route: "/videos/tools/video-colorizer" },
+  { id: "video-watermark", name: "Watermark", route: "/videos/tools/video-watermark" },
+  { id: "video-bg-replacer", name: "BG Replacer", route: "/videos/tools/video-bg-replacer" },
+  { id: "video-intro", name: "Video Intro", route: "/videos/tools/video-intro" },
+  { id: "video-denoise", name: "Denoise", route: "/videos/tools/video-denoise" },
+  { id: "thumbnail-generator", name: "Thumbnail", route: "/videos/tools/thumbnail-generator" },
 ];
 
 const TOOL_ROWS = [
@@ -43,6 +50,13 @@ const TOOL_SILK: Record<string, { bg: string; s1: string; s2: string; s3: string
   "auto-caption": { bg: "linear-gradient(135deg, #5f3a1e 0%, #d97706 40%, #b45309 100%)", s1: "rgba(251,191,36,0.5)", s2: "rgba(217,119,6,0.4)", s3: "rgba(253,224,71,0.15)", s4: "rgba(245,158,11,0.25)" },
   "lip-sync": { bg: "linear-gradient(135deg, #1e5f2a 0%, #16a34a 40%, #15803d 100%)", s1: "rgba(74,222,128,0.5)", s2: "rgba(22,163,74,0.4)", s3: "rgba(134,239,172,0.15)", s4: "rgba(34,197,94,0.25)" },
   "video-extender": { bg: "linear-gradient(135deg, #1e2a5f 0%, #4f46e5 40%, #4338ca 100%)", s1: "rgba(129,140,248,0.5)", s2: "rgba(79,70,229,0.4)", s3: "rgba(165,180,252,0.15)", s4: "rgba(99,102,241,0.25)" },
+  "green-screen": { bg: "linear-gradient(135deg, #1e4a4a 0%, #0d9488 40%, #0f766e 100%)", s1: "rgba(94,234,212,0.5)", s2: "rgba(13,148,136,0.4)", s3: "rgba(153,246,228,0.15)", s4: "rgba(20,184,166,0.25)" },
+  "video-colorizer": { bg: "linear-gradient(135deg, #5f4a1e 0%, #eab308 40%, #ca8a04 100%)", s1: "rgba(250,204,21,0.5)", s2: "rgba(234,179,8,0.4)", s3: "rgba(253,224,71,0.15)", s4: "rgba(202,138,4,0.25)" },
+  "video-watermark": { bg: "linear-gradient(135deg, #2a2a3a 0%, #475569 40%, #334155 100%)", s1: "rgba(148,163,184,0.5)", s2: "rgba(71,85,105,0.4)", s3: "rgba(203,213,225,0.15)", s4: "rgba(100,116,139,0.25)" },
+  "video-bg-replacer": { bg: "linear-gradient(135deg, #1e3a3a 0%, #14b8a6 40%, #0d9488 100%)", s1: "rgba(94,234,212,0.5)", s2: "rgba(20,184,166,0.4)", s3: "rgba(153,246,228,0.15)", s4: "rgba(13,148,136,0.25)" },
+  "video-intro": { bg: "linear-gradient(135deg, #5f1e4a 0%, #d946ef 40%, #a21caf 100%)", s1: "rgba(232,121,249,0.5)", s2: "rgba(217,70,239,0.4)", s3: "rgba(240,171,252,0.15)", s4: "rgba(192,38,211,0.25)" },
+  "video-denoise": { bg: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 40%, #1e40af 100%)", s1: "rgba(96,165,250,0.5)", s2: "rgba(37,99,235,0.4)", s3: "rgba(147,197,253,0.15)", s4: "rgba(59,130,246,0.25)" },
+  "thumbnail-generator": { bg: "linear-gradient(135deg, #3a1e1e 0%, #ef4444 40%, #dc2626 100%)", s1: "rgba(248,113,113,0.5)", s2: "rgba(239,68,68,0.4)", s3: "rgba(254,202,202,0.15)", s4: "rgba(220,38,38,0.25)" },
 };
 
 const VIDEO_PLACEHOLDERS = [
