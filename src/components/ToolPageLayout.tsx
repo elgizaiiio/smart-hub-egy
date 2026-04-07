@@ -6,6 +6,42 @@ import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 
+// Tool metadata for landing pages
+const TOOL_META: Record<string, { headline: string; accent: string; desc: string }> = {
+  'inpaint': { headline: 'AI', accent: 'Inpainting', desc: 'Edit parts of any image with AI precision' },
+  'clothes-changer': { headline: 'Change', accent: 'Outfits', desc: 'Transform clothing with AI styles' },
+  'headshot': { headline: 'Professional', accent: 'Headshots', desc: 'Studio-quality portraits in seconds' },
+  'bg-remover': { headline: 'Remove', accent: 'Backgrounds', desc: 'Clean background removal instantly' },
+  'face-swap': { headline: 'Face', accent: 'Swap', desc: 'Swap faces between any two photos' },
+  'relight': { headline: 'AI', accent: 'Relight', desc: 'Change lighting and mood of any photo' },
+  'colorizer': { headline: 'Colorize', accent: 'Photos', desc: 'Bring black & white photos to life' },
+  'character-swap': { headline: 'Character', accent: 'Swap', desc: 'Replace characters in any scene' },
+  'storyboard': { headline: 'AI', accent: 'Storyboard', desc: 'Create cinematic storyboard panels' },
+  'sketch-to-image': { headline: 'Sketch to', accent: 'Image', desc: 'Turn sketches into realistic photos' },
+  'retouching': { headline: 'Photo', accent: 'Retouching', desc: 'Professional beauty retouching' },
+  'remover': { headline: 'Object', accent: 'Remover', desc: 'Erase unwanted objects cleanly' },
+  'hair-changer': { headline: 'Change', accent: 'Hairstyle', desc: 'Try new hairstyles with AI' },
+  'cartoon': { headline: 'AI', accent: 'Cartoon', desc: 'Transform photos to cartoon art' },
+  'avatar-generator': { headline: 'AI', accent: 'Avatar', desc: 'Generate personal AI avatars' },
+  'product-photo': { headline: 'Product', accent: 'Photography', desc: 'Professional product shots' },
+  'logo-generator': { headline: 'AI Logo', accent: 'Generator', desc: 'Design logos with AI' },
+  'perspective-correction': { headline: 'Fix', accent: 'Perspective', desc: 'Correct image distortion' },
+  'green-screen': { headline: 'Green', accent: 'Screen', desc: 'Remove green screen backgrounds' },
+  'video-colorizer': { headline: 'Colorize', accent: 'Video', desc: 'Add color to old footage' },
+  'video-watermark': { headline: 'Video', accent: 'Watermark', desc: 'Add watermarks to your videos' },
+  'video-bg-replacer': { headline: 'Replace', accent: 'Background', desc: 'Change video backgrounds' },
+  'video-intro': { headline: 'Video', accent: 'Intro', desc: 'Create professional intros' },
+  'video-denoise': { headline: 'Denoise', accent: 'Video', desc: 'Remove noise from footage' },
+  'thumbnail-generator': { headline: 'AI', accent: 'Thumbnails', desc: 'Generate YouTube thumbnails' },
+  'auto-caption': { headline: 'Auto', accent: 'Caption', desc: 'Add subtitles automatically' },
+  'lip-sync': { headline: 'Lip', accent: 'Sync', desc: 'Sync lips to any audio' },
+  'video-extender': { headline: 'Extend', accent: 'Video', desc: 'Make videos longer with AI' },
+  'video-to-text': { headline: 'Video to', accent: 'Text', desc: 'Transcribe video content' },
+  'talking-photo': { headline: 'Talking', accent: 'Photo', desc: 'Make photos speak' },
+  'video-upscale': { headline: 'Upscale', accent: 'Video', desc: 'Enhance video resolution' },
+  'video-swap': { headline: 'Video Face', accent: 'Swap', desc: 'Swap faces in videos' },
+};
+
 // Local landing images
 const LOCAL_LANDING: Record<string, () => Promise<{ default: string }>> = {
   'inpaint': () => import('@/assets/tool-landing/inpaint.jpg'),
@@ -26,6 +62,20 @@ const LOCAL_LANDING: Record<string, () => Promise<{ default: string }>> = {
   'perspective-correction': () => import('@/assets/tool-landing/perspective-correction.jpg'),
   'storyboard': () => import('@/assets/tool-landing/storyboard.jpg'),
   'character-swap': () => import('@/assets/tool-landing/character-swap.jpg'),
+  'green-screen': () => import('@/assets/tool-landing/green-screen.jpg'),
+  'video-colorizer': () => import('@/assets/tool-landing/video-colorizer.jpg'),
+  'video-watermark': () => import('@/assets/tool-landing/video-watermark.jpg'),
+  'video-bg-replacer': () => import('@/assets/tool-landing/video-bg-replacer.jpg'),
+  'video-intro': () => import('@/assets/tool-landing/video-intro.jpg'),
+  'video-denoise': () => import('@/assets/tool-landing/video-denoise.jpg'),
+  'thumbnail-generator': () => import('@/assets/tool-landing/thumbnail-generator.jpg'),
+  'auto-caption': () => import('@/assets/tool-landing/auto-caption.jpg'),
+  'lip-sync': () => import('@/assets/tool-landing/lip-sync.jpg'),
+  'video-extender': () => import('@/assets/tool-landing/video-extender.jpg'),
+  'video-to-text': () => import('@/assets/tool-landing/video-to-text.jpg'),
+  'talking-photo': () => import('@/assets/tool-landing/talking-photo.jpg'),
+  'video-upscale': () => import('@/assets/tool-landing/video-upscale.jpg'),
+  'video-swap': () => import('@/assets/tool-landing/video-swap.jpg'),
 };
 
 // ==================== Types ====================
@@ -119,13 +169,16 @@ const ToolLanding = ({
   onStart,
   uploadLabel = "Upload Your Photo",
   accept = "image/*",
+  toolId,
 }: {
   landingImage?: string | null;
   onStart: (file: File) => void;
   uploadLabel?: string;
   accept?: string;
+  toolId?: string;
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
+  const meta = toolId ? TOOL_META[toolId] : null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,24 +187,87 @@ const ToolLanding = ({
   };
 
   return (
-    <div className="relative min-h-[75vh] flex flex-col items-center justify-center">
-      {landingImage ? (
-        <img src={landingImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-background" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-      <div className="relative z-10 text-center px-6">
+    <div className="min-h-[85vh] flex flex-col items-center px-6 pt-8 pb-24 bg-background">
+      {/* Bold headline */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-center mb-6"
+      >
+        <h2 className="text-4xl font-black text-foreground leading-tight">
+          {meta?.headline || "AI"}
+        </h2>
+        <h2 className="text-4xl font-black bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 bg-clip-text text-transparent leading-tight">
+          {meta?.accent || "Tool"}
+        </h2>
+      </motion.div>
+
+      {/* Preview card */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.15 }}
+        className="w-full max-w-sm rounded-3xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden shadow-2xl shadow-black/20"
+      >
+        {/* Card header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
+          <div className="w-6 h-6 rounded-full bg-muted/50 flex items-center justify-center">
+            <X className="w-3 h-3 text-muted-foreground" />
+          </div>
+          <div className="flex gap-2">
+            <div className="w-7 h-7 rounded-lg bg-muted/30 flex items-center justify-center">
+              <Download className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
+            <div className="w-7 h-7 rounded-lg bg-muted/30 flex items-center justify-center">
+              <Share2 className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+
+        {/* Preview image */}
+        <div className="relative aspect-[3/4] bg-muted/10">
+          {landingImage ? (
+            <img src={landingImage} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-pink-500/10 flex items-center justify-center">
+              <Sparkles className="w-12 h-12 text-muted-foreground/20" />
+            </div>
+          )}
+          {/* Play-style overlay circle */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-violet-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Description below image */}
+        <div className="px-4 py-3 flex items-start gap-2">
+          <Sparkles className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {meta?.desc || "Transform your media with AI"}
+          </p>
+        </div>
+      </motion.div>
+
+      {/* Upload button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="mt-8"
+      >
         <input ref={fileRef} type="file" className="hidden" accept={accept} onChange={handleFileChange} />
         <motion.button
           whileTap={{ scale: 0.96 }}
           onClick={() => fileRef.current?.click()}
-          className="px-10 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20"
+          className="px-10 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold text-base shadow-lg shadow-violet-600/20"
         >
           <Upload className="w-4 h-4 inline mr-2" />
           {uploadLabel}
         </motion.button>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -330,6 +446,7 @@ const ToolPageLayout = ({
                 onStart={handleLandingFileSelect}
                 uploadLabel={uploadLabel}
                 accept={acceptType}
+                toolId={toolId}
               />
             </motion.div>
           )}
