@@ -224,6 +224,10 @@ const App = () => {
                 <Route path="/images/tools/remover" element={<ProtectedRoute><RemoverPage /></ProtectedRoute>} />
                 <Route path="/images/tools/hair-changer" element={<ProtectedRoute><HairChangerPage /></ProtectedRoute>} />
                 <Route path="/images/tools/cartoon" element={<ProtectedRoute><CartoonPage /></ProtectedRoute>} />
+                <Route path="/images/tools/avatar-generator" element={<ProtectedRoute><AvatarGeneratorPage /></ProtectedRoute>} />
+                <Route path="/images/tools/product-photo" element={<ProtectedRoute><ProductPhotoPage /></ProtectedRoute>} />
+                <Route path="/images/tools/logo-generator" element={<ProtectedRoute><LogoGeneratorPage /></ProtectedRoute>} />
+                <Route path="/images/tools/perspective-correction" element={<ProtectedRoute><PerspectiveCorrectionPage /></ProtectedRoute>} />
                 
                 {/* Video tool routes */}
                 <Route path="/videos/tools/swap-characters" element={<ProtectedRoute><VideoSwapPage /></ProtectedRoute>} />
@@ -233,6 +237,13 @@ const App = () => {
                 <Route path="/videos/tools/auto-caption" element={<ProtectedRoute><AutoCaptionPage /></ProtectedRoute>} />
                 <Route path="/videos/tools/lip-sync" element={<ProtectedRoute><LipSyncPage /></ProtectedRoute>} />
                 <Route path="/videos/tools/video-to-text" element={<ProtectedRoute><VideoToTextPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/green-screen" element={<ProtectedRoute><GreenScreenPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-colorizer" element={<ProtectedRoute><VideoColorizerPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-watermark" element={<ProtectedRoute><VideoWatermarkPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-bg-replacer" element={<ProtectedRoute><VideoBgReplacerPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-intro" element={<ProtectedRoute><VideoIntroPage /></ProtectedRoute>} />
+                <Route path="/videos/tools/video-denoise" element={<ProtectedRoute><VideoDenoisePage /></ProtectedRoute>} />
+                <Route path="/videos/tools/thumbnail-generator" element={<ProtectedRoute><ThumbnailGeneratorPage /></ProtectedRoute>} />
                 <Route path="/voice" element={<ProtectedRoute><VoicePage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/voice/changer" element={<ProtectedRoute><VoiceChangerPage /></ProtectedRoute>} />
                 <Route path="/voice/clone" element={<ProtectedRoute><CloneVoicePage /></ProtectedRoute>} />
