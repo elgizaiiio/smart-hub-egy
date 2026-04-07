@@ -6,6 +6,42 @@ import { toast } from "sonner";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 
+// Tool metadata for landing pages
+const TOOL_META: Record<string, { headline: string; accent: string; desc: string }> = {
+  'inpaint': { headline: 'AI', accent: 'Inpainting', desc: 'Edit parts of any image with AI precision' },
+  'clothes-changer': { headline: 'Change', accent: 'Outfits', desc: 'Transform clothing with AI styles' },
+  'headshot': { headline: 'Professional', accent: 'Headshots', desc: 'Studio-quality portraits in seconds' },
+  'bg-remover': { headline: 'Remove', accent: 'Backgrounds', desc: 'Clean background removal instantly' },
+  'face-swap': { headline: 'Face', accent: 'Swap', desc: 'Swap faces between any two photos' },
+  'relight': { headline: 'AI', accent: 'Relight', desc: 'Change lighting and mood of any photo' },
+  'colorizer': { headline: 'Colorize', accent: 'Photos', desc: 'Bring black & white photos to life' },
+  'character-swap': { headline: 'Character', accent: 'Swap', desc: 'Replace characters in any scene' },
+  'storyboard': { headline: 'AI', accent: 'Storyboard', desc: 'Create cinematic storyboard panels' },
+  'sketch-to-image': { headline: 'Sketch to', accent: 'Image', desc: 'Turn sketches into realistic photos' },
+  'retouching': { headline: 'Photo', accent: 'Retouching', desc: 'Professional beauty retouching' },
+  'remover': { headline: 'Object', accent: 'Remover', desc: 'Erase unwanted objects cleanly' },
+  'hair-changer': { headline: 'Change', accent: 'Hairstyle', desc: 'Try new hairstyles with AI' },
+  'cartoon': { headline: 'AI', accent: 'Cartoon', desc: 'Transform photos to cartoon art' },
+  'avatar-generator': { headline: 'AI', accent: 'Avatar', desc: 'Generate personal AI avatars' },
+  'product-photo': { headline: 'Product', accent: 'Photography', desc: 'Professional product shots' },
+  'logo-generator': { headline: 'AI Logo', accent: 'Generator', desc: 'Design logos with AI' },
+  'perspective-correction': { headline: 'Fix', accent: 'Perspective', desc: 'Correct image distortion' },
+  'green-screen': { headline: 'Green', accent: 'Screen', desc: 'Remove green screen backgrounds' },
+  'video-colorizer': { headline: 'Colorize', accent: 'Video', desc: 'Add color to old footage' },
+  'video-watermark': { headline: 'Video', accent: 'Watermark', desc: 'Add watermarks to your videos' },
+  'video-bg-replacer': { headline: 'Replace', accent: 'Background', desc: 'Change video backgrounds' },
+  'video-intro': { headline: 'Video', accent: 'Intro', desc: 'Create professional intros' },
+  'video-denoise': { headline: 'Denoise', accent: 'Video', desc: 'Remove noise from footage' },
+  'thumbnail-generator': { headline: 'AI', accent: 'Thumbnails', desc: 'Generate YouTube thumbnails' },
+  'auto-caption': { headline: 'Auto', accent: 'Caption', desc: 'Add subtitles automatically' },
+  'lip-sync': { headline: 'Lip', accent: 'Sync', desc: 'Sync lips to any audio' },
+  'video-extender': { headline: 'Extend', accent: 'Video', desc: 'Make videos longer with AI' },
+  'video-to-text': { headline: 'Video to', accent: 'Text', desc: 'Transcribe video content' },
+  'talking-photo': { headline: 'Talking', accent: 'Photo', desc: 'Make photos speak' },
+  'video-upscale': { headline: 'Upscale', accent: 'Video', desc: 'Enhance video resolution' },
+  'video-swap': { headline: 'Video Face', accent: 'Swap', desc: 'Swap faces in videos' },
+};
+
 // Local landing images
 const LOCAL_LANDING: Record<string, () => Promise<{ default: string }>> = {
   'inpaint': () => import('@/assets/tool-landing/inpaint.jpg'),
@@ -26,6 +62,20 @@ const LOCAL_LANDING: Record<string, () => Promise<{ default: string }>> = {
   'perspective-correction': () => import('@/assets/tool-landing/perspective-correction.jpg'),
   'storyboard': () => import('@/assets/tool-landing/storyboard.jpg'),
   'character-swap': () => import('@/assets/tool-landing/character-swap.jpg'),
+  'green-screen': () => import('@/assets/tool-landing/green-screen.jpg'),
+  'video-colorizer': () => import('@/assets/tool-landing/video-colorizer.jpg'),
+  'video-watermark': () => import('@/assets/tool-landing/video-watermark.jpg'),
+  'video-bg-replacer': () => import('@/assets/tool-landing/video-bg-replacer.jpg'),
+  'video-intro': () => import('@/assets/tool-landing/video-intro.jpg'),
+  'video-denoise': () => import('@/assets/tool-landing/video-denoise.jpg'),
+  'thumbnail-generator': () => import('@/assets/tool-landing/thumbnail-generator.jpg'),
+  'auto-caption': () => import('@/assets/tool-landing/auto-caption.jpg'),
+  'lip-sync': () => import('@/assets/tool-landing/lip-sync.jpg'),
+  'video-extender': () => import('@/assets/tool-landing/video-extender.jpg'),
+  'video-to-text': () => import('@/assets/tool-landing/video-to-text.jpg'),
+  'talking-photo': () => import('@/assets/tool-landing/talking-photo.jpg'),
+  'video-upscale': () => import('@/assets/tool-landing/video-upscale.jpg'),
+  'video-swap': () => import('@/assets/tool-landing/video-swap.jpg'),
 };
 
 // ==================== Types ====================
