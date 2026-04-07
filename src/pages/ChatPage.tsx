@@ -306,6 +306,8 @@ const ChatPage = () => {
       chatMode: chatMode,
       user_id: chatUserId || undefined,
       computerUseEnabled,
+      activeAgent: chatMode !== "normal" ? chatMode : (selectedModel ? undefined : undefined),
+      selectedModel: selectedModel ? { id: selectedModel.id, cost: selectedModel.cost } : undefined,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
       onStatus: (status) => {
@@ -340,7 +342,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(false);setComputerUseEnabled(false);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
