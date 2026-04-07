@@ -225,6 +225,8 @@ const App = () => {
                 <Route path="/voice/music/:id" element={<ProtectedRoute><MusicPlayerPage /></ProtectedRoute>} />
                 <Route path="/voice/call" element={<ProtectedRoute><VoiceCallPage /></ProtectedRoute>} />
                 <Route path="/voice/noise-remover" element={<ProtectedRoute><NoiseRemoverPage /></ProtectedRoute>} />
+                <Route path="/voice/translate" element={<ProtectedRoute><VoiceTranslatePage /></ProtectedRoute>} />
+                <Route path="/voice/studio" element={<ProtectedRoute><VoiceStudioPage /></ProtectedRoute>} />
                 <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
