@@ -191,6 +191,17 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
 
   return (
     <div className="relative">
+      <AnimatePresence>
+        {mentionOpen && (
+          <MentionDropdown
+            query={mentionQuery}
+            onSelect={handleMentionSelect}
+            onClose={() => setMentionOpen(false)}
+            visible={mentionOpen}
+            categories={mentionCategories}
+          />
+        )}
+      </AnimatePresence>
       <div className="rounded-[2rem] border border-border/50 bg-background/35 backdrop-blur-xl overflow-hidden shadow-[0_18px_60px_hsl(var(--foreground)/0.08)]">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
