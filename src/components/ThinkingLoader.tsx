@@ -4,7 +4,6 @@ interface ThinkingLoaderProps {
   searchQuery?: string;
   searchStatus?: string;
   statusHistory?: string[];
-  isComputerUse?: boolean;
 }
 
 function getStarColor(text: string, isComputerUse?: boolean): string {
@@ -25,9 +24,9 @@ function detectComputerUse(statusHistory: string[]): boolean {
   });
 }
 
-const ThinkingLoader = ({ searchQuery, searchStatus, statusHistory = [], isComputerUse }: ThinkingLoaderProps) => {
+const ThinkingLoader = ({ searchQuery, searchStatus, statusHistory = [] }: ThinkingLoaderProps) => {
   const hasRealSteps = statusHistory.length > 0;
-  const actualComputerUse = isComputerUse || detectComputerUse(statusHistory);
+  const actualComputerUse = detectComputerUse(statusHistory);
 
   const latestStatus = hasRealSteps ? statusHistory[statusHistory.length - 1] : null;
   const displayText = searchStatus || latestStatus || (searchQuery ? `Searching for "${searchQuery}"` : "Thinking");
