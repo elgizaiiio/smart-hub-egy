@@ -10,6 +10,8 @@ import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
+import AgentBadge from "@/components/AgentBadge";
+import type { AgentDef } from "@/lib/agentRegistry";
 
 import { streamChat } from "@/lib/streamChat";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
