@@ -165,70 +165,50 @@ const StarLoader = () => {
   );
 };
 
-// ==================== Landing Page ====================
-const ToolLanding = ({
+// ==================== Silky Landing (exported for custom pages) ====================
+export const SilkyToolLanding = ({
   onStart,
   uploadLabel = "Upload Your Photo",
   accept = "image/*",
   toolId,
+  onButtonClick,
 }: {
-  onStart: (file: File) => void;
+  onStart?: (file: File) => void;
   uploadLabel?: string;
   accept?: string;
-  toolId?: string;
+  toolId: string;
+  onButtonClick?: () => void;
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
-  const meta = toolId ? TOOL_META[toolId] : null;
-  const Icon = meta?.icon || Sparkles;
+  const meta = TOOL_META[toolId];
+  const silk = TOOL_SILK[toolId] || TOOL_SILK["inpaint"];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) onStart(file);
+    if (file && onStart) onStart(file);
     e.target.value = "";
   };
 
   return (
     <div className="h-[calc(100vh-56px)] flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Silky gradient background */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${meta?.gradient || 'from-violet-600/30 via-purple-500/20 to-pink-600/30'}`} />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(139,92,246,0.15),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(236,72,153,0.12),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_70%)]" />
-
-      {/* Floating orbs */}
-      <motion.div
-        animate={{ y: [-20, 20, -20], x: [-10, 10, -10] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[15%] left-[10%] w-32 h-32 rounded-full bg-violet-500/10 blur-3xl"
-      />
-      <motion.div
-        animate={{ y: [15, -15, 15], x: [10, -10, 10] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[20%] right-[10%] w-40 h-40 rounded-full bg-pink-500/10 blur-3xl"
-      />
+      {/* Multi-layered silky radial gradient background */}
+      <div className="absolute inset-0" style={{ background: silk.bg }} />
+      <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse 150% 100% at 15% 25%, ${silk.s1}, transparent 70%), radial-gradient(ellipse 130% 90% at 85% 75%, ${silk.s2}, transparent 65%), radial-gradient(ellipse 100% 120% at 50% -10%, ${silk.s3}, transparent 60%)` }} />
+      <div className="absolute inset-0" style={{ background: `radial-gradient(circle 80px at 25% 75%, ${silk.s4}, transparent), radial-gradient(circle 60px at 75% 25%, rgba(255,255,255,0.08), transparent), radial-gradient(circle 100px at 50% 50%, ${silk.s4}, transparent)` }} />
+      <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, rgba(255,255,255,0.06) 0%, transparent 40%, rgba(255,255,255,0.04) 60%, transparent 100%)` }} />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-md">
-        {/* Icon */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, type: "spring" }}
-          className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center mb-6"
-        >
-          <Icon className="w-8 h-8 text-foreground/80" />
-        </motion.div>
-
         {/* Headlines */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ duration: 0.5 }}
         >
-          <h2 className="text-5xl font-black text-foreground leading-[1.1] tracking-tight">
+          <h2 className="text-5xl font-black text-white leading-[1.1] tracking-tight drop-shadow-lg">
             {meta?.headline || "AI"}
           </h2>
-          <h2 className="text-5xl font-black bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-[1.1] tracking-tight">
+          <h2 className="text-5xl font-black text-white/90 leading-[1.1] tracking-tight drop-shadow-lg">
             {meta?.accent || "Tool"}
           </h2>
         </motion.div>
@@ -237,8 +217,8 @@ const ToolLanding = ({
         <motion.p
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-sm text-muted-foreground mt-4 leading-relaxed max-w-[280px]"
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="text-sm text-white/60 mt-4 leading-relaxed max-w-[280px]"
         >
           {meta?.desc || "Transform your media with AI"}
         </motion.p>
@@ -247,38 +227,41 @@ const ToolLanding = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
           className="mt-8"
         >
           <input ref={fileRef} type="file" className="hidden" accept={accept} onChange={handleFileChange} />
           <motion.button
             whileTap={{ scale: 0.96 }}
             whileHover={{ scale: 1.02 }}
-            onClick={() => fileRef.current?.click()}
-            className="px-8 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-foreground font-semibold text-base shadow-2xl shadow-black/20 hover:bg-white/20 transition-colors flex items-center gap-2.5"
+            onClick={() => onButtonClick ? onButtonClick() : fileRef.current?.click()}
+            className="px-8 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-white font-semibold text-base shadow-2xl shadow-black/30 hover:bg-white/25 transition-colors flex items-center gap-2.5"
           >
             <Upload className="w-5 h-5" />
             {uploadLabel}
           </motion.button>
         </motion.div>
 
-        {/* Subtle features line */}
+        {/* Subtle features */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="flex items-center gap-4 mt-6 text-[11px] text-muted-foreground/60"
+          transition={{ delay: 0.45 }}
+          className="flex items-center gap-4 mt-6 text-[11px] text-white/40"
         >
           <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> Fast</span>
-          <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+          <span className="w-1 h-1 rounded-full bg-white/30" />
           <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI-Powered</span>
-          <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+          <span className="w-1 h-1 rounded-full bg-white/30" />
           <span className="flex items-center gap-1"><EyeIcon className="w-3 h-3" /> HD</span>
         </motion.div>
       </div>
     </div>
   );
 };
+
+// Keep backward-compatible alias
+const ToolLanding = SilkyToolLanding;
 
 // ==================== Yellow Generate Button ====================
 const YellowGenerateButton = ({
