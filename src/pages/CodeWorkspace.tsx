@@ -513,7 +513,7 @@ const CodeWorkspace = () => {
         <button onClick={() => navigate("/code")} className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <span className="text-xs text-muted-foreground font-mono">{isLoading ? "Building..." : "Megsy Code"}</span>
+        <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{isLoading ? "Building..." : (prompt?.slice(0, 40) || "Megsy Code")}</span>
         <div className="w-8" />
       </div>
 

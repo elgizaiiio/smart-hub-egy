@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, Mic, Coins } from "lucide-react";
+import { ArrowLeft, Upload, Mic, Coins, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AppLayout from "@/layouts/AppLayout";
@@ -11,12 +11,28 @@ import { useCredits } from "@/hooks/useCredits";
 
 const COST = 2;
 
-const CloneVoicePage = () => {
+const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "ar", name: "Arabic" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "pt", name: "Portuguese" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "zh", name: "Chinese" },
+  { code: "ru", name: "Russian" },
+  { code: "hi", name: "Hindi" },
+  { code: "tr", name: "Turkish" },
+];
+
+const VoiceTranslatePage = () => {
   const navigate = useNavigate();
   const { credits, userId, hasEnoughCredits } = useCredits();
-  const [step, setStep] = useState<"upload" | "text" | "confirm" | "loading" | "result">("upload");
+  const [step, setStep] = useState<"upload" | "language" | "confirm" | "loading" | "result">("upload");
   const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [prompt, setPrompt] = useState("");
+  const [targetLang, setTargetLang] = useState(LANGUAGES[0]);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,7 +43,7 @@ const CloneVoicePage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     setAudioFile(file);
-    setStep("text");
+    setStep("language");
   };
 
   const startRecording = async () => {
@@ -40,7 +56,7 @@ const CloneVoicePage = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         const file = new File([blob], "recording.webm", { type: "audio/webm" });
         setAudioFile(file);
-        setStep("text");
+        setStep("language");
         stream.getTracks().forEach(t => t.stop());
       };
       recorder.start();
@@ -57,22 +73,27 @@ const CloneVoicePage = () => {
   };
 
   const handleGenerate = async () => {
-    if (!prompt.trim() || !audioFile || !userId) return;
+    if (!audioFile || !userId) return;
     if (!hasEnoughCredits(COST)) { toast.error("Not enough credits"); return; }
 
     setStep("loading");
     try {
       await supabase.functions.invoke("deduct-credits", {
-        body: { user_id: userId, amount: COST, action_type: "clone_voice", description: "Voice Cloning" }
+        body: { user_id: userId, amount: COST, action_type: "voice_translate", description: "Voice Translation" }
       });
 
       const reader = new FileReader();
       reader.onload = async () => {
         const { data, error } = await supabase.functions.invoke("generate-voice", {
-          body: { model_id: "qwen3-tts-clone", prompt: prompt.trim(), type: "tts", settings: { voice_sample: reader.result } },
+          body: {
+            model_id: "voice-translate",
+            prompt: reader.result,
+            type: "tts",
+            settings: { target_language: targetLang.code, voice: "nova" }
+          },
         });
         if (error) throw error;
-        if (data?.url) { setResultUrl(data.url); setStep("result"); toast.success("Voice cloned!"); }
+        if (data?.url) { setResultUrl(data.url); setStep("result"); toast.success("Voice translated!"); }
         else { toast.error("No audio returned"); setStep("confirm"); }
       };
       reader.readAsDataURL(audioFile);
@@ -87,12 +108,12 @@ const CloneVoicePage = () => {
       case "upload":
         return (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
-            <h2 className="text-xl font-bold text-foreground mb-2">Upload Voice Sample</h2>
-            <p className="text-sm text-muted-foreground mb-6 text-center">Upload a clear audio sample (10+ seconds) of the voice you want to clone</p>
+            <h2 className="text-xl font-bold text-foreground mb-2">Upload Voice to Translate</h2>
+            <p className="text-sm text-muted-foreground mb-6 text-center">Upload or record audio in any language to translate it</p>
             <button onClick={() => fileInputRef.current?.click()} className="w-full max-w-sm py-16 rounded-2xl border-2 border-dashed border-border/40 flex flex-col items-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors">
               <Upload className="w-8 h-8" />
-              <p className="text-sm font-medium">Upload Voice Sample (10s+)</p>
-              <p className="text-xs text-muted-foreground/50">MP3, WAV, M4A</p>
+              <p className="text-sm font-medium">Upload Audio File</p>
+              <p className="text-xs text-muted-foreground/50">MP3, WAV, M4A, WebM</p>
             </button>
             <button
               onClick={isRecording ? stopRecording : startRecording}
@@ -105,28 +126,25 @@ const CloneVoicePage = () => {
           </div>
         );
 
-      case "text":
+      case "language":
         return (
           <div className="px-4 pt-4 space-y-4">
-            <h2 className="text-lg font-bold text-foreground">What should the clone say?</h2>
-            <p className="text-sm text-muted-foreground">Enter the text you want spoken in the cloned voice</p>
-            <textarea
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              placeholder="Type or paste your text here..."
-              rows={6}
-              className="w-full rounded-2xl border border-border/30 bg-card/50 p-4 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none resize-none"
-            />
-            {prompt.trim() && (
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={() => setStep("confirm")}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-500 to-blue-500 text-white font-bold text-sm"
-              >
-                Next
-              </motion.button>
-            )}
+            <h2 className="text-lg font-bold text-foreground">Translate To</h2>
+            <p className="text-sm text-muted-foreground">Choose the target language</p>
+            <div className="grid grid-cols-2 gap-3">
+              {LANGUAGES.map(lang => (
+                <motion.button
+                  key={lang.code}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => { setTargetLang(lang); setStep("confirm"); }}
+                  className={`p-4 rounded-2xl border-2 text-left transition-colors ${targetLang.code === lang.code ? "border-primary bg-primary/5" : "border-border/20"}`}
+                  style={{ background: targetLang.code === lang.code ? undefined : "hsl(var(--card))" }}
+                >
+                  <p className="text-sm font-medium text-foreground">{lang.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{lang.code.toUpperCase()}</p>
+                </motion.button>
+              ))}
+            </div>
           </div>
         );
 
@@ -137,24 +155,24 @@ const CloneVoicePage = () => {
               <Coins className="w-8 h-8 text-primary" />
             </div>
             <div className="text-center">
-              <h2 className="text-xl font-bold text-foreground mb-2">Ready to Clone</h2>
-              <p className="text-sm text-muted-foreground max-w-xs">"{prompt.slice(0, 80)}{prompt.length > 80 ? "..." : ""}"</p>
+              <h2 className="text-xl font-bold text-foreground mb-2">Ready to Translate</h2>
+              <p className="text-sm text-muted-foreground">Target: <span className="text-foreground font-medium">{targetLang.name}</span></p>
               <p className="text-2xl font-bold text-primary mt-4">{COST} MC</p>
               <p className="text-xs text-muted-foreground mt-1">Your balance: {credits ?? 0} MC</p>
             </div>
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={handleGenerate}
-              className="w-full max-w-xs py-4 rounded-2xl bg-gradient-to-r from-violet-500 to-blue-500 text-white font-bold text-sm"
+              className="w-full max-w-xs py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold text-sm"
             >
-              Start Cloning
+              Start Translation
             </motion.button>
-            <button onClick={() => setStep("text")} className="text-sm text-muted-foreground">Edit text</button>
+            <button onClick={() => setStep("language")} className="text-sm text-muted-foreground">Change language</button>
           </div>
         );
 
       case "loading":
-        return <VoiceStarLoader />;
+        return <VoiceStarLoader text="Translating voice..." />;
 
       case "result":
         return (
@@ -162,7 +180,7 @@ const CloneVoicePage = () => {
             {resultUrl && (
               <VoiceResultPlayer
                 audioUrl={resultUrl}
-                title="Cloned Voice"
+                title="Translated Voice"
                 onGenerateMore={() => navigate("/voice")}
               />
             )}
@@ -175,15 +193,10 @@ const CloneVoicePage = () => {
     <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
       <div className="h-full flex flex-col bg-background">
         <div className="sticky top-0 z-10 px-4 py-3 bg-background/80 backdrop-blur-xl flex items-center gap-3">
-          <button onClick={() => {
-            if (step === "upload") navigate("/voice");
-            else if (step === "text") setStep("upload");
-            else if (step === "confirm") setStep("text");
-            else navigate("/voice");
-          }} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground">
+          <button onClick={() => step === "upload" ? navigate("/voice") : setStep("upload")} className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-base font-bold text-foreground">Clone Voice</h1>
+          <h1 className="text-base font-bold text-foreground">Voice Translation</h1>
         </div>
         <div className="flex-1 overflow-y-auto pb-8">
           <AnimatePresence mode="wait">
@@ -197,4 +210,4 @@ const CloneVoicePage = () => {
   );
 };
 
-export default CloneVoicePage;
+export default VoiceTranslatePage;

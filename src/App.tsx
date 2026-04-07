@@ -66,6 +66,8 @@ import VoiceCallPage from "./pages/voice/VoiceCallPage";
 import MusicGeneratorPage from "./pages/voice/MusicGeneratorPage";
 import MusicPlayerPage from "./pages/voice/MusicPlayerPage";
 import NoiseRemoverPage from "./pages/voice/NoiseRemoverPage";
+import VoiceTranslatePage from "./pages/voice/VoiceTranslatePage";
+import VoiceStudioPage from "./pages/voice/VoiceStudioPage";
 import VideoToTextPage from "./pages/tools/VideoToTextPage";
 import AIPersonalizationPage from "./pages/AIPersonalizationPage";
 
@@ -223,6 +225,8 @@ const App = () => {
                 <Route path="/voice/music/:id" element={<ProtectedRoute><MusicPlayerPage /></ProtectedRoute>} />
                 <Route path="/voice/call" element={<ProtectedRoute><VoiceCallPage /></ProtectedRoute>} />
                 <Route path="/voice/noise-remover" element={<ProtectedRoute><NoiseRemoverPage /></ProtectedRoute>} />
+                <Route path="/voice/translate" element={<ProtectedRoute><VoiceTranslatePage /></ProtectedRoute>} />
+                <Route path="/voice/studio" element={<ProtectedRoute><VoiceStudioPage /></ProtectedRoute>} />
                 <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

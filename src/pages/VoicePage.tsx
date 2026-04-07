@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Menu, Mic, Music, Volume2, AudioLines, Phone, Eraser } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Menu, Mic, Music, Volume2, AudioLines, Phone, Eraser, Languages, LayoutGrid, Disc3 } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
-import silkCard1 from "@/assets/silk-card-1.webp";
-import silkCard2 from "@/assets/silk-card-2.jpg";
-import silkCard3 from "@/assets/silk-card-3.webp";
+import voiceChangerHero from "@/assets/voice-changer-hero.jpg";
+import cloneVoiceHero from "@/assets/clone-voice-hero.jpg";
+import ttsHero from "@/assets/tts-hero.jpg";
+import noiseRemoverHero from "@/assets/noise-remover-hero.jpg";
+import voiceTranslateHero from "@/assets/voice-translate-hero.jpg";
 
 const HERO_PHRASES = [
   "Transform your voice with AI-powered tools",
@@ -67,14 +69,16 @@ const PRIORITY_SERVICES = [
 ];
 
 const TOOL_SERVICES = [
-  { id: "voice-changer", title: "Voice Changer", route: "/voice/changer", icon: <AudioLines className="w-5 h-5" /> },
-  { id: "clone-voice", title: "Clone Voice", route: "/voice/clone", icon: <Mic className="w-5 h-5" /> },
-  { id: "tts", title: "Text to Speech", route: "/voice/tts", icon: <Volume2 className="w-5 h-5" /> },
-  { id: "noise-remover", title: "Noise Remover", route: "/voice/noise-remover", icon: <Eraser className="w-5 h-5" /> },
+  { id: "voice-changer", title: "Voice Changer", route: "/voice/changer", icon: <AudioLines className="w-5 h-5" />, image: voiceChangerHero },
+  { id: "clone-voice", title: "Clone Voice", route: "/voice/clone", icon: <Mic className="w-5 h-5" />, image: cloneVoiceHero },
+  { id: "tts", title: "Text to Speech", route: "/voice/tts", icon: <Volume2 className="w-5 h-5" />, image: ttsHero },
+  { id: "noise-remover", title: "Noise Remover", route: "/voice/noise-remover", icon: <Eraser className="w-5 h-5" />, image: noiseRemoverHero },
+  { id: "voice-translate", title: "Voice Translation", route: "/voice/translate", icon: <Languages className="w-5 h-5" />, image: voiceTranslateHero },
 ];
 
 const VoicePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [heroIdx, setHeroIdx] = useState(0);
 
@@ -82,8 +86,6 @@ const VoicePage = () => {
     const t = setInterval(() => setHeroIdx(p => (p + 1) % HERO_PHRASES.length), 3500);
     return () => clearInterval(t);
   }, []);
-
-  const silkImages = [silkCard1, silkCard2, silkCard3, silkCard1];
 
   return (
     <AppLayout onSelectConversation={() => {}} onNewChat={() => {}} activeConversationId={null}>
@@ -97,8 +99,8 @@ const VoicePage = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-8">
-          {/* Hero - single long line */}
+        <div className="flex-1 overflow-y-auto px-4 pb-24">
+          {/* Hero - blue gradient text like landing */}
           <div className="pt-4 pb-6 overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.p
@@ -107,7 +109,7 @@ const VoicePage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.4 }}
-                className="text-lg font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent leading-snug"
+                className="text-lg font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent leading-snug"
               >
                 {HERO_PHRASES[heroIdx]}
               </motion.p>
@@ -140,7 +142,7 @@ const VoicePage = () => {
             ))}
           </div>
 
-          {/* Tool cards - half image, half dark */}
+          {/* Tool cards with hero images */}
           <div className="space-y-3">
             {TOOL_SERVICES.map((s, i) => (
               <motion.button
@@ -154,10 +156,10 @@ const VoicePage = () => {
                 style={{ background: "hsl(var(--card))" }}
               >
                 <div className="w-1/2 h-full relative overflow-hidden">
-                  <img src={silkImages[i % silkImages.length]} alt="" className="w-full h-full object-cover" />
+                  <img src={s.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                 </div>
                 <div className="w-1/2 h-full relative flex flex-col justify-center px-4" style={{ background: "hsl(var(--card))" }}>
-                  <div className="absolute inset-0 opacity-30" style={{ background: "radial-gradient(ellipse 120% 100% at 0% 50%, rgba(139,92,246,0.4), transparent 70%)" }} />
+                  <div className="absolute inset-0 opacity-30" style={{ background: "radial-gradient(ellipse 120% 100% at 0% 50%, rgba(59,130,246,0.4), transparent 70%)" }} />
                   <div className="relative">
                     <div className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground mb-2">{s.icon}</div>
                     <p className="text-sm font-bold text-foreground">{s.title}</p>
@@ -165,6 +167,26 @@ const VoicePage = () => {
                 </div>
               </motion.button>
             ))}
+          </div>
+        </div>
+
+        {/* Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-xl border-t border-border/30">
+          <div className="flex items-center justify-around py-2 max-w-lg mx-auto">
+            <button
+              onClick={() => navigate("/voice")}
+              className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-colors ${location.pathname === "/voice" ? "text-primary" : "text-muted-foreground"}`}
+            >
+              <LayoutGrid className="w-5 h-5" />
+              <span className="text-[10px] font-medium">Home</span>
+            </button>
+            <button
+              onClick={() => navigate("/voice/studio")}
+              className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-colors ${location.pathname === "/voice/studio" ? "text-primary" : "text-muted-foreground"}`}
+            >
+              <Disc3 className="w-5 h-5" />
+              <span className="text-[10px] font-medium">Studio</span>
+            </button>
           </div>
         </div>
       </div>

@@ -44,7 +44,7 @@ const TTSPage = () => {
       });
 
       const { data, error } = await supabase.functions.invoke("generate-voice", {
-        body: { model_id: "kokoro", prompt: prompt.trim(), type: "tts", settings: { voice_id: selectedVoice.voice_id } },
+        body: { model_id: "kokoro", prompt: prompt.trim(), type: "tts", settings: { voice: selectedVoice.voice_id || "nova" } },
       });
       if (error) throw error;
       if (data?.url) { setResultUrl(data.url); setStep("result"); toast.success("Speech generated!"); }
