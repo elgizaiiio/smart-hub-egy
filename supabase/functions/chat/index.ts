@@ -305,6 +305,13 @@ serve(async (req) => {
 
     const isCasualMessage = isCasualEarly;
 
+    // Detect if user mentioned any agent/tool keywords to decide if tools are needed
+    const needsTools = !isCasualMessage && (
+      searchEnabled || isDeepResearch || isShopping || computerUseEnabled ||
+      /@(images|صور|videos|فيديو|voice|صوت|integrations|تكاملات|slides)/i.test(latestUserText) ||
+      /(generate|create|make|send|search|browse|ابحث|اعمل|ولد|ارسل|افتح)/i.test(latestUserText)
+    );
+
     const body: any = {
       model: modelId,
       messages: isCasualMessage 
@@ -315,7 +322,7 @@ serve(async (req) => {
       temperature: isCasualMessage ? 0.3 : 0.7,
     };
 
-    const allTools = isCasualMessage ? [] : [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools];
+    const allTools = needsTools ? [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools] : [];
     if (allTools.length > 0) {
       body.tools = allTools;
       body.tool_choice = "auto";
