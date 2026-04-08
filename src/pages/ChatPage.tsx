@@ -56,7 +56,7 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
   </svg>;
 
 
-const MEGSY_MODEL = "openai/gpt-4.1-mini";
+const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview";
 
 const ChatPage = () => {
   const navigate = useNavigate();
