@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,10 +20,10 @@ const LOADING_TEXTS = [
 
 const CartoonStarLoader = () => {
   const [idx, setIdx] = useState(0);
-  useState(() => {
+  useEffect(() => {
     const t = setInterval(() => setIdx(i => (i + 1) % LOADING_TEXTS.length), 2400);
     return () => clearInterval(t);
-  });
+  }, []);
   const current = LOADING_TEXTS[idx];
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-5">
