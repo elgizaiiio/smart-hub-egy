@@ -196,7 +196,7 @@ const ChatPage = () => {
     setInput(text);
     setTimeout(() => {
       setInput(text);
-      handleSendWithText(text);
+      void sendWithTextRef.current?.(text);
     }, 50);
   }, []);
 
