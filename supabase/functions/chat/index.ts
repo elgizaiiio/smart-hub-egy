@@ -212,24 +212,35 @@ serve(async (req) => {
       } catch { /* skip */ }
     }
 
-    // ── Model routing — LemonData PRIMARY (fastest models) ──
+    // ── Model routing — WaveSpeed PRIMARY (fastest), LemonData FALLBACK ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
 
-    // Use fastest LemonData model: anthropic/claude-haiku-4.5 (fastest + cheapest with tool use)
     let modelId: string = requestedModel ?? "anthropic/claude-haiku-4.5";
-    let apiUrl = LEMONDATA_URL;
+    let apiUrl = WAVESPEED_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
+    let provider: "wavespeed" | "lemondata" = "wavespeed";
 
-    const lemonKey = await getLemonDataKey(sb);
-    if (lemonKey) {
-      apiKey = lemonKey.api_key;
-      usedKeyId = lemonKey.id;
+    // Try WaveSpeed first
+    const wsKey = await getWaveSpeedLlmKey(sb);
+    if (wsKey) {
+      apiKey = wsKey.api_key;
+      usedKeyId = wsKey.id;
+      provider = "wavespeed";
     } else {
-      return new Response(JSON.stringify({ error: "No API keys available" }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Fallback to LemonData
+      const lemonKey = await getLemonDataKey(sb);
+      if (lemonKey) {
+        apiUrl = LEMONDATA_URL;
+        apiKey = lemonKey.api_key;
+        usedKeyId = lemonKey.id;
+        provider = "lemondata";
+      } else {
+        return new Response(JSON.stringify({ error: "No API keys available" }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Build Composio tools
