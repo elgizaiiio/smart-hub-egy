@@ -325,7 +325,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           )}
         </AnimatePresence>
 
-        <div className="relative flex items-center gap-2 px-3 py-3">
+        <div className="relative flex items-end gap-2 px-3 py-3">
           <button
             onClick={onPlusClick}
             className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors"
@@ -334,19 +334,16 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             <Plus className="w-5 h-5" />
           </button>
 
-          {/* Inline mode badge next to + button */}
-          {activeAgent && activeAgent !== "normal" && (
-            <span className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium">
-              {activeAgent === "deep-research" ? "Deep Research" : activeAgent === "shopping" ? "Shopping" : activeAgent === "learning" ? "Learning" : activeAgent}
-              <button onClick={onAgentRemove} className="ml-0.5 hover:text-foreground transition-colors" aria-label="Clear mode">
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {/* Agent and model shown inline in text, no separate badges */}
+            <div className="flex items-center gap-1.5 flex-wrap min-h-[44px]">
+              {activeAgent && activeAgent !== "normal" && (
+                <span className="shrink-0 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium">
+                  <span className="truncate">{activeAgent === "deep-research" ? "Deep Research" : activeAgent === "shopping" ? "Shopping" : activeAgent === "learning" ? "Learning" : activeAgent}</span>
+                  <button onClick={onAgentRemove} className="ml-0.5 hover:text-foreground transition-colors" aria-label="Clear mode">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
               <textarea
                 ref={textareaRef}
                 value={value}
@@ -354,7 +351,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                 onKeyDown={handleKeyDown}
                 placeholder={displayedPlaceholder || " "}
                 rows={1}
-                className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
+                className="flex-1 basis-[120px] min-w-[120px] bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
                 style={{ minHeight: "44px" }}
               />
             </div>
