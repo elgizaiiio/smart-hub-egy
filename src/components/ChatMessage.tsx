@@ -25,8 +25,18 @@ interface ChatMessageProps {
   onShare?: () => void;
   onStructuredAction?: (text: string) => void;
   searchQuery?: string;
+  searchStatus?: string;
+  statusHistory?: string[];
+  browserLiveState?: BrowserLiveState | null;
   onEditUserMessage?: (text: string) => void;
   onEditUserMessageAt?: (index: number, text: string) => void;
+}
+
+interface BrowserLiveState {
+  currentUrl?: string;
+  liveUrl?: string;
+  screenshotUrl?: string;
+  currentStep?: string;
 }
 
 const getDomain = (url: string) => {
@@ -35,6 +45,14 @@ const getDomain = (url: string) => {
 
 const getFavicon = (url: string) => {
   try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`; } catch { return null; }
+};
+
+const getArtifactActionLabel = (url: string): string | null => {
+  if (/\.(png|jpe?g|webp|gif|svg)(\?|#|$)/i.test(url)) return "الاطلاع على الصورة";
+  if (/\.pptx?(\?|#|$)/i.test(url) || /canva\.com/i.test(url)) return "الاطلاع على العرض";
+  if (/\.(pdf|docx?|xlsx?|csv)(\?|#|$)/i.test(url)) return "الاطلاع على المستند";
+  if (/\.html?(\?|#|$)/i.test(url)) return "فتح المعاينة";
+  return null;
 };
 
 function parseStructuredBlocks(content: string): { type: "text" | "questions" | "flow" | "cards"; data: any; raw: string }[] {
@@ -211,7 +229,7 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
   </ReactMarkdown>
 );
 
-const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchQuery, onEditUserMessage, onEditUserMessageAt }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchQuery, searchStatus, statusHistory = [], browserLiveState, onEditUserMessage, onEditUserMessageAt }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -375,13 +393,31 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
     links.push({ text: urlMatch[1], url: urlMatch[2] });
   }
   const uniqueLinks = links.filter((link, i, arr) => arr.findIndex(l => l.url === link.url) === i);
+  const artifactActions = useMemo(() => {
+    const actionMap = new Map<string, { label: string; url: string }>();
+
+    images?.forEach((url, index) => {
+      actionMap.set(url, {
+        url,
+        label: images.length > 1 ? `الاطلاع على الصورة ${index + 1}` : "الاطلاع على الصورة",
+      });
+    });
+
+    uniqueLinks.forEach(({ url }) => {
+      const label = getArtifactActionLabel(url);
+      if (!label) return;
+      actionMap.set(url, { url, label });
+    });
+
+    return Array.from(actionMap.values());
+  }, [images, uniqueLinks]);
 
   const hasStructured = structuredBlocks && structuredBlocks.some(b => b.type !== "text");
 
   return (
     <div className="mb-6 relative">
       {isThinking && !content ? (
-        <ThinkingLoader searchQuery={searchQuery} />
+        <ThinkingLoader searchQuery={searchQuery} searchStatus={searchStatus} statusHistory={statusHistory} browserLiveState={browserLiveState} />
       ) : (
         <>
           {images && images.length > 0 && (
@@ -457,6 +493,22 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
               {isStreaming && (
                 <span className="inline-block w-1.5 h-4 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
               )}
+            </div>
+          )}
+
+          {!isStreaming && artifactActions.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {artifactActions.map((action, index) => (
+                <button
+                  key={`${action.url}-${index}`}
+                  type="button"
+                  onClick={() => window.open(action.url, "_blank", "noopener,noreferrer")}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border/40 bg-secondary/35 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-secondary/55"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  <span>{action.label}</span>
+                </button>
+              ))}
             </div>
           )}
 
