@@ -352,7 +352,7 @@ Output ONLY the complete HTML code with no explanations.`,
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ messages: [...historyMessages, userMessage], model: "google/gemini-2.5-flash-lite-preview-09-2025", mode: "files", searchEnabled }),
+        body: JSON.stringify({ messages: [...historyMessages, userMessage], model: "moonshotai/kimi-k2.5:nitro", mode: "files", searchEnabled }),
       });
 
       if (!resp.ok || !resp.body) {

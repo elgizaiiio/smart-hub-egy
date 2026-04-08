@@ -10,6 +10,7 @@ const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
+const COMPLEX_MODEL = "moonshotai/kimi-k2.5:nitro";
 const OPENROUTER_FALLBACK_MODELS = [DEFAULT_MODEL, "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
@@ -157,7 +158,19 @@ function getNextFallbackModel(currentModel: string): string | null {
   return OPENROUTER_FALLBACK_MODELS.find((candidate) => candidate !== currentModel) ?? null;
 }
 
-// detectComplexity removed — use fast public WaveSpeed model by default
+// Detect if the task requires a more powerful model
+function detectComplexTask(text: string, hasImages: boolean, isDeepResearch: boolean, isShopping: boolean, mode?: string): boolean {
+  if (hasImages) return true;
+  if (isDeepResearch) return true;
+  if (isShopping) return true;
+  if (mode === "files") return true;
+  // Complex patterns: code, analysis, comparison, long requests
+  const complexPatterns = /(compare|مقارنة|analyze|تحليل|explain in detail|اشرح بالتفصيل|write code|اكتب كود|debug|programming|برمجة|research|بحث عميق|create a plan|خطة|summarize this|لخص|translate this document|ترجم|review|مراجعة|step by step|خطوة بخطوة)/i;
+  if (complexPatterns.test(text)) return true;
+  // Long messages likely need more reasoning
+  if (text.split(/\s+/).length > 50) return true;
+  return false;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -208,11 +221,19 @@ serve(async (req) => {
       } catch { /* silently skip */ }
     }
 
-    // ── Model routing — WaveSpeed PRIMARY (fastest), LemonData FALLBACK ──
+    // ── Model routing ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = normalizeRequestedModel(typeof model === "string" ? model : null);
+    
+    // Check if messages contain images
+    const hasImages = Array.isArray(messages) && messages.some((m: any) => {
+      if (Array.isArray(m.content)) return m.content.some((p: any) => p.type === "image_url");
+      return false;
+    });
 
-    let modelId: string = requestedModel ?? DEFAULT_MODEL;
+    // Auto-select powerful model for complex tasks
+    const needsComplexModel = !isCasualEarly && detectComplexTask(latestUserText, hasImages, isDeepResearch, isShopping, effectiveMode);
+    let modelId: string = requestedModel ?? (needsComplexModel ? COMPLEX_MODEL : DEFAULT_MODEL);
     let apiUrl = OPENROUTER_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
@@ -300,7 +321,7 @@ serve(async (req) => {
     const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
     const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
     const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && hasSearchIntent(latestUserText);
-    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText));
+    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || isShopping);
     const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
     const shouldLoadHyperbrowserKey = needsBrowserIntent;
 
@@ -619,16 +640,22 @@ DEEP RESEARCH MODE:
 - While researching people, brands, founders, celebrities, athletes, politicians, or public figures, always gather relevant images too.
 - After gathering all information, synthesize into a comprehensive, well-structured research report.
 
+CRITICAL OUTPUT RULES:
+- NEVER dump raw search results, API responses, or unprocessed data to the user
+- NEVER show JSON blobs, raw URLs lists, or unformatted text
+- ALWAYS synthesize and analyze the information into a polished report
+- Include relevant images inline using markdown: ![description](url)
+- Format all links as clickable text: [Source Name](url)
+- Use tables only for structured comparisons, not raw data dumps
+
 REPORT STRUCTURE:
 ## Executive Summary
 ## Key Findings
 ## Detailed Analysis (with sub-sections)
-## Data & Statistics (use tables)
-## Expert Opinions
-## Counterarguments/Limitations
-## Visual Evidence
+## Data & Statistics (use tables for comparisons)
+## Visual Evidence (include relevant images inline)
 ## Conclusion with Actionable Recommendations
-## Sources
+## Sources (formatted as clickable links)
 
 - Use markdown extensively: headers, bold, bullet points, numbered lists, tables.
 - Cite ALL sources: [Source Name](URL)
@@ -688,6 +715,12 @@ ${userContext}`;
 
   // Shopping mode
   if (mode === "shopping") {
+    // Detect user location/currency from text
+    const isEgypt = /(مصر|egypt|القاهرة|cairo|جنيه|egp|جمبري|اسكندرية|الجيزة)/i.test(userContext + " " + mode);
+    const isSaudi = /(السعودية|saudi|riyal|sar|جدة|الرياض)/i.test(userContext);
+    const localCurrency = isEgypt ? "EGP (الجنيه المصري)" : isSaudi ? "SAR (الريال السعودي)" : "the user's local currency";
+    const localStores = isEgypt ? "Noon Egypt, Jumia Egypt, Amazon.eg, B.Tech, 2B" : isSaudi ? "Noon KSA, Amazon.sa, Jarir, Extra" : "local online stores";
+    
     return `You are Megsy, a smart AI Shopping Assistant made by Megsy AI. The current year is 2026.
 
 SHOPPING ASSISTANT MODE:
@@ -695,15 +728,24 @@ SHOPPING ASSISTANT MODE:
 YOUR CAPABILITIES:
 - You have SHOPPING_SEARCH tool to search across online stores for products with real prices, images, and links
 - You have WEB_SEARCH tool for product reviews and comparisons
-- You have BROWSE_WEBSITE tool to open a real browser and browse stores like Amazon, Noon, Jumia to get live prices and availability
-- ALWAYS use SHOPPING_SEARCH first, then use BROWSE_WEBSITE for specific product pages or when you need more details
-- Use BROWSE_WEBSITE to verify prices, check stock availability, or compare across specific stores
+- You have BROWSE_WEBSITE tool to open a real browser and browse stores like ${localStores} to get live prices and availability
+- ALWAYS use SHOPPING_SEARCH first with locale-specific queries (e.g., add "مصر" or "egypt" to queries)
+- Then use BROWSE_WEBSITE to verify prices on ${localStores} for accurate local pricing
+- ALWAYS show prices in ${localCurrency}. NEVER show USD unless the user explicitly asks
+
+CRITICAL CURRENCY RULE:
+- Detect the user's country from their language, dialect, or explicit mentions
+- ALL prices MUST be in ${localCurrency}
+- If search results show USD, convert or search again with local store names
+- Search queries should include the country name for local results
 
 RESPONSE FORMAT for products:
-When you get shopping results, format them as a clean product card format:
-\`\`\`json
-{"type":"products","items":[{"title":"Product Name","price":"$XX.XX","image":"url","link":"url","seller":"Store","rating":"4.5/5","delivery":"Free shipping"}]}
-\`\`\`
+When you get shopping results, present them in a clean organized format with:
+- Product name and image
+- Price in ${localCurrency}
+- Store/seller name
+- Rating if available
+- Direct purchase link as [Store Name](url)
 
 BEHAVIOR:
 - When user mentions ANY product, immediately search for it
@@ -750,10 +792,14 @@ LANGUAGE & TONE:
 QUALITY RULES:
 - Avoid fixed openings, repeated intros, and generic capability lists.
 - If the user asks for help on an existing project, respond as if you understand the project context and reference the most relevant parts.
-- If something is ambiguous, ask one focused follow-up instead of giving a generic answer.
+- If something is ambiguous, ask a focused follow-up using smart questions format:
+\`\`\`json
+{"type":"questions","questions":[{"title":"What do you need help with?","options":["Option A","Option B","Option C"],"allowText":true}]}
+\`\`\`
 - For comparisons, use a table only when it genuinely helps.
 - For technical answers, include examples only when relevant.
 - For greetings or very short casual messages, do not use WEB_SEARCH or BROWSE_WEBSITE.
+- Format ALL links as clickable text: [descriptive text](url). NEVER paste raw URLs.
 
 IMAGE & FILE HANDLING:
 - Analyze uploaded images and files carefully and incorporate them into the answer when relevant.

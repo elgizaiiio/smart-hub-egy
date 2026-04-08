@@ -121,6 +121,30 @@ const BidiText = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Convert raw URLs in text to markdown links before rendering
+const formatRawUrls = (text: string): string => {
+  // Don't convert URLs that are already inside markdown links [text](url)
+  // Split by existing markdown links to avoid double-converting
+  const parts = text.split(/(\[[^\]]*\]\([^)]+\))/g);
+  return parts.map(part => {
+    // If this part is already a markdown link, leave it
+    if (/^\[[^\]]*\]\([^)]+\)$/.test(part)) return part;
+    // Convert raw URLs to [domain](url)
+    return part.replace(
+      /(?<!\]\()https?:\/\/[^\s<>")\]]+/g,
+      (url) => {
+        const cleanUrl = url.replace(/[.,;:!?]+$/, '');
+        try {
+          const domain = new URL(cleanUrl).hostname.replace('www.', '');
+          return `[${domain}](${cleanUrl})`;
+        } catch {
+          return cleanUrl;
+        }
+      }
+    );
+  }).join('');
+};
+
 const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: { 
   content: string; 
   onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
@@ -182,7 +206,7 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
       td: ({ children }) => <td className="px-3 py-2 text-xs text-muted-foreground border-t border-border/50">{children}</td>,
     }}
   >
-    {content}
+    {formatRawUrls(content)}
   </ReactMarkdown>
 );
 

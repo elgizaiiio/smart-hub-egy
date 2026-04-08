@@ -125,18 +125,59 @@ serve(async (req) => {
       });
 
     } else {
-      // ═══ TTS/VOICE: synchronous ═══
-      const ttsBody: Record<string, any> = { input: prompt, model: "tts-1-hd" };
-      if (settings?.voice) ttsBody.voice = settings.voice;
-      else ttsBody.voice = "nova";
-      if (settings?.speed) ttsBody.speed = settings.speed;
+      // ═══ TTS/VOICE: Try OpenRouter first (fast), fallback to LemonData ═══
+      const ttsInput = prompt;
+      const voice = settings?.voice || "nova";
+      const speed = settings?.speed || 1;
+      const OPENROUTER_KEY = Deno.env.get("OPENROUTER_API_KEY");
+
+      // Try OpenRouter TTS first (faster)
+      if (OPENROUTER_KEY) {
+        try {
+          const orResp = await Promise.race([
+            fetch("https://openrouter.ai/api/v1/audio/speech", {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${OPENROUTER_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ model: "openai/tts-1", input: ttsInput, voice, speed }),
+            }),
+            new Promise<Response>((_, reject) => setTimeout(() => reject(new Error("timeout")), 25000)),
+          ]) as Response;
+
+          if (orResp.ok) {
+            const ct = orResp.headers.get("content-type") || "";
+            if (ct.includes("audio") || ct.includes("octet-stream")) {
+              const audioData = await orResp.arrayBuffer();
+              const base64 = base64Encode(new Uint8Array(audioData));
+              return new Response(JSON.stringify({ success: true, url: `data:audio/mp3;base64,${base64}`, model: model_id }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+            const data = await orResp.json();
+            const url = data.url || data.audio_url || data.output?.url;
+            if (url) {
+              return new Response(JSON.stringify({ success: true, url, model: model_id }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+          }
+        } catch (orErr) {
+          console.error("OpenRouter TTS failed, falling back:", orErr);
+        }
+      }
+
+      // Fallback: LemonData TTS
+      const ttsBody: Record<string, any> = { input: ttsInput, model: "tts-1-hd", voice };
+      if (speed) ttsBody.speed = speed;
       if (settings?.response_format) ttsBody.response_format = settings.response_format;
 
-      const resp = await fetch(`${LEMON_BASE}/v1/audio/speech`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${key.api_key}`, "Content-Type": "application/json" },
-        body: JSON.stringify(ttsBody),
-      });
+      const resp = await Promise.race([
+        fetch(`${LEMON_BASE}/v1/audio/speech`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${key.api_key}`, "Content-Type": "application/json" },
+          body: JSON.stringify(ttsBody),
+        }),
+        new Promise<Response>((_, reject) => setTimeout(() => reject(new Error("TTS timeout")), 30000)),
+      ]) as Response;
 
       supabase.from("lemondata_keys").update({
         usage_count: (key.usage_count || 0) + 1,
@@ -148,7 +189,7 @@ serve(async (req) => {
         if (resp.status === 401 || resp.status === 403) {
           supabase.from("lemondata_keys").update({ is_blocked: true, block_reason: `HTTP ${resp.status}` }).eq("id", key.id);
         }
-        throw new Error(`TTS API error ${resp.status}: ${errText}`);
+        throw new Error(`Voice service error: ${resp.status}`);
       }
 
       const contentType = resp.headers.get("content-type") || "";
@@ -168,8 +209,11 @@ serve(async (req) => {
     }
   } catch (e) {
     console.error("generate-voice error:", e);
+    // White-label error messages - never expose provider names
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    const safeMsg = msg.replace(/lemon|openrouter|deepgram/gi, "service").replace(/api\.lemondata\.cc|openrouter\.ai/gi, "provider");
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: safeMsg.includes("timeout") ? "Voice generation timed out. Please try again." : "Voice generation failed. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
