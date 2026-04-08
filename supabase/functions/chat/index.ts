@@ -978,6 +978,90 @@ async function handleToolCalls(
         continue;
       }
 
+      // Canva slide creation via Hyperbrowser
+      if (toolName === "CANVA_CREATE_SLIDES" && HB_API_KEY) {
+        const topic = String(toolArgs.topic || "").trim();
+        if (!topic) continue;
+        const slideCount = Math.min(Math.max(Number(toolArgs.slide_count) || 10, 5), 20);
+        const style = String(toolArgs.style || "professional");
+        const outline = String(toolArgs.content_outline || "");
+
+        const HB_BASE = "https://api.hyperbrowser.ai";
+        const canvaTask = `Go to https://www.canva.com and create a ${style} presentation about "${topic}" with ${slideCount} slides. ${outline ? `Content outline: ${outline}` : `Create a well-structured presentation covering the key aspects of ${topic}.`} Use Canva's templates if available. After creating all slides, download the presentation as PPTX format and provide the download link.`;
+
+        pushStatus(`Opening Canva to create presentation...`);
+        pushStatus(`Topic: ${topic} — ${slideCount} slides`);
+
+        try {
+          const startResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent`, {
+            method: "POST",
+            headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ task: canvaTask, maxSteps: 30, keepBrowserOpen: false }),
+          }, 15000);
+
+          if (!startResp.ok) {
+            pushStatus("Failed to open Canva browser");
+            allSearchResults.push(`Failed to create Canva presentation for "${topic}". Browser could not be opened.`);
+            continue;
+          }
+
+          const startData = await startResp.json();
+          const jobId = startData.jobId;
+          if (!jobId) { pushStatus("No task ID"); continue; }
+
+          pushStatus("Canva opened — creating slides...");
+
+          let lastStepCount = 0;
+          let pollCount = 0;
+          const MAX_POLLS = 90; // ~3 min for Canva
+          let finalResult: any = null;
+          const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+          while (pollCount < MAX_POLLS) {
+            await sleep(2000);
+            pollCount++;
+            try {
+              const statusResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent/${jobId}/status`, {
+                headers: { "x-api-key": HB_API_KEY },
+              }, 8000);
+              if (!statusResp.ok) continue;
+              const statusData = await statusResp.json();
+
+              if (statusData.steps && Array.isArray(statusData.steps)) {
+                const newSteps = statusData.steps.slice(lastStepCount);
+                for (const s of newSteps) {
+                  const desc = s.description || s.next_goal || s.action || "";
+                  if (desc) pushStatus(desc);
+                }
+                lastStepCount = statusData.steps.length;
+              }
+
+              if (statusData.status === "completed" || statusData.status === "finished" || statusData.status === "done") {
+                finalResult = statusData;
+                break;
+              }
+              if (statusData.status === "failed" || statusData.status === "error") {
+                pushStatus("Canva task failed");
+                break;
+              }
+            } catch { continue; }
+          }
+
+          if (finalResult) {
+            const output = finalResult.output || finalResult.result || JSON.stringify(finalResult);
+            pushStatus("Presentation created successfully");
+            allSearchResults.push(`Canva presentation created for "${topic}":\n${typeof output === 'string' ? output : JSON.stringify(output, null, 2)}`);
+          } else {
+            pushStatus("Canva task timed out");
+            allSearchResults.push(`Canva presentation creation timed out for "${topic}". The browser took too long.`);
+          }
+        } catch (err) {
+          console.error("Canva error:", err);
+          pushStatus("Canva creation error");
+        }
+        continue;
+      }
+
       if (!COMPOSIO_API_KEY || !toolName) continue;
 
       pushStatus(`Executing ${toolName.split("_")[0]} action...`);
