@@ -313,26 +313,41 @@ serve(async (req) => {
 
     const isCasualMessage = isCasualEarly;
 
-    // Detect if user mentioned any agent/tool keywords to decide if tools are needed
-    const needsTools = !isCasualMessage && (
-      searchEnabled || isDeepResearch || isShopping || computerUseEnabled ||
-      /@(images|صور|videos|فيديو|voice|صوت|integrations|تكاملات|slides)/i.test(latestUserText) ||
-      /(generate|create|make|send|search|browse|ابحث|اعمل|ولد|ارسل|افتح)/i.test(latestUserText)
-    );
+    // Smart selective tool loading — only load what's actually needed
+    const mentionsMedia = /@(images|صور|videos|فيديو|voice|صوت|slides)/i.test(latestUserText);
+    const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
+    const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
+    const mentionsGenerate = /(generate|create|make|ابحث|اعمل|ولد)/i.test(latestUserText);
+    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && !/^(هلا|اهلا|hi|hello|hey|thanks|شكرا|ok|bye)\b/i.test(latestUserText.trim());
+    const needsBrowser = !isCasualMessage && (mentionsBrowse || (computerUseEnabled && mentionsGenerate));
+
+    // Build tools array selectively
+    const selectedTools: any[] = [];
+    if (!isCasualMessage) {
+      if (needsSearch) selectedTools.push(...searchTools);
+      if (isShopping) selectedTools.push(...shoppingTools);
+      if (needsBrowser) selectedTools.push(...browserTools);
+      if (mentionsMedia || mentionsGenerate) selectedTools.push(...mediaTools);
+      if (mentionsIntegrations) selectedTools.push(...composioTools);
+    }
+
+    // Trim messages to last 10 for speed (keep system prompt separate)
+    const trimmedMessages = Array.isArray(messages) && messages.length > 10
+      ? messages.slice(-10)
+      : messages;
 
     const body: any = {
       model: modelId,
       messages: isCasualMessage 
-        ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...messages]
-        : [{ role: "system", content: systemPrompt }, ...messages],
+        ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...trimmedMessages]
+        : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
       max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048)),
       temperature: isCasualMessage ? 0.3 : 0.7,
     };
 
-    const allTools = needsTools ? [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools] : [];
-    if (allTools.length > 0) {
-      body.tools = allTools;
+    if (selectedTools.length > 0) {
+      body.tools = selectedTools;
       body.tool_choice = "auto";
     }
 

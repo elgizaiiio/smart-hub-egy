@@ -2,10 +2,10 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2 } from "lucide-react";
+import { ArrowLeft, Download, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCredits } from "@/hooks/useCredits";
-import { TemplateGrid, SilkyToolLanding } from "@/components/ToolPageLayout";
+import ToolPageLayout, { TemplateGrid, SilkyToolLanding } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
@@ -67,11 +67,8 @@ const CartoonPage = () => {
           )}
 
           {step === "generating" && (
-            <motion.div key="gen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-              <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }} className="relative">
-                <Sparkles className="w-12 h-12 text-yellow-400" />
-              </motion.div>
-              <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
+            <motion.div key="gen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center min-h-[50vh]">
+              <CartoonStarLoader />
             </motion.div>
           )}
 
