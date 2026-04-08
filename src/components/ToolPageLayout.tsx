@@ -330,7 +330,7 @@ const ResultView = ({
 
 // ==================== Template Grid ====================
 export const TemplateGrid = ({
-  templates, onSelect, onCustom, customLabel = "Custom", gender, onGenderChange,
+  templates, onSelect, onCustom, customLabel = "Custom", gender, onGenderChange, hideNames,
 }: {
   templates: ToolTemplate[];
   onSelect: (template: ToolTemplate) => void;
@@ -338,7 +338,7 @@ export const TemplateGrid = ({
   customLabel?: string;
   gender?: "male" | "female";
   onGenderChange?: (g: "male" | "female") => void;
-}) => {
+  hideNames?: boolean;
   const filtered = gender ? templates.filter(t => t.gender === "both" || t.gender === gender) : templates;
 
   return (
