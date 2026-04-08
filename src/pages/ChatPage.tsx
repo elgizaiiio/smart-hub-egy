@@ -230,6 +230,7 @@ const ChatPage = () => {
   };
 
   const isSubmittingRef = useRef(false);
+  const sendWithTextRef = useRef<(overrideText?: string) => Promise<void>>();
 
   const handleSendWithText = async (overrideText?: string) => {
     const text = overrideText || input;
@@ -342,6 +343,10 @@ const ChatPage = () => {
       signal: controller.signal
     });
   };
+
+  useEffect(() => {
+    sendWithTextRef.current = handleSendWithText;
+  });
 
   const handleSend = () => handleSendWithText();
 
