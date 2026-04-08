@@ -12,17 +12,20 @@ import CodePreviewModal from "./CodePreviewModal";
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  messageIndex?: number;
   isStreaming?: boolean;
   isThinking?: boolean;
   images?: string[];
   attachedImages?: string[];
   attachedFiles?: { name: string; type: string }[];
   onLike?: (liked: boolean | null) => void;
+  onLikeMessage?: (index: number, liked: boolean | null) => void;
   liked?: boolean | null;
   onShare?: () => void;
   onStructuredAction?: (text: string) => void;
   searchQuery?: string;
   onEditUserMessage?: (text: string) => void;
+  onEditUserMessageAt?: (index: number, text: string) => void;
 }
 
 const getDomain = (url: string) => {
@@ -183,7 +186,7 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
   </ReactMarkdown>
 );
 
-const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, liked, onShare, onStructuredAction, searchQuery, onEditUserMessage }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchQuery, onEditUserMessage, onEditUserMessageAt }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -250,6 +253,22 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
     setPreviewCode({ code, lang });
   }, []);
 
+  const handleLikeAction = useCallback((nextLiked: boolean | null) => {
+    if (typeof messageIndex === "number" && onLikeMessage) {
+      onLikeMessage(messageIndex, nextLiked);
+      return;
+    }
+    onLike?.(nextLiked);
+  }, [messageIndex, onLike, onLikeMessage]);
+
+  const handleEditAction = useCallback(() => {
+    if (typeof messageIndex === "number" && onEditUserMessageAt) {
+      onEditUserMessageAt(messageIndex, content);
+      return;
+    }
+    onEditUserMessage?.(content);
+  }, [content, messageIndex, onEditUserMessage, onEditUserMessageAt]);
+
   const structuredBlocks = useMemo(() => {
     if (role === "user" || isStreaming) return null;
     return parseStructuredBlocks(content);
@@ -302,7 +321,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
                     {[
                       { icon: Copy, label: "Copy", action: async () => { await handleCopy(); closeMenu(); } },
                       { icon: Share2, label: "Share", action: async () => { await handleUserShare(); closeMenu(); } },
-                      { icon: Pencil, label: "Edit", action: () => { onEditUserMessage?.(content); closeMenu(); } },
+                      { icon: Pencil, label: "Edit", action: () => { handleEditAction(); closeMenu(); } },
                       { icon: Type, label: "Select text", action: async () => { await handleSelectText(); closeMenu(); } },
                     ].map(({ icon: Icon, label, action }) => (
                       <button
@@ -397,7 +416,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
               <motion.button
-                onClick={() => onLike?.(liked === true ? null : true)}
+                onClick={() => handleLikeAction(liked === true ? null : true)}
                 className={`p-1.5 transition-colors ${liked === true ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}
                 title="Like"
                 whileTap={{ scale: 1.3 }}
@@ -406,7 +425,7 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
                 <ThumbsUp className="w-3.5 h-3.5" />
               </motion.button>
               <motion.button
-                onClick={() => onLike?.(liked === false ? null : false)}
+                onClick={() => handleLikeAction(liked === false ? null : false)}
                 className={`p-1.5 transition-colors ${liked === false ? "text-destructive" : "text-muted-foreground/50 hover:text-foreground"}`}
                 title="Dislike"
                 whileTap={{ scale: 1.3 }}

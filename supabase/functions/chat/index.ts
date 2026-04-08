@@ -168,10 +168,7 @@ serve(async (req) => {
       : String(latestUserMessage?.content || "");
     const wantsHamzaProfile = /(hamza|hassan el-gizaery|elgiza|حمزه|حمزة|حمزة حسن)/i.test(latestUserText);
     const COMPOSIO_API_KEY = Deno.env.get("COMPOSIO_API_KEY");
-
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const SERPER_API_KEY = await getSerperKey(sb);
-    const HB_API_KEY = await getHyperbrowserKey(sb);
 
     // Resolve effective chat mode
     const effectiveMode = chatMode || mode || "normal";
@@ -205,18 +202,16 @@ serve(async (req) => {
         }
         if (parts.length > 0) userContext = `\n\n--- USER CONTEXT ---\n${parts.join("\n")}`;
       } catch { /* silently skip */ }
-    } else if (user_id && isCasualEarly) {
-      try {
-        const { data: p } = await sb.from("profiles").select("display_name").eq("id", user_id).single();
-        if (p?.display_name) userContext = `\n\n--- USER CONTEXT ---\nUser name: ${p.display_name}`;
-      } catch { /* skip */ }
     }
 
     // ── Model routing — WaveSpeed PRIMARY (fastest), LemonData FALLBACK ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
+    const normalizedModel = requestedModel === "claude-haiku-4-5"
+      ? "anthropic/claude-haiku-4.5"
+      : requestedModel;
 
-    let modelId: string = requestedModel ?? "anthropic/claude-haiku-4.5";
+    let modelId: string = normalizedModel ?? "anthropic/claude-haiku-4.5";
     let apiUrl = WAVESPEED_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
@@ -341,10 +336,30 @@ serve(async (req) => {
       },
     ];
 
+    const isCasualMessage = isCasualEarly;
+
+    // Smart selective tool loading — only load what's actually needed
+    const wantsImageTool = /@(images|صور)\b|\b(image|photo|picture|images|photos|صورة|صور)\b/i.test(latestUserText);
+    const wantsVideoTool = /@(videos|فيديو)\b|\b(video|videos|clip|فيديو|فديو)\b/i.test(latestUserText);
+    const wantsVoiceTool = /@(voice|صوت)\b|\b(voice|speech|audio|tts|صوت|كلام)\b/i.test(latestUserText);
+    const wantsSlideTool = activeAgent === "slides" || /@(slides|files)\b|\b(slide|slides|presentation|pitch deck|ppt|pptx|powerpoint|عرض|شرائح|سلايد|سلايدز|برزنتيشن|بوربوينت|كانفا)\b/i.test(latestUserText);
+    const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
+    const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
+    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && hasSearchIntent(latestUserText);
+    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText));
+    const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
+    const shouldLoadHyperbrowserKey = needsBrowserIntent;
+
+    const [SERPER_API_KEY, HB_API_KEY] = await Promise.all([
+      shouldLoadSerperKey ? getSerperKey(sb) : Promise.resolve(null),
+      shouldLoadHyperbrowserKey ? getHyperbrowserKey(sb) : Promise.resolve(null),
+    ]);
+
+    const needsBrowser = !!HB_API_KEY && needsBrowserIntent;
+
     // System prompt
     let systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext, activeAgent);
-    
-    // If computer use is explicitly enabled, add browser instructions
+
     if (computerUseEnabled && HB_API_KEY) {
       systemPrompt += `\n\nCOMPUTER USE (Megsy Computer):
 - You have BROWSE_WEBSITE tool that opens a real browser to autonomously browse websites.
@@ -353,7 +368,6 @@ serve(async (req) => {
 - Think first: if the task can be answered without opening a browser, do not call BROWSE_WEBSITE.`;
     }
 
-    // Add media tool instructions
     systemPrompt += `\n\nMEDIA GENERATION TOOLS:
 - You have GENERATE_IMAGE, GENERATE_VIDEO, and GENERATE_VOICE tools.
 - Use them when the user asks to create images, videos, or speech.
@@ -367,18 +381,6 @@ serve(async (req) => {
         systemPrompt += `\n\nINTEGRATIONS AGENT:\n- The user selected @integrations but no service after # yet.\n- Ask them to choose a service like Gmail, Outlook, Slack, Notion, Google Drive, or Google Calendar.`;
       }
     }
-
-    const isCasualMessage = isCasualEarly;
-
-    // Smart selective tool loading — only load what's actually needed
-    const wantsImageTool = /@(images|صور)\b|\b(image|photo|picture|images|photos|صورة|صور)\b/i.test(latestUserText);
-    const wantsVideoTool = /@(videos|فيديو)\b|\b(video|videos|clip|فيديو|فديو)\b/i.test(latestUserText);
-    const wantsVoiceTool = /@(voice|صوت)\b|\b(voice|speech|audio|tts|صوت|كلام)\b/i.test(latestUserText);
-    const wantsSlideTool = activeAgent === "slides" || /@(slides|files)\b|\b(slide|slides|presentation|pitch deck|ppt|pptx|powerpoint|عرض|شرائح|سلايد|سلايدز|برزنتيشن|بوربوينت|كانفا)\b/i.test(latestUserText);
-    const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
-    const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
-    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && hasSearchIntent(latestUserText);
-    const needsBrowser = !isCasualMessage && !!HB_API_KEY && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText));
 
     // Build tools array selectively
     const selectedTools: any[] = [];
