@@ -56,7 +56,7 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
   </svg>;
 
 
-const MEGSY_MODEL = "claude-haiku-4-5";
+const MEGSY_MODEL = "anthropic/claude-haiku-4.5";
 
 const ChatPage = () => {
   const navigate = useNavigate();
@@ -143,9 +143,9 @@ const ChatPage = () => {
     await supabase.from("messages").insert({ conversation_id: convId, role, content, images: images || null });
   };
 
-  const handleLike = async (index: number, liked: boolean | null) => {
+  const handleLikeMessage = useCallback((index: number, liked: boolean | null) => {
     setMessages((prev) => prev.map((m, i) => i === index ? { ...m, liked } : m));
-  };
+  }, []);
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
@@ -188,7 +188,7 @@ const ChatPage = () => {
     setPlusMenuOpen(false);
   };
 
-  const handleStructuredAction = (text: string) => {
+  const handleStructuredAction = useCallback((text: string) => {
     if (text.startsWith("Connect:")) {
       setConnectorsOpen(true);
       return;
@@ -196,9 +196,9 @@ const ChatPage = () => {
     setInput(text);
     setTimeout(() => {
       setInput(text);
-      handleSendWithText(text);
+      void sendWithTextRef.current?.(text);
     }, 50);
-  };
+  }, []);
 
   // Fix: detect smart questions from the LATEST assistant message when streaming completes
   useEffect(() => {
@@ -230,6 +230,7 @@ const ChatPage = () => {
   };
 
   const isSubmittingRef = useRef(false);
+  const sendWithTextRef = useRef<(overrideText?: string) => Promise<void>>();
 
   const handleSendWithText = async (overrideText?: string) => {
     const text = overrideText || input;
@@ -255,13 +256,11 @@ const ChatPage = () => {
     setPendingQuestions([]); // Clear previous questions on new send
     setStatusHistory([]); // Clear status history for new message
 
-    const convId = await createOrUpdateConversation(userInput || "File analysis");
-    if (convId) await saveMessage(convId, "user", userInput || `[${currentFiles.length} file(s) attached]`);
-    if (convId && messages.length === 0) {
-      const title = (userInput || "File analysis").slice(0, 50);
-      await supabase.from("conversations").update({ title, updated_at: new Date().toISOString() }).eq("id", convId);
-      setConversationTitle(title);
-    }
+    const conversationPromise = createOrUpdateConversation(userInput || "File analysis").catch(() => null);
+    void conversationPromise.then(async (resolvedConversationId) => {
+      if (!resolvedConversationId) return;
+      await saveMessage(resolvedConversationId, "user", userInput || `[${currentFiles.length} file(s) attached]`);
+    });
 
     let assistantContent = "";
     const controller = new AbortController();
@@ -327,8 +326,9 @@ const ChatPage = () => {
       onDone: async () => {
         setIsLoading(false);setIsThinking(false);setSearchStatus("");
         isSubmittingRef.current = false;
-        if (convId && assistantContent) {
-          await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
+        const resolvedConversationId = await conversationPromise;
+        if (resolvedConversationId && assistantContent) {
+          await saveMessage(resolvedConversationId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (searchImages.length > 0) {
             setMessages((prev) => {
               const last = prev[prev.length - 1];
@@ -336,13 +336,17 @@ const ChatPage = () => {
               return prev;
             });
           }
-          await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+          await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", resolvedConversationId);
         }
       },
       onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);isSubmittingRef.current = false;},
       signal: controller.signal
     });
   };
+
+  useEffect(() => {
+    sendWithTextRef.current = handleSendWithText;
+  });
 
   const handleSend = () => handleSendWithText();
 
@@ -630,19 +634,15 @@ Ask me anything to get started!`;
     handleNewChat();
   };
 
-  const handleEditUserMessage = (messageText: string) => {
+  const handleEditUserMessageAt = useCallback((index: number, messageText: string) => {
     setInput(messageText);
     setMessages((prev) => {
       const next = [...prev];
-      for (let i = next.length - 1; i >= 0; i -= 1) {
-        if (next[i]?.role === "user" && next[i].content === messageText) {
-          next.splice(i, next[i + 1]?.role === "assistant" ? 2 : 1);
-          break;
-        }
-      }
+      if (!next[index] || next[index].role !== "user") return prev;
+      next.splice(index, next[index + 1]?.role === "assistant" ? 2 : 1);
       return next;
     });
-  };
+  }, []);
 
   const hasConversation = messages.length > 0;
 
@@ -821,6 +821,7 @@ Ask me anything to get started!`;
               {messages.map((msg, i) =>
                 <ChatMessage
                   key={i}
+                  messageIndex={i}
                   role={msg.role}
                   content={msg.content}
                   images={msg.images}
@@ -829,10 +830,10 @@ Ask me anything to get started!`;
                   isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
                   isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
                   liked={msg.liked}
-                  onLike={(liked) => handleLike(i, liked)}
+                  onLikeMessage={handleLikeMessage}
                   onShare={undefined}
                   onStructuredAction={handleStructuredAction}
-                  onEditUserMessage={msg.role === "user" ? handleEditUserMessage : undefined} />
+                  onEditUserMessageAt={msg.role === "user" ? handleEditUserMessageAt : undefined} />
               )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
                 <ThinkingLoader searchStatus={searchStatus} statusHistory={statusHistory} />
