@@ -108,7 +108,6 @@ const ProgrammingPage = () => {
           <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
             <Menu className="w-5 h-5" />
           </button>
-          <FancyButton onClick={() => navigate("/pricing")}>Unlock Pro</FancyButton>
           <div className="w-9" />
         </div>
 
@@ -195,7 +194,7 @@ const ProgrammingPage = () => {
                 <FolderOpen className="w-4 h-4 text-muted-foreground" />
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Your Projects</h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-4">
                 {projects.map((project, i) => (
                   <motion.button
                     key={project.id}
@@ -203,23 +202,22 @@ const ProgrammingPage = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.5 + i * 0.04 }}
                     onClick={() => openProject(project)}
-                    className="group flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-primary/30 hover:shadow-sm transition-all text-left"
+                    className="group flex flex-col rounded-2xl border border-border bg-card hover:border-primary/30 hover:shadow-lg transition-all text-left overflow-hidden"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="w-full h-40 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary flex items-center justify-center overflow-hidden">
                       {project.preview_url ? (
                         <img src={project.preview_url} alt={project.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Code2 className="w-5 h-5 text-muted-foreground/40" />
+                        <Code2 className="w-10 h-10 text-muted-foreground/20" />
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-card-foreground truncate">{project.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <Clock className="w-3 h-3 text-muted-foreground/60" />
-                        <p className="text-[11px] text-muted-foreground">{formatDate(project.updated_at)}</p>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
+                    <div className="p-4">
+                      <p className="text-sm font-semibold text-card-foreground truncate">{project.name}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={`w-2 h-2 rounded-full ${
                           project.status === "running" ? "bg-green-500" : project.status === "building" ? "bg-yellow-500 animate-pulse" : "bg-muted-foreground/30"
                         }`} />
+                        <p className="text-xs text-muted-foreground capitalize">{project.status || "idle"}</p>
                       </div>
                     </div>
                   </motion.button>
