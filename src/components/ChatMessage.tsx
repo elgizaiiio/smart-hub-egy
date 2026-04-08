@@ -317,6 +317,32 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
     return parseStructuredBlocks(content);
   }, [content, role, isStreaming]);
 
+  const urlRegex = /\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
+  const links: { text: string; url: string }[] = [];
+  let urlMatch;
+  while ((urlMatch = urlRegex.exec(content)) !== null) {
+    links.push({ text: urlMatch[1], url: urlMatch[2] });
+  }
+  const uniqueLinks = links.filter((link, i, arr) => arr.findIndex(l => l.url === link.url) === i);
+  const artifactActions = useMemo(() => {
+    const actionMap = new Map<string, { label: string; url: string }>();
+
+    images?.forEach((url, index) => {
+      actionMap.set(url, {
+        url,
+        label: images.length > 1 ? `الاطلاع على الصورة ${index + 1}` : "الاطلاع على الصورة",
+      });
+    });
+
+    uniqueLinks.forEach(({ url }) => {
+      const label = getArtifactActionLabel(url);
+      if (!label) return;
+      actionMap.set(url, { url, label });
+    });
+
+    return Array.from(actionMap.values());
+  }, [images, uniqueLinks]);
+
   if (role === "user") {
     return (
       <div className="flex justify-end mb-4 relative">
@@ -385,32 +411,6 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
       </div>
     );
   }
-
-  const urlRegex = /\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
-  const links: { text: string; url: string }[] = [];
-  let urlMatch;
-  while ((urlMatch = urlRegex.exec(content)) !== null) {
-    links.push({ text: urlMatch[1], url: urlMatch[2] });
-  }
-  const uniqueLinks = links.filter((link, i, arr) => arr.findIndex(l => l.url === link.url) === i);
-  const artifactActions = useMemo(() => {
-    const actionMap = new Map<string, { label: string; url: string }>();
-
-    images?.forEach((url, index) => {
-      actionMap.set(url, {
-        url,
-        label: images.length > 1 ? `الاطلاع على الصورة ${index + 1}` : "الاطلاع على الصورة",
-      });
-    });
-
-    uniqueLinks.forEach(({ url }) => {
-      const label = getArtifactActionLabel(url);
-      if (!label) return;
-      actionMap.set(url, { url, label });
-    });
-
-    return Array.from(actionMap.values());
-  }, [images, uniqueLinks]);
 
   const hasStructured = structuredBlocks && structuredBlocks.some(b => b.type !== "text");
 
