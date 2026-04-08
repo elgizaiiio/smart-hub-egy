@@ -622,7 +622,7 @@ Output ONLY the complete HTML code with no explanations.`,
                   ) : (
                     <div className="mb-4">
                       <div className="prose-chat text-foreground text-sm mb-3">
-                        <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "").replace(/```html[\s\S]*?```/g, "")}</ReactMarkdown>
+                        <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "").replace(/```html[\s\S]*?```/g, "").replace(/```[\s\S]*?```/g, "").trim()}</ReactMarkdown>
                       </div>
                       {/* Real artifact links */}
                       {msg.artifacts && msg.artifacts.length > 0 && (
