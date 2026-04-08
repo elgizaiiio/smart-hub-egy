@@ -83,7 +83,7 @@ const VoiceCallPage = () => {
               },
               ...conversationRef.current.slice(-10),
             ],
-            model: "anthropic/claude-haiku-4.5",
+            model: "openai/gpt-4.1-mini",
           }),
         }
       );
