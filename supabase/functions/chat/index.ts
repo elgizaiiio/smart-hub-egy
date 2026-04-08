@@ -431,7 +431,7 @@ serve(async (req) => {
         body: JSON.stringify(body),
       });
 
-      if (apiUrl === LEMONDATA_URL && (response.status === 401 || response.status === 403 || response.status === 429) && retryCount < MAX_RETRIES) {
+      if (apiUrl === LEMONDATA_URL && (response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < MAX_RETRIES) {
         if (response.status !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
         const newKey = await getLemonDataKey(sb, usedKeyId || undefined);
         if (newKey) {
@@ -441,9 +441,9 @@ serve(async (req) => {
           continue;
         }
 
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        // Fallback to Lovable Gateway
         if (LOVABLE_API_KEY) {
-          body.model = requestedModel && /^(google\/|openai\/)/.test(requestedModel) ? requestedModel : "google/gemini-2.5-flash";
+          body.model = "google/gemini-2.5-flash";
           const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
