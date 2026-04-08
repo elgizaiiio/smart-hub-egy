@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue } from "react";
 import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MentionDropdown from "./MentionDropdown";
@@ -40,6 +40,7 @@ const DEFAULT_PLACEHOLDERS = [
 ];
 
 const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip, activeAgent, onAgentSelect, onAgentRemove, mentionCategories, selectedModel, onModelSelect, onModelRemove }: AnimatedInputProps) => {
+  const deferredValue = useDeferredValue(value);
   const items = useMemo(() => placeholders && placeholders.length > 0 ? placeholders : DEFAULT_PLACEHOLDERS, [placeholders]);
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
