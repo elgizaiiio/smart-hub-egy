@@ -1,113 +1,114 @@
 
 
-# Plan: Chat UI Cleanup + Unified Tool Orchestration via @mentions
+# خطة: إصلاح الأعطال + تسريع فائق للموقع بدون المساس بالتصميم
 
-## Summary
-Three main areas: (1) Clean up Megsy Computer and mode UI, (2) Fix ThinkingLoader display, (3) Build a unified @mention tool-chaining system that lets users invoke Images, Videos, Voice, Files, and more directly from Chat.
-
----
-
-## Part 1: UI Cleanup (ThinkingLoader + ChatPage)
-
-### ThinkingLoader.tsx
-- Remove `Monitor` icon import and usage next to "Megsy Computer"
-- Replace animated star next to "Megsy Computer" with a **static** violet-colored star (no `animate` prop)
-- Remove the `ChevronDown` toggle button that expands/collapses the step log
-- Always show steps inline (no collapsible) -- each step appears as a new line below the previous one, no toggle needed
-- When `isComputerUse` is false, don't show "Megsy Computer" header at all
-- Steps just flow naturally: star + latest status text, with history lines below
-
-### ChatPage.tsx
-- Set `searchEnabled: true` and `computerUseEnabled: true` as **defaults** (useState defaults)
-- Keep toggles in the `+` menu so users can disable them
-- Remove `Monitor` icon from the Megsy Computer toggle in the `+` menu (keep just text "Megsy Computer")
-- Remove the mode badge section above the input bar (lines 836-849 with `@{chatMode}` text)
-- The `isComputerUse` prop passed to ThinkingLoader should be based on whether the backend **actually triggered** computer use (detected from status events containing browser keywords like "Navigating", "Opening", "Scrolling"), NOT from the toggle state
+## ملخص
+إصلاح 6 مشاكل حرجة: (1) الكومبيوتر لا يعمل ولا يظهر شعاره، (2) بطء شديد في الشات والباك اند، (3) Object Remover لا يرسل الماسك بشكل صحيح، (4) Cartoon تستخدم أنيميشن مختلف + أسماء قوالب ظاهرة، (5) زر View Live للكومبيوتر، (6) تسريع داخلي بدون تغيير أي تصميم.
 
 ---
 
-## Part 2: Unified @Mention Tool Orchestration
+## الجزء 1: إصلاح Computer Use (الكومبيوتر)
 
-### Concept
-Users can chain multiple tools in a single message using `@` mentions. After selecting a tool, pressing `#` shows relevant models/parameters with credit costs.
+### المشكلة
+الكومبيوتر لا يعمل فعلياً — الخطوات الحقيقية لا تصل للمستخدم وشعار "Megsy Computer" لا يظهر.
 
-**Flow example:**
-```
-@images #nano-banana Generate a sunset photo
-@videos #veo3 Create a video of ocean waves  
-@voice #tts Read this text aloud
-@slides Create a presentation about Egypt
-```
+### الحل
+**ملف `supabase/functions/chat/index.ts`:**
+- الكومبيوتر يعتمد على `computerUseEnabled` و `HB_API_KEY` — إذا لم يوجد مفتاح HB نشط في `api_keys`، الأداة لا تظهر أصلاً. يجب التأكد من وجود مفتاح فعال.
+- حالياً `needsTools` تشترط `!isCasualMessage` — يعني أي تحية أو رسالة قصيرة لا تُحمّل أداة الكومبيوتر. هذا صحيح.
+- المشكلة الأساسية: الـ `pushStatus` يرسل أحداث status لكن لا يوجد فلترة ذكية — كل رسالة حتى "هلا" إذا لم تكن casual تُحمّل أدوات البحث والكومبيوتر وده بيبطئ الرد.
 
-### agentRegistry.ts Changes
-- Add new agents for direct tool invocation:
-  - `@email` (category: "integration") -- send email
-  - Keep existing: `@images`, `@videos`, `@voice`, `@slides`, `@code`
-- Add a `models` array to each agent definition listing available models with credit costs:
-  ```ts
-  models?: { id: string; label: string; cost: number }[]
-  ```
-  - `@images` models: nano-banana (2 MC), nano-banana-pro (4 MC), nano-banana-2 (3 MC)
-  - `@videos` models: veo3, wan-x, etc.
-  - `@voice` models: tts, voice-clone, etc.
+**ملف `src/components/ThinkingLoader.tsx`:**
+- إضافة زر **"View Live"** بجانب "Megsy Computer" — يفتح نافذة/modal تعرض الخطوات بشكل مفصل.
 
-### MentionDropdown.tsx Changes
-- After selecting an agent, if user types `#`, show a **ModelPickerDropdown** with that agent's available models
-- Each model option shows: model name + credit cost badge
-- Selected model gets injected as `#model-name` in the input text
-
-### AnimatedInput.tsx Changes  
-- Detect `#` after an `@agent` selection to trigger model picker
-- Parse input to extract: agent mentions, model selections, and the prompt text
-- Display selected tools as minimal inline tags: `@images #nano-banana`
-
-### ChatPage.tsx -- Tool Execution
-- Instead of navigating away when selecting `@images`, `@videos`, etc., **stay in chat**
-- Parse the message to detect tool invocations
-- Send tool instructions to the backend via the existing chat function
-- Backend orchestrates: calls the appropriate edge functions (generate-image, generate-video, generate-voice, etc.)
-- Results stream back and display inline in the chat
-
-### Backend: chat/index.ts Changes
-- Add tool definitions for each workspace tool:
-  ```ts
-  GENERATE_IMAGE: { goal, model, count }
-  GENERATE_VIDEO: { prompt, model }
-  GENERATE_VOICE: { text, voice }
-  SEND_EMAIL: { to, subject, body }
-  CREATE_SLIDES: { topic, style }
-  ```
-- When AI calls these tools, the backend invokes the corresponding edge functions
-- Stream status updates back: "Generating image with Nano Banana...", "Image ready", etc.
-- Deduct credits based on model + quantity
+### التغييرات
+- فحص وجود مفاتيح Hyperbrowser نشطة في الداتابيز
+- تحسين `detectComputerUse` ليكتشف أحداث أكثر دقة
+- إضافة زر "View Live" في ThinkingLoader يفتح dialog مع كل الخطوات
 
 ---
 
-## Part 3: Credit Integration
-- Each tool call deducts the appropriate MC cost
-- Before execution, validate user has sufficient credits
-- Show cost preview in the `#model` picker dropdown
+## الجزء 2: تسريع فائق للشات والباك اند
+
+### المشكلة
+الشات بطيء جداً بسبب:
+1. تحميل 12+ أداة Composio + أدوات بحث + أدوات ميديا حتى لو مش محتاجهم
+2. استعلامات DB غير ضرورية
+3. النموذج يستقبل system prompt ضخم حتى للرسائل البسيطة
+
+### الحل — تسريع داخلي 100% بدون تغيير التصميم
+
+**ملف `supabase/functions/chat/index.ts`:**
+1. **مسار فائق السرعة (Ultra-fast):** الرسائل العادية (بدون @mentions أو أوامر أدوات) → system prompt مصغر + بدون أدوات + max_tokens: 100 + temperature: 0.3
+2. **تحميل الأدوات بذكاء:** فقط حمّل الأدوات المطلوبة فعلاً:
+   - `composioTools` → فقط لو المستخدم ذكر `@integrations`
+   - `browserTools` → فقط لو المستخدم ذكر `browse` أو `open` أو `website` أو كلمات متصفح
+   - `mediaTools` → فقط لو المستخدم ذكر `@images` أو `@videos` أو `generate`
+   - `searchTools` → فقط لو `searchEnabled` والمستخدم سأل سؤال يحتاج بحث (ليس كل رسالة)
+3. **إلغاء الـ second round-trip:** حالياً بعد البحث يرسل نتائج البحث في رسالة ثانية للنموذج — هذا يضاعف الوقت. بدلاً منه، أدمج نتائج البحث مباشرة في السياق الأصلي.
+4. **تقليل حجم context:** حالياً يرسل كل الرسائل السابقة للنموذج — حدد آخر 10 رسائل فقط.
+
+**ملف `src/lib/streamChat.ts`:**
+- لا تغيير — الـ streaming parser يعمل بشكل صحيح.
 
 ---
 
-## Files to Modify
+## الجزء 3: إصلاح Object Remover
 
-| File | Changes |
-|------|---------|
-| `src/components/ThinkingLoader.tsx` | Remove Monitor icon, static violet star for computer use header, remove collapsible toggle |
-| `src/pages/ChatPage.tsx` | Default search+computer ON, remove mode badge above input, detect computer use from status events, handle in-chat tool execution |
-| `src/lib/agentRegistry.ts` | Add `models` array to agents, add `@email` agent |
-| `src/components/MentionDropdown.tsx` | Show model picker on `#` after agent selection |
-| `src/components/AnimatedInput.tsx` | Detect `#` trigger, parse multi-tool input |
-| `supabase/functions/chat/index.ts` | Add tool definitions for image/video/voice/slides/email, orchestrate execution, stream status |
+### المشكلة
+الماسك (التحديد) لا يُرسل بشكل صحيح — المستخدم يحدد منطقة لكن AI يمسح منطقة عشوائية.
+
+### الحل
+**ملف `src/pages/tools/RemoverPage.tsx`:**
+- في `getMaskDataUrl()`: الماسك يُنشئ صورة أبيض وأسود (أبيض = المنطقة المحددة). المشكلة أن الـ alpha channel فقط يُفحص (>10) لكن الـ brush يرسم بـ `rgba(239, 68, 68, 0.4)` — قيمة alpha = 102 (~0.4 * 255) وهذا يعمل.
+- المشكلة الحقيقية في `callLemonImage`: يرسل `body.mask = maskUrl` لكن LemonData API تتوقع الماسك بتنسيق محدد. يجب التأكد من إرسال الماسك كـ base64 data URL بشكل صحيح وأن API الـ edit تدعم الماسك.
+
+**ملف `supabase/functions/image-tools/index.ts`:**
+- التأكد من إرسال الماسك بالتنسيق الصحيح لـ LemonData API (mask_image بدل mask في بعض APIs).
 
 ---
 
-## Implementation Order
-1. UI cleanup (ThinkingLoader + ChatPage badges/defaults) -- quick wins
-2. Agent registry + model data
-3. MentionDropdown + AnimatedInput `#` model picker
-4. Backend tool orchestration in chat function
-5. In-chat result rendering (images, videos inline)
-6. Credit validation and deduction
+## الجزء 4: إصلاح Cartoon
+
+### المشكلة
+1. أنيميشن الانتظار مختلف عن بقية الأدوات (Sparkles بدل StarLoader)
+2. أسماء القوالب ظاهرة
+
+### الحل
+**ملف `src/pages/tools/CartoonPage.tsx`:**
+- استبدال أنيميشن `Sparkles` في مرحلة `generating` بنفس StarLoader الأزرق المستخدم في بقية الأدوات
+- إخفاء أسماء/عناوين القوالب من `TemplateGrid`
+
+---
+
+## الجزء 5: تسريع داخلي للموقع بالكامل (بدون تغيير التصميم)
+
+### التحسينات — كود داخلي فقط، صفر تغيير مرئي:
+
+1. **Lazy loading للـ routes:** التأكد من أن كل صفحات الأدوات محملة lazy
+2. **تقليل re-renders:** إضافة `React.memo` للمكونات الثقيلة مثل `ChatMessage`, `ThinkingLoader`
+3. **Debounce للإدخال:** تقليل عدد الـ re-renders أثناء الكتابة في AnimatedInput
+4. **تحسين الـ Edge Functions:** تقليل cold start عن طريق تبسيط الـ imports
+
+---
+
+## الملفات المطلوب تعديلها
+
+| الملف | التغييرات |
+|-------|----------|
+| `supabase/functions/chat/index.ts` | تحميل أدوات ذكي، مسار فائق السرعة، تقليل context |
+| `src/components/ThinkingLoader.tsx` | زر View Live + dialog للخطوات |
+| `src/pages/tools/RemoverPage.tsx` | إصلاح إرسال الماسك |
+| `supabase/functions/image-tools/index.ts` | إصلاح تنسيق الماسك لـ LemonData |
+| `src/pages/tools/CartoonPage.tsx` | StarLoader + إخفاء أسماء القوالب |
+| `src/pages/ChatPage.tsx` | تحسينات أداء (memo, cleanup) |
+
+---
+
+## ترتيب التنفيذ
+1. تسريع الباك اند (chat/index.ts) — أكبر تأثير
+2. إصلاح ThinkingLoader + View Live
+3. إصلاح Object Remover
+4. إصلاح Cartoon
+5. تحسينات أداء عامة
 
