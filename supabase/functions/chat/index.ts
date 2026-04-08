@@ -407,7 +407,7 @@ serve(async (req) => {
     // Key rotation with retry
     let response: Response;
     let retryCount = 0;
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 2;
 
     while (true) {
       response = await fetch(apiUrl, {
@@ -416,6 +416,22 @@ serve(async (req) => {
         body: JSON.stringify(body),
       });
 
+      if (response.ok) break;
+
+      // If Lovable Gateway fails, fallback to LemonData
+      if (apiUrl.includes("ai.gateway.lovable.dev") && retryCount < MAX_RETRIES) {
+        const lemonKey = await getLemonDataKey(sb, usedKeyId || undefined);
+        if (lemonKey) {
+          apiUrl = LEMONDATA_URL;
+          apiKey = lemonKey.api_key;
+          usedKeyId = lemonKey.id;
+          body.model = "claude-haiku-4-5";
+          retryCount++;
+          continue;
+        }
+      }
+
+      // If LemonData fails, try another key
       if (apiUrl === LEMONDATA_URL && (response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < MAX_RETRIES) {
         if (response.status !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
         const newKey = await getLemonDataKey(sb, usedKeyId || undefined);
@@ -424,20 +440,6 @@ serve(async (req) => {
           usedKeyId = newKey.id;
           retryCount++;
           continue;
-        }
-
-        // Fallback to Lovable Gateway
-        if (LOVABLE_API_KEY) {
-          body.model = "google/gemini-2.5-flash";
-          const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          });
-          if (fallbackResp.ok) {
-            return new Response(fallbackResp.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
-          }
-          console.error("Lovable AI fallback error:", fallbackResp.status);
         }
       }
       break;
