@@ -321,7 +321,7 @@ serve(async (req) => {
     const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
     const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
     const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && hasSearchIntent(latestUserText);
-    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || isShopping);
+    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || isShopping || isDeepResearch);
     const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
     const shouldLoadHyperbrowserKey = needsBrowserIntent;
 
