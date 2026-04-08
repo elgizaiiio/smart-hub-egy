@@ -440,8 +440,8 @@ serve(async (req) => {
       failureText = await response.text();
       if (retryCount >= 3) break;
 
-      if (provider === "wavespeed" && isWaveSpeedModelUnavailable(failStatus, failureText)) {
-        const nextModel = getNextWaveSpeedModel(modelId);
+      if (provider === "openrouter" && isModelUnavailable(failStatus, failureText)) {
+        const nextModel = getNextFallbackModel(modelId);
         if (nextModel) {
           modelId = nextModel;
           body.model = modelId;
@@ -450,16 +450,8 @@ serve(async (req) => {
         }
       }
 
-      // If WaveSpeed fails, try another WaveSpeed key first, then fallback to LemonData
-      if (provider === "wavespeed" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402 || failStatus >= 500)) {
-        const newWsKey = await getWaveSpeedLlmKey(sb, usedKeyId || undefined);
-        if (newWsKey) {
-          apiKey = newWsKey.api_key;
-          usedKeyId = newWsKey.id;
-          retryCount++;
-          continue;
-        }
-        // No more WaveSpeed keys — fallback to LemonData
+      // If OpenRouter fails with auth/rate/server errors, fallback to LemonData
+      if (provider === "openrouter" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402 || failStatus >= 500)) {
         const lemonKey = await getLemonDataKey(sb);
         if (lemonKey) {
           apiUrl = LEMONDATA_URL;
