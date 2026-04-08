@@ -10,6 +10,7 @@ const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
+const COMPLEX_MODEL = "moonshotai/kimi-k2.5:nitro";
 const OPENROUTER_FALLBACK_MODELS = [DEFAULT_MODEL, "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
@@ -157,7 +158,19 @@ function getNextFallbackModel(currentModel: string): string | null {
   return OPENROUTER_FALLBACK_MODELS.find((candidate) => candidate !== currentModel) ?? null;
 }
 
-// detectComplexity removed — use fast public WaveSpeed model by default
+// Detect if the task requires a more powerful model
+function detectComplexTask(text: string, hasImages: boolean, isDeepResearch: boolean, isShopping: boolean, mode?: string): boolean {
+  if (hasImages) return true;
+  if (isDeepResearch) return true;
+  if (isShopping) return true;
+  if (mode === "files") return true;
+  // Complex patterns: code, analysis, comparison, long requests
+  const complexPatterns = /(compare|مقارنة|analyze|تحليل|explain in detail|اشرح بالتفصيل|write code|اكتب كود|debug|programming|برمجة|research|بحث عميق|create a plan|خطة|summarize this|لخص|translate this document|ترجم|review|مراجعة|step by step|خطوة بخطوة)/i;
+  if (complexPatterns.test(text)) return true;
+  // Long messages likely need more reasoning
+  if (text.split(/\s+/).length > 50) return true;
+  return false;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -208,11 +221,19 @@ serve(async (req) => {
       } catch { /* silently skip */ }
     }
 
-    // ── Model routing — WaveSpeed PRIMARY (fastest), LemonData FALLBACK ──
+    // ── Model routing ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = normalizeRequestedModel(typeof model === "string" ? model : null);
+    
+    // Check if messages contain images
+    const hasImages = Array.isArray(messages) && messages.some((m: any) => {
+      if (Array.isArray(m.content)) return m.content.some((p: any) => p.type === "image_url");
+      return false;
+    });
 
-    let modelId: string = requestedModel ?? DEFAULT_MODEL;
+    // Auto-select powerful model for complex tasks
+    const needsComplexModel = !isCasualEarly && detectComplexTask(latestUserText, hasImages, isDeepResearch, isShopping, effectiveMode);
+    let modelId: string = requestedModel ?? (needsComplexModel ? COMPLEX_MODEL : DEFAULT_MODEL);
     let apiUrl = OPENROUTER_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
