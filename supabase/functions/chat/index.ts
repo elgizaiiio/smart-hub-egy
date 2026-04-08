@@ -198,32 +198,28 @@ serve(async (req) => {
     // ── Model routing ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
-    const isLovableGatewayModel = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    // Default to LemonData with claude-haiku-4-5 for speed
-    let modelId: string = requestedModel ?? "claude-haiku-4-5";
-    let apiUrl = LEMONDATA_URL;
+    // PRIMARY: Lovable Gateway (gemini-2.5-flash) — fastest
+    // FALLBACK: LemonData
+    let modelId: string = requestedModel ?? "google/gemini-2.5-flash";
+    let apiUrl = LOVABLE_API_KEY ? "https://ai.gateway.lovable.dev/v1/chat/completions" : LEMONDATA_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const isLovableGatewayModel2 = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
-
-    if (isLovableGatewayModel2 && LOVABLE_API_KEY) {
-      // Gateway model explicitly requested
+    if (LOVABLE_API_KEY) {
+      // Use Lovable Gateway as primary (fastest)
       apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
       apiKey = LOVABLE_API_KEY;
+      if (!requestedModel) modelId = "google/gemini-2.5-flash";
     } else {
-      // Use LemonData (primary)
+      // Fallback to LemonData
+      apiUrl = LEMONDATA_URL;
+      modelId = requestedModel ?? "claude-haiku-4-5";
       const lemonKey = await getLemonDataKey(sb);
       if (lemonKey) {
         apiKey = lemonKey.api_key;
         usedKeyId = lemonKey.id;
-      } else if (LOVABLE_API_KEY) {
-        // Fallback to Lovable Gateway
-        apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-        apiKey = LOVABLE_API_KEY;
-        modelId = "google/gemini-2.5-flash";
       } else {
         return new Response(JSON.stringify({ error: "No API keys available" }), {
           status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -411,7 +407,7 @@ serve(async (req) => {
     // Key rotation with retry
     let response: Response;
     let retryCount = 0;
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 2;
 
     while (true) {
       response = await fetch(apiUrl, {
@@ -420,6 +416,22 @@ serve(async (req) => {
         body: JSON.stringify(body),
       });
 
+      if (response.ok) break;
+
+      // If Lovable Gateway fails, fallback to LemonData
+      if (apiUrl.includes("ai.gateway.lovable.dev") && retryCount < MAX_RETRIES) {
+        const lemonKey = await getLemonDataKey(sb, usedKeyId || undefined);
+        if (lemonKey) {
+          apiUrl = LEMONDATA_URL;
+          apiKey = lemonKey.api_key;
+          usedKeyId = lemonKey.id;
+          body.model = "claude-haiku-4-5";
+          retryCount++;
+          continue;
+        }
+      }
+
+      // If LemonData fails, try another key
       if (apiUrl === LEMONDATA_URL && (response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < MAX_RETRIES) {
         if (response.status !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
         const newKey = await getLemonDataKey(sb, usedKeyId || undefined);
@@ -428,20 +440,6 @@ serve(async (req) => {
           usedKeyId = newKey.id;
           retryCount++;
           continue;
-        }
-
-        // Fallback to Lovable Gateway
-        if (LOVABLE_API_KEY) {
-          body.model = "google/gemini-2.5-flash";
-          const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          });
-          if (fallbackResp.ok) {
-            return new Response(fallbackResp.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
-          }
-          console.error("Lovable AI fallback error:", fallbackResp.status);
         }
       }
       break;
