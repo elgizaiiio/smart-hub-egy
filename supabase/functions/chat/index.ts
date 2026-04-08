@@ -8,11 +8,9 @@ const corsHeaders = {
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
-const WAVESPEED_URL = "https://api.wavespeed.ai/v1/chat/completions";
-const LEGACY_WAVESPEED_MODEL = "anthropic/claude-haiku-4.5";
-const LEGACY_WAVESPEED_MODEL_ALIAS = "claude-haiku-4-5";
-const DEFAULT_WAVESPEED_MODEL = "openai/gpt-4.1-mini";
-const WAVESPEED_FALLBACK_MODELS = [DEFAULT_WAVESPEED_MODEL, "openai/gpt-4o-mini"];
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
+const OPENROUTER_FALLBACK_MODELS = [DEFAULT_MODEL, "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
   try {
@@ -85,20 +83,9 @@ async function getHyperbrowserKey(sb: ReturnType<typeof createClient>): Promise<
   return pick.api_key;
 }
 
-// ── WaveSpeed LLM key cache ──
-let cachedWsLlmKey: { id: string; api_key: string } | null = null;
-let cachedWsLlmKeyExpiry = 0;
-
-async function getWaveSpeedLlmKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
-  if (cachedWsLlmKey && Date.now() < cachedWsLlmKeyExpiry && cachedWsLlmKey.id !== excludeId) return cachedWsLlmKey;
-  const { data } = await sb.from("api_keys").select("id, api_key").eq("service", "wavespeed").eq("is_active", true).limit(10);
-  if (!data || data.length === 0) return null;
-  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
-  if (pool.length === 0) return null;
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  cachedWsLlmKey = pick;
-  cachedWsLlmKeyExpiry = Date.now() + CACHE_TTL_MS;
-  return pick;
+// ── OpenRouter key ──
+function getOpenRouterKey(): string | null {
+  return Deno.env.get("OPENROUTER_API_KEY") || null;
 }
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
@@ -159,16 +146,15 @@ function hasWebsiteIntent(text: string): boolean {
 
 function normalizeRequestedModel(rawModel: string | null): string | null {
   if (!rawModel || rawModel === "auto") return null;
-  if (rawModel === LEGACY_WAVESPEED_MODEL_ALIAS) return LEGACY_WAVESPEED_MODEL;
   return rawModel;
 }
 
-function isWaveSpeedModelUnavailable(status: number, errorText: string): boolean {
-  return status === 400 && /model_price_not_configured|not currently available for public requests|invalid_request_error/i.test(errorText);
+function isModelUnavailable(status: number, errorText: string): boolean {
+  return status === 400 && /not.*available|invalid.*model|unsupported/i.test(errorText);
 }
 
-function getNextWaveSpeedModel(currentModel: string): string | null {
-  return WAVESPEED_FALLBACK_MODELS.find((candidate) => candidate !== currentModel) ?? null;
+function getNextFallbackModel(currentModel: string): string | null {
+  return OPENROUTER_FALLBACK_MODELS.find((candidate) => candidate !== currentModel) ?? null;
 }
 
 // detectComplexity removed — use fast public WaveSpeed model by default
@@ -226,18 +212,17 @@ serve(async (req) => {
     const isDeepResearch = deepResearch === true;
     const requestedModel = normalizeRequestedModel(typeof model === "string" ? model : null);
 
-    let modelId: string = requestedModel ?? DEFAULT_WAVESPEED_MODEL;
-    let apiUrl = WAVESPEED_URL;
+    let modelId: string = requestedModel ?? DEFAULT_MODEL;
+    let apiUrl = OPENROUTER_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
-    let provider: "wavespeed" | "lemondata" = "wavespeed";
+    let provider: "openrouter" | "lemondata" = "openrouter";
 
-    // Try WaveSpeed first
-    const wsKey = await getWaveSpeedLlmKey(sb);
-    if (wsKey) {
-      apiKey = wsKey.api_key;
-      usedKeyId = wsKey.id;
-      provider = "wavespeed";
+    // Try OpenRouter first (env secret)
+    const orKey = getOpenRouterKey();
+    if (orKey) {
+      apiKey = orKey;
+      provider = "openrouter";
     } else {
       // Fallback to LemonData
       const lemonKey = await getLemonDataKey(sb);
@@ -455,8 +440,8 @@ serve(async (req) => {
       failureText = await response.text();
       if (retryCount >= 3) break;
 
-      if (provider === "wavespeed" && isWaveSpeedModelUnavailable(failStatus, failureText)) {
-        const nextModel = getNextWaveSpeedModel(modelId);
+      if (provider === "openrouter" && isModelUnavailable(failStatus, failureText)) {
+        const nextModel = getNextFallbackModel(modelId);
         if (nextModel) {
           modelId = nextModel;
           body.model = modelId;
@@ -465,16 +450,8 @@ serve(async (req) => {
         }
       }
 
-      // If WaveSpeed fails, try another WaveSpeed key first, then fallback to LemonData
-      if (provider === "wavespeed" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402 || failStatus >= 500)) {
-        const newWsKey = await getWaveSpeedLlmKey(sb, usedKeyId || undefined);
-        if (newWsKey) {
-          apiKey = newWsKey.api_key;
-          usedKeyId = newWsKey.id;
-          retryCount++;
-          continue;
-        }
-        // No more WaveSpeed keys — fallback to LemonData
+      // If OpenRouter fails with auth/rate/server errors, fallback to LemonData
+      if (provider === "openrouter" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402 || failStatus >= 500)) {
         const lemonKey = await getLemonDataKey(sb);
         if (lemonKey) {
           apiUrl = LEMONDATA_URL;

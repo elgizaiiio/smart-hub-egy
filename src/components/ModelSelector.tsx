@@ -18,7 +18,7 @@ export interface ModelOption {
 type ModelMode = "chat" | "images" | "videos" | "files" | "code";
 
 const CHAT_MODELS: ModelOption[] = [
-  { id: "gemini-3.1-flash-lite-preview", name: "Megsy V1", credits: "" },
+  { id: "google/gemini-2.5-flash-lite-preview-09-2025", name: "Megsy V1", credits: "" },
   { id: "google/gemini-2.5-pro", name: "Gemini 2.5 Pro", credits: "" },
   { id: "openai/gpt-5", name: "GPT-5", credits: "" },
   { id: "x-ai/grok-3", name: "Grok 3", credits: "" },
@@ -41,7 +41,7 @@ const MODELS: Record<ModelMode, ModelOption[]> = {
 
 // Real brand icons for chat models
 export const ModelBrandIcon = ({ modelId }: { modelId: string }) => {
-  if (modelId.includes("gemini-3-flash") || modelId.includes("gemini-3.1-flash-lite")) {
+  if (modelId.includes("gemini-2.5-flash-lite") || modelId.includes("gemini-3.1-flash-lite")) {
     return (
       <span className="text-sm font-black leading-none" style={{ background: "linear-gradient(135deg, #C0C0C0, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>M</span>
     );
