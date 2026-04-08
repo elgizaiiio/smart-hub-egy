@@ -226,10 +226,13 @@ const ChatPage = () => {
     setPendingQuestions([]);
   };
 
+  const isSubmittingRef = useRef(false);
+
   const handleSendWithText = async (overrideText?: string) => {
     const text = overrideText || input;
     if (!text.trim() && attachedFiles.length === 0) return;
-    if (isLoading) return;
+    if (isLoading || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
     const imageAttachments = attachedFiles.filter((f) => f.type === "image");
     const fileAttachments = attachedFiles.filter((f) => f.type === "file");
@@ -319,7 +322,8 @@ const ChatPage = () => {
         });
       },
       onDone: async () => {
-        setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);
+        setIsLoading(false);setIsThinking(false);setSearchStatus("");
+        isSubmittingRef.current = false;
         if (convId && assistantContent) {
           await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (searchImages.length > 0) {
@@ -332,7 +336,7 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
         }
       },
-      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);},
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);isSubmittingRef.current = false;},
       signal: controller.signal
     });
   };
@@ -340,7 +344,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

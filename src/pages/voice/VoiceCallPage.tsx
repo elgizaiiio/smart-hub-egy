@@ -152,8 +152,21 @@ const VoiceCallPage = () => {
     }
   }, [playNextAudio]);
 
+  // ─── Check Deepgram availability on mount ───
+  useEffect(() => {
+    supabase.functions.invoke("deepgram-token", { body: { ttl_seconds: 10 } })
+      .then(({ data, error }) => {
+        setDeepgramReady(!error && !!data?.token);
+      })
+      .catch(() => setDeepgramReady(false));
+  }, []);
+
   // ─── Start call: Deepgram STT WebSocket + mic ───
   const startCall = useCallback(async () => {
+    if (deepgramReady === false) {
+      toast.error("Voice service is temporarily unavailable. Please try again later.");
+      return;
+    }
     setPhase("connecting");
     setStatusText("Getting access...");
 
@@ -180,8 +193,8 @@ const VoiceCallPage = () => {
       if (tokenError || !tokenData?.token) {
         stream.getTracks().forEach(t => t.stop());
         setPhase("idle");
-        setStatusText("Connection failed. Try again.");
-        toast.error("Could not connect to voice service");
+        setStatusText("Voice service unavailable. Please try again later.");
+        toast.error("Could not connect to voice service — Deepgram key may be missing");
         return;
       }
 
