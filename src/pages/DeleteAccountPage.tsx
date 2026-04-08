@@ -11,6 +11,7 @@ const DeleteAccountPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [confirmText, setConfirmText] = useState("");
+  const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteAccount = async () => {
@@ -18,8 +19,21 @@ const DeleteAccountPage = () => {
       toast.error("Please type DELETE to confirm");
       return;
     }
+    if (!password.trim()) {
+      toast.error("Please enter your password to confirm");
+      return;
+    }
     setIsDeleting(true);
     try {
+      // Verify password by attempting sign-in
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) throw new Error("User not found");
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password });
+      if (signInError) {
+        toast.error("Incorrect password");
+        setIsDeleting(false);
+        return;
+      }
       toast.success("Account deletion requested. You will be signed out.");
       await supabase.auth.signOut();
       navigate("/auth");
@@ -61,6 +75,20 @@ const DeleteAccountPage = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Password confirmation */}
+      <div className="mb-4">
+        <label className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 block">
+          Enter your password to confirm
+        </label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Your password"
+          className="w-full px-4 py-3 rounded-xl bg-muted/50 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-destructive/30 transition-all"
+        />
       </div>
 
       {/* Confirm input */}

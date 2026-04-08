@@ -149,6 +149,9 @@ const ChatPage = () => {
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
+    setStatusHistory([]);
+    setSearchStatus("");
+    setPendingQuestions([]);
     const { data: conv } = await supabase.from("conversations").select("title, is_shared, share_id, is_pinned").eq("id", id).single();
     if (conv) {
       setConversationTitle(conv.title || "Untitled");
@@ -226,10 +229,13 @@ const ChatPage = () => {
     setPendingQuestions([]);
   };
 
+  const isSubmittingRef = useRef(false);
+
   const handleSendWithText = async (overrideText?: string) => {
     const text = overrideText || input;
     if (!text.trim() && attachedFiles.length === 0) return;
-    if (isLoading) return;
+    if (isLoading || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
     const imageAttachments = attachedFiles.filter((f) => f.type === "image");
     const fileAttachments = attachedFiles.filter((f) => f.type === "file");
@@ -319,7 +325,8 @@ const ChatPage = () => {
         });
       },
       onDone: async () => {
-        setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);
+        setIsLoading(false);setIsThinking(false);setSearchStatus("");
+        isSubmittingRef.current = false;
         if (convId && assistantContent) {
           await saveMessage(convId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (searchImages.length > 0) {
@@ -332,7 +339,7 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
         }
       },
-      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);},
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);isSubmittingRef.current = false;},
       signal: controller.signal
     });
   };
@@ -340,13 +347,27 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach(async (file) => {
+    const fileList = Array.from(files);
+    if (attachedFiles.length + fileList.length > 5) {
+      toast.error("Maximum 5 files allowed");
+      e.target.value = "";
+      return;
+    }
+    fileList.forEach(async (file) => {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 20MB)`);
+        return;
+      }
+      if (file.size === 0) {
+        toast.error(`${file.name} is empty`);
+        return;
+      }
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
@@ -487,9 +508,18 @@ const ChatPage = () => {
     if (inviteLink) { await navigator.clipboard.writeText(inviteLink); toast.success("Invite link copied!"); }
   };
 
-  // Accept invite on page load + demo conversation on first visit
+  // Accept invite / deep link / demo conversation on page load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    
+    // Deep link: /chat?conv=xxx
+    const convParam = params.get("conv");
+    if (convParam && !conversationId) {
+      loadConversation(convParam);
+      window.history.replaceState({}, "", "/chat");
+      return;
+    }
+
     const inviteToken = params.get("invite");
     if (inviteToken) {
       (async () => {

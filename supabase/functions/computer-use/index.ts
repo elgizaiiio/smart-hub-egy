@@ -14,7 +14,25 @@ let cachedHBKeyExpiry = 0;
 async function getHyperbrowserKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
   if (cachedHBKey && Date.now() < cachedHBKeyExpiry && cachedHBKey.id !== excludeId) return cachedHBKey;
   const { data } = await sb.from("api_keys").select("id, api_key").eq("service", "hyperbrowser").eq("is_active", true).eq("is_blocked", false).limit(20);
-  if (!data || data.length === 0) return null;
+  if (!data || data.length === 0) {
+    // Auto-reactivate keys blocked more than 30 minutes ago
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data: reactivated } = await sb.from("api_keys")
+      .update({ is_blocked: false, block_reason: null })
+      .eq("service", "hyperbrowser")
+      .eq("is_active", true)
+      .eq("is_blocked", true)
+      .lt("last_error_at", thirtyMinAgo)
+      .select("id, api_key");
+    if (reactivated && reactivated.length > 0) {
+      console.log(`Auto-reactivated ${reactivated.length} HB key(s)`);
+      const pick = reactivated[Math.floor(Math.random() * reactivated.length)];
+      cachedHBKey = pick;
+      cachedHBKeyExpiry = Date.now() + CACHE_TTL_MS;
+      return pick;
+    }
+    return null;
+  }
   const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
   if (pool.length === 0) return null;
   const pick = pool[Math.floor(Math.random() * pool.length)];

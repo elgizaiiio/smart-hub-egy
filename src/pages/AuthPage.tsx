@@ -37,6 +37,11 @@ const AuthPage = () => {
   const handleCheckEmail = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
     setIsSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("check-email", { body: { email: normalizedEmail } });

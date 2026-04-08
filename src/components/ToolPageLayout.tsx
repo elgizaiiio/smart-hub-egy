@@ -185,7 +185,18 @@ export const SilkyToolLanding = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && onStart) onStart(file);
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("File too large. Maximum size is 20MB.");
+      e.target.value = "";
+      return;
+    }
+    if (file.size === 0) {
+      toast.error("File is empty. Please select a valid file.");
+      e.target.value = "";
+      return;
+    }
+    if (onStart) onStart(file);
     e.target.value = "";
   };
 

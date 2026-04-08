@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, memo } from "react";
 import { Copy, ThumbsUp, ThumbsDown, Check, Play, FileUp, Share2, Pencil, Type, Ellipsis } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -435,4 +435,4 @@ const ChatMessage = ({ role, content, isStreaming, isThinking, images, attachedI
   );
 };
 
-export default ChatMessage;
+export default memo(ChatMessage);
