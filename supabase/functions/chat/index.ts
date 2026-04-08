@@ -392,10 +392,9 @@ serve(async (req) => {
     }
 
 
-    // Key rotation with retry
+    // Key rotation with fast retry
     let response: Response;
     let retryCount = 0;
-    const MAX_RETRIES = 2;
 
     while (true) {
       response = await fetch(apiUrl, {
@@ -406,21 +405,8 @@ serve(async (req) => {
 
       if (response.ok) break;
 
-      // If Lovable Gateway fails, fallback to LemonData
-      if (apiUrl.includes("ai.gateway.lovable.dev") && retryCount < MAX_RETRIES) {
-        const lemonKey = await getLemonDataKey(sb, usedKeyId || undefined);
-        if (lemonKey) {
-          apiUrl = LEMONDATA_URL;
-          apiKey = lemonKey.api_key;
-          usedKeyId = lemonKey.id;
-          body.model = "claude-haiku-4-5";
-          retryCount++;
-          continue;
-        }
-      }
-
-      // If LemonData fails, try another key
-      if (apiUrl === LEMONDATA_URL && (response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < MAX_RETRIES) {
+      // LemonData key rotation on failure
+      if ((response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < 2) {
         if (response.status !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
         const newKey = await getLemonDataKey(sb, usedKeyId || undefined);
         if (newKey) {
