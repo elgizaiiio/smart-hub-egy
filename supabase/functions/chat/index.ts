@@ -371,9 +371,9 @@ serve(async (req) => {
       if (mentionsIntegrations) selectedTools.push(...composioTools);
     }
 
-    // Trim messages to last 8 for speed (keep system prompt separate)
-    const trimmedMessages = Array.isArray(messages) && messages.length > 8
-      ? messages.slice(-8)
+    // Trim messages aggressively for speed
+    const trimmedMessages = Array.isArray(messages) && messages.length > (isCasualMessage ? 4 : 6)
+      ? messages.slice(isCasualMessage ? -4 : -6)
       : messages;
 
     const body: any = {
@@ -382,8 +382,8 @@ serve(async (req) => {
         ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...trimmedMessages]
         : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
-      max_tokens: isCasualMessage ? 120 : (isDeepResearch ? 3072 : (mode === "files" ? 2048 : 1024)),
-      temperature: isCasualMessage ? 0.25 : 0.55,
+      max_tokens: isCasualMessage ? 100 : (isDeepResearch ? 3072 : (mode === "files" ? 2048 : 768)),
+      temperature: isCasualMessage ? 0.2 : 0.5,
     };
 
     if (selectedTools.length > 0) {
