@@ -303,14 +303,13 @@ serve(async (req) => {
       }
     }
 
-    // Detect if message is casual/greeting — skip tools entirely
-    const isCasualMessage = /^(هلا|اهلا|هاي|مرحبا|السلام|سلام|hi|hello|hey|yo|sup|thanks|شكرا|تمام|ok|اوك|good|كويس|ازيك|عامل ايه|كيفك|صباح|مساء|bye|وداعا|ايوه|لا)\b/i.test(latestUserText.trim()) && latestUserText.trim().split(/\s+/).length <= 5;
+    const isCasualMessage = isCasualEarly;
 
     const body: any = {
       model: modelId,
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
-      max_tokens: isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048),
+      max_tokens: isCasualMessage ? 256 : (isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048)),
     };
 
     const allTools = isCasualMessage ? [] : [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools];
