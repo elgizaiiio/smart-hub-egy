@@ -101,7 +101,7 @@ const CartoonPage = () => {
             <motion.div key="templates" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4 pb-32 space-y-4">
               <div className="relative rounded-2xl overflow-hidden border border-border/30"><img src={image!} alt="" className="w-full h-40 object-cover" /></div>
               <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the cartoon style you want..." className="w-full rounded-2xl border border-border/50 bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground resize-none min-h-[80px] focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              {templates.length > 0 && <TemplateGrid templates={templates} onSelect={handleTemplateSelect} />}
+              {templates.length > 0 && <TemplateGrid templates={templates} onSelect={handleTemplateSelect} hideNames />}
             </motion.div>
           )}
 
