@@ -17,6 +17,7 @@ interface ChatMsg {
   role: "user" | "assistant";
   content: string;
   htmlContent?: string;
+  artifacts?: FileArtifact[];
 }
 
 interface AttachedFile {
@@ -36,6 +37,43 @@ interface SavedFile {
   title: string;
   created_at: string;
   mode: string;
+}
+
+interface FileArtifact {
+  url: string;
+  label: string;
+  kind: string;
+}
+
+function extractArtifacts(text: string): FileArtifact[] {
+  const urls = Array.from(new Set((text.match(/https?:\/\/[^\s<>\")\]]+/g) || []).map((url) => url.replace(/[.,;]+$/, ""))));
+  return urls.map((url) => {
+    const kind = /\.pptx?(\?|#|$)/i.test(url)
+      ? "pptx"
+      : /\.pdf(\?|#|$)/i.test(url)
+        ? "pdf"
+        : /\.xlsx?(\?|#|$)/i.test(url)
+          ? "sheet"
+          : /\.docx?(\?|#|$)/i.test(url)
+            ? "doc"
+            : /\.(png|jpe?g|webp|gif|svg)(\?|#|$)/i.test(url)
+              ? "image"
+              : /canva\.com/i.test(url)
+                ? "canva"
+                : "link";
+
+    const labelMap: Record<string, string> = {
+      pptx: "Download PPTX",
+      pdf: "Download PDF",
+      sheet: "Download spreadsheet",
+      doc: "Download document",
+      image: "Open image",
+      canva: "Open Canva file",
+      link: "Open link",
+    };
+
+    return { url, kind, label: labelMap[kind] || "Open file" };
+  });
 }
 
 const FILE_SERVICES = [
@@ -61,6 +99,8 @@ const FilesPage = () => {
   const [savedFiles, setSavedFiles] = useState<SavedFile[]>([]);
   const [researchSteps, setResearchSteps] = useState<ResearchStep[]>([]);
   const [researchOutline, setResearchOutline] = useState<string[] | null>(null);
+  const [searchStatus, setSearchStatus] = useState("");
+  const [statusHistory, setStatusHistory] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -136,7 +176,7 @@ const FilesPage = () => {
     if (msgs) {
       const loaded: ChatMsg[] = [];
       for (const m of msgs) {
-        const msg: ChatMsg = { role: m.role as "user" | "assistant", content: m.content };
+        const msg: ChatMsg = { role: m.role as "user" | "assistant", content: m.content, artifacts: extractArtifacts(m.content) };
         if (m.role === "assistant" && m.images && m.images.length > 0) {
           try { const meta = JSON.parse(m.images[0]); if (meta.htmlContent) msg.htmlContent = meta.htmlContent; } catch {}
         }
