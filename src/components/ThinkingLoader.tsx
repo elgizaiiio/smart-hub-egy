@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -122,4 +122,4 @@ const ThinkingLoader = ({ searchQuery, searchStatus, statusHistory = [] }: Think
   );
 };
 
-export default ThinkingLoader;
+export default memo(ThinkingLoader);

@@ -23,7 +23,6 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(window.location.search);
   const redirectUrl = searchParams.get("redirect");
-  const [rememberMe, setRememberMe] = useState(false);
 
   const startCountdown = () => {
     setCountdown(60);
