@@ -736,9 +736,10 @@ ${userContext}`;
 
   // Shopping mode
   if (mode === "shopping") {
-    // Detect user location/currency from text
-    const isEgypt = /(مصر|egypt|القاهرة|cairo|جنيه|egp|جمبري|اسكندرية|الجيزة)/i.test(userContext + " " + mode);
-    const isSaudi = /(السعودية|saudi|riyal|sar|جدة|الرياض)/i.test(userContext);
+    // Detect user location/currency from their text AND user context
+    const combinedText = (userContext + " " + latestUserText).toLowerCase();
+    const isEgypt = /(مصر|egypt|القاهرة|cairo|جنيه|egp|اسكندرية|الجيزة|نون مصر|جوميا|امازون مصر|بي تك)/i.test(combinedText) || /[\u0600-\u06FF]/.test(latestUserText);
+    const isSaudi = /(السعودية|saudi|riyal|sar|جدة|الرياض|نون السعودية)/i.test(combinedText);
     const localCurrency = isEgypt ? "EGP (الجنيه المصري)" : isSaudi ? "SAR (الريال السعودي)" : "the user's local currency";
     const localStores = isEgypt ? "Noon Egypt, Jumia Egypt, Amazon.eg, B.Tech, 2B" : isSaudi ? "Noon KSA, Amazon.sa, Jarir, Extra" : "local online stores";
     
