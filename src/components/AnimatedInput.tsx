@@ -335,15 +335,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap min-h-[44px]">
-              {activeAgent && activeAgent !== "normal" && (
-                <span className="shrink-0 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium">
-                  <span className="truncate">{activeAgent === "deep-research" ? "Deep Research" : activeAgent === "shopping" ? "Shopping" : activeAgent === "learning" ? "Learning" : activeAgent}</span>
-                  <button onClick={onAgentRemove} className="ml-0.5 hover:text-foreground transition-colors" aria-label="Clear mode">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
+            <div className="flex items-center min-h-[44px]">
               <textarea
                 ref={textareaRef}
                 value={value}
@@ -351,7 +343,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                 onKeyDown={handleKeyDown}
                 placeholder={displayedPlaceholder || " "}
                 rows={1}
-                className="flex-1 basis-[120px] min-w-[120px] bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
+                className="flex-1 w-full min-w-0 bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
                 style={{ minHeight: "44px" }}
               />
             </div>
