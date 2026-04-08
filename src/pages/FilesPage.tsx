@@ -622,8 +622,19 @@ Output ONLY the complete HTML code with no explanations.`,
                   ) : (
                     <div className="mb-4">
                       <div className="prose-chat text-foreground text-sm mb-3">
-                        <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "")}</ReactMarkdown>
+                        <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "").replace(/```html[\s\S]*?```/g, "")}</ReactMarkdown>
                       </div>
+                      {/* Real artifact links */}
+                      {msg.artifacts && msg.artifacts.length > 0 && (
+                        <div className="flex gap-2 flex-wrap mb-3">
+                          {msg.artifacts.map((art, ai) => (
+                            <a key={ai} href={art.url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm hover:bg-primary/20 transition-colors">
+                              <Download className="w-4 h-4" /> {art.label}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       {msg.htmlContent && (
                         <div className="flex gap-2 flex-wrap">
                           <button onClick={() => setPreviewHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm hover:bg-primary/20 transition-colors"><Eye className="w-4 h-4" /> Preview</button>

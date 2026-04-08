@@ -200,39 +200,28 @@ serve(async (req) => {
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
     const isLovableGatewayModel = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
 
-    // Default to Lovable Gateway with gemini-2.5-flash for maximum speed
-    let modelId: string = requestedModel ?? "google/gemini-2.5-flash";
-    let apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+    // Default to LemonData with claude-haiku-4-5 for speed
+    let modelId: string = requestedModel ?? "claude-haiku-4-5";
+    let apiUrl = LEMONDATA_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const isLovableGatewayModel2 = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
 
-    if (isLovableGatewayModel || !requestedModel) {
-      // Use Lovable Gateway (fastest)
-      if (!LOVABLE_API_KEY) {
-        // Fallback to LemonData
-        const lemonKey = await getLemonDataKey(sb);
-        if (!lemonKey) {
-          return new Response(JSON.stringify({ error: "No API keys available" }), {
-            status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        apiUrl = LEMONDATA_URL;
-        apiKey = lemonKey.api_key;
-        usedKeyId = lemonKey.id;
-        modelId = requestedModel ?? "claude-haiku-4-5";
-      } else {
-        apiKey = LOVABLE_API_KEY;
-      }
+    if (isLovableGatewayModel2 && LOVABLE_API_KEY) {
+      // Gateway model explicitly requested
+      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      apiKey = LOVABLE_API_KEY;
     } else {
-      // Specific non-gateway model requested — use LemonData
+      // Use LemonData (primary)
       const lemonKey = await getLemonDataKey(sb);
       if (lemonKey) {
-        apiUrl = LEMONDATA_URL;
         apiKey = lemonKey.api_key;
         usedKeyId = lemonKey.id;
       } else if (LOVABLE_API_KEY) {
+        // Fallback to Lovable Gateway
+        apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
         apiKey = LOVABLE_API_KEY;
         modelId = "google/gemini-2.5-flash";
       } else {
