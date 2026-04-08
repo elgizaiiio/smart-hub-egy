@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ThinkingLoaderProps {
   searchQuery?: string;
@@ -17,7 +19,7 @@ function getStarColor(text: string, isComputerUse?: boolean): string {
 }
 
 function detectComputerUse(statusHistory: string[]): boolean {
-  const browserKeywords = ["navigat", "opening", "scrolling", "clicking", "browser", "extracting", "browsing", "smart browser", "go to"];
+  const browserKeywords = ["navigat", "opening", "scrolling", "clicking", "browser", "extracting", "browsing", "smart browser", "go to", "canva", "opened"];
   return statusHistory.some(s => {
     const lower = s.toLowerCase();
     return browserKeywords.some(k => lower.includes(k));
@@ -25,6 +27,7 @@ function detectComputerUse(statusHistory: string[]): boolean {
 }
 
 const ThinkingLoader = ({ searchQuery, searchStatus, statusHistory = [] }: ThinkingLoaderProps) => {
+  const [showLive, setShowLive] = useState(false);
   const hasRealSteps = statusHistory.length > 0;
   const actualComputerUse = detectComputerUse(statusHistory);
 
@@ -44,6 +47,12 @@ const ThinkingLoader = ({ searchQuery, searchStatus, statusHistory = [] }: Think
             <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
           </svg>
           <span className="text-xs font-semibold text-violet-400">Megsy Computer</span>
+          <button
+            onClick={() => setShowLive(true)}
+            className="ml-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-500/15 text-violet-400 hover:bg-violet-500/25 transition-colors"
+          >
+            View Live
+          </button>
         </div>
       )}
 
@@ -82,6 +91,33 @@ const ThinkingLoader = ({ searchQuery, searchStatus, statusHistory = [] }: Think
           ))}
         </div>
       )}
+
+      {/* View Live Dialog */}
+      <Dialog open={showLive} onOpenChange={setShowLive}>
+        <DialogContent className="max-w-md max-h-[70vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{ color: "#a78bfa" }}>
+                <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+              </svg>
+              Megsy Computer — Live
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+            {statusHistory.length === 0 && (
+              <p className="text-sm text-muted-foreground">No steps recorded yet...</p>
+            )}
+            {statusHistory.map((step, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${i === statusHistory.length - 1 ? "bg-violet-400 animate-pulse" : "bg-muted-foreground/40"}`} />
+                <span className={i === statusHistory.length - 1 ? "text-foreground font-medium" : "text-muted-foreground"}>
+                  {step}
+                </span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -106,7 +106,10 @@ async function callLemonImage(sb: ReturnType<typeof createClient>, model: string
         body.image = imageUrl;
         url = "https://api.lemondata.cc/v1/images/edits";
       }
-      if (maskUrl) body.mask = maskUrl;
+      if (maskUrl) {
+        body.mask = maskUrl;
+        body.mask_image = maskUrl;
+      }
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 90000);

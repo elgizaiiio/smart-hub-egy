@@ -1,15 +1,54 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Sparkles, Download, Share2 } from "lucide-react";
+import { ArrowLeft, Download, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCredits } from "@/hooks/useCredits";
-import { TemplateGrid, SilkyToolLanding } from "@/components/ToolPageLayout";
+import ToolPageLayout, { TemplateGrid, SilkyToolLanding } from "@/components/ToolPageLayout";
 import { useToolTemplates } from "@/hooks/useToolTemplates";
 import type { ToolTemplate } from "@/components/ToolPageLayout";
 
 type Step = "landing" | "templates" | "generating" | "result";
+
+const LOADING_TEXTS = [
+  { text: "CREATING", accent: "MAGIC" },
+  { text: "PROCESSING", accent: "YOUR IMAGE" },
+  { text: "REFINING", accent: "DETAILS" },
+  { text: "ALMOST", accent: "READY" },
+];
+
+const CartoonStarLoader = () => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % LOADING_TEXTS.length), 2400);
+    return () => clearInterval(t);
+  }, []);
+  const current = LOADING_TEXTS[idx];
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-5">
+      <motion.svg width="36" height="36" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+        animate={{ y: [0, -8, 0], rotate: [0, 180, 360], scale: [1, 1.2, 1] }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="url(#cartoonStarGrad)" />
+        <defs>
+          <linearGradient id="cartoonStarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="50%" stopColor="#8b5cf6" />
+            <stop offset="100%" stopColor="#ec4899" />
+          </linearGradient>
+        </defs>
+      </motion.svg>
+      <AnimatePresence mode="wait">
+        <motion.div key={idx} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="text-center">
+          <p className="text-2xl font-black text-foreground">{current.text}</p>
+          <p className="text-2xl font-black bg-gradient-to-r from-blue-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">{current.accent}</p>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const CartoonPage = () => {
   const navigate = useNavigate();
@@ -62,16 +101,13 @@ const CartoonPage = () => {
             <motion.div key="templates" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 py-4 pb-32 space-y-4">
               <div className="relative rounded-2xl overflow-hidden border border-border/30"><img src={image!} alt="" className="w-full h-40 object-cover" /></div>
               <textarea value={customPrompt} onChange={(e) => setCustomPrompt(e.target.value)} placeholder="Describe the cartoon style you want..." className="w-full rounded-2xl border border-border/50 bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground resize-none min-h-[80px] focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              {templates.length > 0 && <TemplateGrid templates={templates} onSelect={handleTemplateSelect} />}
+              {templates.length > 0 && <TemplateGrid templates={templates} onSelect={handleTemplateSelect} hideNames />}
             </motion.div>
           )}
 
           {step === "generating" && (
-            <motion.div key="gen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-              <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, scale: { duration: 1, repeat: Infinity } }} className="relative">
-                <Sparkles className="w-12 h-12 text-yellow-400" />
-              </motion.div>
-              <p className="text-sm text-muted-foreground animate-pulse">Generating...</p>
+            <motion.div key="gen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center min-h-[50vh]">
+              <CartoonStarLoader />
             </motion.div>
           )}
 
