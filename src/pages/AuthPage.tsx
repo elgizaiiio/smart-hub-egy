@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowLeft, Mail, Lock, Shield, Sparkles } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 type Step = "email" | "password" | "otp-signup" | "set-password" | "otp-2fa" | "forgot-password" | "otp-reset" | "reset-password";
 
@@ -25,7 +25,6 @@ const AuthPage = () => {
   const redirectUrl = searchParams.get("redirect");
   const [rememberMe, setRememberMe] = useState(false);
 
-  // --- All handlers preserved exactly ---
   const startCountdown = () => {
     setCountdown(60);
     const interval = setInterval(() => {
@@ -201,14 +200,14 @@ const AuthPage = () => {
   const resetFlow = () => { setStep("email"); setPassword(""); setNewPassword(""); setOtpValues(["", "", "", "", "", ""]); };
 
   const stepTitle: Record<Step, string> = {
-    email: "Welcome To Megsy",
+    email: "Sign in to Megsy",
     password: "Welcome Back",
     "otp-signup": "Verify Your Email",
-    "set-password": "Create Your Password",
+    "set-password": "Create Password",
     "otp-2fa": "Two-Factor Auth",
     "forgot-password": "Reset Password",
-    "otp-reset": "Verify Reset Code",
-    "reset-password": "Set New Password"
+    "otp-reset": "Verify Code",
+    "reset-password": "New Password"
   };
 
   const stepSubtitle: Record<Step, string> = {
@@ -225,144 +224,130 @@ const AuthPage = () => {
   const isOtpStep = step === "otp-signup" || step === "otp-2fa" || step === "otp-reset";
   const showBack = step !== "email";
 
-  const stepIconMap: Record<Step, React.ReactNode> = {
-    email: <Mail className="w-4 h-4" />,
-    password: <Lock className="w-4 h-4" />,
-    "otp-signup": <Shield className="w-4 h-4" />,
-    "set-password": <Lock className="w-4 h-4" />,
-    "otp-2fa": <Shield className="w-4 h-4" />,
-    "forgot-password": <Mail className="w-4 h-4" />,
-    "otp-reset": <Shield className="w-4 h-4" />,
-    "reset-password": <Lock className="w-4 h-4" />
-  };
-
-  // Email chip shown on non-email steps
   const EmailChip = () => (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.06] border border-white/[0.08] w-fit">
-      <Mail className="w-3.5 h-3.5 text-white/30" />
-      <span className="text-xs text-white/50 truncate">{email}</span>
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.06] border border-white/[0.06] w-fit">
+      <span className="text-xs text-white/40 truncate">{email}</span>
     </div>
   );
 
   const Spinner = () => <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />;
 
+  const inputCls = "w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/20 outline-none focus:border-white/20 focus:bg-white/[0.07] transition-all duration-200";
+
+  const btnCls = "w-full py-3.5 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:pointer-events-none";
+
+  const socialCls = "w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border border-white/[0.08] text-white/70 text-sm font-medium hover:bg-white/[0.04] active:scale-[0.98] transition-all duration-200";
+
   return (
     <div className="min-h-screen w-full bg-black flex">
-      {/* ═══ Desktop Left — Cinematic Showcase ═══ */}
+      {/* ═══ Desktop Left — Bold Typography ═══ */}
       <div className="hidden lg:flex lg:w-[55%] xl:w-[58%] relative overflow-hidden">
-        {/* Layered gradient background */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(262,60%,12%)] via-black to-[hsl(262,40%,6%)]" />
-          <div className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] rounded-full bg-[hsl(262,60%,20%)] opacity-20 blur-[120px]" />
-          <div className="absolute bottom-[-15%] left-[-5%] w-[50%] h-[50%] rounded-full bg-[hsl(262,80%,30%)] opacity-10 blur-[100px]" />
-          {/* Grid lines */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '80px 80px'
-          }} />
-        </div>
+        {/* Video background — MUTED */}
+        <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover opacity-30">
+          <source src="/videos/auth-bg.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/40" />
 
-        <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-          {/* Top — Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(262,60%,55%)] to-[hsl(262,80%,40%)] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-white/70 text-sm font-semibold tracking-wide">MEGSY</span>
+        <div className="relative z-10 flex flex-col justify-between p-14 xl:p-20 w-full">
+          {/* Top */}
+          <div>
+            <span className="text-white/40 text-xs font-semibold tracking-[0.3em] uppercase">Megsy AI</span>
           </div>
 
-          {/* Center — Hero text */}
+          {/* Center — Landing-style hero text */}
           <div>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-[10px] uppercase tracking-[0.5em] text-[hsl(262,60%,65%)] mb-6 font-medium"
+              transition={{ delay: 0.15, duration: 0.5 }}
+              className="text-[10px] uppercase tracking-[0.5em] text-white/25 mb-8"
             >
-              AI Platform
+              The AI Platform
             </motion.p>
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
+            <motion.h1
+              initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              className="font-display text-[clamp(2.5rem,4vw,4.5rem)] font-black text-white leading-[0.9] tracking-tight"
+              transition={{ delay: 0.25, duration: 0.7 }}
+              className="font-display text-[clamp(3rem,5vw,6rem)] font-black leading-[0.88] tracking-tighter"
             >
-              CREATE.
+              <span className="text-white">BUILD A</span>
               <br />
-              <span className="bg-gradient-to-r from-[hsl(262,60%,65%)] via-[hsl(300,60%,65%)] to-[hsl(330,70%,65%)] bg-clip-text text-transparent">
-                GENERATE.
+              <span className="bg-gradient-to-r from-[hsl(262,80%,70%)] via-[hsl(300,70%,70%)] to-[hsl(340,80%,70%)] bg-clip-text text-transparent">
+                WEBSITE.
               </span>
               <br />
-              BUILD.
-            </motion.h2>
+              <span className="text-white">CREATE A</span>
+              <br />
+              <span className="bg-gradient-to-r from-[hsl(200,80%,65%)] via-[hsl(170,70%,60%)] to-[hsl(140,70%,65%)] bg-clip-text text-transparent">
+                VIDEO.
+              </span>
+              <br />
+              <span className="text-white/60 text-[clamp(1.5rem,2.5vw,3rem)]">IN SECONDS.</span>
+            </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="mt-8 text-sm text-white/35 max-w-xs leading-relaxed"
+              transition={{ delay: 0.7 }}
+              className="mt-10 text-sm text-white/25 max-w-sm leading-relaxed"
             >
-              One platform for AI chat, images, video, voice, and code — powered by the best models in the world.
+              Chat, images, video, voice, code, and 50+ AI models — all in one place.
             </motion.p>
           </div>
 
-          {/* Bottom — Stats */}
+          {/* Bottom — Minimal stats */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="flex gap-10"
+            transition={{ delay: 0.9 }}
+            className="flex gap-12"
           >
             {[
-              { value: "50+", label: "AI Models" },
+              { value: "50+", label: "Models" },
               { value: "10M+", label: "Generations" },
               { value: "99.9%", label: "Uptime" }
             ].map((s) => (
               <div key={s.label}>
-                <p className="text-2xl font-bold text-white">{s.value}</p>
-                <p className="text-[11px] text-white/30 mt-0.5">{s.label}</p>
+                <p className="text-lg font-bold text-white/80">{s.value}</p>
+                <p className="text-[10px] text-white/20 mt-0.5 uppercase tracking-wider">{s.label}</p>
               </div>
             ))}
           </motion.div>
         </div>
       </div>
 
-      {/* ═══ Right Panel — Auth Form ═══ */}
+      {/* ═══ Right — Auth Form ═══ */}
       <div className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Background — shared for mobile and desktop */}
-        <div className="absolute inset-0">
-          {/* Mobile: video bg */}
-          <div className="lg:hidden absolute inset-0">
-            <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover">
-              <source src="/videos/auth-bg.mp4" type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
-          </div>
-          {/* Desktop: dark surface */}
-          <div className="hidden lg:block absolute inset-0 bg-[hsl(0,0%,3%)]" />
-          {/* Subtle glow */}
-          <div className="absolute top-0 right-0 w-[60%] h-[40%] rounded-full bg-[hsl(262,60%,20%)] opacity-[0.06] blur-[100px]" />
+        {/* Mobile bg */}
+        <div className="lg:hidden absolute inset-0">
+          <div className="absolute inset-0 bg-black" />
+          <div className="absolute top-[-30%] right-[-20%] w-[80%] h-[60%] rounded-full bg-[hsl(262,60%,15%)] opacity-30 blur-[100px]" />
         </div>
+        {/* Desktop bg */}
+        <div className="hidden lg:block absolute inset-0 bg-[hsl(0,0%,2%)]" />
 
-        {/* Form container */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 lg:px-16">
-          <div className="w-full max-w-[380px]">
+          <div className="w-full max-w-[360px]">
             {/* Mobile Logo */}
-            <div className="lg:hidden flex items-center gap-3 mb-10">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[hsl(262,60%,55%)] to-[hsl(262,80%,40%)] flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-white/70 text-sm font-semibold tracking-wide">MEGSY</span>
+            <div className="lg:hidden mb-12">
+              <p className="text-white/30 text-[10px] uppercase tracking-[0.4em] mb-3">Megsy AI</p>
+              <h2 className="font-display text-3xl font-black text-white leading-[0.9] tracking-tight">
+                BUILD.
+                <br />
+                <span className="bg-gradient-to-r from-[hsl(262,80%,70%)] to-[hsl(330,80%,70%)] bg-clip-text text-transparent">
+                  CREATE.
+                </span>
+              </h2>
             </div>
 
-            {/* Back button */}
+            {/* Back */}
             <AnimatePresence>
               {showBack && (
                 <motion.button
-                  initial={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  exit={{ opacity: 0, x: -8 }}
                   onClick={resetFlow}
-                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 mb-6 transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 mb-6 transition-colors"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back
@@ -370,27 +355,19 @@ const AuthPage = () => {
               )}
             </AnimatePresence>
 
-            {/* Step header */}
+            {/* Header */}
             <div className="mb-8">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-white/50">
-                  {stepIconMap[step]}
-                </div>
-                <h1 className="text-xl font-bold text-white">{stepTitle[step]}</h1>
-              </div>
-              <p className="text-[13px] text-white/35 leading-relaxed ml-11">
-                {stepSubtitle[step]}
-              </p>
+              <h1 className="text-xl font-bold text-white mb-1.5">{stepTitle[step]}</h1>
+              <p className="text-[13px] text-white/30 leading-relaxed">{stepSubtitle[step]}</p>
             </div>
 
-            {/* ═══ Step Forms ═══ */}
+            {/* ═══ Forms ═══ */}
             <AnimatePresence mode="wait">
-              {/* Email Step */}
               {step === "email" && (
-                <motion.div key="email" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }}>
-                  <div className="space-y-3.5">
+                <motion.div key="email" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }}>
+                  <div className="space-y-3">
                     <div>
-                      <label className="text-[11px] font-medium text-white/40 mb-1.5 block uppercase tracking-wider">Email address</label>
+                      <label className="text-[11px] font-medium text-white/30 mb-1.5 block uppercase tracking-wider">Email</label>
                       <input
                         type="email"
                         placeholder="you@example.com"
@@ -398,22 +375,22 @@ const AuthPage = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleCheckEmail()}
                         autoFocus
-                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-[hsl(262,60%,55%)]/60 focus:bg-white/[0.08] transition-all duration-200"
+                        className={inputCls}
                       />
                     </div>
-                    <button onClick={handleCheckEmail} disabled={isSubmitting || !email.trim()} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[hsl(262,60%,50%)] to-[hsl(262,70%,45%)] text-white text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none">
+                    <button onClick={handleCheckEmail} disabled={isSubmitting || !email.trim()} className={btnCls}>
                       {isSubmitting ? <span className="flex items-center justify-center gap-2"><Spinner />Checking...</span> : "Continue"}
                     </button>
                   </div>
 
                   <div className="flex items-center gap-3 my-6">
                     <div className="flex-1 h-px bg-white/[0.06]" />
-                    <span className="text-[10px] text-white/20 uppercase tracking-wider">or</span>
+                    <span className="text-[10px] text-white/15 uppercase tracking-wider">or</span>
                     <div className="flex-1 h-px bg-white/[0.06]" />
                   </div>
 
                   <div className="space-y-2.5">
-                    <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border border-white/[0.08] text-white/80 text-sm font-medium hover:bg-white/[0.04] active:scale-[0.98] transition-all duration-200">
+                    <button onClick={handleGoogleLogin} className={socialCls}>
                       <svg className="w-4 h-4" viewBox="0 0 24 24">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -422,7 +399,7 @@ const AuthPage = () => {
                       </svg>
                       Continue with Google
                     </button>
-                    <button onClick={handleGitHubLogin} className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl border border-white/[0.08] text-white/80 text-sm font-medium hover:bg-white/[0.04] active:scale-[0.98] transition-all duration-200">
+                    <button onClick={handleGitHubLogin} className={socialCls}>
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
                       </svg>
@@ -432,12 +409,11 @@ const AuthPage = () => {
                 </motion.div>
               )}
 
-              {/* Password Step */}
               {step === "password" && (
-                <motion.div key="password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
+                <motion.div key="password" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="space-y-3">
                   <EmailChip />
                   <div>
-                    <label className="text-[11px] font-medium text-white/40 mb-1.5 block uppercase tracking-wider">Password</label>
+                    <label className="text-[11px] font-medium text-white/30 mb-1.5 block uppercase tracking-wider">Password</label>
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
@@ -446,29 +422,28 @@ const AuthPage = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
                         autoFocus
-                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-[hsl(262,60%,55%)]/60 focus:bg-white/[0.08] transition-all duration-200 pr-12"
+                        className={`${inputCls} pr-12`}
                       />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/50 transition-colors">
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40 transition-colors">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-xs text-white/30 cursor-pointer select-none">
-                      <input type="checkbox" checked={rememberMe} onChange={() => setRememberMe(!rememberMe)} className="rounded border-white/20 w-3.5 h-3.5 accent-[hsl(262,60%,55%)]" />
+                    <label className="flex items-center gap-2 text-xs text-white/25 cursor-pointer select-none">
+                      <input type="checkbox" checked={rememberMe} onChange={() => setRememberMe(!rememberMe)} className="rounded border-white/20 w-3.5 h-3.5" />
                       Remember me
                     </label>
-                    <button onClick={() => setStep("forgot-password")} className="text-xs text-[hsl(262,60%,65%)] hover:text-[hsl(262,60%,75%)] transition-colors">Forgot?</button>
+                    <button onClick={() => setStep("forgot-password")} className="text-xs text-white/40 hover:text-white/60 transition-colors">Forgot?</button>
                   </div>
-                  <button onClick={handlePasswordLogin} disabled={isSubmitting || !password} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[hsl(262,60%,50%)] to-[hsl(262,70%,45%)] text-white text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none">
+                  <button onClick={handlePasswordLogin} disabled={isSubmitting || !password} className={btnCls}>
                     {isSubmitting ? <span className="flex items-center justify-center gap-2"><Spinner />Signing in...</span> : "Sign In"}
                   </button>
                 </motion.div>
               )}
 
-              {/* OTP Steps */}
               {isOtpStep && (
-                <motion.div key={step} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-5">
+                <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="space-y-5">
                   <EmailChip />
                   <div className="flex justify-center gap-2.5" onPaste={handleOtpPaste}>
                     {otpValues.map((val, i) => (
@@ -484,16 +459,16 @@ const AuthPage = () => {
                         onChange={(e) => handleOtpChange(i, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(i, e)}
                         onFocus={(e) => e.target.select()}
-                        className="w-12 h-14 text-center text-xl font-bold text-white bg-white/[0.06] border border-white/[0.1] rounded-xl outline-none focus:border-[hsl(262,60%,55%)]/60 focus:ring-1 focus:ring-[hsl(262,60%,55%)]/20 transition-all duration-200"
+                        className="w-12 h-14 text-center text-xl font-bold text-white bg-white/[0.05] border border-white/[0.08] rounded-xl outline-none focus:border-white/25 transition-all duration-200"
                       />
                     ))}
                   </div>
-                  {isSubmitting && <p className="text-xs text-white/40 animate-pulse text-center">Verifying...</p>}
+                  {isSubmitting && <p className="text-xs text-white/30 animate-pulse text-center">Verifying...</p>}
                   <div className="text-center">
                     {countdown > 0 ? (
-                      <p className="text-xs text-white/25">Resend in {countdown}s</p>
+                      <p className="text-xs text-white/20">Resend in {countdown}s</p>
                     ) : (
-                      <button onClick={() => sendOTP()} disabled={isSubmitting} className="text-xs text-[hsl(262,60%,65%)] hover:text-[hsl(262,60%,75%)] transition-colors disabled:opacity-40">
+                      <button onClick={() => sendOTP()} disabled={isSubmitting} className="text-xs text-white/40 hover:text-white/60 transition-colors disabled:opacity-40">
                         Resend code
                       </button>
                     )}
@@ -501,12 +476,11 @@ const AuthPage = () => {
                 </motion.div>
               )}
 
-              {/* Set Password (new user) */}
               {step === "set-password" && (
-                <motion.div key="set-password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
+                <motion.div key="set-password" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="space-y-3">
                   <EmailChip />
                   <div>
-                    <label className="text-[11px] font-medium text-white/40 mb-1.5 block uppercase tracking-wider">Password</label>
+                    <label className="text-[11px] font-medium text-white/30 mb-1.5 block uppercase tracking-wider">Password</label>
                     <div className="relative">
                       <input
                         type={showNewPassword ? "text" : "password"}
@@ -515,25 +489,24 @@ const AuthPage = () => {
                         onChange={(e) => setNewPassword(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleCreateAccount()}
                         autoFocus
-                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-[hsl(262,60%,55%)]/60 focus:bg-white/[0.08] transition-all duration-200 pr-12"
+                        className={`${inputCls} pr-12`}
                       />
-                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/50 transition-colors">
+                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40 transition-colors">
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
-                  <button onClick={handleCreateAccount} disabled={isSubmitting || newPassword.length < 8} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[hsl(262,60%,50%)] to-[hsl(262,70%,45%)] text-white text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none">
+                  <button onClick={handleCreateAccount} disabled={isSubmitting || newPassword.length < 8} className={btnCls}>
                     {isSubmitting ? <span className="flex items-center justify-center gap-2"><Spinner />Creating...</span> : "Create Account"}
                   </button>
                 </motion.div>
               )}
 
-              {/* Reset Password */}
               {step === "reset-password" && (
-                <motion.div key="reset-password" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
+                <motion.div key="reset-password" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="space-y-3">
                   <EmailChip />
                   <div>
-                    <label className="text-[11px] font-medium text-white/40 mb-1.5 block uppercase tracking-wider">New Password</label>
+                    <label className="text-[11px] font-medium text-white/30 mb-1.5 block uppercase tracking-wider">New Password</label>
                     <div className="relative">
                       <input
                         type={showNewPassword ? "text" : "password"}
@@ -542,35 +515,33 @@ const AuthPage = () => {
                         onChange={(e) => setNewPassword(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleResetPassword()}
                         autoFocus
-                        className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-[hsl(262,60%,55%)]/60 focus:bg-white/[0.08] transition-all duration-200 pr-12"
+                        className={`${inputCls} pr-12`}
                       />
-                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/50 transition-colors">
+                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40 transition-colors">
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
-                  <button onClick={handleResetPassword} disabled={isSubmitting || newPassword.length < 8} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[hsl(262,60%,50%)] to-[hsl(262,70%,45%)] text-white text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none">
+                  <button onClick={handleResetPassword} disabled={isSubmitting || newPassword.length < 8} className={btnCls}>
                     {isSubmitting ? <span className="flex items-center justify-center gap-2"><Spinner />Updating...</span> : "Update Password"}
                   </button>
                 </motion.div>
               )}
 
-              {/* Forgot Password */}
               {step === "forgot-password" && (
-                <motion.div key="forgot" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }} className="space-y-3.5">
+                <motion.div key="forgot" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="space-y-3">
                   <EmailChip />
-                  <button onClick={handleForgotPassword} disabled={isSubmitting} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[hsl(262,60%,50%)] to-[hsl(262,70%,45%)] text-white text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none">
+                  <button onClick={handleForgotPassword} disabled={isSubmitting} className={btnCls}>
                     {isSubmitting ? <span className="flex items-center justify-center gap-2"><Spinner />Sending...</span> : "Send Reset Code"}
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Terms */}
-            <p className="text-[10px] text-white/15 mt-8 text-center leading-relaxed">
+            <p className="text-[10px] text-white/10 mt-8 text-center leading-relaxed">
               By continuing, you agree to our{" "}
-              <a href="https://terms.megsyai.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-white/30 transition-colors">Terms</a> and{" "}
-              <a href="https://privacy.megsyai.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-white/30 transition-colors">Privacy Policy</a>
+              <a href="https://terms.megsyai.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-white/25 transition-colors">Terms</a> and{" "}
+              <a href="https://privacy.megsyai.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-white/25 transition-colors">Privacy Policy</a>
             </p>
           </div>
         </div>
