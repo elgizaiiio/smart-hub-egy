@@ -9,6 +9,10 @@ const corsHeaders = {
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
 const WAVESPEED_URL = "https://api.wavespeed.ai/v1/chat/completions";
+const LEGACY_WAVESPEED_MODEL = "anthropic/claude-haiku-4.5";
+const LEGACY_WAVESPEED_MODEL_ALIAS = "claude-haiku-4-5";
+const DEFAULT_WAVESPEED_MODEL = "openai/gpt-4.1-mini";
+const WAVESPEED_FALLBACK_MODELS = [DEFAULT_WAVESPEED_MODEL, "openai/gpt-4o-mini"];
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
   try {
@@ -153,7 +157,21 @@ function hasWebsiteIntent(text: string): boolean {
   return /(website|site|url|link|domain|browser|web page|page|canva|dashboard|store|amazon|jumia|noon|login|sign in|portal|checkout|موقع|لينك|رابط|متصفح|كانفا|صفحة|سجل الدخول|ادخل|افتح)/i.test(text);
 }
 
-// detectComplexity removed — always use claude-haiku-4-5 for speed
+function normalizeRequestedModel(rawModel: string | null): string | null {
+  if (!rawModel || rawModel === "auto") return null;
+  if (rawModel === LEGACY_WAVESPEED_MODEL_ALIAS) return LEGACY_WAVESPEED_MODEL;
+  return rawModel;
+}
+
+function isWaveSpeedModelUnavailable(status: number, errorText: string): boolean {
+  return status === 400 && /model_price_not_configured|not currently available for public requests|invalid_request_error/i.test(errorText);
+}
+
+function getNextWaveSpeedModel(currentModel: string): string | null {
+  return WAVESPEED_FALLBACK_MODELS.find((candidate) => candidate !== currentModel) ?? null;
+}
+
+// detectComplexity removed — use fast public WaveSpeed model by default
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -206,12 +224,9 @@ serve(async (req) => {
 
     // ── Model routing — WaveSpeed PRIMARY (fastest), LemonData FALLBACK ──
     const isDeepResearch = deepResearch === true;
-    const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
-    const normalizedModel = requestedModel === "claude-haiku-4-5"
-      ? "anthropic/claude-haiku-4.5"
-      : requestedModel;
+    const requestedModel = normalizeRequestedModel(typeof model === "string" ? model : null);
 
-    let modelId: string = normalizedModel ?? "anthropic/claude-haiku-4.5";
+    let modelId: string = requestedModel ?? DEFAULT_WAVESPEED_MODEL;
     let apiUrl = WAVESPEED_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
@@ -425,6 +440,7 @@ serve(async (req) => {
     // Key rotation with fast retry + provider fallback
     let response: Response;
     let retryCount = 0;
+    let failureText = "";
 
     while (true) {
       response = await fetch(apiUrl, {
@@ -436,7 +452,18 @@ serve(async (req) => {
       if (response.ok) break;
 
       const failStatus = response.status;
+      failureText = await response.text();
       if (retryCount >= 3) break;
+
+      if (provider === "wavespeed" && isWaveSpeedModelUnavailable(failStatus, failureText)) {
+        const nextModel = getNextWaveSpeedModel(modelId);
+        if (nextModel) {
+          modelId = nextModel;
+          body.model = modelId;
+          retryCount++;
+          continue;
+        }
+      }
 
       // If WaveSpeed fails, try another WaveSpeed key first, then fallback to LemonData
       if (provider === "wavespeed" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402 || failStatus >= 500)) {
@@ -479,8 +506,7 @@ serve(async (req) => {
       const status = response.status;
       if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (status === 402) return new Response(JSON.stringify({ error: "Credits depleted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      const t = await response.text();
-      console.error("AI error:", status, t);
+      console.error("AI error:", status, failureText);
       return new Response(JSON.stringify({ error: "AI service error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
