@@ -200,7 +200,7 @@ const AuthPage = () => {
   const resetFlow = () => { setStep("email"); setPassword(""); setNewPassword(""); setOtpValues(["", "", "", "", "", ""]); };
 
   const stepTitle: Record<Step, string> = {
-    email: "Sign in to Megsy",
+    email: "Join 10M+ Creators",
     password: "Welcome Back",
     "otp-signup": "Verify Your Email",
     "set-password": "Create Password",
@@ -211,7 +211,7 @@ const AuthPage = () => {
   };
 
   const stepSubtitle: Record<Step, string> = {
-    email: "Enter your email to sign in or create a new account",
+    email: "Create, generate, and build — all with AI",
     password: "Enter your password to continue",
     "otp-signup": `We sent a 6-digit code to ${email}`,
     "set-password": "Choose a strong password for your account",
@@ -251,7 +251,7 @@ const AuthPage = () => {
         <div className="relative z-10 flex flex-col justify-between p-14 xl:p-20 w-full">
           {/* Top */}
           <div>
-            <span className="text-white/40 text-xs font-semibold tracking-[0.3em] uppercase">Megsy AI</span>
+            <span className="text-white/40 text-xs font-semibold tracking-[0.3em] uppercase">The AI Platform</span>
           </div>
 
           {/* Center — Landing-style hero text */}
@@ -317,19 +317,16 @@ const AuthPage = () => {
 
       {/* ═══ Right — Auth Form ═══ */}
       <div className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Mobile bg */}
-        <div className="lg:hidden absolute inset-0">
-          <div className="absolute inset-0 bg-black" />
-          <div className="absolute top-[-30%] right-[-20%] w-[80%] h-[60%] rounded-full bg-[hsl(262,60%,15%)] opacity-30 blur-[100px]" />
-        </div>
-        {/* Desktop bg */}
-        <div className="hidden lg:block absolute inset-0 bg-[hsl(0,0%,2%)]" />
+        {/* Silky gradient bg for both mobile and desktop */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(262,40%,8%)] via-[hsl(280,30%,5%)] to-[hsl(320,25%,6%)]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[50%] rounded-full bg-[hsl(262,60%,18%)] opacity-20 blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[40%] rounded-full bg-[hsl(330,50%,15%)] opacity-15 blur-[100px]" />
+        <div className="absolute top-[40%] right-[20%] w-[30%] h-[30%] rounded-full bg-[hsl(200,50%,12%)] opacity-10 blur-[80px]" />
 
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 lg:px-16">
           <div className="w-full max-w-[360px]">
             {/* Mobile Logo */}
             <div className="lg:hidden mb-12">
-              <p className="text-white/30 text-[10px] uppercase tracking-[0.4em] mb-3">Megsy AI</p>
               <h2 className="font-display text-3xl font-black text-white leading-[0.9] tracking-tight">
                 BUILD.
                 <br />
@@ -411,7 +408,6 @@ const AuthPage = () => {
 
               {step === "password" && (
                 <motion.div key="password" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }} className="space-y-3">
-                  <EmailChip />
                   <div>
                     <label className="text-[11px] font-medium text-white/30 mb-1.5 block uppercase tracking-wider">Password</label>
                     <div className="relative">
@@ -429,12 +425,8 @@ const AuthPage = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-xs text-white/25 cursor-pointer select-none">
-                      <input type="checkbox" checked={rememberMe} onChange={() => setRememberMe(!rememberMe)} className="rounded border-white/20 w-3.5 h-3.5" />
-                      Remember me
-                    </label>
-                    <button onClick={() => setStep("forgot-password")} className="text-xs text-white/40 hover:text-white/60 transition-colors">Forgot?</button>
+                  <div className="flex items-center justify-end">
+                    <button onClick={() => setStep("forgot-password")} className="text-xs text-white/40 hover:text-white/60 transition-colors">Forgot password?</button>
                   </div>
                   <button onClick={handlePasswordLogin} disabled={isSubmitting || !password} className={btnCls}>
                     {isSubmitting ? <span className="flex items-center justify-center gap-2"><Spinner />Signing in...</span> : "Sign In"}
