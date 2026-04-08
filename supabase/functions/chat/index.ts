@@ -198,32 +198,28 @@ serve(async (req) => {
     // ── Model routing ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
-    const isLovableGatewayModel = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    // Default to LemonData with claude-haiku-4-5 for speed
-    let modelId: string = requestedModel ?? "claude-haiku-4-5";
-    let apiUrl = LEMONDATA_URL;
+    // PRIMARY: Lovable Gateway (gemini-2.5-flash) — fastest
+    // FALLBACK: LemonData
+    let modelId: string = requestedModel ?? "google/gemini-2.5-flash";
+    let apiUrl = LOVABLE_API_KEY ? "https://ai.gateway.lovable.dev/v1/chat/completions" : LEMONDATA_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const isLovableGatewayModel2 = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
-
-    if (isLovableGatewayModel2 && LOVABLE_API_KEY) {
-      // Gateway model explicitly requested
+    if (LOVABLE_API_KEY) {
+      // Use Lovable Gateway as primary (fastest)
       apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
       apiKey = LOVABLE_API_KEY;
+      if (!requestedModel) modelId = "google/gemini-2.5-flash";
     } else {
-      // Use LemonData (primary)
+      // Fallback to LemonData
+      apiUrl = LEMONDATA_URL;
+      modelId = requestedModel ?? "claude-haiku-4-5";
       const lemonKey = await getLemonDataKey(sb);
       if (lemonKey) {
         apiKey = lemonKey.api_key;
         usedKeyId = lemonKey.id;
-      } else if (LOVABLE_API_KEY) {
-        // Fallback to Lovable Gateway
-        apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-        apiKey = LOVABLE_API_KEY;
-        modelId = "google/gemini-2.5-flash";
       } else {
         return new Response(JSON.stringify({ error: "No API keys available" }), {
           status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
