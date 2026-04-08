@@ -199,8 +199,8 @@ serve(async (req) => {
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
 
-    // Use fastest LemonData model: gpt-4o-mini for speed, claude-haiku-4-5 for quality
-    let modelId: string = requestedModel ?? (isCasualEarly ? "gpt-4o-mini" : "claude-haiku-4-5");
+    // Use fastest LemonData model: anthropic/claude-haiku-4.5 (fastest + cheapest with tool use)
+    let modelId: string = requestedModel ?? "anthropic/claude-haiku-4.5";
     let apiUrl = LEMONDATA_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
