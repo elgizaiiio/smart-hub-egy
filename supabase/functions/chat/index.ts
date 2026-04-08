@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
+const WAVESPEED_URL = "https://api.wavespeed.ai/v1/chat/completions";
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
   try {
@@ -78,6 +79,22 @@ async function getHyperbrowserKey(sb: ReturnType<typeof createClient>): Promise<
   hbKeyCache.api_key = pick.api_key;
   hbKeyCache.expiry = Date.now() + CACHE_TTL_MS;
   return pick.api_key;
+}
+
+// ── WaveSpeed LLM key cache ──
+let cachedWsLlmKey: { id: string; api_key: string } | null = null;
+let cachedWsLlmKeyExpiry = 0;
+
+async function getWaveSpeedLlmKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
+  if (cachedWsLlmKey && Date.now() < cachedWsLlmKeyExpiry && cachedWsLlmKey.id !== excludeId) return cachedWsLlmKey;
+  const { data } = await sb.from("api_keys").select("id, api_key").eq("service", "wavespeed").eq("is_active", true).limit(10);
+  if (!data || data.length === 0) return null;
+  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
+  if (pool.length === 0) return null;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  cachedWsLlmKey = pick;
+  cachedWsLlmKeyExpiry = Date.now() + CACHE_TTL_MS;
+  return pick;
 }
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
@@ -195,24 +212,35 @@ serve(async (req) => {
       } catch { /* skip */ }
     }
 
-    // ── Model routing — LemonData PRIMARY (fastest models) ──
+    // ── Model routing — WaveSpeed PRIMARY (fastest), LemonData FALLBACK ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
 
-    // Use fastest LemonData model: anthropic/claude-haiku-4.5 (fastest + cheapest with tool use)
     let modelId: string = requestedModel ?? "anthropic/claude-haiku-4.5";
-    let apiUrl = LEMONDATA_URL;
+    let apiUrl = WAVESPEED_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
+    let provider: "wavespeed" | "lemondata" = "wavespeed";
 
-    const lemonKey = await getLemonDataKey(sb);
-    if (lemonKey) {
-      apiKey = lemonKey.api_key;
-      usedKeyId = lemonKey.id;
+    // Try WaveSpeed first
+    const wsKey = await getWaveSpeedLlmKey(sb);
+    if (wsKey) {
+      apiKey = wsKey.api_key;
+      usedKeyId = wsKey.id;
+      provider = "wavespeed";
     } else {
-      return new Response(JSON.stringify({ error: "No API keys available" }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Fallback to LemonData
+      const lemonKey = await getLemonDataKey(sb);
+      if (lemonKey) {
+        apiUrl = LEMONDATA_URL;
+        apiKey = lemonKey.api_key;
+        usedKeyId = lemonKey.id;
+        provider = "lemondata";
+      } else {
+        return new Response(JSON.stringify({ error: "No API keys available" }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Build Composio tools
@@ -392,7 +420,7 @@ serve(async (req) => {
     }
 
 
-    // Key rotation with fast retry
+    // Key rotation with fast retry + provider fallback
     let response: Response;
     let retryCount = 0;
 
@@ -405,9 +433,33 @@ serve(async (req) => {
 
       if (response.ok) break;
 
-      // LemonData key rotation on failure
-      if ((response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < 2) {
-        if (response.status !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
+      const failStatus = response.status;
+      if (retryCount >= 3) break;
+
+      // If WaveSpeed fails, try another WaveSpeed key first, then fallback to LemonData
+      if (provider === "wavespeed" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402 || failStatus >= 500)) {
+        const newWsKey = await getWaveSpeedLlmKey(sb, usedKeyId || undefined);
+        if (newWsKey) {
+          apiKey = newWsKey.api_key;
+          usedKeyId = newWsKey.id;
+          retryCount++;
+          continue;
+        }
+        // No more WaveSpeed keys — fallback to LemonData
+        const lemonKey = await getLemonDataKey(sb);
+        if (lemonKey) {
+          apiUrl = LEMONDATA_URL;
+          apiKey = lemonKey.api_key;
+          usedKeyId = lemonKey.id;
+          provider = "lemondata";
+          retryCount++;
+          continue;
+        }
+      }
+
+      // LemonData key rotation
+      if (provider === "lemondata" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402)) {
+        if (failStatus !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${failStatus}`);
         const newKey = await getLemonDataKey(sb, usedKeyId || undefined);
         if (newKey) {
           apiKey = newKey.api_key;
