@@ -598,11 +598,9 @@ Output ONLY the complete HTML code with no explanations.`,
                       className="w-full rounded-2xl overflow-hidden border border-border/30 bg-secondary/30 text-left hover:bg-secondary/50 transition-colors"
                     >
                       <div className="w-full h-36 overflow-hidden">
-                        <img
-                          src="/images/egypt-slides-example.jpg"
-                          alt="Egypt Presentation"
-                          className="w-full h-full object-cover object-center"
-                        />
+                        <div className="w-full h-full bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-pink-500/20 flex items-center justify-center">
+                          <Presentation className="w-12 h-12 text-foreground/30" />
+                        </div>
                       </div>
                       <div className="p-4">
                         <p className="text-sm font-medium text-foreground">Egypt — Where Ancient Wonders Meet Modern Vitality</p>

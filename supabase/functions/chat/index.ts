@@ -200,35 +200,45 @@ serve(async (req) => {
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
     const isLovableGatewayModel = !!requestedModel && /^(google\/|openai\/)/.test(requestedModel);
 
-    let modelId: string = requestedModel ?? "claude-haiku-4-5";
-    let apiUrl = LEMONDATA_URL;
+    // Default to Lovable Gateway with gemini-2.5-flash for maximum speed
+    let modelId: string = requestedModel ?? "google/gemini-2.5-flash";
+    let apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
     let apiKey = "";
     let usedKeyId: string | null = null;
 
-    if (isLovableGatewayModel) {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    if (isLovableGatewayModel || !requestedModel) {
+      // Use Lovable Gateway (fastest)
       if (!LOVABLE_API_KEY) {
-        return new Response(JSON.stringify({ error: "No API keys available" }), {
-          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      apiKey = LOVABLE_API_KEY;
-    } else {
-      const lemonKey = await getLemonDataKey(sb);
-      if (lemonKey) {
-        apiKey = lemonKey.api_key;
-        usedKeyId = lemonKey.id;
-      } else {
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-        if (!LOVABLE_API_KEY) {
+        // Fallback to LemonData
+        const lemonKey = await getLemonDataKey(sb);
+        if (!lemonKey) {
           return new Response(JSON.stringify({ error: "No API keys available" }), {
             status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+        apiUrl = LEMONDATA_URL;
+        apiKey = lemonKey.api_key;
+        usedKeyId = lemonKey.id;
+        modelId = requestedModel ?? "claude-haiku-4-5";
+      } else {
         apiKey = LOVABLE_API_KEY;
-        if (!requestedModel) modelId = "google/gemini-2.5-flash";
+      }
+    } else {
+      // Specific non-gateway model requested — use LemonData
+      const lemonKey = await getLemonDataKey(sb);
+      if (lemonKey) {
+        apiUrl = LEMONDATA_URL;
+        apiKey = lemonKey.api_key;
+        usedKeyId = lemonKey.id;
+      } else if (LOVABLE_API_KEY) {
+        apiKey = LOVABLE_API_KEY;
+        modelId = "google/gemini-2.5-flash";
+      } else {
+        return new Response(JSON.stringify({ error: "No API keys available" }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 

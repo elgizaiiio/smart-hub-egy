@@ -19,7 +19,7 @@ function getStarColor(text: string, isComputerUse?: boolean): string {
 }
 
 function detectComputerUse(statusHistory: string[]): boolean {
-  const browserKeywords = ["navigat", "opening", "scrolling", "clicking", "browser", "extracting", "browsing", "smart browser", "go to", "canva", "opened"];
+  const browserKeywords = ["navigat", "opening", "scrolling", "clicking", "browser", "extracting", "browsing", "smart browser", "go to", "canva", "opened", "browse", "task", "executing", "opened —", "browser opened"];
   return statusHistory.some(s => {
     const lower = s.toLowerCase();
     return browserKeywords.some(k => lower.includes(k));
