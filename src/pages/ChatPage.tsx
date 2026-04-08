@@ -51,6 +51,13 @@ interface ProductResult {
   delivery?: string | null;
 }
 
+interface BrowserLiveState {
+  currentUrl?: string;
+  liveUrl?: string;
+  screenshotUrl?: string;
+  currentStep?: string;
+}
+
 type ChatMode = "normal" | "learning" | "shopping" | "deep-research";
 
 const MODE_PROMPTS: Record<ChatMode, string> = {
@@ -101,6 +108,7 @@ const ChatPage = () => {
   const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
   const [statusHistory, setStatusHistory] = useState<string[]>([]);
+  const [browserLiveState, setBrowserLiveState] = useState<BrowserLiveState | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareMode, setShareMode] = useState<"private" | "public">("public");
   const [isShared, setIsShared] = useState(false);
@@ -196,7 +204,7 @@ const ChatPage = () => {
 
   const handleCancel = () => {
     if (abortControllerRef.current) {abortControllerRef.current.abort();abortControllerRef.current = null;}
-    setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);
+    setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);
   };
 
   const handleModeChange = (mode: ChatMode) => {
@@ -282,6 +290,7 @@ const ChatPage = () => {
     setIsLoading(true);setIsThinking(true);
     setPendingQuestions([]); // Clear previous questions on new send
     setStatusHistory([]); // Clear status history for new message
+    setBrowserLiveState(null);
 
     const conversationPromise = createOrUpdateConversation(userInput || "File analysis").catch(() => null);
     void conversationPromise.then(async (resolvedConversationId) => {
@@ -373,6 +382,14 @@ const ChatPage = () => {
           return [...prev, status];
         });
       },
+      onBrowser: (browser) => {
+        setBrowserLiveState((prev) => ({ ...prev, ...browser }));
+        if (browser.currentStep) {
+          setStatusHistory((prev) => prev[prev.length - 1] === browser.currentStep ? prev : [...prev, browser.currentStep]);
+          setSearchStatus(normalizeStatusLabel(browser.currentStep));
+        }
+        setIsThinking(true);
+      },
       onDone: async () => {
         setIsLoading(false);setIsThinking(false);setSearchStatus("");
         isSubmittingRef.current = false;
@@ -389,7 +406,7 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", resolvedConversationId);
         }
       },
-      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);isSubmittingRef.current = false;},
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);isSubmittingRef.current = false;},
       signal: controller.signal
     });
   };
@@ -401,7 +418,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -887,7 +904,7 @@ Ask me anything to get started!`;
                   onEditUserMessageAt={msg.role === "user" ? handleEditUserMessageAt : undefined} />
               )}
               {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
-                <ThinkingLoader searchStatus={searchStatus} statusHistory={statusHistory} />
+                <ThinkingLoader searchStatus={searchStatus} statusHistory={statusHistory} browserLiveState={browserLiveState} />
               }
               <div ref={messagesEndRef} />
             </div>
