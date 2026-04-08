@@ -146,16 +146,15 @@ function hasWebsiteIntent(text: string): boolean {
 
 function normalizeRequestedModel(rawModel: string | null): string | null {
   if (!rawModel || rawModel === "auto") return null;
-  if (rawModel === LEGACY_WAVESPEED_MODEL_ALIAS) return LEGACY_WAVESPEED_MODEL;
   return rawModel;
 }
 
-function isWaveSpeedModelUnavailable(status: number, errorText: string): boolean {
-  return status === 400 && /model_price_not_configured|not currently available for public requests|invalid_request_error/i.test(errorText);
+function isModelUnavailable(status: number, errorText: string): boolean {
+  return status === 400 && /not.*available|invalid.*model|unsupported/i.test(errorText);
 }
 
-function getNextWaveSpeedModel(currentModel: string): string | null {
-  return WAVESPEED_FALLBACK_MODELS.find((candidate) => candidate !== currentModel) ?? null;
+function getNextFallbackModel(currentModel: string): string | null {
+  return OPENROUTER_FALLBACK_MODELS.find((candidate) => candidate !== currentModel) ?? null;
 }
 
 // detectComplexity removed — use fast public WaveSpeed model by default
