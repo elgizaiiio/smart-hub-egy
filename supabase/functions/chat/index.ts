@@ -83,20 +83,9 @@ async function getHyperbrowserKey(sb: ReturnType<typeof createClient>): Promise<
   return pick.api_key;
 }
 
-// ── WaveSpeed LLM key cache ──
-let cachedWsLlmKey: { id: string; api_key: string } | null = null;
-let cachedWsLlmKeyExpiry = 0;
-
-async function getWaveSpeedLlmKey(sb: ReturnType<typeof createClient>, excludeId?: string): Promise<{ id: string; api_key: string } | null> {
-  if (cachedWsLlmKey && Date.now() < cachedWsLlmKeyExpiry && cachedWsLlmKey.id !== excludeId) return cachedWsLlmKey;
-  const { data } = await sb.from("api_keys").select("id, api_key").eq("service", "wavespeed").eq("is_active", true).limit(10);
-  if (!data || data.length === 0) return null;
-  const pool = excludeId ? data.filter((k: any) => k.id !== excludeId) : data;
-  if (pool.length === 0) return null;
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  cachedWsLlmKey = pick;
-  cachedWsLlmKeyExpiry = Date.now() + CACHE_TTL_MS;
-  return pick;
+// ── OpenRouter key ──
+function getOpenRouterKey(): string | null {
+  return Deno.env.get("OPENROUTER_API_KEY") || null;
 }
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> {
