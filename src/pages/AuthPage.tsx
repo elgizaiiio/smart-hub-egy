@@ -200,7 +200,7 @@ const AuthPage = () => {
   const resetFlow = () => { setStep("email"); setPassword(""); setNewPassword(""); setOtpValues(["", "", "", "", "", ""]); };
 
   const stepTitle: Record<Step, string> = {
-    email: "Join 10M+ Creators",
+    email: "Welcome to Megsy",
     password: "Welcome Back",
     "otp-signup": "Verify Your Email",
     "set-password": "Create Password",
@@ -211,7 +211,7 @@ const AuthPage = () => {
   };
 
   const stepSubtitle: Record<Step, string> = {
-    email: "Create, generate, and build — all with AI",
+    email: "Your AI workspace — create anything, instantly",
     password: "Enter your password to continue",
     "otp-signup": `We sent a 6-digit code to ${email}`,
     "set-password": "Choose a strong password for your account",
@@ -317,11 +317,13 @@ const AuthPage = () => {
 
       {/* ═══ Right — Auth Form ═══ */}
       <div className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Silky gradient bg for both mobile and desktop */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(262,40%,8%)] via-[hsl(280,30%,5%)] to-[hsl(320,25%,6%)]" />
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[50%] rounded-full bg-[hsl(262,60%,18%)] opacity-20 blur-[120px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[40%] rounded-full bg-[hsl(330,50%,15%)] opacity-15 blur-[100px]" />
-        <div className="absolute top-[40%] right-[20%] w-[30%] h-[30%] rounded-full bg-[hsl(200,50%,12%)] opacity-10 blur-[80px]" />
+        {/* Silky multi-color gradient */}
+        <div className="absolute inset-0 bg-[hsl(260,20%,4%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(280,60%,12%)/0.6] via-transparent to-[hsl(340,50%,10%)/0.4]" />
+        <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[70%] rounded-full bg-[hsl(270,70%,25%)] opacity-25 blur-[160px]" />
+        <div className="absolute bottom-[-25%] right-[-15%] w-[70%] h-[60%] rounded-full bg-[hsl(340,60%,20%)] opacity-20 blur-[140px]" />
+        <div className="absolute top-[30%] right-[10%] w-[50%] h-[40%] rounded-full bg-[hsl(200,60%,18%)] opacity-15 blur-[120px]" />
+        <div className="absolute bottom-[20%] left-[5%] w-[40%] h-[35%] rounded-full bg-[hsl(160,50%,15%)] opacity-10 blur-[100px]" />
 
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 lg:px-16">
           <div className="w-full max-w-[360px]">

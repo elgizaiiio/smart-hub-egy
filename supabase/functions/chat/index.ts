@@ -274,6 +274,14 @@ serve(async (req) => {
           parameters: { type: "object", properties: { text: { type: "string", description: "Text to speak" }, voice: { type: "string", description: "Voice ID to use. Default: alloy" } }, required: ["text"] },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "CANVA_CREATE_SLIDES",
+          description: "Create a professional presentation/slides using Canva via autonomous browser. Use when the user asks to create slides, presentations, or pitch decks. The browser will open Canva, create the presentation, and return a download link.",
+          parameters: { type: "object", properties: { topic: { type: "string", description: "The topic/title of the presentation" }, slide_count: { type: "number", description: "Number of slides (5-20). Default: 10" }, style: { type: "string", description: "Presentation style: professional, creative, minimal, bold. Default: professional" }, content_outline: { type: "string", description: "Detailed outline of what each slide should contain" } }, required: ["topic"] },
+        },
+      },
     ];
 
     // System prompt
@@ -305,6 +313,13 @@ serve(async (req) => {
 
     const isCasualMessage = isCasualEarly;
 
+    // Detect if user mentioned any agent/tool keywords to decide if tools are needed
+    const needsTools = !isCasualMessage && (
+      searchEnabled || isDeepResearch || isShopping || computerUseEnabled ||
+      /@(images|صور|videos|فيديو|voice|صوت|integrations|تكاملات|slides)/i.test(latestUserText) ||
+      /(generate|create|make|send|search|browse|ابحث|اعمل|ولد|ارسل|افتح)/i.test(latestUserText)
+    );
+
     const body: any = {
       model: modelId,
       messages: isCasualMessage 
@@ -315,7 +330,7 @@ serve(async (req) => {
       temperature: isCasualMessage ? 0.3 : 0.7,
     };
 
-    const allTools = isCasualMessage ? [] : [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools];
+    const allTools = needsTools ? [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools] : [];
     if (allTools.length > 0) {
       body.tools = allTools;
       body.tool_choice = "auto";
@@ -960,6 +975,90 @@ async function handleToolCalls(
             pushStatus("Voice generation failed");
           }
         } catch { pushStatus("Voice generation error"); }
+        continue;
+      }
+
+      // Canva slide creation via Hyperbrowser
+      if (toolName === "CANVA_CREATE_SLIDES" && HB_API_KEY) {
+        const topic = String(toolArgs.topic || "").trim();
+        if (!topic) continue;
+        const slideCount = Math.min(Math.max(Number(toolArgs.slide_count) || 10, 5), 20);
+        const style = String(toolArgs.style || "professional");
+        const outline = String(toolArgs.content_outline || "");
+
+        const HB_BASE = "https://api.hyperbrowser.ai";
+        const canvaTask = `Go to https://www.canva.com and create a ${style} presentation about "${topic}" with ${slideCount} slides. ${outline ? `Content outline: ${outline}` : `Create a well-structured presentation covering the key aspects of ${topic}.`} Use Canva's templates if available. After creating all slides, download the presentation as PPTX format and provide the download link.`;
+
+        pushStatus(`Opening Canva to create presentation...`);
+        pushStatus(`Topic: ${topic} — ${slideCount} slides`);
+
+        try {
+          const startResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent`, {
+            method: "POST",
+            headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ task: canvaTask, maxSteps: 30, keepBrowserOpen: false }),
+          }, 15000);
+
+          if (!startResp.ok) {
+            pushStatus("Failed to open Canva browser");
+            allSearchResults.push(`Failed to create Canva presentation for "${topic}". Browser could not be opened.`);
+            continue;
+          }
+
+          const startData = await startResp.json();
+          const jobId = startData.jobId;
+          if (!jobId) { pushStatus("No task ID"); continue; }
+
+          pushStatus("Canva opened — creating slides...");
+
+          let lastStepCount = 0;
+          let pollCount = 0;
+          const MAX_POLLS = 90; // ~3 min for Canva
+          let finalResult: any = null;
+          const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+          while (pollCount < MAX_POLLS) {
+            await sleep(2000);
+            pollCount++;
+            try {
+              const statusResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent/${jobId}/status`, {
+                headers: { "x-api-key": HB_API_KEY },
+              }, 8000);
+              if (!statusResp.ok) continue;
+              const statusData = await statusResp.json();
+
+              if (statusData.steps && Array.isArray(statusData.steps)) {
+                const newSteps = statusData.steps.slice(lastStepCount);
+                for (const s of newSteps) {
+                  const desc = s.description || s.next_goal || s.action || "";
+                  if (desc) pushStatus(desc);
+                }
+                lastStepCount = statusData.steps.length;
+              }
+
+              if (statusData.status === "completed" || statusData.status === "finished" || statusData.status === "done") {
+                finalResult = statusData;
+                break;
+              }
+              if (statusData.status === "failed" || statusData.status === "error") {
+                pushStatus("Canva task failed");
+                break;
+              }
+            } catch { continue; }
+          }
+
+          if (finalResult) {
+            const output = finalResult.output || finalResult.result || JSON.stringify(finalResult);
+            pushStatus("Presentation created successfully");
+            allSearchResults.push(`Canva presentation created for "${topic}":\n${typeof output === 'string' ? output : JSON.stringify(output, null, 2)}`);
+          } else {
+            pushStatus("Canva task timed out");
+            allSearchResults.push(`Canva presentation creation timed out for "${topic}". The browser took too long.`);
+          }
+        } catch (err) {
+          console.error("Canva error:", err);
+          pushStatus("Canva creation error");
+        }
         continue;
       }
 
