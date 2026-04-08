@@ -508,9 +508,18 @@ const ChatPage = () => {
     if (inviteLink) { await navigator.clipboard.writeText(inviteLink); toast.success("Invite link copied!"); }
   };
 
-  // Accept invite on page load + demo conversation on first visit
+  // Accept invite / deep link / demo conversation on page load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    
+    // Deep link: /chat?conv=xxx
+    const convParam = params.get("conv");
+    if (convParam && !conversationId) {
+      loadConversation(convParam);
+      window.history.replaceState({}, "", "/chat");
+      return;
+    }
+
     const inviteToken = params.get("invite");
     if (inviteToken) {
       (async () => {
