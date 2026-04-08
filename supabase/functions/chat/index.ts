@@ -307,9 +307,12 @@ serve(async (req) => {
 
     const body: any = {
       model: modelId,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      messages: isCasualMessage 
+        ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...messages]
+        : [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
-      max_tokens: isCasualMessage ? 256 : (isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048)),
+      max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048)),
+      temperature: isCasualMessage ? 0.3 : 0.7,
     };
 
     const allTools = isCasualMessage ? [] : [...composioTools, ...searchTools, ...shoppingTools, ...browserTools, ...mediaTools];
