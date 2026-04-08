@@ -115,15 +115,16 @@ serve(async (req) => {
     const isShopping = effectiveMode === "shopping";
     const isLearning = effectiveMode === "learning";
 
-    // ── Fetch user context ──
+    // ── Fetch user context (optimized — skip heavy queries for casual) ──
     let userContext = "";
-    if (user_id) {
+    // Detect casual early to skip expensive context fetching
+    const isCasualEarly = /^(هلا|اهلا|هاي|مرحبا|السلام|سلام|hi|hello|hey|yo|sup|thanks|شكرا|تمام|ok|اوك|good|كويس|ازيك|عامل ايه|كيفك|صباح|مساء|bye|وداعا|ايوه|لا)\b/i.test(latestUserText.trim()) && latestUserText.trim().split(/\s+/).length <= 5;
+
+    if (user_id && !isCasualEarly) {
       try {
-        const [profileRes, personalizationRes, memoriesRes, recentConvsRes] = await Promise.all([
+        const [profileRes, personalizationRes] = await Promise.all([
           sb.from("profiles").select("display_name, plan, credits").eq("id", user_id).single(),
           sb.from("ai_personalization").select("call_name, about, profession, ai_traits, custom_instructions").eq("user_id", user_id).maybeSingle(),
-          sb.from("memories").select("key, value").limit(20),
-          sb.from("conversations").select("title, mode").eq("user_id", user_id).order("updated_at", { ascending: false }).limit(10),
         ]);
 
         const parts: string[] = [];
@@ -139,14 +140,13 @@ serve(async (req) => {
           if (ai.ai_traits) parts.push(`AI personality: ${ai.ai_traits}`);
           if (ai.custom_instructions) parts.push(`Custom instructions: ${ai.custom_instructions}`);
         }
-        if (memoriesRes.data && memoriesRes.data.length > 0) {
-          parts.push(`Memories: ${memoriesRes.data.map((m: any) => `${m.key}: ${m.value}`).join("; ")}`);
-        }
-        if (recentConvsRes.data && recentConvsRes.data.length > 0) {
-          parts.push(`Recent conversations: ${recentConvsRes.data.map((c: any) => c.title).join(", ")}`);
-        }
         if (parts.length > 0) userContext = `\n\n--- USER CONTEXT ---\n${parts.join("\n")}`;
-      } catch { /* silently skip memory errors */ }
+      } catch { /* silently skip */ }
+    } else if (user_id && isCasualEarly) {
+      try {
+        const { data: p } = await sb.from("profiles").select("display_name").eq("id", user_id).single();
+        if (p?.display_name) userContext = `\n\n--- USER CONTEXT ---\nUser name: ${p.display_name}`;
+      } catch { /* skip */ }
     }
 
     // ── Model routing ──
