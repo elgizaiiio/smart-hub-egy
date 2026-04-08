@@ -1,190 +1,155 @@
 
+# خطة إصلاح الشات وتحويله لوكيل حقيقي
 
-# خطة تنفيذ شاملة — 18 مشكلة وميزة جديدة
+## ما تم اكتشافه
+المشاكل الحالية واضحة من الكود والصور:
 
-## نظرة عامة
-هذه الخطة تغطي كل المشاكل المطلوب إصلاحها مقسمة إلى 7 مراحل. التنفيذ سيتم بالترتيب حسب الأولوية والتأثير.
+1. **Megsy Computer لا يظهر غالباً**
+   - الشعار يظهر فقط لو `statusHistory` يحتوي كلمات معيّنة.
+   - لو أداة التصفح لم تُستدع أو لم ترجع خطوات مناسبة، المستخدم يرى تحميل فقط بدون الشعار.
+   - في `ChatPage` يتم عرض `ThinkingLoader` خارج الرسالة، لذلك أحياناً التجربة تبدو منفصلة ومبهمة.
 
----
+2. **الكومبيوتر ليس مفعلاً كوحدة ذكية عامة**
+   - في `chat/index.ts` تفعيل المتصفح مرتبط بشكل كبير بـ intent detection.
+   - يوجد `BROWSE_WEBSITE` لكن النظام لا يجبره على العمل كجزء من وكيل عام للمهام التي تحتاج web actions.
+   - النتيجة: في الشات العادي قد يشرح فقط بدل ما يتصفح فعلاً.
 
-## المرحلة 1: إصلاح الشات — الأخطاء الحرجة (P0)
+3. **Deep Research يجلب صوراً لكن التجربة النهائية ضعيفة**
+   - الصور تُرسل فعلاً عبر SSE من `WEB_SEARCH`.
+   - لكن التقرير النهائي قد يخرج بدون دمج بصري جيد أو بصور مكسورة.
+   - يوجد أيضاً عرض لحالات البحث للمستخدم بشكل مزعج بدل أن يرى نتيجة نهائية نظيفة.
 
-### 1.1 تحليل الصور والملفات في الشات لا يعمل
-- **المشكلة**: الصور المرفقة تُرسل كـ `image_url` لكن النموذج الحالي (Gemini Flash Lite) لا يدعم الرؤية بشكل جيد
-- **الحل**: عند اكتشاف مرفقات صور، تبديل النموذج تلقائياً إلى `moonshotai/kimi-k2.5:nitro` (يدعم الرؤية + ذكاء عالي)
-- **الملف**: `supabase/functions/chat/index.ts` — إضافة شرط `hasImages` → override model
+4. **Shopping غير مربوط بشكل جيد**
+   - `SHOPPING_SEARCH` يرجّع منتجات، لكن `ChatPage` لا يستخدم `onProducts` لواجهة منتجات فعلية.
+   - لذا النتيجة نصية أكثر من اللازم وغير منظمة.
+   - اكتشاف الدولة في prompt فيه ضعف واضح وقد يخطئ.
 
-### 1.2 استخدام kimi-k2.5:nitro للمهام المعقدة
-- **المشكلة**: النموذج الحالي بسيط جداً للمهام المعقدة
-- **الحل**: إضافة `detectComplexity()` في chat function:
-  - المهام البسيطة/العادية → `gemini-2.5-flash-lite` (سريع ورخيص)
-  - المهام المعقدة (بحث عميق، تحليل صور، برمجة، مقارنات) → `moonshotai/kimi-k2.5:nitro`
-  - Deep Research → `moonshotai/kimi-k2.5:nitro`
-  - Shopping → `moonshotai/kimi-k2.5:nitro`
-- **الملف**: `supabase/functions/chat/index.ts`
+5. **شارة الوضع فوق الإدخال موضوعة بشكل غير مناسب**
+   - حالياً هي badge منفصلة ومتمركزة فوق الإدخال.
+   - المطلوب: تكون داخل صف الإدخال بجانب زر `+` ومعها زر `X` لإلغائها.
 
-### 1.3 اللينكات تظهر بشكل سيء
-- **المشكلة**: الروابط الخام تظهر كنص كامل بدلاً من كلمات قابلة للنقر
-- **الحل**: في `ChatMessage.tsx` → مكون `a` في ReactMarkdown يعمل بالفعل لكن المشكلة أن الـ AI يكتب روابط خام بدون markdown formatting
-- **الإصلاح**: إضافة post-processing في ChatMessage لتحويل الروابط الخام `https://...` إلى `[domain](url)` قبل عرضها
-- **الملف**: `src/components/ChatMessage.tsx`
+6. **الأسئلة الذكية ليست مستقرة**
+   - هناك طريقتان مختلفتان لعرض الأسئلة: داخل الرسالة + داخل `AnimatedInput`.
+   - هذا يسبب تضارب وتجربة مربكة.
 
-### 1.4 الكومبيوتر والشعار مش بيظهر
-- **المشكلة**: `ThinkingLoader` يظهر "Megsy Computer" فقط عند اكتشاف browser keywords في statusHistory، لكن المشكلة أن الـ tool calls لا تُفعّل BROWSE_WEBSITE بشكل صحيح
-- **الحل**: تحسين شروط `needsBrowserIntent` في chat function لتشمل Shopping mode دائماً + التأكد من تمرير `statusHistory` بشكل صحيح
-- **الملفات**: `supabase/functions/chat/index.ts`, `src/pages/ChatPage.tsx`
-
-### 1.5 الأسئلة الذكية والمربعات لا تظهر
-- **المشكلة**: الـ system prompt يطلب من AI إرسال JSON blocks لكن لا يحدث
-- **الحل**: تعزيز system prompt بتعليمات أوضح + إضافة `tool` خاص بـ `ASK_SMART_QUESTIONS` لضمان ظهور الأسئلة
-- **الملف**: `supabase/functions/chat/index.ts`
+7. **التجربة الحالية ليست Agent-first**
+   - يوجد أدوات، لكن لا يوجد orchestration واضح لوكيل موحد: يقرر متى يبحث، متى يتصفح، متى يعرض منتجات، ومتى يقدم إجابة نهائية نظيفة.
 
 ---
 
-## المرحلة 2: إصلاح Deep Research والتسوق
-
-### 2.1 Deep Research يعرض بيانات خام
-- **المشكلة**: البحث العميق يعرض نتائج خام ومعلومات لا يجب عرضها
-- **الحل**: تحسين system prompt للـ Deep Research ليقوم بـ:
-  - عرض الصور المرتبطة فقط
-  - تقديم تحليل عميق منظم بدلاً من إلقاء البيانات الخام
-  - استخدام `moonshotai/kimi-k2.5:nitro` للتحليل
-- **الملف**: `supabase/functions/chat/index.ts` — تحديث `buildSystemPrompt` للـ deep research
-
-### 2.2 Shopping يعطي نتائج سيئة
-- **المشكلة**: لا يستخدم الكومبيوتر، أسعار بالدولار بدل العملة المحلية
-- **الحل**:
-  - تفعيل `BROWSE_WEBSITE` تلقائياً في Shopping mode
-  - إضافة اكتشاف الموقع الجغرافي في shopping prompt ("مصر" → بحث بالعربي + EGP)
-  - استخدام `moonshotai/kimi-k2.5:nitro` للتسوق
-- **الملف**: `supabase/functions/chat/index.ts`
+## الهدف
+تحويل الشات إلى **وكيل ذكي موحد**:
+- يفكر ويقرر تلقائياً بين: إجابة مباشرة / بحث / تصفح / تسوق / deep research
+- يُظهر حالة واضحة فقط عند الحاجة
+- لا يسرّب خطواتنا الداخلية للمستخدم
+- يعرض نتائج البحث، الصور، والمنتجات بشكل أنيق ومفهوم
 
 ---
 
-## المرحلة 3: المكالمة الصوتية (Voice Call)
+## خطة التنفيذ
 
-### 3.1 إصلاح Voice Call
-- **المشكلة الحالية**: المدخل (STT) من Deepgram ✅ + الرد النصي من chat function ✅ + الـ TTS من `generate-voice` (LemonData) — هذا الأخير بطيء أو معطل
-- **الحل**: تحويل TTS إلى OpenRouter model سريع ورخيص:
-  - استخدام `openai/tts-1` عبر OpenRouter بدلاً من LemonData
-  - أو استخدام Deepgram TTS (لأنه موجود فعلاً ومتاح)
-- **الملفات**: `supabase/functions/generate-voice/index.ts`, `src/pages/voice/VoiceCallPage.tsx`
+### المرحلة 1: إصلاح Megsy Computer في الشات
+- تعديل منطق `needsBrowserIntent` في `supabase/functions/chat/index.ts` ليكون أوسع وأذكى، وليس محصوراً في shopping/deep-research فقط.
+- إضافة **browser escalation rules**:
+  - لو المستخدم طلب زيارة موقع / استخراج بيانات من موقع / مقارنة مباشرة / معلومات مؤسسة / نتائج حية → يتم تفعيل التصفح.
+- تحسين status events الخارجة من التصفح لتكون ثابتة وواضحة كي يلتقطها `ThinkingLoader`.
+- تحديث `ThinkingLoader.tsx` ليظهر **Megsy Computer** عند:
+  - وجود tool call browser فعلي
+  - أو وجود status من نوع browser
+  - وليس فقط matching بالكلمات.
 
----
+### المرحلة 2: جعل الشات Agent Orchestrator حقيقي
+- في `chat/index.ts` إنشاء منطق قرار أوضح:
+  - Casual answer
+  - Search-backed answer
+  - Browser-backed answer
+  - Shopping agent
+  - Deep research agent
+- إضافة system prompt موحد يفرض:
+  - لا تعرض internal steps للمستخدم
+  - استخدم الأدوات أولاً عند الحاجة
+  - أخرج النتيجة النهائية فقط
+- للمهام العامة المعقدة: الوكيل يختار تلقائياً بين البحث والتصفح، وليس فقط حسب mode.
 
-## المرحلة 4: أدوات الصوت
+### المرحلة 3: إصلاح Deep Research
+- إبقاء البحث والصور داخلياً ثم إظهار **final polished report فقط**.
+- منع ظهور search logs للمستخدم في الرسالة النهائية.
+- تحسين prompt للغة:
+  - لو المستخدم كتب بالعربي فكل الناتج بالعربي
+  - أسماء الأقسام بالعربي
+- تحسين دمج الصور:
+  - إرسال الصور المرتبطة بالشخصية/الموضوع
+  - فلترة الصور المكسورة أو الضعيفة
+- تحسين الواجهة في `ChatMessage.tsx` لعرض gallery أنظف للصور مع fallback بصري أفضل.
 
-### 4.1 أدوات الصوت تظل تحمّل بلا نهاية
-- **المشكلة**: `generate-voice` يستخدم LemonData للـ TTS وقد يفشل أو يتأخر بدون timeout واضح
-- **الحل**: 
-  - إضافة timeout 30 ثانية مع رسالة خطأ واضحة
-  - تحويل نماذج الصوت لـ OpenRouter (أرخص وأسرع)
-  - إضافة fallback: OpenRouter → LemonData
-- **الملف**: `supabase/functions/generate-voice/index.ts`
+### المرحلة 4: إصلاح Shopping
+- في `chat/index.ts` جعل shopping pipeline كالتالي:
+  1. `SHOPPING_SEARCH`
+  2. `WEB_SEARCH` للمراجعات عند الحاجة
+  3. `BROWSE_WEBSITE` للتحقق من النتائج المحلية
+- تحسين locale detection ليقرأ من نص المستخدم نفسه لا من `mode`.
+- فرض تنسيق محلي:
+  - مصر → EGP ومتاجر مصرية
+- في `ChatPage.tsx` إضافة state لاستقبال `products` من `streamChat`.
+- عرض المنتجات في UI كبطاقات/قائمة منظمة بدل دفنها داخل النص.
+- الإبقاء على النص التحليلي النهائي، لكن مع عرض بصري للنتائج.
 
-### 4.2 زر التسجيل في المتصفح لكل أدوات الصوت
-- **المشكلة**: بعض أدوات الصوت لا تدعم التسجيل من المتصفح
-- **الحل**: إضافة مكون `AudioRecorder` مشترك يستخدم `MediaRecorder API` في:
-  - TTSPage, VoiceChangerPage, CloneVoicePage, VoiceTranslatePage, NoiseRemoverPage
-- **الملفات**: إنشاء `src/components/AudioRecorder.tsx` + تحديث صفحات الصوت
+### المرحلة 5: إصلاح شارة الوضع فوق الإدخال
+- إزالة الـ badge الحالية المنفصلة فوق مربع الإدخال في `ChatPage.tsx`.
+- نقل الشارة إلى **نفس صف مربع الإدخال** قرب زر `+`.
+- تضمين زر `X` صغير لإلغاء الوضع النشط فوراً.
+- الشارة تظهر فقط عند:
+  - `shopping`
+  - `deep-research`
+  - `learning`
+  - أو agent مختار
+- التصميم يكون compact ومتماشياً مع الواجهة الداكنة الحالية.
 
----
+### المرحلة 6: إصلاح الأسئلة الذكية
+- توحيد عرض الأسئلة في مكان واحد فقط.
+- الأفضل هنا: الإبقاء على عرض الأسئلة داخل `AnimatedInput` لأنه أقرب للإجابة السريعة.
+- في `ChatMessage.tsx` يتم إيقاف render التفاعلي لبلوك `questions` أو تحويله لعرض نصي فقط إن لزم.
+- تحسين prompt الخلفي ليُخرج JSON questions فقط عند الحاجة الحقيقية.
+- النتيجة: لا تكرار، لا تضارب، وتجربة أوضح.
 
-## المرحلة 5: صفحة الملفات
-
-### 5.1 استخدام kimi-k2.5:nitro في الملفات
-- **الملف**: `src/pages/FilesPage.tsx` — تغيير النموذج من `gemini-2.5-flash-lite` إلى `moonshotai/kimi-k2.5:nitro`
-
-### 5.2 إعادة تصميم عرض Slides
-- **المشكلة**: عرض Slides حالياً بشكل بحث قبيح
-- **الحل**: تحويله لتصميم مشابه لسجل البرمجة (timeline/history cards) مع:
-  - بطاقات أنيقة لكل عرض تقديمي
-  - أيقونات gradient
-  - تاريخ الإنشاء
-  - زر Preview وDownload
-- **الملف**: `src/pages/FilesPage.tsx`
-
-### 5.3 تحسين Preview
-- **المشكلة**: البريفيو مقرف
-- **الحل**: إعادة تصميم Preview modal ليكون أنيق مع:
-  - شريط أدوات نظيف
-  - عرض بملء الشاشة بشكل افتراضي
-  - أزرار تحميل واضحة
-- **الملف**: `src/pages/FilesPage.tsx`
-
-### 5.4 MagicSlides Integration
-- **المشكلة**: يجب استخدام MagicSlides API بدلاً من HTML slides
-- **الحل**: إنشاء edge function `generate-slides` تقوم بـ:
-  1. البحث والمحتوى من خلالنا (chat function)
-  2. إرسال المحتوى المنظم لـ MagicSlides API
-  3. نظام تدوير مفاتيح ذكي (جدول `api_keys` مع service = "magicslides")
-- **الملفات**: إنشاء `supabase/functions/generate-slides/index.ts`, تحديث `FilesPage.tsx`
-- **ملاحظة**: يحتاج مفتاح API من المستخدم أولاً — سأبني البنية التحتية وأضيف placeholder
-
----
-
-## المرحلة 6: تحسينات عامة
-
-### 6.1 رسائل خطأ واضحة بدون أسماء مزودين
-- **المشكلة**: رسائل الخطأ تكشف أسماء مزودي الخدمة (LemonData, OpenRouter, Deepgram)
-- **الحل**: استبدال كل رسائل الخطأ في:
-  - Edge functions: إخفاء أسماء المزودين في console.error فقط، وإرجاع رسائل عامة للمستخدم
-  - Frontend: رسائل toast عامة مثل "حدث خطأ، حاول مرة أخرى"
-- **الملفات**: كل edge functions + صفحات الواجهة
-
-### 6.2 عدم طلب المدخل مرتين
-- **المشكلة**: إذا رفع المستخدم صورة في Landing page، يُطلب منه مرة أخرى داخل الأداة
-- **الحل**: تمرير الملف المرفق عبر URL params أو state عند التنقل من Landing إلى الأداة
-- **الملفات**: صفحات أدوات الصور والفيديو والصوت
-
-### 6.3 بطء Image Studio
-- **المشكلة**: يأخذ دقائق لتحميل المحتوى
-- **الحل**: إضافة timeout + loading states + lazy loading للصور + pagination
-- **الملف**: `src/pages/ImageStudioPage.tsx`
+### المرحلة 7: تحسين تجربة التحميل والحالات
+- عند بدء بحث أو تصفح:
+  - إظهار status واحد واضح ومتدرج
+  - عدم إغراق المستخدم برسائل داخلية كثيرة
+- عند failure:
+  - رسالة واضحة مختصرة بدون أسماء مزودين
+  - إنهاء حالة التحميل بشكل نظيف
+- لو browser لم يرجع خطوات بسرعة:
+  - fallback status واضح مثل: "جاري فحص الموقع الآن"
+  - بدلاً من تحميل صامت.
 
 ---
 
-## المرحلة 7: باقي الملفات (CSS + JS)
-- **المشكلة**: Resume, Spreadsheet, Document تُنشأ كـ HTML
-- **الحل**: إبقاء HTML مع تحسين CSS والـ JavaScript المضمن لجعلها تفاعلية وجميلة — هذا هو الأسلوب الحالي وهو الأنسب
-
----
-
-## ترتيب التنفيذ
-
+## الملفات المتأثرة
 ```text
-المرحلة 1 (P0): إصلاح الشات — تحليل الصور، kimi model، لينكات، كومبيوتر، أسئلة ذكية
-المرحلة 2 (P0): Deep Research + Shopping
-المرحلة 3 (P1): Voice Call
-المرحلة 4 (P1): أدوات الصوت + تسجيل المتصفح
-المرحلة 5 (P1): الملفات — model + slides تصميم + preview + MagicSlides
-المرحلة 6 (P2): رسائل خطأ + عدم تكرار المدخل + Image Studio
-المرحلة 7 (P3): تحسين CSS/JS للملفات
+supabase/functions/chat/index.ts
+src/pages/ChatPage.tsx
+src/components/ThinkingLoader.tsx
+src/components/ChatMessage.tsx
+src/components/AnimatedInput.tsx
+src/lib/streamChat.ts
 ```
 
-## التفاصيل التقنية
+---
 
-### النماذج المستخدمة بعد التحديث:
-| الاستخدام | النموذج | المزود |
-|-----------|---------|--------|
-| شات عادي / casual | `google/gemini-2.5-flash-lite-preview-09-2025` | OpenRouter |
-| مهام معقدة / تحليل صور / deep research / shopping | `moonshotai/kimi-k2.5:nitro` | OpenRouter |
-| ملفات (FilesPage) | `moonshotai/kimi-k2.5:nitro` | OpenRouter |
-| مكالمة صوتية (chat) | `google/gemini-2.5-flash-lite-preview-09-2025` | OpenRouter |
-| TTS (الصوت) | OpenRouter TTS أو LemonData fallback | OpenRouter → LemonData |
+## النتيجة المتوقعة بعد التنفيذ
+- **Megsy Computer** يظهر فعلاً عندما يبدأ التصفح
+- الشات العادي يقدر يستخدم الكمبيوتر عند الحاجة، وليس الشوبينج فقط
+- Deep Research يعرض **نتيجة نهائية مرتبة + صور** بدون كشف خطواتنا الداخلية
+- Shopping يصبح مربوطاً بالبحث والتصفح ويعرض نتائج أفضل بصرياً
+- شارة الوضع تصبح داخل صف الإدخال مع زر إلغاء
+- الأسئلة الذكية تصبح ثابتة وواضحة
+- الشات كله يتحول إلى **وكيل موحد ذكي** بدل مجموعة أوضاع مفصولة بشكل ضعيف
 
-### الملفات المتأثرة:
-```text
-supabase/functions/chat/index.ts              — model routing + shopping + deep research + smart questions + error messages
-supabase/functions/generate-voice/index.ts     — OpenRouter TTS + timeout
-supabase/functions/generate-slides/index.ts    — جديد — MagicSlides integration
-src/pages/ChatPage.tsx                        — computer use badge + error messages
-src/pages/FilesPage.tsx                       — kimi model + slides redesign + preview
-src/pages/voice/VoiceCallPage.tsx             — TTS fix
-src/components/ChatMessage.tsx                — link formatting
-src/components/AudioRecorder.tsx              — جديد — browser recording
-src/components/ThinkingLoader.tsx             — computer use detection
-src/lib/streamChat.ts                        — error messages
-صفحات أدوات الصوت المتعددة                    — إضافة AudioRecorder
-```
+---
 
+## تفاصيل تقنية مختصرة
+- السبب الرئيسي لفشل الشعار: الاعتماد على keyword detection في `ThinkingLoader` بدلاً من event/state أكثر موثوقية.
+- السبب الرئيسي لفشل shopping: `products` تُرسل من SSE لكن لا تُستهلك في `ChatPage`.
+- السبب الرئيسي لسوء deep research: backend يجمع البيانات، لكن الواجهة وتوليف النتيجة النهائية ما زالا يسمحان بتجربة noisy.
+- السبب الرئيسي لسوء الشارة: موضعها الحالي خارج composer row.
