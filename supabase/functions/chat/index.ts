@@ -90,6 +90,52 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 1
   }
 }
 
+type FileArtifact = { url: string; label: string; kind: string };
+
+function extractUrls(text: string): string[] {
+  const matches = text.match(/https?:\/\/[^\s<>")\]]+/g) || [];
+  return Array.from(new Set(matches.map((url) => url.replace(/[.,;]+$/, ""))));
+}
+
+function detectArtifactKind(url: string): string {
+  if (/\.pptx?(\?|#|$)/i.test(url)) return "pptx";
+  if (/\.pdf(\?|#|$)/i.test(url)) return "pdf";
+  if (/\.docx?(\?|#|$)/i.test(url)) return "doc";
+  if (/\.xlsx?(\?|#|$)/i.test(url)) return "sheet";
+  if (/\.csv(\?|#|$)/i.test(url)) return "csv";
+  if (/\.html?(\?|#|$)/i.test(url)) return "html";
+  if (/\.(png|jpe?g|webp|gif|svg)(\?|#|$)/i.test(url)) return "image";
+  if (/canva\.com/i.test(url)) return "canva";
+  return "link";
+}
+
+function buildArtifactsFromText(text: string): FileArtifact[] {
+  return extractUrls(text).map((url) => {
+    const kind = detectArtifactKind(url);
+    const labelMap: Record<string, string> = {
+      pptx: "Download PPTX",
+      pdf: "Download PDF",
+      doc: "Download document",
+      sheet: "Download spreadsheet",
+      csv: "Download CSV",
+      html: "Open preview",
+      image: "Open image",
+      canva: "Open Canva file",
+      link: "Open link",
+    };
+
+    return { url, kind, label: labelMap[kind] || "Open file" };
+  });
+}
+
+function hasSearchIntent(text: string): boolean {
+  return /(latest|news|price|prices|compare|comparison|research|search|find|current|today|recent|web|website|source|sources|review|reviews|who is|what is|when did|where is|how to|ابحث|بحث|اخر|آخر|سعر|اسعار|قارن|مقارنة|معلومات|مصادر|مين|ايه|ما هو|ما هي|شو)/i.test(text);
+}
+
+function hasWebsiteIntent(text: string): boolean {
+  return /(website|site|url|link|domain|browser|web page|page|canva|dashboard|store|amazon|jumia|noon|login|sign in|portal|checkout|موقع|لينك|رابط|متصفح|كانفا|صفحة|سجل الدخول|ادخل|افتح)/i.test(text);
+}
+
 // detectComplexity removed — always use claude-haiku-4-5 for speed
 
 serve(async (req) => {
@@ -285,7 +331,7 @@ serve(async (req) => {
     ];
 
     // System prompt
-    let systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext);
+    let systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext, activeAgent);
     
     // If computer use is explicitly enabled, add browser instructions
     if (computerUseEnabled && HB_API_KEY) {
@@ -314,12 +360,14 @@ serve(async (req) => {
     const isCasualMessage = isCasualEarly;
 
     // Smart selective tool loading — only load what's actually needed
-    const mentionsMedia = /@(images|صور|videos|فيديو|voice|صوت|slides)/i.test(latestUserText);
+    const wantsImageTool = /@(images|صور)\b|\b(image|photo|picture|images|photos|صورة|صور)\b/i.test(latestUserText);
+    const wantsVideoTool = /@(videos|فيديو)\b|\b(video|videos|clip|فيديو|فديو)\b/i.test(latestUserText);
+    const wantsVoiceTool = /@(voice|صوت)\b|\b(voice|speech|audio|tts|صوت|كلام)\b/i.test(latestUserText);
+    const wantsSlideTool = activeAgent === "slides" || /@(slides|files)\b|\b(slide|slides|presentation|pitch deck|ppt|pptx|powerpoint|عرض|شرائح|سلايد|سلايدز|برزنتيشن|بوربوينت|كانفا)\b/i.test(latestUserText);
     const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
     const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
-    const mentionsGenerate = /(generate|create|make|ابحث|اعمل|ولد)/i.test(latestUserText);
-    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && !/^(هلا|اهلا|hi|hello|hey|thanks|شكرا|ok|bye)\b/i.test(latestUserText.trim());
-    const needsBrowser = !isCasualMessage && (mentionsBrowse || (computerUseEnabled && mentionsGenerate));
+    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && hasSearchIntent(latestUserText);
+    const needsBrowser = !isCasualMessage && !!HB_API_KEY && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText));
 
     // Build tools array selectively
     const selectedTools: any[] = [];
@@ -327,13 +375,22 @@ serve(async (req) => {
       if (needsSearch) selectedTools.push(...searchTools);
       if (isShopping) selectedTools.push(...shoppingTools);
       if (needsBrowser) selectedTools.push(...browserTools);
-      if (mentionsMedia || mentionsGenerate) selectedTools.push(...mediaTools);
+      if (wantsImageTool || wantsVideoTool || wantsVoiceTool || wantsSlideTool) {
+        selectedTools.push(...mediaTools.filter((tool) => {
+          const name = tool.function.name;
+          if (name === "GENERATE_IMAGE") return wantsImageTool;
+          if (name === "GENERATE_VIDEO") return wantsVideoTool;
+          if (name === "GENERATE_VOICE") return wantsVoiceTool;
+          if (name === "CANVA_CREATE_SLIDES") return wantsSlideTool;
+          return false;
+        }));
+      }
       if (mentionsIntegrations) selectedTools.push(...composioTools);
     }
 
-    // Trim messages to last 10 for speed (keep system prompt separate)
-    const trimmedMessages = Array.isArray(messages) && messages.length > 10
-      ? messages.slice(-10)
+    // Trim messages to last 8 for speed (keep system prompt separate)
+    const trimmedMessages = Array.isArray(messages) && messages.length > 8
+      ? messages.slice(-8)
       : messages;
 
     const body: any = {
@@ -342,8 +399,8 @@ serve(async (req) => {
         ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...trimmedMessages]
         : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
-      max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 4096 : (mode === "files" ? 4096 : 2048)),
-      temperature: isCasualMessage ? 0.3 : 0.7,
+      max_tokens: isCasualMessage ? 120 : (isDeepResearch ? 3072 : (mode === "files" ? 2048 : 1024)),
+      temperature: isCasualMessage ? 0.25 : 0.55,
     };
 
     if (selectedTools.length > 0) {
@@ -477,7 +534,7 @@ serve(async (req) => {
 });
 
 // ── Build system prompt ──
-function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string): string {
+function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string, activeAgent?: string): string {
   if (mode === "files") {
     return `You are Megsy, a smart AI File Agent made by Megsy AI. The current year is 2026. You are a decision-making agent, not a simple chatbot.
 
@@ -514,7 +571,11 @@ Rules:
 \`\`\`
 
 IMPORTANT: Before ANY questions JSON block, write a natural sentence explaining what you need.
-- For PowerPoint requests, return structured JSON slides.
+- If the request is for slides, presentations, PPT, PPTX, pitch deck, or the active file agent is slides, you MUST use CANVA_CREATE_SLIDES when that tool is available.
+- Never return HTML slides, fake preview text, or JSON slides for presentation requests when CANVA_CREATE_SLIDES is available.
+- After Canva finishes, reply briefly with the result and include direct download/open links only.
+- For document, resume, and spreadsheet requests, use browser/computer tools only when the user explicitly asks for a real web-app workflow or website action.
+- Active file agent: ${activeAgent || "general"}.
 ${userContext}`;
   }
   
