@@ -150,6 +150,22 @@ function hasBrowserEscalation(text: string): boolean {
   return /(fill.*form|submit|download.*from|screenshot|log.*in|sign.*up|book.*ticket|order|purchase|buy.*from|track.*order|check.*status|monitor|watch.*price|تعبئة|نموذج|طلب|اشتري|حجز|تتبع)/i.test(text);
 }
 
+function hasShoppingIntent(text: string): boolean {
+  return /(buy|shopping|shop|product|products|compare prices|best price|deal|deals|amazon|jumia|noon|store|stores|purchase|شراء|اشتري|تسوق|تسوّق|منتج|منتجات|قارن|مقارنة اسعار|سعر|اسعار|عروض|متجر|متاجر)/i.test(text);
+}
+
+function isToolMarkerChunk(content: string): boolean {
+  return [
+    "WEB_SEARCH",
+    "BROWSE_WEBSITE",
+    "SHOPPING_SEARCH",
+    "GENERATE_IMAGE",
+    "GENERATE_VIDEO",
+    "GENERATE_VOICE",
+    "CANVA_CREATE_SLIDES",
+  ].includes(content.trim());
+}
+
 function normalizeRequestedModel(rawModel: string | null): string | null {
   if (!rawModel || rawModel === "auto") return null;
   return rawModel;
@@ -194,7 +210,7 @@ serve(async (req) => {
 
     // Resolve effective chat mode
     const effectiveMode = chatMode || mode || "normal";
-    const isShopping = effectiveMode === "shopping";
+    const isShopping = effectiveMode === "shopping" || hasShoppingIntent(latestUserText);
     const isLearning = effectiveMode === "learning";
 
     // ── Fetch user context (optimized — skip heavy queries for casual) ──
@@ -387,7 +403,7 @@ serve(async (req) => {
     const needsBrowser = !!HB_API_KEY && needsBrowserIntent;
 
     // System prompt
-    let systemPrompt = buildSystemPrompt(effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext, activeAgent);
+    let systemPrompt = buildSystemPrompt(isShopping ? "shopping" : effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext, latestUserText, activeAgent);
 
     if (computerUseEnabled && HB_API_KEY) {
       systemPrompt += `\n\nCOMPUTER USE (Megsy Computer):
@@ -395,6 +411,13 @@ serve(async (req) => {
 - Use it ONLY when the task genuinely requires visiting a real website, extracting live page data, comparing store pages, or interacting with a web page.
 - Never use it for greetings, casual chat, writing, explanation, summarization, translation, or simple reasoning.
 - Think first: if the task can be answered without opening a browser, do not call BROWSE_WEBSITE.`;
+    }
+
+    if (needsBrowser && !isDeepResearch) {
+      systemPrompt += `\n\nIMPORTANT FOR THIS REQUEST:
+- The user's request is already clear enough for live browsing.
+- Do not ask unnecessary follow-up questions before browsing.
+- If the request mentions a website, company page, team page, pricing page, or live store comparison, call BROWSE_WEBSITE immediately and then answer from the live result.`;
     }
 
     systemPrompt += `\n\nMEDIA GENERATION TOOLS:
@@ -414,8 +437,8 @@ serve(async (req) => {
     // Build tools array selectively
     const selectedTools: any[] = [];
     if (!isCasualMessage) {
-      if (needsSearch) selectedTools.push(...searchTools);
       if (isShopping) selectedTools.push(...shoppingTools);
+      else if (needsSearch) selectedTools.push(...searchTools);
       if (needsBrowser) selectedTools.push(...browserTools);
       if (wantsImageTool || wantsVideoTool || wantsVoiceTool || wantsSlideTool) {
         selectedTools.push(...mediaTools.filter((tool) => {
@@ -562,7 +585,7 @@ serve(async (req) => {
                 continue;
               }
 
-              if (delta.content) {
+              if (delta.content && !isToolMarkerChunk(delta.content)) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: delta.content } }] })}\n\n`));
               }
             } catch {
@@ -591,7 +614,7 @@ serve(async (req) => {
 });
 
 // ── Build system prompt ──
-function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string, activeAgent?: string): string {
+function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string, latestUserText: string, activeAgent?: string): string {
   if (mode === "files") {
     return `You are Megsy, a smart AI File Agent made by Megsy AI. The current year is 2026. You are a decision-making agent, not a simple chatbot.
 
@@ -885,7 +908,7 @@ async function handleToolCalls(
         const searchQuery = String(toolArgs.query || "").trim();
         if (!searchQuery) continue;
 
-        pushStatus(`Searching for products: ${searchQuery}`);
+        pushStatus("Searching stores...");
 
         const shopResp = await fetchWithTimeout("https://google.serper.dev/shopping", {
           method: "POST",
@@ -913,7 +936,7 @@ async function handleToolCalls(
               ).join("\n\n");
             allSearchResults.push(context);
             
-            pushStatus(`Found ${products.length} products`);
+            pushStatus("Comparing the best product options...");
 
             // Send product images
             const productImages = products.filter((p: any) => p.image).map((p: any) => p.image);
@@ -930,7 +953,7 @@ async function handleToolCalls(
         if (!searchQuery) continue;
 
         const includeImages = shouldIncludeImages(searchQuery, Boolean(toolArgs.include_images));
-        pushStatus(`Searching: ${searchQuery}`);
+        pushStatus(isDeepResearch ? "Gathering trusted sources..." : "Searching the web...");
 
         const searchRequest = fetchWithTimeout("https://google.serper.dev/search", {
           method: "POST",
@@ -981,7 +1004,7 @@ async function handleToolCalls(
         }
 
         const organicCount = searchData.organic?.length || 0;
-        pushStatus(organicCount > 0 ? `Found ${organicCount} results` : "Search completed");
+        pushStatus(organicCount > 0 ? (isDeepResearch ? "Reviewing the sources..." : "Reviewing the results...") : "Search completed");
         allSearchResults.push(context);
         continue;
       }
@@ -995,8 +1018,8 @@ async function handleToolCalls(
         const HB_BASE = "https://api.hyperbrowser.ai";
         const fullTask = browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal;
 
-        pushStatus(`Opening smart browser...`);
-        if (browseUrl) pushStatus(`Navigating to ${browseUrl}...`);
+        pushStatus("Opening smart browser...");
+        if (browseUrl) pushStatus("Navigating to the website...");
 
         try {
           // Start async task

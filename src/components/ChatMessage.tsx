@@ -16,6 +16,7 @@ interface ChatMessageProps {
   isStreaming?: boolean;
   isThinking?: boolean;
   images?: string[];
+  products?: { title: string; price: string; image?: string; link?: string; seller?: string; rating?: string | null; delivery?: string | null }[];
   attachedImages?: string[];
   attachedFiles?: { name: string; type: string }[];
   onLike?: (liked: boolean | null) => void;
@@ -210,7 +211,7 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
   </ReactMarkdown>
 );
 
-const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchQuery, onEditUserMessage, onEditUserMessageAt }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchQuery, onEditUserMessage, onEditUserMessageAt }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -384,10 +385,50 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
       ) : (
         <>
           {images && images.length > 0 && (
-            <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+            <div className="flex gap-3 mb-3 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory touch-pan-x">
               {images.map((img, i) => (
-                <img key={i} src={img} alt="" className="rounded-lg max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(img, '_blank')} />
+                <img key={i} src={img} alt="" className="shrink-0 snap-start w-[74vw] max-w-[18rem] aspect-[4/3] rounded-xl border border-border/40 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(img, '_blank')} />
               ))}
+            </div>
+          )}
+
+          {products && products.length > 0 && (
+            <div className="mb-4 flex gap-3 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory touch-pan-x">
+              {products.map((product, index) => {
+                const card = (
+                  <div className="w-[16.5rem] shrink-0 snap-start rounded-2xl border border-border/40 bg-secondary/30 overflow-hidden">
+                    {product.image ? (
+                      <img src={product.image} alt={product.title} className="h-36 w-full object-cover" />
+                    ) : (
+                      <div className="h-36 w-full bg-secondary" />
+                    )}
+                    <div className="p-3 space-y-1.5">
+                      <p className="text-sm font-semibold text-foreground line-clamp-2">{product.title}</p>
+                      <p className="text-sm text-primary font-medium">{product.price}</p>
+                      {product.seller && <p className="text-xs text-muted-foreground">{product.seller}</p>}
+                      <div className="flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
+                        {product.rating && <span className="rounded-full bg-background/70 px-2 py-1 border border-border/40">{product.rating}</span>}
+                        {product.delivery && <span className="rounded-full bg-background/70 px-2 py-1 border border-border/40">{product.delivery}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+
+                if (product.link) {
+                  return (
+                    <a
+                      key={`${product.link}-${index}`}
+                      href={product.link}
+                      onClick={(e) => handleLinkClick(e, product.link!)}
+                      className="block"
+                    >
+                      {card}
+                    </a>
+                  );
+                }
+
+                return <div key={`${product.title}-${index}`}>{card}</div>;
+              })}
             </div>
           )}
 
@@ -401,30 +442,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
                   return <InfoCards key={idx} items={block.data.items} onAction={(action, title) => { onStructuredAction?.(`${action}: ${title}`); }} />;
                 }
                 if (block.type === "questions") {
-                  // Render smart questions as interactive cards inline
-                  return (
-                    <div key={idx} className="space-y-2">
-                      {block.data.questions.map((q: any, qi: number) => (
-                        <div key={qi} className="rounded-xl border border-border/60 bg-secondary/30 p-4 space-y-2">
-                          {q.title && <p className="text-sm font-medium text-foreground mb-2">{q.title}</p>}
-                          <div className="flex flex-col gap-1.5">
-                            {q.options?.map((opt: string, oi: number) => (
-                              <button key={oi} onClick={() => onStructuredAction?.(opt)} className="w-full text-left px-4 py-2.5 rounded-xl border border-border/50 bg-background text-sm text-foreground hover:bg-accent/50 hover:border-primary/30 transition-colors">
-                                <span className="text-muted-foreground mr-2">{oi + 1}.</span>{opt}
-                              </button>
-                            ))}
-                          </div>
-                          {q.allowText !== false && (
-                            <input
-                              placeholder="Or type your answer..."
-                              className="w-full px-3 py-2.5 rounded-xl border border-border/50 bg-background text-sm text-foreground outline-none focus:border-primary/40 mt-2"
-                              onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) { onStructuredAction?.((e.target as HTMLInputElement).value.trim()); } }}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  );
+                  return null;
                 }
                 return (
                   <div key={idx} className="prose-chat text-foreground">

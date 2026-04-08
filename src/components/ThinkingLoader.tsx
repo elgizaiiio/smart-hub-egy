@@ -38,8 +38,9 @@ function detectComputerUse(statusHistory: string[]): boolean {
 
 const ThinkingLoader = ({ searchQuery, searchStatus, statusHistory = [] }: ThinkingLoaderProps) => {
   const [showLive, setShowLive] = useState(false);
+  const combinedStatuses = [searchStatus || "", ...statusHistory].filter(Boolean);
   const hasRealSteps = statusHistory.length > 0;
-  const actualComputerUse = detectComputerUse(statusHistory);
+  const actualComputerUse = detectComputerUse(combinedStatuses);
 
   const latestStatus = hasRealSteps ? statusHistory[statusHistory.length - 1] : null;
   const displayText = searchStatus || latestStatus || "Thinking";

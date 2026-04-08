@@ -10,7 +10,6 @@ import ChatMessage from "@/components/ChatMessage";
 import AnimatedInput from "@/components/AnimatedInput";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import FancyButton from "@/components/FancyButton";
-import AgentBadge from "@/components/AgentBadge";
 import type { AgentDef, AgentModel } from "@/lib/agentRegistry";
 
 import { streamChat } from "@/lib/streamChat";
@@ -35,10 +34,21 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   images?: string[];
+  products?: ProductResult[];
   attachedImages?: string[];
   attachedFiles?: {name: string;type: string;}[];
   liked?: boolean | null;
   id?: string;
+}
+
+interface ProductResult {
+  title: string;
+  price: string;
+  image?: string;
+  link?: string;
+  seller?: string;
+  rating?: string | null;
+  delivery?: string | null;
 }
 
 type ChatMode = "normal" | "learning" | "shopping" | "deep-research";
@@ -57,6 +67,23 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
 
 
 const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
+
+const BROWSER_STATUS_REGEX = /(megsy computer|smart browser|browser opened|opening smart browser|browsing completed|navigat|clicking|scrolling|extracting|currently on|opening canva|canva opened|browser task|live browser|website check)/i;
+
+const isBrowserStatus = (status: string) => BROWSER_STATUS_REGEX.test(status);
+
+const normalizeStatusLabel = (status: string) => {
+  if (!status.trim()) return "";
+  if (isBrowserStatus(status)) return status;
+  if (/writing the report/i.test(status)) return "Writing the final report...";
+  if (/analyzing products/i.test(status)) return "Comparing the best options...";
+  if (/searching for products/i.test(status)) return "Searching stores...";
+  if (/searching:/i.test(status)) return "Searching the web...";
+  if (/found\s+\d+\s+(results|products)/i.test(status)) return "Reviewing the results...";
+  if (/search completed/i.test(status)) return "Search completed.";
+  if (/running /i.test(status)) return "Working on your request...";
+  return "Working on your request...";
+};
 
 const ChatPage = () => {
   const navigate = useNavigate();
@@ -169,7 +196,7 @@ const ChatPage = () => {
 
   const handleCancel = () => {
     if (abortControllerRef.current) {abortControllerRef.current.abort();abortControllerRef.current = null;}
-    setIsLoading(false);setIsThinking(false);setSearchStatus("");
+    setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);
   };
 
   const handleModeChange = (mode: ChatMode) => {
@@ -266,14 +293,29 @@ const ChatPage = () => {
     const controller = new AbortController();
     abortControllerRef.current = controller;
     let searchImages: string[] = [];
+    let streamedProducts: ProductResult[] = [];
+
+    const isToolMarkerChunk = (chunk: string) => {
+      const trimmed = chunk.trim();
+      return [
+        "BROWSE_WEBSITE",
+        "WEB_SEARCH",
+        "SHOPPING_SEARCH",
+        "GENERATE_IMAGE",
+        "GENERATE_VIDEO",
+        "GENERATE_VOICE",
+        "CANVA_CREATE_SLIDES",
+      ].includes(trimmed);
+    };
 
     const updateAssistant = (chunk: string) => {
+      if (isToolMarkerChunk(chunk)) return;
       setIsThinking(false);setSearchStatus("");
       assistantContent += chunk;
       setMessages((prev) => {
         const last = prev[prev.length - 1];
-        if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
-        return [...prev, { role: "assistant", content: assistantContent }];
+        if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent, products: m.products ?? streamedProducts } : m);
+        return [...prev, { role: "assistant", content: assistantContent, products: streamedProducts }];
       });
     };
 
@@ -313,12 +355,20 @@ const ChatPage = () => {
       selectedModel: selectedModel ? { id: selectedModel.id, cost: selectedModel.cost } : undefined,
       onDelta: updateAssistant,
       onImages: (imgs) => {searchImages = imgs;},
+      onProducts: (products) => {
+        streamedProducts = products;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role !== "assistant") return prev;
+          return prev.map((m, i) => i === prev.length - 1 ? { ...m, products } : m);
+        });
+      },
       onStatus: (status) => {
-        setSearchStatus(status);
+        const normalizedStatus = normalizeStatusLabel(status);
+        setSearchStatus(normalizedStatus);
         setIsThinking(true);
-        // Accumulate real status events into history
+        if (!isBrowserStatus(status)) return;
         setStatusHistory(prev => {
-          // Avoid duplicates
           if (prev.length > 0 && prev[prev.length - 1] === status) return prev;
           return [...prev, status];
         });
@@ -329,10 +379,10 @@ const ChatPage = () => {
         const resolvedConversationId = await conversationPromise;
         if (resolvedConversationId && assistantContent) {
           await saveMessage(resolvedConversationId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
-          if (searchImages.length > 0) {
+          if (searchImages.length > 0 || streamedProducts.length > 0) {
             setMessages((prev) => {
               const last = prev[prev.length - 1];
-              if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, images: searchImages } : m);
+              if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, images: searchImages.length > 0 ? searchImages : m.images, products: streamedProducts.length > 0 ? streamedProducts : m.products } : m);
               return prev;
             });
           }
@@ -825,6 +875,7 @@ Ask me anything to get started!`;
                   role={msg.role}
                   content={msg.content}
                   images={msg.images}
+                  products={msg.products}
                   attachedImages={msg.attachedImages}
                   attachedFiles={msg.attachedFiles}
                   isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}

@@ -294,19 +294,17 @@ const FilesPage = () => {
       }
 
       const AGENT_PROMPTS: Record<string, string> = {
-        slides: `You are an expert presentation designer. The user wants a presentation. First, if the request is vague, respond with smart questions in this JSON format:
+        slides: `You are Kimi Slides Agent. The user wants a presentation. First, if the request is vague, respond with smart questions in this JSON format:
 \`\`\`json
 {"type":"questions","questions":[{"title":"Question?","options":["Option 1","Option 2"],"allowText":true}]}
 \`\`\`
-If the request is clear enough, generate a complete HTML presentation using Nano Banana-generated visuals for the slides instead of stock images or Pexels:
+If the request is clear enough, generate a premium single-file presentation as HTML with embedded CSS and vanilla JavaScript:
 - DARK themed slideshow with 10+ slides
-- Full-viewport sections (100vh) with scroll-snap
-- Navigation buttons and slide counter
-- Professional typography, gradients, animations
-- Color: dark background (#0a0a0f), violet/purple accents, white text
-- JavaScript for keyboard navigation
-- Use provided Nano Banana image URLs as the main visuals/backgrounds across the slides
-- Do not mention Pexels and do not use stock-photo APIs
+- Full-viewport sections (100vh) with horizontal or vertical scroll-snap where appropriate
+- Distinct layouts, strong visual hierarchy, and polished transitions
+- Professional typography, gradients, responsive spacing, and keyboard navigation in JavaScript
+- Use the provided external image URLs as the main visuals/backgrounds across the slides
+- Do not mention image providers or stock-photo APIs
 - Include comprehensive, well-researched content
 Output ONLY the complete HTML code with no explanations.`,
         resume: "Generate a professional HTML resume/CV. Modern dark theme. Output ONLY HTML.",
@@ -318,17 +316,12 @@ Output ONLY the complete HTML code with no explanations.`,
       let prompt = `${agentPrompt}\n\nUser request: ${userInput}`;
       if (activeAgent === "slides") {
         try {
-          const { data: slideImages } = await supabase.functions.invoke("generate-image", {
-            body: {
-              prompt: `${userInput}. Create cinematic presentation visuals for a professional slide deck with clean composition and strong focal subjects.`,
-              model: "nano-banana",
-              num_images: 3,
-              image_size: "1536x1024",
-            },
+          const { data: slideImages } = await supabase.functions.invoke("search", {
+            body: { query: `${userInput} presentation visuals high quality editorial photos` },
           });
-          const urls = Array.isArray(slideImages?.images) ? slideImages.images : [];
+          const urls = Array.isArray(slideImages?.images) ? slideImages.images.slice(0, 4) : [];
           if (urls.length > 0) {
-            prompt += `\n\nUse these Nano Banana visual URLs in the presentation:\n${urls.map((url: string, index: number) => `${index + 1}. ${url}`).join("\n")}`;
+            prompt += `\n\nUse these researched visual URLs in the presentation:\n${urls.map((url: string, index: number) => `${index + 1}. ${url}`).join("\n")}`;
           }
         } catch {}
       }
