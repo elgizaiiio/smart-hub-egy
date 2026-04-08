@@ -9,8 +9,8 @@ const corsHeaders = {
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "google/gemini-2.5-flash-lite-preview";
-const OPENROUTER_FALLBACK_MODELS = [DEFAULT_MODEL, "google/gemini-2.5-flash-preview:thinking", "google/gemini-2.5-flash"];
+const DEFAULT_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
+const OPENROUTER_FALLBACK_MODELS = [DEFAULT_MODEL, "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
   try {

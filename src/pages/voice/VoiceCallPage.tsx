@@ -83,7 +83,7 @@ const VoiceCallPage = () => {
               },
               ...conversationRef.current.slice(-10),
             ],
-            model: "google/gemini-2.5-flash-lite-preview",
+            model: "google/gemini-2.5-flash-lite-preview-09-2025",
           }),
         }
       );
