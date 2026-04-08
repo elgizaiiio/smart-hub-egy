@@ -254,52 +254,6 @@ serve(async (req) => {
       { type: "function", function: { name: "YOUTUBE_LIST_VIDEOS", description: "List videos from a YouTube channel", parameters: { type: "object", properties: { query: { type: "string" }, max_results: { type: "number", default: 5 } } } } },
     ] : [];
 
-    // Build search tools
-    const searchTools = (((searchEnabled || isDeepResearch) || wantsHamzaProfile) && SERPER_API_KEY) ? [
-      {
-        type: "function",
-        function: {
-          name: "WEB_SEARCH",
-          description: isDeepResearch
-            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 3-5 TIMES with different queries."
-            : "Search the web for current information. Use when the user asks about recent events, facts, product prices, news, or anything that benefits from real-time data.",
-          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images" } }, required: ["query"] },
-        },
-      },
-    ] : [];
-
-    // Shopping search tool
-    const shoppingTools = (isShopping && SERPER_API_KEY) ? [
-      {
-        type: "function",
-        function: {
-          name: "SHOPPING_SEARCH",
-          description: "Search for products across online stores. Returns product images, prices, sellers, ratings, and links. ALWAYS use this when the user asks about buying, prices, products, or shopping. You can call it multiple times with different queries to find the best deals.",
-          parameters: { type: "object", properties: { query: { type: "string", description: "Product search query" }, num: { type: "number", description: "Number of results (default 10)" } }, required: ["query"] },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "WEB_SEARCH",
-          description: "Search the web for product reviews, comparisons, or general information to help the user make better purchasing decisions.",
-          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean" } }, required: ["query"] },
-        },
-      },
-    ] : [];
-
-    // Browser tool (Computer Use via Hyperbrowser)
-    const browserTools = HB_API_KEY ? [
-      {
-        type: "function",
-        function: {
-          name: "BROWSE_WEBSITE",
-          description: "Open a real browser and autonomously browse a website to extract data, fill forms, or perform actions. Use when: shopping comparisons need live prices, user asks to check a specific website, research needs real-time page content, or any task requiring actual web browsing. Returns extracted content and screenshots.",
-          parameters: { type: "object", properties: { goal: { type: "string", description: "What to accomplish (e.g., 'Find the cheapest iPhone 16 on amazon.eg')" }, url: { type: "string", description: "Optional specific URL to start from" } }, required: ["goal"] },
-        },
-      },
-    ] : [];
-
     // Media generation tools (available when user uses @images, @videos, @voice in chat)
     const mediaTools = [
       {
@@ -354,6 +308,52 @@ serve(async (req) => {
       shouldLoadSerperKey ? getSerperKey(sb) : Promise.resolve(null),
       shouldLoadHyperbrowserKey ? getHyperbrowserKey(sb) : Promise.resolve(null),
     ]);
+
+    // Build search tools (AFTER key loading)
+    const searchTools = (((searchEnabled || isDeepResearch) || wantsHamzaProfile) && SERPER_API_KEY) ? [
+      {
+        type: "function",
+        function: {
+          name: "WEB_SEARCH",
+          description: isDeepResearch
+            ? "Perform a comprehensive deep research web search. You MUST call this tool AT LEAST 3-5 TIMES with different queries."
+            : "Search the web for current information. Use when the user asks about recent events, facts, product prices, news, or anything that benefits from real-time data.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean", description: "Whether to include relevant images" } }, required: ["query"] },
+        },
+      },
+    ] : [];
+
+    // Shopping search tool
+    const shoppingTools = (isShopping && SERPER_API_KEY) ? [
+      {
+        type: "function",
+        function: {
+          name: "SHOPPING_SEARCH",
+          description: "Search for products across online stores. Returns product images, prices, sellers, ratings, and links. ALWAYS use this when the user asks about buying, prices, products, or shopping. You can call it multiple times with different queries to find the best deals.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Product search query" }, num: { type: "number", description: "Number of results (default 10)" } }, required: ["query"] },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "WEB_SEARCH",
+          description: "Search the web for product reviews, comparisons, or general information to help the user make better purchasing decisions.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean" } }, required: ["query"] },
+        },
+      },
+    ] : [];
+
+    // Browser tool (Computer Use via Hyperbrowser)
+    const browserTools = HB_API_KEY ? [
+      {
+        type: "function",
+        function: {
+          name: "BROWSE_WEBSITE",
+          description: "Open a real browser and autonomously browse a website to extract data, fill forms, or perform actions. Use when: shopping comparisons need live prices, user asks to check a specific website, research needs real-time page content, or any task requiring actual web browsing. Returns extracted content and screenshots.",
+          parameters: { type: "object", properties: { goal: { type: "string", description: "What to accomplish (e.g., 'Find the cheapest iPhone 16 on amazon.eg')" }, url: { type: "string", description: "Optional specific URL to start from" } }, required: ["goal"] },
+        },
+      },
+    ] : [];
 
     const needsBrowser = !!HB_API_KEY && needsBrowserIntent;
 
