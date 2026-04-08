@@ -149,6 +149,9 @@ const ChatPage = () => {
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
+    setStatusHistory([]);
+    setSearchStatus("");
+    setPendingQuestions([]);
     const { data: conv } = await supabase.from("conversations").select("title, is_shared, share_id, is_pinned").eq("id", id).single();
     if (conv) {
       setConversationTitle(conv.title || "Untitled");
@@ -350,7 +353,21 @@ const ChatPage = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach(async (file) => {
+    const fileList = Array.from(files);
+    if (attachedFiles.length + fileList.length > 5) {
+      toast.error("Maximum 5 files allowed");
+      e.target.value = "";
+      return;
+    }
+    fileList.forEach(async (file) => {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 20MB)`);
+        return;
+      }
+      if (file.size === 0) {
+        toast.error(`${file.name} is empty`);
+        return;
+      }
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = () => setAttachedFiles((prev) => [...prev, { name: file.name, type: "image", data: reader.result as string }]);
