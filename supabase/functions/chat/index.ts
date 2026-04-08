@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
+const WAVESPEED_URL = "https://api.wavespeed.ai/v1/chat/completions";
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
   try {
