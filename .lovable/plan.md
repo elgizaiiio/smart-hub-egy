@@ -1,113 +1,190 @@
 
 
-# خطة إصلاح 28 خطأ متبقي من تقرير E2E
+# خطة تنفيذ شاملة — 18 مشكلة وميزة جديدة
 
-## الأخطاء المستخرجة (28 خطأ غير مُصلح)
-
-```text
-الأولوية   العدد   الحالة
-─────────────────────────
-P0 حرج      3      لم يُصلح
-P1 عالي      6      لم يُصلح
-P2 متوسط    13      لم يُصلح
-P3 منخفض     6      لم يُصلح
-```
+## نظرة عامة
+هذه الخطة تغطي كل المشاكل المطلوب إصلاحها مقسمة إلى 7 مراحل. التنفيذ سيتم بالترتيب حسب الأولوية والتأثير.
 
 ---
 
-## المرحلة 1: الأخطاء الحرجة (P0) — 3 أخطاء
+## المرحلة 1: إصلاح الشات — الأخطاء الحرجة (P0)
 
-| الخطأ | الوصف | الإصلاح |
-|-------|-------|---------|
-| BUG-12 | Computer Use يتوقف عند حظر كل مفاتيح HB | إضافة آلية إعادة تفعيل تلقائية بعد 30 دقيقة + تنبيه عبر console |
-| BUG-13 | Slides تولد HTML بدل Canva/PPTX | ربط Computer Use بـ Canva — إرسال task لـ HyperAgent يفتح canva.com وينشئ ويصدر PPTX |
-| BUG-18 | المكالمات الصوتية تفشل بدون Deepgram token | التحقق من وجود المفتاح قبل بدء المكالمة + رسالة خطأ واضحة |
+### 1.1 تحليل الصور والملفات في الشات لا يعمل
+- **المشكلة**: الصور المرفقة تُرسل كـ `image_url` لكن النموذج الحالي (Gemini Flash Lite) لا يدعم الرؤية بشكل جيد
+- **الحل**: عند اكتشاف مرفقات صور، تبديل النموذج تلقائياً إلى `moonshotai/kimi-k2.5:nitro` (يدعم الرؤية + ذكاء عالي)
+- **الملف**: `supabase/functions/chat/index.ts` — إضافة شرط `hasImages` → override model
 
----
+### 1.2 استخدام kimi-k2.5:nitro للمهام المعقدة
+- **المشكلة**: النموذج الحالي بسيط جداً للمهام المعقدة
+- **الحل**: إضافة `detectComplexity()` في chat function:
+  - المهام البسيطة/العادية → `gemini-2.5-flash-lite` (سريع ورخيص)
+  - المهام المعقدة (بحث عميق، تحليل صور، برمجة، مقارنات) → `moonshotai/kimi-k2.5:nitro`
+  - Deep Research → `moonshotai/kimi-k2.5:nitro`
+  - Shopping → `moonshotai/kimi-k2.5:nitro`
+- **الملف**: `supabase/functions/chat/index.ts`
 
-## المرحلة 2: الأخطاء العالية (P1) — 6 أخطاء
+### 1.3 اللينكات تظهر بشكل سيء
+- **المشكلة**: الروابط الخام تظهر كنص كامل بدلاً من كلمات قابلة للنقر
+- **الحل**: في `ChatMessage.tsx` → مكون `a` في ReactMarkdown يعمل بالفعل لكن المشكلة أن الـ AI يكتب روابط خام بدون markdown formatting
+- **الإصلاح**: إضافة post-processing في ChatMessage لتحويل الروابط الخام `https://...` إلى `[domain](url)` قبل عرضها
+- **الملف**: `src/components/ChatMessage.tsx`
 
-| الخطأ | الوصف | الإصلاح |
-|-------|-------|---------|
-| BUG-04 | ChatPage.tsx = 1038 سطر | تقسيم إلى: ChatMessages, ChatInput, ChatDialogs, ChatSidebar |
-| BUG-09 | خطأ 402 يظهر رسالة تقنية | عرض "الرصيد غير كافٍ" بدل النص التقني |
-| BUG-11 | لا fallback من LemonData لـ deAPI عند 402 | إضافة catch 402 → تحويل تلقائي لـ deAPI |
-| BUG-15 | DOCX يُقرأ كـ binary garbage | استخدام mammoth.js لتحويل DOCX لنص |
-| BUG-22 | بطء أول رد AI | تقليل system prompt للرسائل البسيطة + تسريع isCasualMessage |
-| BUG-25 | CORS مفتوح `*` في كل Edge Functions | تقييد لـ `smart-hub-egy.lovable.app` و `lovable.app` |
+### 1.4 الكومبيوتر والشعار مش بيظهر
+- **المشكلة**: `ThinkingLoader` يظهر "Megsy Computer" فقط عند اكتشاف browser keywords في statusHistory، لكن المشكلة أن الـ tool calls لا تُفعّل BROWSE_WEBSITE بشكل صحيح
+- **الحل**: تحسين شروط `needsBrowserIntent` في chat function لتشمل Shopping mode دائماً + التأكد من تمرير `statusHistory` بشكل صحيح
+- **الملفات**: `supabase/functions/chat/index.ts`, `src/pages/ChatPage.tsx`
 
----
-
-## المرحلة 3: الأخطاء المتوسطة (P2) — 13 خطأ
-
-| الخطأ | الإصلاح المختصر |
-|-------|----------------|
-| BUG-01 | إضافة regex validation للبريد في AuthPage |
-| BUG-05 | إضافة `React.memo` على ChatMessage |
-| BUG-06 | إضافة `isSubmitting` ref لمنع double-submit |
-| BUG-07 | مسح statusHistory عند تبديل المحادثة |
-| BUG-10 | إضافة تحقق حجم الملف (max 20MB) في ToolPageLayout |
-| BUG-14 | إضافة AbortController لإلغاء Computer Use |
-| BUG-20 | إضافة خصم credits بعد كل مكالمة صوتية |
-| BUG-23 | تثبيت react-virtuoso لقائمة الرسائل |
-| BUG-26 | إضافة `dir="rtl"` تلقائي بناءً على اللغة |
-| BUG-28 | إضافة Supabase Realtime subscription للمحادثة النشطة |
-| BUG-29 | طلب كلمة مرور تأكيدية قبل حذف الحساب |
-| BUG-32 | حل memory leak عبر react-virtuoso (مع BUG-23) |
-| BUG-34 | نفس BUG-20 (مكرر) |
+### 1.5 الأسئلة الذكية والمربعات لا تظهر
+- **المشكلة**: الـ system prompt يطلب من AI إرسال JSON blocks لكن لا يحدث
+- **الحل**: تعزيز system prompt بتعليمات أوضح + إضافة `tool` خاص بـ `ASK_SMART_QUESTIONS` لضمان ظهور الأسئلة
+- **الملف**: `supabase/functions/chat/index.ts`
 
 ---
 
-## المرحلة 4: الأخطاء المنخفضة (P3) — 6 أخطاء
+## المرحلة 2: إصلاح Deep Research والتسوق
 
-| الخطأ | الإصلاح المختصر |
-|-------|----------------|
-| BUG-08 | إضافة `useDeferredValue` في AnimatedInput |
-| BUG-16 | تحديد max 5 ملفات مرفقة |
-| BUG-17 | رفض الملفات الفارغة (size === 0) |
-| BUG-27 | دعم `/chat?conv=xxx` عبر useSearchParams |
-| BUG-30 | إضافة try/catch حول كل عمليات localStorage |
-| BUG-31 | إضافة reconnect logic لـ Supabase Realtime |
+### 2.1 Deep Research يعرض بيانات خام
+- **المشكلة**: البحث العميق يعرض نتائج خام ومعلومات لا يجب عرضها
+- **الحل**: تحسين system prompt للـ Deep Research ليقوم بـ:
+  - عرض الصور المرتبطة فقط
+  - تقديم تحليل عميق منظم بدلاً من إلقاء البيانات الخام
+  - استخدام `moonshotai/kimi-k2.5:nitro` للتحليل
+- **الملف**: `supabase/functions/chat/index.ts` — تحديث `buildSystemPrompt` للـ deep research
+
+### 2.2 Shopping يعطي نتائج سيئة
+- **المشكلة**: لا يستخدم الكومبيوتر، أسعار بالدولار بدل العملة المحلية
+- **الحل**:
+  - تفعيل `BROWSE_WEBSITE` تلقائياً في Shopping mode
+  - إضافة اكتشاف الموقع الجغرافي في shopping prompt ("مصر" → بحث بالعربي + EGP)
+  - استخدام `moonshotai/kimi-k2.5:nitro` للتسوق
+- **الملف**: `supabase/functions/chat/index.ts`
 
 ---
 
-## الملفات المتأثرة
+## المرحلة 3: المكالمة الصوتية (Voice Call)
 
-```text
-المرحلة 1 (P0):
-  supabase/functions/computer-use/index.ts    — إعادة تفعيل مفاتيح + Canva task
-  supabase/functions/chat/index.ts            — slides عبر computer-use
-  src/pages/voice/VoiceCallPage.tsx           — فحص Deepgram قبل البدء
+### 3.1 إصلاح Voice Call
+- **المشكلة الحالية**: المدخل (STT) من Deepgram ✅ + الرد النصي من chat function ✅ + الـ TTS من `generate-voice` (LemonData) — هذا الأخير بطيء أو معطل
+- **الحل**: تحويل TTS إلى OpenRouter model سريع ورخيص:
+  - استخدام `openai/tts-1` عبر OpenRouter بدلاً من LemonData
+  - أو استخدام Deepgram TTS (لأنه موجود فعلاً ومتاح)
+- **الملفات**: `supabase/functions/generate-voice/index.ts`, `src/pages/voice/VoiceCallPage.tsx`
 
-المرحلة 2 (P1):
-  src/pages/ChatPage.tsx                      — تقسيم لـ 4 مكونات
-  src/components/chat/ChatMessages.tsx         — جديد
-  src/components/chat/ChatInput.tsx            — جديد
-  src/components/chat/ChatDialogs.tsx          — جديد
-  supabase/functions/generate-image/index.ts   — fallback 402
-  supabase/functions/chat/index.ts             — رسالة 402 واضحة + CORS
-  src/pages/FilesPage.tsx                      — mammoth.js لـ DOCX
-  كل Edge Functions                           — CORS تقييد
+---
 
-المرحلة 3 (P2):
-  src/pages/AuthPage.tsx                       — email validation
-  src/components/ChatMessage.tsx               — React.memo
-  src/components/ThinkingLoader.tsx            — مسح statusHistory
-  src/components/ToolPageLayout.tsx            — تحقق حجم الملف
-  src/pages/voice/VoiceCallPage.tsx            — credits deduction
-  src/pages/settings/DeleteAccountPage.tsx     — تأكيد بكلمة مرور
+## المرحلة 4: أدوات الصوت
 
-المرحلة 4 (P3):
-  src/components/AnimatedInput.tsx             — useDeferredValue
-  src/pages/FilesPage.tsx                      — حد ملفات + فارغ
-  src/pages/ChatPage.tsx                       — deep linking
-  src/hooks/useLocalCache.ts                   — try/catch
-```
+### 4.1 أدوات الصوت تظل تحمّل بلا نهاية
+- **المشكلة**: `generate-voice` يستخدم LemonData للـ TTS وقد يفشل أو يتأخر بدون timeout واضح
+- **الحل**: 
+  - إضافة timeout 30 ثانية مع رسالة خطأ واضحة
+  - تحويل نماذج الصوت لـ OpenRouter (أرخص وأسرع)
+  - إضافة fallback: OpenRouter → LemonData
+- **الملف**: `supabase/functions/generate-voice/index.ts`
+
+### 4.2 زر التسجيل في المتصفح لكل أدوات الصوت
+- **المشكلة**: بعض أدوات الصوت لا تدعم التسجيل من المتصفح
+- **الحل**: إضافة مكون `AudioRecorder` مشترك يستخدم `MediaRecorder API` في:
+  - TTSPage, VoiceChangerPage, CloneVoicePage, VoiceTranslatePage, NoiseRemoverPage
+- **الملفات**: إنشاء `src/components/AudioRecorder.tsx` + تحديث صفحات الصوت
+
+---
+
+## المرحلة 5: صفحة الملفات
+
+### 5.1 استخدام kimi-k2.5:nitro في الملفات
+- **الملف**: `src/pages/FilesPage.tsx` — تغيير النموذج من `gemini-2.5-flash-lite` إلى `moonshotai/kimi-k2.5:nitro`
+
+### 5.2 إعادة تصميم عرض Slides
+- **المشكلة**: عرض Slides حالياً بشكل بحث قبيح
+- **الحل**: تحويله لتصميم مشابه لسجل البرمجة (timeline/history cards) مع:
+  - بطاقات أنيقة لكل عرض تقديمي
+  - أيقونات gradient
+  - تاريخ الإنشاء
+  - زر Preview وDownload
+- **الملف**: `src/pages/FilesPage.tsx`
+
+### 5.3 تحسين Preview
+- **المشكلة**: البريفيو مقرف
+- **الحل**: إعادة تصميم Preview modal ليكون أنيق مع:
+  - شريط أدوات نظيف
+  - عرض بملء الشاشة بشكل افتراضي
+  - أزرار تحميل واضحة
+- **الملف**: `src/pages/FilesPage.tsx`
+
+### 5.4 MagicSlides Integration
+- **المشكلة**: يجب استخدام MagicSlides API بدلاً من HTML slides
+- **الحل**: إنشاء edge function `generate-slides` تقوم بـ:
+  1. البحث والمحتوى من خلالنا (chat function)
+  2. إرسال المحتوى المنظم لـ MagicSlides API
+  3. نظام تدوير مفاتيح ذكي (جدول `api_keys` مع service = "magicslides")
+- **الملفات**: إنشاء `supabase/functions/generate-slides/index.ts`, تحديث `FilesPage.tsx`
+- **ملاحظة**: يحتاج مفتاح API من المستخدم أولاً — سأبني البنية التحتية وأضيف placeholder
+
+---
+
+## المرحلة 6: تحسينات عامة
+
+### 6.1 رسائل خطأ واضحة بدون أسماء مزودين
+- **المشكلة**: رسائل الخطأ تكشف أسماء مزودي الخدمة (LemonData, OpenRouter, Deepgram)
+- **الحل**: استبدال كل رسائل الخطأ في:
+  - Edge functions: إخفاء أسماء المزودين في console.error فقط، وإرجاع رسائل عامة للمستخدم
+  - Frontend: رسائل toast عامة مثل "حدث خطأ، حاول مرة أخرى"
+- **الملفات**: كل edge functions + صفحات الواجهة
+
+### 6.2 عدم طلب المدخل مرتين
+- **المشكلة**: إذا رفع المستخدم صورة في Landing page، يُطلب منه مرة أخرى داخل الأداة
+- **الحل**: تمرير الملف المرفق عبر URL params أو state عند التنقل من Landing إلى الأداة
+- **الملفات**: صفحات أدوات الصور والفيديو والصوت
+
+### 6.3 بطء Image Studio
+- **المشكلة**: يأخذ دقائق لتحميل المحتوى
+- **الحل**: إضافة timeout + loading states + lazy loading للصور + pagination
+- **الملف**: `src/pages/ImageStudioPage.tsx`
+
+---
+
+## المرحلة 7: باقي الملفات (CSS + JS)
+- **المشكلة**: Resume, Spreadsheet, Document تُنشأ كـ HTML
+- **الحل**: إبقاء HTML مع تحسين CSS والـ JavaScript المضمن لجعلها تفاعلية وجميلة — هذا هو الأسلوب الحالي وهو الأنسب
+
+---
 
 ## ترتيب التنفيذ
 
-1. المرحلة 1 (P0) — الأخطاء الحرجة اولا
-2. المرحلة 2 (P1) — تقسيم ChatPage + fallback + CORS
-3. المرحلة 3 (P2) — تحسينات الاداء والامان
-4. المرحلة 4 (P3) — تحسينات صغيرة
+```text
+المرحلة 1 (P0): إصلاح الشات — تحليل الصور، kimi model، لينكات، كومبيوتر، أسئلة ذكية
+المرحلة 2 (P0): Deep Research + Shopping
+المرحلة 3 (P1): Voice Call
+المرحلة 4 (P1): أدوات الصوت + تسجيل المتصفح
+المرحلة 5 (P1): الملفات — model + slides تصميم + preview + MagicSlides
+المرحلة 6 (P2): رسائل خطأ + عدم تكرار المدخل + Image Studio
+المرحلة 7 (P3): تحسين CSS/JS للملفات
+```
+
+## التفاصيل التقنية
+
+### النماذج المستخدمة بعد التحديث:
+| الاستخدام | النموذج | المزود |
+|-----------|---------|--------|
+| شات عادي / casual | `google/gemini-2.5-flash-lite-preview-09-2025` | OpenRouter |
+| مهام معقدة / تحليل صور / deep research / shopping | `moonshotai/kimi-k2.5:nitro` | OpenRouter |
+| ملفات (FilesPage) | `moonshotai/kimi-k2.5:nitro` | OpenRouter |
+| مكالمة صوتية (chat) | `google/gemini-2.5-flash-lite-preview-09-2025` | OpenRouter |
+| TTS (الصوت) | OpenRouter TTS أو LemonData fallback | OpenRouter → LemonData |
+
+### الملفات المتأثرة:
+```text
+supabase/functions/chat/index.ts              — model routing + shopping + deep research + smart questions + error messages
+supabase/functions/generate-voice/index.ts     — OpenRouter TTS + timeout
+supabase/functions/generate-slides/index.ts    — جديد — MagicSlides integration
+src/pages/ChatPage.tsx                        — computer use badge + error messages
+src/pages/FilesPage.tsx                       — kimi model + slides redesign + preview
+src/pages/voice/VoiceCallPage.tsx             — TTS fix
+src/components/ChatMessage.tsx                — link formatting
+src/components/AudioRecorder.tsx              — جديد — browser recording
+src/components/ThinkingLoader.tsx             — computer use detection
+src/lib/streamChat.ts                        — error messages
+صفحات أدوات الصوت المتعددة                    — إضافة AudioRecorder
+```
 
