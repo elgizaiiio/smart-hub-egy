@@ -12,6 +12,7 @@ import SmartQuestionCard from "@/components/SmartQuestionCard";
 import FilesInputBar from "@/components/files/FilesInputBar";
 import ResearchFlow from "@/components/files/ResearchFlow";
 import type { ResearchStep } from "@/components/files/ResearchFlow";
+import { buildPreviewHtml } from "@/lib/filesHtmlBuilders";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -385,9 +386,7 @@ Output ONLY the complete HTML code with no explanations.`,
         return;
       }
 
-      let html = content;
-      const htmlMatch = content.match(/```html\n([\s\S]*?)```/);
-      if (htmlMatch) html = htmlMatch[1];
+      const html = buildPreviewHtml({ content, agent: activeAgent, request: userInput });
 
       // Get natural AI description
       let description = "Your document is ready. Click Preview to view it.";
@@ -587,7 +586,7 @@ Output ONLY the complete HTML code with no explanations.`,
                     <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Example</p>
                     <motion.button
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => { setActiveAgent("slides"); setInput("Create a presentation about Egypt"); }}
+                      onClick={() => { setActiveAgent("slides"); }}
                       className="w-full rounded-2xl overflow-hidden border border-border/30 bg-secondary/30 text-left hover:bg-secondary/50 transition-colors"
                     >
                       <div className="w-full h-36 overflow-hidden">

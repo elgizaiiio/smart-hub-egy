@@ -342,9 +342,8 @@ serve(async (req) => {
     const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
     const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
     const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch || isShopping) && (hasSearchIntent(latestUserText) || isDeepResearch || isShopping);
-    // Browser escalation: much broader — any task that needs real web interaction
     const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (
-      wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || hasBrowserEscalation(latestUserText) || isShopping || isDeepResearch
+      wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || hasBrowserEscalation(latestUserText) || isShopping || isDeepResearch || needsSearch
     );
     const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
     const shouldLoadHyperbrowserKey = needsBrowserIntent;
@@ -893,6 +892,9 @@ async function handleToolCalls(
   const pushStatus = (status: string) => {
     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status })}\n\n`));
   };
+  const pushBrowser = (browser: Record<string, unknown>) => {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ browser })}\n\n`));
+  };
   const shouldIncludeImages = (query: string, explicit: boolean) => {
     if (isDeepResearch || explicit) return true;
     return /(who is|biography|profile|photos|images|picture|person|celebrity|founder|actor|singer|player|president|ممثل|مطرب|لاعب|شخص|شخصية|صور|صورة|مؤسس)/i.test(query);
@@ -1019,10 +1021,10 @@ async function handleToolCalls(
         const fullTask = browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal;
 
         pushStatus("Opening smart browser...");
+        pushBrowser({ currentStep: "بدأت استخدام Megsy Computer", currentUrl: browseUrl || "about:blank" });
         if (browseUrl) pushStatus("Navigating to the website...");
 
         try {
-          // Start async task
           const startResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent`, {
             method: "POST",
             headers: { "x-api-key": HB_API_KEY, "Content-Type": "application/json" },
@@ -1039,11 +1041,16 @@ async function handleToolCalls(
           if (!jobId) { pushStatus("No task ID returned"); continue; }
 
           pushStatus("Browser opened — executing task...");
+          pushBrowser({
+            currentStep: "المتصفح يعمل الآن",
+            currentUrl: browseUrl || startData.url || "about:blank",
+            liveUrl: startData.liveUrl || startData.sessionUrl || startData.previewUrl || undefined,
+            screenshotUrl: startData.screenshotUrl || undefined,
+          });
 
-          // Poll for status with live step streaming
           let lastStepCount = 0;
           let pollCount = 0;
-          const MAX_POLLS = 45; // ~90 seconds
+          const MAX_POLLS = 45;
           let finalResult: any = null;
 
           const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -1060,14 +1067,27 @@ async function handleToolCalls(
               if (!statusResp.ok) continue;
 
               const statusData = await statusResp.json();
+              pushBrowser({
+                currentUrl: statusData.currentUrl || statusData.url || browseUrl || undefined,
+                liveUrl: statusData.liveUrl || statusData.sessionUrl || statusData.previewUrl || startData.liveUrl || undefined,
+                screenshotUrl: statusData.screenshotUrl || statusData.latestScreenshot || undefined,
+                currentStep: statusData.currentStep || undefined,
+              });
 
-              // Stream new steps live
               if (statusData.steps && Array.isArray(statusData.steps)) {
                 const newSteps = statusData.steps.slice(lastStepCount);
                 for (const step of newSteps) {
                   const desc = step.description || step.next_goal || step.action || "";
-                  const stepUrl = step.url || "";
-                  if (desc) pushStatus(stepUrl ? `${desc} — ${stepUrl}` : desc);
+                  const stepUrl = step.url || statusData.currentUrl || statusData.url || "";
+                  if (desc) {
+                    pushStatus(stepUrl ? `${desc} — ${stepUrl}` : desc);
+                    pushBrowser({
+                      currentStep: desc,
+                      currentUrl: stepUrl || undefined,
+                      liveUrl: statusData.liveUrl || statusData.sessionUrl || statusData.previewUrl || undefined,
+                      screenshotUrl: step.screenshotUrl || statusData.screenshotUrl || statusData.latestScreenshot || undefined,
+                    });
+                  }
                 }
                 lastStepCount = statusData.steps.length;
               }
@@ -1086,6 +1106,12 @@ async function handleToolCalls(
           if (finalResult) {
             const output = finalResult.output || finalResult.result || JSON.stringify(finalResult);
             pushStatus("Browsing completed");
+            pushBrowser({
+              currentStep: "انتهيت من جمع البيانات",
+              currentUrl: finalResult.currentUrl || finalResult.url || browseUrl || undefined,
+              liveUrl: finalResult.liveUrl || finalResult.sessionUrl || finalResult.previewUrl || undefined,
+              screenshotUrl: finalResult.screenshotUrl || finalResult.latestScreenshot || undefined,
+            });
             allSearchResults.push(`Browser Agent Result for "${browseGoal}":\n${typeof output === 'string' ? output : JSON.stringify(output, null, 2)}`);
           } else {
             pushStatus("Browser task timed out");

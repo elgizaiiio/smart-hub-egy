@@ -1,6 +1,13 @@
 type MsgContent = string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
 type Msg = { role: "user" | "assistant"; content: MsgContent };
 
+type BrowserPayload = {
+  currentUrl?: string;
+  liveUrl?: string;
+  screenshotUrl?: string;
+  currentStep?: string;
+};
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export async function streamChat({
@@ -19,6 +26,7 @@ export async function streamChat({
   onImages,
   onProducts,
   onStatus,
+  onBrowser,
   signal,
 }: {
   messages: Msg[];
@@ -36,6 +44,7 @@ export async function streamChat({
   onImages?: (images: string[]) => void;
   onProducts?: (products: any[]) => void;
   onStatus?: (status: string) => void;
+  onBrowser?: (browser: BrowserPayload) => void;
   signal?: AbortSignal;
 }) {
   try {
@@ -68,15 +77,10 @@ export async function streamChat({
     }
 
     const handlePayload = (parsed: any) => {
-      if (parsed.status && typeof parsed.status === "string") {
-        onStatus?.(parsed.status);
-      }
-      if (parsed.images && Array.isArray(parsed.images)) {
-        onImages?.(parsed.images);
-      }
-      if (parsed.products && Array.isArray(parsed.products)) {
-        onProducts?.(parsed.products);
-      }
+      if (parsed.status && typeof parsed.status === "string") onStatus?.(parsed.status);
+      if (parsed.images && Array.isArray(parsed.images)) onImages?.(parsed.images);
+      if (parsed.products && Array.isArray(parsed.products)) onProducts?.(parsed.products);
+      if (parsed.browser && typeof parsed.browser === "object") onBrowser?.(parsed.browser);
       const content = parsed.choices?.[0]?.delta?.content as string | undefined;
       if (content) onDelta(content);
     };

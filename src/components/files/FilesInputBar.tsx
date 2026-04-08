@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Paperclip, Image, Globe, ArrowUp, Loader2, X, FileText } from "lucide-react";
-import AgentBadge from "@/components/AgentBadge";
 import MentionDropdown from "@/components/MentionDropdown";
 import type { AgentDef } from "@/lib/agentRegistry";
 
@@ -190,26 +189,21 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
             </AnimatePresence>
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {activeAgent && (
-                <AgentBadge agentId={activeAgent} onRemove={() => onAgentChange(null)} size="sm" />
-              )}
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
-                placeholder={displayedPlaceholder || "Describe what you need..."}
-                rows={1}
-                autoComplete="off"
-                autoCorrect="off"
-                enterKeyHint="send"
-                className="flex-1 min-w-[100px] bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-2 max-h-[180px]"
-                style={{ minHeight: focused || input ? "64px" : (compact ? "40px" : "56px") }}
-              />
-            </div>
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              placeholder={displayedPlaceholder || "Describe what you need..."}
+              rows={1}
+              autoComplete="off"
+              autoCorrect="off"
+              enterKeyHint="send"
+              className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-2 max-h-[180px]"
+              style={{ minHeight: focused || input ? "64px" : (compact ? "40px" : "56px") }}
+            />
           </div>
           <button
             onClick={onSubmit}
