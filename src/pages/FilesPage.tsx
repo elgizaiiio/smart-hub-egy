@@ -524,23 +524,30 @@ Output ONLY the complete HTML code with no explanations.`,
                 {savedFiles.length > 0 ? (
                   <div className="space-y-2">
                     <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Recent Files</p>
-                    {savedFiles.slice(0, 4).map(f => (
-                      <motion.button
-                        key={f.id}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => loadOldConversation(f.id)}
-                        className="w-full flex items-center gap-3 p-3 rounded-2xl bg-secondary/40 border border-border/30 text-left hover:bg-secondary/60 transition-colors"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                          <FileText className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</p>
-                        </div>
-                        <Play className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
-                      </motion.button>
-                    ))}
+                    {savedFiles.slice(0, 4).map(f => {
+                      const gradients = [
+                        "from-violet-500/20 to-purple-600/20",
+                        "from-blue-500/20 to-cyan-500/20",
+                        "from-emerald-500/20 to-teal-500/20",
+                        "from-orange-500/20 to-amber-500/20",
+                      ];
+                      return (
+                        <motion.button
+                          key={f.id}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => loadOldConversation(f.id)}
+                          className="w-full flex items-center gap-3 p-3 rounded-2xl bg-secondary/40 border border-border/30 text-left hover:bg-secondary/60 transition-colors"
+                        >
+                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradients[savedFiles.indexOf(f) % gradients.length]} flex items-center justify-center shrink-0`}>
+                            <FileText className="w-5 h-5 text-foreground/60" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
+                          </div>
+                          <Play className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="space-y-2">

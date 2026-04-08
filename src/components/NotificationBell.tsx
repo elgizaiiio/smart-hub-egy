@@ -46,7 +46,7 @@ const NotificationBell = () => {
   };
 
   return (
-    <Drawer>
+    <Drawer direction="top">
       <DrawerTrigger asChild>
         <button
           className="relative flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors w-9 h-9"
