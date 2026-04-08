@@ -212,18 +212,17 @@ serve(async (req) => {
     const isDeepResearch = deepResearch === true;
     const requestedModel = normalizeRequestedModel(typeof model === "string" ? model : null);
 
-    let modelId: string = requestedModel ?? DEFAULT_WAVESPEED_MODEL;
-    let apiUrl = WAVESPEED_URL;
+    let modelId: string = requestedModel ?? DEFAULT_MODEL;
+    let apiUrl = OPENROUTER_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
-    let provider: "wavespeed" | "lemondata" = "wavespeed";
+    let provider: "openrouter" | "lemondata" = "openrouter";
 
-    // Try WaveSpeed first
-    const wsKey = await getWaveSpeedLlmKey(sb);
-    if (wsKey) {
-      apiKey = wsKey.api_key;
-      usedKeyId = wsKey.id;
-      provider = "wavespeed";
+    // Try OpenRouter first (env secret)
+    const orKey = getOpenRouterKey();
+    if (orKey) {
+      apiKey = orKey;
+      provider = "openrouter";
     } else {
       // Fallback to LemonData
       const lemonKey = await getLemonDataKey(sb);
