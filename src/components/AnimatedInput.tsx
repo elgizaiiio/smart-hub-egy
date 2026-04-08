@@ -334,6 +334,16 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             <Plus className="w-5 h-5" />
           </button>
 
+          {/* Inline mode badge next to + button */}
+          {activeAgent && activeAgent !== "normal" && (
+            <span className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium">
+              {activeAgent === "deep-research" ? "Deep Research" : activeAgent === "shopping" ? "Shopping" : activeAgent === "learning" ? "Learning" : activeAgent}
+              <button onClick={onAgentRemove} className="ml-0.5 hover:text-foreground transition-colors" aria-label="Clear mode">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Agent and model shown inline in text, no separate badges */}

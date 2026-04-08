@@ -138,11 +138,16 @@ function buildArtifactsFromText(text: string): FileArtifact[] {
 }
 
 function hasSearchIntent(text: string): boolean {
-  return /(latest|news|price|prices|compare|comparison|research|search|find|current|today|recent|web|website|source|sources|review|reviews|who is|what is|when did|where is|how to|ابحث|بحث|اخر|آخر|سعر|اسعار|قارن|مقارنة|معلومات|مصادر|مين|ايه|ما هو|ما هي|شو)/i.test(text);
+  return /(latest|news|price|prices|compare|comparison|research|search|find|current|today|recent|web|website|source|sources|review|reviews|who is|what is|when did|where is|how to|what happened|statistics|stats|data|report|info|information|ابحث|بحث|اخر|آخر|سعر|اسعار|قارن|مقارنة|معلومات|مصادر|مين|ايه|ما هو|ما هي|شو|كم|متى|اين|وين|ليه|ليش)/i.test(text);
 }
 
 function hasWebsiteIntent(text: string): boolean {
-  return /(website|site|url|link|domain|browser|web page|page|canva|dashboard|store|amazon|jumia|noon|login|sign in|portal|checkout|موقع|لينك|رابط|متصفح|كانفا|صفحة|سجل الدخول|ادخل|افتح)/i.test(text);
+  return /(website|site|url|link|domain|browser|web page|page|canva|dashboard|store|amazon|jumia|noon|login|sign in|portal|checkout|extract.*from|scrape|data from|check.*website|visit|open.*site|go to|browse|compare.*stores|compare.*prices|live.*price|real.*price|موقع|لينك|رابط|متصفح|كانفا|صفحة|سجل الدخول|ادخل|افتح|استخرج|بيانات من|تصفح|زر|اذهب|شوف الموقع|افتح الموقع)/i.test(text);
+}
+
+function hasBrowserEscalation(text: string): boolean {
+  // Broader detection for tasks that genuinely need a browser
+  return /(fill.*form|submit|download.*from|screenshot|log.*in|sign.*up|book.*ticket|order|purchase|buy.*from|track.*order|check.*status|monitor|watch.*price|تعبئة|نموذج|طلب|اشتري|حجز|تتبع)/i.test(text);
 }
 
 function normalizeRequestedModel(rawModel: string | null): string | null {
@@ -320,8 +325,11 @@ serve(async (req) => {
     const wantsSlideTool = activeAgent === "slides" || /@(slides|files)\b|\b(slide|slides|presentation|pitch deck|ppt|pptx|powerpoint|عرض|شرائح|سلايد|سلايدز|برزنتيشن|بوربوينت|كانفا)\b/i.test(latestUserText);
     const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
     const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
-    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && hasSearchIntent(latestUserText);
-    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || isShopping || isDeepResearch);
+    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch || isShopping) && (hasSearchIntent(latestUserText) || isDeepResearch || isShopping);
+    // Browser escalation: much broader — any task that needs real web interaction
+    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (
+      wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || hasBrowserEscalation(latestUserText) || isShopping || isDeepResearch
+    );
     const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
     const shouldLoadHyperbrowserKey = needsBrowserIntent;
 
@@ -638,6 +646,7 @@ DEEP RESEARCH MODE:
 - For EVERY search, set include_images=true to gather relevant visual content.
 - Cover: 1) General overview 2) Latest developments 3) Key data & expert opinions 4) Visual references
 - While researching people, brands, celebrities, athletes, or public figures, ALWAYS gather photos.
+- If BROWSE_WEBSITE is available, use it to get live data from important sources.
 
 CRITICAL OUTPUT RULES:
 - NEVER dump raw search results, API responses, JSON blobs, or unprocessed data
@@ -649,17 +658,26 @@ CRITICAL OUTPUT RULES:
 - Format all links as clickable text: [Source Name](url)
 - Use tables only for structured comparisons
 
-LANGUAGE RULE:
-- ALWAYS respond in the SAME language the user used in their query
-- If the user writes in Arabic, the ENTIRE report must be in Arabic
-- Never switch languages mid-report
+LANGUAGE RULE (CRITICAL):
+- ALWAYS respond in the EXACT SAME language the user used in their query
+- If the user writes in Arabic (any dialect), the ENTIRE report MUST be in Arabic including ALL section headers
+- If the user writes in English, respond in English
+- Never mix languages within the report
+- Section headers must match the user's language
 
-REPORT STRUCTURE:
+REPORT STRUCTURE (adapt headers to user's language):
 ## ملخص تنفيذي / Executive Summary
 ## النتائج الرئيسية / Key Findings  
 ## تحليل مفصل / Detailed Analysis (with sub-sections and inline images)
 ## بيانات وإحصائيات / Data & Statistics (use tables for comparisons)
 ## المصادر / Sources (formatted as clickable links)
+
+IMAGE HANDLING:
+- Include ALL relevant images inline in the report using ![alt text](image_url)
+- For people/celebrities: include their photos prominently
+- For products: include product images
+- For places: include location photos
+- Place images near the text that discusses them, not all at the end
 
 - Use markdown extensively: headers, bold, bullet points, numbered lists, tables.
 - Cite ALL sources: [Source Name](URL)
@@ -718,9 +736,10 @@ ${userContext}`;
 
   // Shopping mode
   if (mode === "shopping") {
-    // Detect user location/currency from text
-    const isEgypt = /(مصر|egypt|القاهرة|cairo|جنيه|egp|جمبري|اسكندرية|الجيزة)/i.test(userContext + " " + mode);
-    const isSaudi = /(السعودية|saudi|riyal|sar|جدة|الرياض)/i.test(userContext);
+    // Detect user location/currency from their text AND user context
+    const combinedText = (userContext + " " + latestUserText).toLowerCase();
+    const isEgypt = /(مصر|egypt|القاهرة|cairo|جنيه|egp|اسكندرية|الجيزة|نون مصر|جوميا|امازون مصر|بي تك)/i.test(combinedText) || /[\u0600-\u06FF]/.test(latestUserText);
+    const isSaudi = /(السعودية|saudi|riyal|sar|جدة|الرياض|نون السعودية)/i.test(combinedText);
     const localCurrency = isEgypt ? "EGP (الجنيه المصري)" : isSaudi ? "SAR (الريال السعودي)" : "the user's local currency";
     const localStores = isEgypt ? "Noon Egypt, Jumia Egypt, Amazon.eg, B.Tech, 2B" : isSaudi ? "Noon KSA, Amazon.sa, Jarir, Extra" : "local online stores";
     
@@ -1295,10 +1314,10 @@ async function handleToolCalls(
       ...originalBody.messages,
       { role: "assistant", content: "I searched and found the following information. Let me synthesize this into a comprehensive response." },
       { role: "user", content: `Here are the search results:\n\n${combinedContext}\n\n${isShopping 
-        ? "Format the products nicely with prices, sellers, ratings, and purchase links. Compare options and give clear recommendations. Use tables for comparisons." 
+        ? "Format the products nicely with prices, sellers, ratings, and purchase links. Compare options and give clear recommendations. Use tables for comparisons. ALWAYS use the same language the user used. If the user wrote in Arabic, write EVERYTHING in Arabic." 
         : isDeepResearch 
-          ? "Write a detailed research report with sections: Executive Summary, Key Findings, Detailed Analysis, Data & Statistics, Conclusion with Recommendations, and Sources." 
-          : "Synthesize the information naturally and cite sources with [Source Name](URL)."}` },
+          ? "Write a detailed, polished research report. CRITICAL: Use the SAME LANGUAGE as the user's original query. If they wrote in Arabic, the ENTIRE report must be in Arabic. Include relevant images inline with ![description](url). Structure: Executive Summary → Key Findings → Detailed Analysis → Data & Statistics → Sources. Do NOT show any raw search data, internal steps, or tool outputs." 
+          : "Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language."}` },
     ];
 
     const secondBody: any = {

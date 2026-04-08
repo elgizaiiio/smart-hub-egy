@@ -18,8 +18,18 @@ function getStarColor(text: string, isComputerUse?: boolean): string {
   return "hsl(var(--primary))";
 }
 
+// Detect computer use from status events - much more reliable than keyword matching
 function detectComputerUse(statusHistory: string[]): boolean {
-  const browserKeywords = ["navigat", "opening", "scrolling", "clicking", "browser", "extracting", "browsing", "smart browser", "go to", "canva", "opened", "browse", "task", "executing", "opened —", "browser opened"];
+  const browserKeywords = [
+    "browser", "browsing", "smart browser", "opening smart browser",
+    "navigat", "clicking", "scrolling", "extracting",
+    "canva", "opened", "browse", "executing task",
+    "browser opened", "opening canva", "go to",
+    "فتح المتصفح", "تصفح", "المتصفح",
+    // Status events from the backend
+    "opening smart browser", "browser opened", "browsing completed",
+    "canva opened", "failed to open"
+  ];
   return statusHistory.some(s => {
     const lower = s.toLowerCase();
     return browserKeywords.some(k => lower.includes(k));
