@@ -195,36 +195,24 @@ serve(async (req) => {
       } catch { /* skip */ }
     }
 
-    // ── Model routing ──
+    // ── Model routing — LemonData PRIMARY (fastest models) ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    // PRIMARY: Lovable Gateway (gemini-2.5-flash) — fastest
-    // FALLBACK: LemonData
-    let modelId: string = requestedModel ?? "google/gemini-2.5-flash";
-    let apiUrl = LOVABLE_API_KEY ? "https://ai.gateway.lovable.dev/v1/chat/completions" : LEMONDATA_URL;
+    // Use fastest LemonData model: gpt-4o-mini for speed, claude-haiku-4-5 for quality
+    let modelId: string = requestedModel ?? (isCasualEarly ? "gpt-4o-mini" : "claude-haiku-4-5");
+    let apiUrl = LEMONDATA_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
 
-    if (LOVABLE_API_KEY) {
-      // Use Lovable Gateway as primary (fastest)
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      apiKey = LOVABLE_API_KEY;
-      if (!requestedModel) modelId = "google/gemini-2.5-flash";
+    const lemonKey = await getLemonDataKey(sb);
+    if (lemonKey) {
+      apiKey = lemonKey.api_key;
+      usedKeyId = lemonKey.id;
     } else {
-      // Fallback to LemonData
-      apiUrl = LEMONDATA_URL;
-      modelId = requestedModel ?? "claude-haiku-4-5";
-      const lemonKey = await getLemonDataKey(sb);
-      if (lemonKey) {
-        apiKey = lemonKey.api_key;
-        usedKeyId = lemonKey.id;
-      } else {
-        return new Response(JSON.stringify({ error: "No API keys available" }), {
-          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      return new Response(JSON.stringify({ error: "No API keys available" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Build Composio tools
