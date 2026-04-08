@@ -339,6 +339,7 @@ export const TemplateGrid = ({
   gender?: "male" | "female";
   onGenderChange?: (g: "male" | "female") => void;
   hideNames?: boolean;
+}) => {
   const filtered = gender ? templates.filter(t => t.gender === "both" || t.gender === gender) : templates;
 
   return (
@@ -365,7 +366,7 @@ export const TemplateGrid = ({
                 <Sparkles className="w-8 h-8 text-muted-foreground/20" />
               </div>
             )}
-            <div className="p-2.5"><p className="text-sm font-medium text-foreground">{t.name}</p></div>
+            {!hideNames && <div className="p-2.5"><p className="text-sm font-medium text-foreground">{t.name}</p></div>}
           </motion.button>
         ))}
       </div>
