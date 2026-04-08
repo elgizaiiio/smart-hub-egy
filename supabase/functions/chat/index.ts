@@ -1314,10 +1314,10 @@ async function handleToolCalls(
       ...originalBody.messages,
       { role: "assistant", content: "I searched and found the following information. Let me synthesize this into a comprehensive response." },
       { role: "user", content: `Here are the search results:\n\n${combinedContext}\n\n${isShopping 
-        ? "Format the products nicely with prices, sellers, ratings, and purchase links. Compare options and give clear recommendations. Use tables for comparisons." 
+        ? "Format the products nicely with prices, sellers, ratings, and purchase links. Compare options and give clear recommendations. Use tables for comparisons. ALWAYS use the same language the user used. If the user wrote in Arabic, write EVERYTHING in Arabic." 
         : isDeepResearch 
-          ? "Write a detailed research report with sections: Executive Summary, Key Findings, Detailed Analysis, Data & Statistics, Conclusion with Recommendations, and Sources." 
-          : "Synthesize the information naturally and cite sources with [Source Name](URL)."}` },
+          ? "Write a detailed, polished research report. CRITICAL: Use the SAME LANGUAGE as the user's original query. If they wrote in Arabic, the ENTIRE report must be in Arabic. Include relevant images inline with ![description](url). Structure: Executive Summary → Key Findings → Detailed Analysis → Data & Statistics → Sources. Do NOT show any raw search data, internal steps, or tool outputs." 
+          : "Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language."}` },
     ];
 
     const secondBody: any = {
