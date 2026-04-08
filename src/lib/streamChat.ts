@@ -56,7 +56,7 @@ export async function streamChat({
       return;
     }
     if (resp.status === 402) {
-      onError?.("Credits depleted. Please add more credits to continue.");
+      onError?.("الرصيد غير كافٍ. يرجى شحن رصيدك للاستمرار.");
       onDone();
       return;
     }

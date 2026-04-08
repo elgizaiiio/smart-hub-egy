@@ -9,6 +9,7 @@ import "./VoiceCallLoader.css";
 const VoiceCallPage = () => {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<"idle" | "connecting" | "connected" | "ended">("idle");
+  const [deepgramReady, setDeepgramReady] = useState<boolean | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [statusText, setStatusText] = useState("Tap to start call");

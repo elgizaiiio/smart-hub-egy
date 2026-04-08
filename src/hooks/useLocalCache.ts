@@ -25,5 +25,9 @@ export function setCache<T>(key: string, data: T, ttlMs = 5 * 60 * 1000) {
 }
 
 export function clearCache(key: string) {
-  localStorage.removeItem(`megsy_cache_${key}`);
+  try {
+    localStorage.removeItem(`megsy_cache_${key}`);
+  } catch {
+    /* silently fail */
+  }
 }
