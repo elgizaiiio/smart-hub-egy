@@ -8,11 +8,9 @@ const corsHeaders = {
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
-const WAVESPEED_URL = "https://api.wavespeed.ai/v1/chat/completions";
-const LEGACY_WAVESPEED_MODEL = "anthropic/claude-haiku-4.5";
-const LEGACY_WAVESPEED_MODEL_ALIAS = "claude-haiku-4-5";
-const DEFAULT_WAVESPEED_MODEL = "openai/gpt-4.1-mini";
-const WAVESPEED_FALLBACK_MODELS = [DEFAULT_WAVESPEED_MODEL, "openai/gpt-4o-mini"];
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_MODEL = "google/gemini-2.5-flash-lite-preview";
+const OPENROUTER_FALLBACK_MODELS = [DEFAULT_MODEL, "google/gemini-2.5-flash-preview:thinking", "google/gemini-2.5-flash"];
 
 function safeParseToolArgs(raw: string): Record<string, unknown> {
   try {
