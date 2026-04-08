@@ -58,13 +58,89 @@ const MusicGeneratorPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Please sign in");
 
+      // Step 1: Analyze prompt and generate lyrics + tags via AI
+      toast.info("Analyzing your request...");
+      let enhancedPrompt = prompt.trim();
+      let songTitle = prompt.trim().slice(0, 50);
+      let tags = "";
+
+      try {
+        const aiResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({
+            messages: [{
+              role: "user",
+              content: `Analyze this music request and generate song details. Return ONLY a JSON object, no other text:
+{"title": "short catchy title", "lyrics": "full song lyrics (4-8 lines)", "tags": "genre tags like: pop, arabic, emotional, female vocal", "enhanced_prompt": "detailed music description for AI generation"}
+
+User request: "${prompt.trim()}"
+
+Rules:
+- Match the language of the request (Arabic → Arabic lyrics)
+- Choose appropriate genre/style
+- If they mention a singer's style, incorporate it in tags
+- Keep lyrics poetic and natural
+- Tags should be comma-separated music genres/moods`
+            }],
+            model: "google/gemini-2.5-flash-lite-preview-09-2025",
+          }),
+        });
+
+        if (aiResp.ok && aiResp.body) {
+          const reader = aiResp.body.getReader();
+          const decoder = new TextDecoder();
+          let aiContent = "";
+          let buf = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            let ni: number;
+            while ((ni = buf.indexOf("\n")) !== -1) {
+              let ln = buf.slice(0, ni); buf = buf.slice(ni + 1);
+              if (ln.endsWith("\r")) ln = ln.slice(0, -1);
+              if (!ln.startsWith("data: ")) continue;
+              const js = ln.slice(6).trim();
+              if (js === "[DONE]") break;
+              try { const p = JSON.parse(js); const c = p.choices?.[0]?.delta?.content; if (c) aiContent += c; } catch {}
+            }
+          }
+
+          // Parse JSON from AI response
+          const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.title) songTitle = parsed.title;
+            if (parsed.enhanced_prompt) enhancedPrompt = parsed.enhanced_prompt;
+            if (parsed.tags) tags = parsed.tags;
+            if (parsed.lyrics) enhancedPrompt = parsed.lyrics;
+          }
+        }
+      } catch (aiErr) {
+        console.error("AI enhance failed, using original prompt:", aiErr);
+      }
+
+      // Step 2: Generate music with enhanced data
+      toast.info("Generating your track...");
       const { data, error } = await supabase.functions.invoke("generate-voice", {
-        body: { model_id: "suno_music", prompt: prompt.trim(), type: "music" },
+        body: { 
+          model_id: "suno_music", 
+          prompt: enhancedPrompt, 
+          type: "music",
+          settings: { title: songTitle, tags: tags || undefined }
+        },
       });
       if (error) throw error;
 
+      if (data?.fallback || data?.error) {
+        toast.error(data.error || "Music generation is temporarily unavailable.");
+        setGenerating(false);
+        return;
+      }
+
       if (data?.status === "completed" && data?.url) {
-        const song = await saveSong(user.id, prompt.trim(), data.url, data.title);
+        const song = await saveSong(user.id, prompt.trim(), data.url, songTitle);
         if (song) navigate(`/voice/music/${song.id}`);
         setPrompt("");
         setGenerating(false);
@@ -74,11 +150,8 @@ const MusicGeneratorPage = () => {
       if (data?.task_id) {
         const taskId = data.task_id;
         const keyId = data.key_id;
-        // Navigate to a waiting/player page immediately
-        // Save a placeholder song and navigate
-        const placeholderSong = await saveSong(user.id, prompt.trim(), "", data.title || prompt.trim().slice(0, 50));
+        const placeholderSong = await saveSong(user.id, prompt.trim(), "", songTitle);
         if (placeholderSong) {
-          // Navigate to player page which will handle polling
           navigate(`/voice/music/${placeholderSong.id}?task_id=${taskId}&key_id=${keyId}`);
         }
         setPrompt("");
@@ -86,9 +159,9 @@ const MusicGeneratorPage = () => {
         return;
       }
 
-      toast.error("No audio returned");
+      toast.error("Music generation failed. Please try again.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
+      toast.error(e instanceof Error ? e.message : "Generation failed. Please try again.");
     }
     setGenerating(false);
   };

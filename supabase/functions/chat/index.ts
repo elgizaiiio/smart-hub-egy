@@ -321,7 +321,7 @@ serve(async (req) => {
     const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
     const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
     const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && hasSearchIntent(latestUserText);
-    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || isShopping);
+    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || isShopping || isDeepResearch);
     const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
     const shouldLoadHyperbrowserKey = needsBrowserIntent;
 
@@ -635,31 +635,34 @@ CRITICAL: Never introduce yourself. Never say "I'm Megsy" unless directly asked.
 
 DEEP RESEARCH MODE:
 - You MUST use the WEB_SEARCH tool 3-5 TIMES with different focused queries to gather comprehensive information.
+- For EVERY search, set include_images=true to gather relevant visual content.
 - Cover: 1) General overview 2) Latest developments 3) Key data & expert opinions 4) Visual references
-- For at least half your searches, set include_images=true.
-- While researching people, brands, founders, celebrities, athletes, politicians, or public figures, always gather relevant images too.
-- After gathering all information, synthesize into a comprehensive, well-structured research report.
+- While researching people, brands, celebrities, athletes, or public figures, ALWAYS gather photos.
 
 CRITICAL OUTPUT RULES:
-- NEVER dump raw search results, API responses, or unprocessed data to the user
-- NEVER show JSON blobs, raw URLs lists, or unformatted text
-- ALWAYS synthesize and analyze the information into a polished report
+- NEVER dump raw search results, API responses, JSON blobs, or unprocessed data
+- NEVER show raw URLs lists, search query logs, or internal processing steps
+- NEVER expose tool call details, search parameters, or intermediate steps to the user
+- The user should ONLY see the final polished research report — nothing else
+- ALWAYS synthesize and analyze ALL gathered information into ONE cohesive report
 - Include relevant images inline using markdown: ![description](url)
 - Format all links as clickable text: [Source Name](url)
-- Use tables only for structured comparisons, not raw data dumps
+- Use tables only for structured comparisons
+
+LANGUAGE RULE:
+- ALWAYS respond in the SAME language the user used in their query
+- If the user writes in Arabic, the ENTIRE report must be in Arabic
+- Never switch languages mid-report
 
 REPORT STRUCTURE:
-## Executive Summary
-## Key Findings
-## Detailed Analysis (with sub-sections)
-## Data & Statistics (use tables for comparisons)
-## Visual Evidence (include relevant images inline)
-## Conclusion with Actionable Recommendations
-## Sources (formatted as clickable links)
+## ملخص تنفيذي / Executive Summary
+## النتائج الرئيسية / Key Findings  
+## تحليل مفصل / Detailed Analysis (with sub-sections and inline images)
+## بيانات وإحصائيات / Data & Statistics (use tables for comparisons)
+## المصادر / Sources (formatted as clickable links)
 
 - Use markdown extensively: headers, bold, bullet points, numbered lists, tables.
 - Cite ALL sources: [Source Name](URL)
-- Match the user's language and dialect exactly.
 - Aim for 2000-3000+ words in final report.
 - Never use emoji.
 - End with 3-5 follow-up questions.

@@ -77,10 +77,10 @@ function extractArtifacts(text: string): FileArtifact[] {
 }
 
 const FILE_SERVICES = [
-  { id: "slides", label: "Slides", icon: Presentation, prompt: "Create a professional presentation about" },
-  { id: "resume", label: "Resume", icon: PenTool, prompt: "Create a professional resume for" },
-  { id: "spreadsheet", label: "Spreadsheet", icon: FileSpreadsheet, prompt: "Create a spreadsheet for" },
-  { id: "document", label: "Document", icon: ScrollText, prompt: "Write a professional document about" },
+  { id: "slides", label: "Slides", icon: Presentation },
+  { id: "resume", label: "Resume", icon: PenTool },
+  { id: "spreadsheet", label: "Spreadsheet", icon: FileSpreadsheet },
+  { id: "document", label: "Document", icon: ScrollText },
 ];
 
 const FilesPage = () => {
@@ -545,7 +545,7 @@ Output ONLY the complete HTML code with no explanations.`,
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 + i * 0.08 }}
-                      onClick={() => { setActiveAgent(svc.id); setInput(svc.prompt + " "); }}
+                    onClick={() => { setActiveAgent(activeAgent === svc.id ? null : svc.id); }}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all text-sm ${
                         activeAgent === svc.id
                           ? "bg-primary/10 border-primary/30 text-primary"
@@ -622,7 +622,7 @@ Output ONLY the complete HTML code with no explanations.`,
                   ) : (
                     <div className="mb-4">
                       <div className="prose-chat text-foreground text-sm mb-3">
-                        <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "").replace(/```html[\s\S]*?```/g, "")}</ReactMarkdown>
+                        <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "").replace(/```html[\s\S]*?```/g, "").replace(/```[\s\S]*?```/g, "").trim()}</ReactMarkdown>
                       </div>
                       {/* Real artifact links */}
                       {msg.artifacts && msg.artifacts.length > 0 && (

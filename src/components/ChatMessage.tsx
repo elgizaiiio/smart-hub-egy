@@ -392,7 +392,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
           )}
 
           {hasStructured && !isStreaming ? (
-            <div className="space-y-3">
+             <div className="space-y-3">
               {structuredBlocks!.map((block, idx) => {
                 if (block.type === "flow") {
                   return <FlowCard key={idx} steps={block.data.steps} onAction={(action, stepTitle) => { onStructuredAction?.(`${action}: ${stepTitle}`); }} />;
@@ -400,7 +400,32 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
                 if (block.type === "cards") {
                   return <InfoCards key={idx} items={block.data.items} onAction={(action, title) => { onStructuredAction?.(`${action}: ${title}`); }} />;
                 }
-                if (block.type === "questions") return null;
+                if (block.type === "questions") {
+                  // Render smart questions as interactive cards inline
+                  return (
+                    <div key={idx} className="space-y-2">
+                      {block.data.questions.map((q: any, qi: number) => (
+                        <div key={qi} className="rounded-xl border border-border/60 bg-secondary/30 p-4 space-y-2">
+                          {q.title && <p className="text-sm font-medium text-foreground mb-2">{q.title}</p>}
+                          <div className="flex flex-col gap-1.5">
+                            {q.options?.map((opt: string, oi: number) => (
+                              <button key={oi} onClick={() => onStructuredAction?.(opt)} className="w-full text-left px-4 py-2.5 rounded-xl border border-border/50 bg-background text-sm text-foreground hover:bg-accent/50 hover:border-primary/30 transition-colors">
+                                <span className="text-muted-foreground mr-2">{oi + 1}.</span>{opt}
+                              </button>
+                            ))}
+                          </div>
+                          {q.allowText !== false && (
+                            <input
+                              placeholder="Or type your answer..."
+                              className="w-full px-3 py-2.5 rounded-xl border border-border/50 bg-background text-sm text-foreground outline-none focus:border-primary/40 mt-2"
+                              onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) { onStructuredAction?.((e.target as HTMLInputElement).value.trim()); } }}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
                 return (
                   <div key={idx} className="prose-chat text-foreground">
                     <MarkdownRenderer content={typeof block.data === "string" ? block.data : JSON.stringify(block.data)} onLinkClick={handleLinkClick} onPreviewCode={handlePreviewCode} />

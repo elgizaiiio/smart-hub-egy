@@ -860,7 +860,14 @@ Ask me anything to get started!`;
         {/* Bottom input - floating with blur */}
         <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
-              {/* Mode badge removed — agent modes shown inline in input */}
+              {/* Active mode indicator */}
+              {chatMode !== "normal" && (
+                <div className="flex justify-center">
+                  <span className="text-[10px] font-medium px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {chatMode === "deep-research" ? "Deep Research" : chatMode === "shopping" ? "Shopping" : chatMode === "learning" ? "Learning" : chatMode}
+                  </span>
+                </div>
+              )}
 
               {renderAttachments()}
 
