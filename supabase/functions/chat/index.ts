@@ -193,6 +193,63 @@ function detectComplexTask(text: string, hasImages: boolean, isDeepResearch: boo
   return false;
 }
 
+function extractFirstUrl(text: string): string | null {
+  const match = text.match(/https?:\/\/[^\s<>")\]]+/i);
+  return match ? match[0].replace(/[.,;]+$/, "") : null;
+}
+
+function createSyntheticToolCall(name: string, args: Record<string, unknown>) {
+  return { function: { name, arguments: JSON.stringify(args) } };
+}
+
+function buildForcedToolCalls({
+  latestUserText,
+  explicitUrl,
+  isShopping,
+  needsSearch,
+  isDeepResearch,
+  hasSerper,
+}: {
+  latestUserText: string;
+  explicitUrl: string | null;
+  isShopping: boolean;
+  needsSearch: boolean;
+  isDeepResearch: boolean;
+  hasSerper: boolean;
+}) {
+  const calls: any[] = [];
+
+  if (isShopping) {
+    calls.push(createSyntheticToolCall("BROWSE_WEBSITE", {
+      goal: `Search Google and real online stores for "${latestUserText}". Compare the best options, open product pages, collect live prices, seller names, ratings, delivery details, and direct purchase links.`,
+      url: explicitUrl || `https://www.google.com/search?q=${encodeURIComponent(latestUserText)}`,
+    }));
+
+    if (hasSerper) {
+      calls.push(createSyntheticToolCall("SHOPPING_SEARCH", { query: latestUserText, num: 10 }));
+      calls.push(createSyntheticToolCall("WEB_SEARCH", { query: `${latestUserText} reviews comparison`, include_images: true }));
+    }
+
+    return calls;
+  }
+
+  if (needsSearch) {
+    calls.push(createSyntheticToolCall("BROWSE_WEBSITE", {
+      goal: `Search the live web for "${latestUserText}", visit the most relevant pages, gather accurate current information, and collect trustworthy sources.${isDeepResearch ? " Also collect relevant visuals when available." : ""}`,
+      url: explicitUrl || `https://www.google.com/search?q=${encodeURIComponent(latestUserText)}`,
+    }));
+
+    if (hasSerper) {
+      calls.push(createSyntheticToolCall("WEB_SEARCH", {
+        query: latestUserText,
+        include_images: isDeepResearch,
+      }));
+    }
+  }
+
+  return calls;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -210,6 +267,7 @@ serve(async (req) => {
 
     // Resolve effective chat mode
     const effectiveMode = chatMode || mode || "normal";
+    const isFilesMode = effectiveMode === "files";
     const isShopping = effectiveMode === "shopping" || hasShoppingIntent(latestUserText);
     const isLearning = effectiveMode === "learning";
 
@@ -338,7 +396,7 @@ serve(async (req) => {
     const wantsImageTool = /@(images|صور)\b|\b(image|photo|picture|images|photos|صورة|صور)\b/i.test(latestUserText);
     const wantsVideoTool = /@(videos|فيديو)\b|\b(video|videos|clip|فيديو|فديو)\b/i.test(latestUserText);
     const wantsVoiceTool = /@(voice|صوت)\b|\b(voice|speech|audio|tts|صوت|كلام)\b/i.test(latestUserText);
-    const wantsSlideTool = activeAgent === "slides" || /@(slides|files)\b|\b(slide|slides|presentation|pitch deck|ppt|pptx|powerpoint|عرض|شرائح|سلايد|سلايدز|برزنتيشن|بوربوينت|كانفا)\b/i.test(latestUserText);
+    const wantsSlideTool = !isFilesMode && (activeAgent === "slides" || /@(slides|files)\b|\b(slide|slides|presentation|pitch deck|ppt|pptx|powerpoint|عرض|شرائح|سلايد|سلايدز|برزنتيشن|بوربوينت|كانفا)\b/i.test(latestUserText));
     const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
     const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
     const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch || isShopping) && (hasSearchIntent(latestUserText) || isDeepResearch || isShopping);
@@ -352,6 +410,7 @@ serve(async (req) => {
       shouldLoadSerperKey ? getSerperKey(sb) : Promise.resolve(null),
       shouldLoadHyperbrowserKey ? getHyperbrowserKey(sb) : Promise.resolve(null),
     ]);
+    const explicitUrl = extractFirstUrl(latestUserText);
 
     // Build search tools (AFTER key loading)
     const searchTools = (((searchEnabled || isDeepResearch) || wantsHamzaProfile) && SERPER_API_KEY) ? [
@@ -445,7 +504,7 @@ serve(async (req) => {
           if (name === "GENERATE_IMAGE") return wantsImageTool;
           if (name === "GENERATE_VIDEO") return wantsVideoTool;
           if (name === "GENERATE_VOICE") return wantsVoiceTool;
-          if (name === "CANVA_CREATE_SLIDES") return wantsSlideTool;
+          if (name === "CANVA_CREATE_SLIDES") return wantsSlideTool && !isFilesMode;
           return false;
         }));
       }
@@ -470,6 +529,31 @@ serve(async (req) => {
     if (selectedTools.length > 0) {
       body.tools = selectedTools;
       body.tool_choice = "auto";
+    }
+
+    const shouldForceComputerFlow = !!HB_API_KEY && !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || needsSearch);
+    const forcedToolCalls = shouldForceComputerFlow
+      ? buildForcedToolCalls({
+          latestUserText,
+          explicitUrl,
+          isShopping,
+          needsSearch,
+          isDeepResearch,
+          hasSerper: !!SERPER_API_KEY,
+        })
+      : [];
+
+    if (forcedToolCalls.length > 0) {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          await handleToolCalls(controller, encoder, forcedToolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
     }
 
 
@@ -650,9 +734,9 @@ Rules:
 \`\`\`
 
 IMPORTANT: Before ANY questions JSON block, write a natural sentence explaining what you need.
-- If the request is for slides, presentations, PPT, PPTX, pitch deck, or the active file agent is slides, you MUST use CANVA_CREATE_SLIDES when that tool is available.
-- Never return HTML slides, fake preview text, or JSON slides for presentation requests when CANVA_CREATE_SLIDES is available.
-- After Canva finishes, reply briefly with the result and include direct download/open links only.
+- If the request is for slides, presentations, PPT, PPTX, pitch deck, or the active file agent is slides, generate a premium single-file HTML presentation with embedded CSS and vanilla JavaScript.
+- The slide output must be fully client-side and ready for iframe preview inside the app.
+- Never use Canva or browser-only slide tools inside the Files workspace unless the user explicitly asks for an external website workflow.
 - For document, resume, and spreadsheet requests, use browser/computer tools only when the user explicitly asks for a real web-app workflow or website action.
 - Active file agent: ${activeAgent || "general"}.
 ${userContext}`;
@@ -852,6 +936,8 @@ IMAGE & FILE HANDLING:
 TOOLS:
 - You have integration tools (Gmail, GitHub, Slack, Calendar, Drive, Notion, Discord, LinkedIn, YouTube). Use them only when the user asks for an action that needs them.
 - You have BROWSE_WEBSITE tool for autonomous web browsing. Use it when the user asks you to check a website, extract specific data from a page, fill a form, compare products across stores, or any task that requires actually visiting and interacting with a website.
+- When a request needs live search, current prices, recent information, or store comparison and BROWSE_WEBSITE is available, assume Megsy Computer is available and use it instead of only describing what you would do.
+- Never promise that you will browse or search later. Either use the available tool flow or answer directly.
 - If a required integration is not connected, return a connect card.
 ${userContext}`;
 

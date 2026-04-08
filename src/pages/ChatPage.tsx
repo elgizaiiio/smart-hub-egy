@@ -205,6 +205,7 @@ const ChatPage = () => {
   const handleCancel = () => {
     if (abortControllerRef.current) {abortControllerRef.current.abort();abortControllerRef.current = null;}
     setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);
+    setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);
   };
 
   const handleModeChange = (mode: ChatMode) => {
@@ -282,7 +283,7 @@ const ChatPage = () => {
       attachedImages: imageAttachments.map((f) => f.data),
       attachedFiles: fileAttachments.map((f) => ({ name: f.name, type: f.type }))
     };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "" }]);
     const userInput = text;
     setInput("");
     const currentFiles = [...attachedFiles];
@@ -393,6 +394,9 @@ const ChatPage = () => {
       onDone: async () => {
         setIsLoading(false);setIsThinking(false);setSearchStatus("");
         isSubmittingRef.current = false;
+        if (!assistantContent && searchImages.length === 0 && streamedProducts.length === 0) {
+          setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);
+        }
         const resolvedConversationId = await conversationPromise;
         if (resolvedConversationId && assistantContent) {
           await saveMessage(resolvedConversationId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
@@ -406,7 +410,7 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", resolvedConversationId);
         }
       },
-      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);isSubmittingRef.current = false;},
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);isSubmittingRef.current = false;},
       signal: controller.signal
     });
   };
@@ -897,15 +901,15 @@ Ask me anything to get started!`;
                   attachedFiles={msg.attachedFiles}
                   isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
                   isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
+                  searchStatus={i === messages.length - 1 && msg.role === "assistant" ? searchStatus : undefined}
+                  statusHistory={i === messages.length - 1 && msg.role === "assistant" ? statusHistory : undefined}
+                  browserLiveState={i === messages.length - 1 && msg.role === "assistant" ? browserLiveState : undefined}
                   liked={msg.liked}
                   onLikeMessage={handleLikeMessage}
                   onShare={undefined}
                   onStructuredAction={handleStructuredAction}
                   onEditUserMessageAt={msg.role === "user" ? handleEditUserMessageAt : undefined} />
               )}
-              {isThinking && (messages.length === 0 || messages[messages.length - 1]?.role === "user") &&
-                <ThinkingLoader searchStatus={searchStatus} statusHistory={statusHistory} browserLiveState={browserLiveState} />
-              }
               <div ref={messagesEndRef} />
             </div>
           )}
