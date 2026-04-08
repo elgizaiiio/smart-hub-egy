@@ -195,36 +195,24 @@ serve(async (req) => {
       } catch { /* skip */ }
     }
 
-    // ── Model routing ──
+    // ── Model routing — LemonData PRIMARY (fastest models) ──
     const isDeepResearch = deepResearch === true;
     const requestedModel = typeof model === "string" && model !== "auto" ? model : null;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    // PRIMARY: Lovable Gateway (gemini-2.5-flash) — fastest
-    // FALLBACK: LemonData
-    let modelId: string = requestedModel ?? "google/gemini-2.5-flash";
-    let apiUrl = LOVABLE_API_KEY ? "https://ai.gateway.lovable.dev/v1/chat/completions" : LEMONDATA_URL;
+    // Use fastest LemonData model: gpt-4o-mini for speed, claude-haiku-4-5 for quality
+    let modelId: string = requestedModel ?? (isCasualEarly ? "gpt-4o-mini" : "claude-haiku-4-5");
+    let apiUrl = LEMONDATA_URL;
     let apiKey = "";
     let usedKeyId: string | null = null;
 
-    if (LOVABLE_API_KEY) {
-      // Use Lovable Gateway as primary (fastest)
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      apiKey = LOVABLE_API_KEY;
-      if (!requestedModel) modelId = "google/gemini-2.5-flash";
+    const lemonKey = await getLemonDataKey(sb);
+    if (lemonKey) {
+      apiKey = lemonKey.api_key;
+      usedKeyId = lemonKey.id;
     } else {
-      // Fallback to LemonData
-      apiUrl = LEMONDATA_URL;
-      modelId = requestedModel ?? "claude-haiku-4-5";
-      const lemonKey = await getLemonDataKey(sb);
-      if (lemonKey) {
-        apiKey = lemonKey.api_key;
-        usedKeyId = lemonKey.id;
-      } else {
-        return new Response(JSON.stringify({ error: "No API keys available" }), {
-          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      return new Response(JSON.stringify({ error: "No API keys available" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Build Composio tools
@@ -383,9 +371,9 @@ serve(async (req) => {
       if (mentionsIntegrations) selectedTools.push(...composioTools);
     }
 
-    // Trim messages to last 8 for speed (keep system prompt separate)
-    const trimmedMessages = Array.isArray(messages) && messages.length > 8
-      ? messages.slice(-8)
+    // Trim messages aggressively for speed
+    const trimmedMessages = Array.isArray(messages) && messages.length > (isCasualMessage ? 4 : 6)
+      ? messages.slice(isCasualMessage ? -4 : -6)
       : messages;
 
     const body: any = {
@@ -394,8 +382,8 @@ serve(async (req) => {
         ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...trimmedMessages]
         : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
-      max_tokens: isCasualMessage ? 120 : (isDeepResearch ? 3072 : (mode === "files" ? 2048 : 1024)),
-      temperature: isCasualMessage ? 0.25 : 0.55,
+      max_tokens: isCasualMessage ? 100 : (isDeepResearch ? 3072 : (mode === "files" ? 2048 : 768)),
+      temperature: isCasualMessage ? 0.2 : 0.5,
     };
 
     if (selectedTools.length > 0) {
@@ -404,10 +392,9 @@ serve(async (req) => {
     }
 
 
-    // Key rotation with retry
+    // Key rotation with fast retry
     let response: Response;
     let retryCount = 0;
-    const MAX_RETRIES = 2;
 
     while (true) {
       response = await fetch(apiUrl, {
@@ -418,21 +405,8 @@ serve(async (req) => {
 
       if (response.ok) break;
 
-      // If Lovable Gateway fails, fallback to LemonData
-      if (apiUrl.includes("ai.gateway.lovable.dev") && retryCount < MAX_RETRIES) {
-        const lemonKey = await getLemonDataKey(sb, usedKeyId || undefined);
-        if (lemonKey) {
-          apiUrl = LEMONDATA_URL;
-          apiKey = lemonKey.api_key;
-          usedKeyId = lemonKey.id;
-          body.model = "claude-haiku-4-5";
-          retryCount++;
-          continue;
-        }
-      }
-
-      // If LemonData fails, try another key
-      if (apiUrl === LEMONDATA_URL && (response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < MAX_RETRIES) {
+      // LemonData key rotation on failure
+      if ((response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < 2) {
         if (response.status !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
         const newKey = await getLemonDataKey(sb, usedKeyId || undefined);
         if (newKey) {
