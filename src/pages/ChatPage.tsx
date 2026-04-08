@@ -911,7 +911,53 @@ Ask me anything to get started!`;
         {/* Bottom input - floating with blur */}
         <div className="fixed inset-x-0 bottom-0 z-30 px-3 md:px-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
             <div className="max-w-3xl mx-auto space-y-2 pointer-events-auto">
-              {/* Mode badge removed — now inline in input row */}
+              {/* Mode badge above input */}
+              <AnimatePresence>
+                {chatMode !== "normal" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="flex items-center"
+                  >
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium backdrop-blur-sm border border-border/30 ${
+                      chatMode === "learning" ? "bg-emerald-500/15 text-emerald-400" :
+                      chatMode === "shopping" ? "bg-amber-500/15 text-amber-400" :
+                      chatMode === "deep-research" ? "bg-violet-500/15 text-violet-400" : "bg-accent/40 text-foreground"
+                    }`}>
+                      {chatMode === "learning" && <GraduationCap className="w-3.5 h-3.5" />}
+                      {chatMode === "shopping" && <ShoppingCart className="w-3.5 h-3.5" />}
+                      {chatMode === "deep-research" && <Globe className="w-3.5 h-3.5" />}
+                      <span>{chatMode === "learning" ? "Learning" : chatMode === "shopping" ? "Shopping" : "Deep Research"}</span>
+                      <button
+                        onClick={() => { setChatMode("normal"); setSelectedAgent(null); setSelectedModel(null); }}
+                        className="ml-0.5 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  </motion.div>
+                )}
+                {selectedAgent && chatMode === "normal" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="flex items-center"
+                  >
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium backdrop-blur-sm border border-border/30 ${selectedAgent.bg} ${selectedAgent.color}`}>
+                      {(() => { const Icon = selectedAgent.icon; return <Icon className="w-3.5 h-3.5" />; })()}
+                      <span>{selectedAgent.label}</span>
+                      <button
+                        onClick={() => { setSelectedAgent(null); setSelectedModel(null); }}
+                        className="ml-0.5 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {renderAttachments()}
 
