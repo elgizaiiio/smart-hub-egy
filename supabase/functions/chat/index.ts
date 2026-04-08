@@ -138,11 +138,16 @@ function buildArtifactsFromText(text: string): FileArtifact[] {
 }
 
 function hasSearchIntent(text: string): boolean {
-  return /(latest|news|price|prices|compare|comparison|research|search|find|current|today|recent|web|website|source|sources|review|reviews|who is|what is|when did|where is|how to|ابحث|بحث|اخر|آخر|سعر|اسعار|قارن|مقارنة|معلومات|مصادر|مين|ايه|ما هو|ما هي|شو)/i.test(text);
+  return /(latest|news|price|prices|compare|comparison|research|search|find|current|today|recent|web|website|source|sources|review|reviews|who is|what is|when did|where is|how to|what happened|statistics|stats|data|report|info|information|ابحث|بحث|اخر|آخر|سعر|اسعار|قارن|مقارنة|معلومات|مصادر|مين|ايه|ما هو|ما هي|شو|كم|متى|اين|وين|ليه|ليش)/i.test(text);
 }
 
 function hasWebsiteIntent(text: string): boolean {
-  return /(website|site|url|link|domain|browser|web page|page|canva|dashboard|store|amazon|jumia|noon|login|sign in|portal|checkout|موقع|لينك|رابط|متصفح|كانفا|صفحة|سجل الدخول|ادخل|افتح)/i.test(text);
+  return /(website|site|url|link|domain|browser|web page|page|canva|dashboard|store|amazon|jumia|noon|login|sign in|portal|checkout|extract.*from|scrape|data from|check.*website|visit|open.*site|go to|browse|compare.*stores|compare.*prices|live.*price|real.*price|موقع|لينك|رابط|متصفح|كانفا|صفحة|سجل الدخول|ادخل|افتح|استخرج|بيانات من|تصفح|زر|اذهب|شوف الموقع|افتح الموقع)/i.test(text);
+}
+
+function hasBrowserEscalation(text: string): boolean {
+  // Broader detection for tasks that genuinely need a browser
+  return /(fill.*form|submit|download.*from|screenshot|log.*in|sign.*up|book.*ticket|order|purchase|buy.*from|track.*order|check.*status|monitor|watch.*price|تعبئة|نموذج|طلب|اشتري|حجز|تتبع)/i.test(text);
 }
 
 function normalizeRequestedModel(rawModel: string | null): string | null {
@@ -320,8 +325,11 @@ serve(async (req) => {
     const wantsSlideTool = activeAgent === "slides" || /@(slides|files)\b|\b(slide|slides|presentation|pitch deck|ppt|pptx|powerpoint|عرض|شرائح|سلايد|سلايدز|برزنتيشن|بوربوينت|كانفا)\b/i.test(latestUserText);
     const mentionsIntegrations = /@(integrations|تكاملات)/i.test(latestUserText) || activeAgent === "integrations";
     const mentionsBrowse = /(browse|open website|افتح موقع|go to|visit|check.*site)/i.test(latestUserText);
-    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch) && hasSearchIntent(latestUserText);
-    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || isShopping || isDeepResearch);
+    const needsSearch = !isCasualMessage && (searchEnabled || isDeepResearch || isShopping) && (hasSearchIntent(latestUserText) || isDeepResearch || isShopping);
+    // Browser escalation: much broader — any task that needs real web interaction
+    const needsBrowserIntent = !isCasualMessage && computerUseEnabled && (
+      wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || hasBrowserEscalation(latestUserText) || isShopping || isDeepResearch
+    );
     const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
     const shouldLoadHyperbrowserKey = needsBrowserIntent;
 
