@@ -274,6 +274,14 @@ serve(async (req) => {
           parameters: { type: "object", properties: { text: { type: "string", description: "Text to speak" }, voice: { type: "string", description: "Voice ID to use. Default: alloy" } }, required: ["text"] },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "CANVA_CREATE_SLIDES",
+          description: "Create a professional presentation/slides using Canva via autonomous browser. Use when the user asks to create slides, presentations, or pitch decks. The browser will open Canva, create the presentation, and return a download link.",
+          parameters: { type: "object", properties: { topic: { type: "string", description: "The topic/title of the presentation" }, slide_count: { type: "number", description: "Number of slides (5-20). Default: 10" }, style: { type: "string", description: "Presentation style: professional, creative, minimal, bold. Default: professional" }, content_outline: { type: "string", description: "Detailed outline of what each slide should contain" } }, required: ["topic"] },
+        },
+      },
     ];
 
     // System prompt
