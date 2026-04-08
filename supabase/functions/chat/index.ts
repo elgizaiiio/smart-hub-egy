@@ -420,7 +420,7 @@ serve(async (req) => {
     }
 
 
-    // Key rotation with fast retry
+    // Key rotation with fast retry + provider fallback
     let response: Response;
     let retryCount = 0;
 
@@ -433,9 +433,33 @@ serve(async (req) => {
 
       if (response.ok) break;
 
-      // LemonData key rotation on failure
-      if ((response.status === 401 || response.status === 403 || response.status === 429 || response.status === 402) && retryCount < 2) {
-        if (response.status !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${response.status}`);
+      const failStatus = response.status;
+      if (retryCount >= 3) break;
+
+      // If WaveSpeed fails, try another WaveSpeed key first, then fallback to LemonData
+      if (provider === "wavespeed" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402 || failStatus >= 500)) {
+        const newWsKey = await getWaveSpeedLlmKey(sb, usedKeyId || undefined);
+        if (newWsKey) {
+          apiKey = newWsKey.api_key;
+          usedKeyId = newWsKey.id;
+          retryCount++;
+          continue;
+        }
+        // No more WaveSpeed keys — fallback to LemonData
+        const lemonKey = await getLemonDataKey(sb);
+        if (lemonKey) {
+          apiUrl = LEMONDATA_URL;
+          apiKey = lemonKey.api_key;
+          usedKeyId = lemonKey.id;
+          provider = "lemondata";
+          retryCount++;
+          continue;
+        }
+      }
+
+      // LemonData key rotation
+      if (provider === "lemondata" && (failStatus === 401 || failStatus === 403 || failStatus === 429 || failStatus === 402)) {
+        if (failStatus !== 429 && usedKeyId) blockLemonKey(sb, usedKeyId, `HTTP ${failStatus}`);
         const newKey = await getLemonDataKey(sb, usedKeyId || undefined);
         if (newKey) {
           apiKey = newKey.api_key;
