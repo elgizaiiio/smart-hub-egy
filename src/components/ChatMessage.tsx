@@ -8,6 +8,7 @@ import ThinkingLoader from "./ThinkingLoader";
 import FlowCard from "./FlowCard";
 import InfoCards from "./InfoCards";
 import CodePreviewModal from "./CodePreviewModal";
+import ImagePreviewModal from "./ImagePreviewModal";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
