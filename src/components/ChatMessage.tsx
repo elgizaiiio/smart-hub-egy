@@ -474,21 +474,6 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             </div>
           )}
 
-          {!isStreaming && artifactActions.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {artifactActions.map((action, index) => (
-                <button
-                  key={`${action.url}-${index}`}
-                  type="button"
-                  onClick={() => window.open(action.url, "_blank", "noopener,noreferrer")}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border/40 bg-secondary/35 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-secondary/55"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  <span>{action.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Sources */}
           {!isStreaming && uniqueLinks.length > 0 && (
