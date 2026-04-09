@@ -51,13 +51,6 @@ interface ProductResult {
   delivery?: string | null;
 }
 
-interface BrowserLiveState {
-  currentUrl?: string;
-  liveUrl?: string;
-  screenshotUrl?: string;
-  currentStep?: string;
-}
-
 type ChatMode = "normal" | "learning" | "shopping" | "deep-research";
 
 const MODE_PROMPTS: Record<ChatMode, string> = {
@@ -75,24 +68,14 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
 
 const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 
-const BROWSER_STATUS_REGEX = /(megsy computer|smart browser|browser opened|opening smart browser|browsing completed|navigat|clicking|scrolling|extracting|currently on|opening canva|canva opened|browser task|live browser|website check)/i;
-
-const isBrowserStatus = (status: string) => BROWSER_STATUS_REGEX.test(status);
+const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
   const lower = status.toLowerCase();
-  // Block internal tool names and raw queries from leaking
   const blocklist = ["web_search", "browse_website", "shopping_search", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call"];
   if (blocklist.some(b => lower.includes(b))) return "Working on your request...";
-  // Block raw URLs from showing
-  if (/https?:\/\//i.test(status)) {
-    // Extract meaningful part before URL
-    const cleaned = status.replace(/https?:\/\/[^\s]+/g, "").replace(/—/g, "").trim();
-    if (cleaned) return cleaned;
-    return "Searching the web...";
-  }
-  if (isBrowserStatus(status)) return status;
+  if (/https?:\/\//i.test(status)) return "Searching the web...";
   if (/writing the report/i.test(lower)) return "Writing the final report...";
   if (/analyzing products/i.test(lower)) return "Comparing the best options...";
   if (/searching for products|searching stores/i.test(lower)) return "Searching stores...";
@@ -100,9 +83,8 @@ const normalizeStatusLabel = (status: string) => {
   if (/found\s+\d+\s+(results|products)/i.test(lower)) return "Reviewing the results...";
   if (/search completed/i.test(lower)) return "Search completed.";
   if (/browsing completed/i.test(lower)) return "Browsing completed.";
-  if (/opening megsy|starting megsy/i.test(lower)) return "Opening Megsy Computer...";
-  if (/megsy computer is working/i.test(lower)) return "Megsy Computer is working...";
   if (/reviewing/i.test(lower)) return "Reviewing the sources...";
+  if (/opening|starting|browser|megsy computer|navigat|clicking|scrolling|extracting|smart browser/i.test(lower)) return "Searching the web...";
   return "Working on your request...";
 };
 
