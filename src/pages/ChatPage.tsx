@@ -916,8 +916,6 @@ Ask me anything to get started!`;
                   isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
                   isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
                   searchStatus={i === messages.length - 1 && msg.role === "assistant" ? searchStatus : undefined}
-                  statusHistory={i === messages.length - 1 && msg.role === "assistant" ? statusHistory : undefined}
-                  browserLiveState={i === messages.length - 1 && msg.role === "assistant" ? browserLiveState : undefined}
                   liked={msg.liked}
                   onLikeMessage={handleLikeMessage}
                   onShare={undefined}
