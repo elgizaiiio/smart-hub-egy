@@ -25,19 +25,9 @@ interface ChatMessageProps {
   liked?: boolean | null;
   onShare?: () => void;
   onStructuredAction?: (text: string) => void;
-  searchQuery?: string;
   searchStatus?: string;
-  statusHistory?: string[];
-  browserLiveState?: BrowserLiveState | null;
   onEditUserMessage?: (text: string) => void;
   onEditUserMessageAt?: (index: number, text: string) => void;
-}
-
-interface BrowserLiveState {
-  currentUrl?: string;
-  liveUrl?: string;
-  screenshotUrl?: string;
-  currentStep?: string;
 }
 
 const getDomain = (url: string) => {
@@ -47,8 +37,6 @@ const getDomain = (url: string) => {
 const getFavicon = (url: string) => {
   try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`; } catch { return null; }
 };
-
-// getArtifactActionLabel removed — no longer needed
 
 function parseStructuredBlocks(content: string): { type: "text" | "questions" | "flow" | "cards"; data: any; raw: string }[] {
   const blocks: { type: "text" | "questions" | "flow" | "cards"; data: any; raw: string }[] = [];
@@ -135,15 +123,10 @@ const BidiText = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Convert raw URLs in text to markdown links before rendering
 const formatRawUrls = (text: string): string => {
-  // Don't convert URLs that are already inside markdown links [text](url)
-  // Split by existing markdown links to avoid double-converting
   const parts = text.split(/(\[[^\]]*\]\([^)]+\))/g);
   return parts.map(part => {
-    // If this part is already a markdown link, leave it
     if (/^\[[^\]]*\]\([^)]+\)$/.test(part)) return part;
-    // Convert raw URLs to [domain](url)
     return part.replace(
       /(?<!\]\()https?:\/\/[^\s<>")\]]+/g,
       (url) => {
@@ -224,7 +207,7 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
   </ReactMarkdown>
 );
 
-const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchQuery, searchStatus, statusHistory = [], browserLiveState, onEditUserMessage, onEditUserMessageAt }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchStatus, onEditUserMessage, onEditUserMessageAt }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -395,7 +378,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
   return (
     <div className="mb-6 relative">
       {isThinking && !content ? (
-        <ThinkingLoader searchQuery={searchQuery} searchStatus={searchStatus} statusHistory={statusHistory} browserLiveState={browserLiveState} />
+        <ThinkingLoader searchStatus={searchStatus} />
       ) : (
         <>
           {images && images.length > 0 && !(products && products.length > 0) && (
@@ -474,7 +457,6 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             </div>
           )}
 
-
           {/* Sources */}
           {!isStreaming && uniqueLinks.length > 0 && (
             <div className="mt-3 pt-3 border-t border-border/40">
@@ -491,7 +473,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             </div>
           )}
 
-          {/* Action buttons - icons only, no bg/border */}
+          {/* Action buttons */}
           {!isStreaming && content && (
             <div className="flex items-center gap-1 mt-2">
               <button onClick={handleCopy} className="p-1.5 text-muted-foreground/50 hover:text-foreground transition-colors" title="Copy">

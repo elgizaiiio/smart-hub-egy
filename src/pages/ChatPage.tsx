@@ -51,13 +51,6 @@ interface ProductResult {
   delivery?: string | null;
 }
 
-interface BrowserLiveState {
-  currentUrl?: string;
-  liveUrl?: string;
-  screenshotUrl?: string;
-  currentStep?: string;
-}
-
 type ChatMode = "normal" | "learning" | "shopping" | "deep-research";
 
 const MODE_PROMPTS: Record<ChatMode, string> = {
@@ -75,24 +68,12 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
 
 const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 
-const BROWSER_STATUS_REGEX = /(megsy computer|smart browser|browser opened|opening smart browser|browsing completed|navigat|clicking|scrolling|extracting|currently on|opening canva|canva opened|browser task|live browser|website check)/i;
-
-const isBrowserStatus = (status: string) => BROWSER_STATUS_REGEX.test(status);
-
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
   const lower = status.toLowerCase();
-  // Block internal tool names and raw queries from leaking
   const blocklist = ["web_search", "browse_website", "shopping_search", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call"];
   if (blocklist.some(b => lower.includes(b))) return "Working on your request...";
-  // Block raw URLs from showing
-  if (/https?:\/\//i.test(status)) {
-    // Extract meaningful part before URL
-    const cleaned = status.replace(/https?:\/\/[^\s]+/g, "").replace(/—/g, "").trim();
-    if (cleaned) return cleaned;
-    return "Searching the web...";
-  }
-  if (isBrowserStatus(status)) return status;
+  if (/https?:\/\//i.test(status)) return "Searching the web...";
   if (/writing the report/i.test(lower)) return "Writing the final report...";
   if (/analyzing products/i.test(lower)) return "Comparing the best options...";
   if (/searching for products|searching stores/i.test(lower)) return "Searching stores...";
@@ -100,9 +81,8 @@ const normalizeStatusLabel = (status: string) => {
   if (/found\s+\d+\s+(results|products)/i.test(lower)) return "Reviewing the results...";
   if (/search completed/i.test(lower)) return "Search completed.";
   if (/browsing completed/i.test(lower)) return "Browsing completed.";
-  if (/opening megsy|starting megsy/i.test(lower)) return "Opening Megsy Computer...";
-  if (/megsy computer is working/i.test(lower)) return "Megsy Computer is working...";
   if (/reviewing/i.test(lower)) return "Reviewing the sources...";
+  if (/opening|starting|browser|megsy computer|navigat|clicking|scrolling|extracting|smart browser/i.test(lower)) return "Searching the web...";
   return "Working on your request...";
 };
 
@@ -121,8 +101,6 @@ const ChatPage = () => {
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
   const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
-  const [statusHistory, setStatusHistory] = useState<string[]>([]);
-  const [browserLiveState, setBrowserLiveState] = useState<BrowserLiveState | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareMode, setShareMode] = useState<"private" | "public">("public");
   const [isShared, setIsShared] = useState(false);
@@ -198,7 +176,6 @@ const ChatPage = () => {
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
-    setStatusHistory([]);
     setSearchStatus("");
     setPendingQuestions([]);
     const { data: conv } = await supabase.from("conversations").select("title, is_shared, share_id, is_pinned").eq("id", id).single();
@@ -218,7 +195,7 @@ const ChatPage = () => {
 
   const handleCancel = () => {
     if (abortControllerRef.current) {abortControllerRef.current.abort();abortControllerRef.current = null;}
-    setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);
+    setIsLoading(false);setIsThinking(false);setSearchStatus("");
     setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);
   };
 
@@ -303,9 +280,7 @@ const ChatPage = () => {
     const currentFiles = [...attachedFiles];
     setAttachedFiles([]);
     setIsLoading(true);setIsThinking(true);
-    setPendingQuestions([]); // Clear previous questions on new send
-    setStatusHistory([]); // Clear status history for new message
-    setBrowserLiveState(null);
+    setPendingQuestions([]);
 
     const conversationPromise = createOrUpdateConversation(userInput || "File analysis").catch(() => null);
     void conversationPromise.then(async (resolvedConversationId) => {
@@ -389,21 +364,13 @@ const ChatPage = () => {
       },
       onStatus: (status) => {
         const normalizedStatus = normalizeStatusLabel(status);
-        setSearchStatus(normalizedStatus);
-        setIsThinking(true);
-        if (!isBrowserStatus(status)) return;
-        setStatusHistory(prev => {
-          if (prev.length > 0 && prev[prev.length - 1] === status) return prev;
-          return [...prev, status];
-        });
-      },
-      onBrowser: (browser) => {
-        setBrowserLiveState((prev) => ({ ...prev, ...browser }));
-        if (browser.currentStep) {
-          setStatusHistory((prev) => prev[prev.length - 1] === browser.currentStep ? prev : [...prev, browser.currentStep]);
-          setSearchStatus(normalizeStatusLabel(browser.currentStep));
+        if (normalizedStatus) {
+          setSearchStatus(normalizedStatus);
+          setIsThinking(true);
         }
-        setIsThinking(true);
+      },
+      onBrowser: () => {
+        // Browser state no longer tracked in UI
       },
       onDone: async () => {
         setIsLoading(false);setIsThinking(false);setSearchStatus("");
@@ -424,7 +391,7 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", resolvedConversationId);
         }
       },
-      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);isSubmittingRef.current = false;},
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);isSubmittingRef.current = false;},
       signal: controller.signal
     });
   };
@@ -436,7 +403,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -756,12 +723,6 @@ Ask me anything to get started!`;
               <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
             </div>
           </button>
-          <button onClick={() => { setComputerUseEnabled(!computerUseEnabled); setPlusMenuOpen(false); }} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
-            <span className="text-sm text-white/80">Megsy Computer</span>
-            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${computerUseEnabled ? "bg-violet-500 justify-end" : "bg-white/20 justify-start"}`}>
-              <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
-            </div>
-          </button>
           <div className="border-t border-white/10 mt-1 pt-1">
             <p className="text-[10px] text-white/30 uppercase px-3 py-1.5">Modes</p>
             <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
@@ -916,8 +877,6 @@ Ask me anything to get started!`;
                   isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
                   isThinking={isThinking && i === messages.length - 1 && msg.role === "assistant" && !msg.content}
                   searchStatus={i === messages.length - 1 && msg.role === "assistant" ? searchStatus : undefined}
-                  statusHistory={i === messages.length - 1 && msg.role === "assistant" ? statusHistory : undefined}
-                  browserLiveState={i === messages.length - 1 && msg.role === "assistant" ? browserLiveState : undefined}
                   liked={msg.liked}
                   onLikeMessage={handleLikeMessage}
                   onShare={undefined}

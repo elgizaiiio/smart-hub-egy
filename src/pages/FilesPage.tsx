@@ -493,7 +493,7 @@ Output ONLY the complete HTML code with no explanations.`,
                   onAnswer={(answer) => { setPendingQuestions([]); setInput(answer); setTimeout(() => handleGenerate(answer), 50); }}
                 />
               )}
-              {isGenerating && <ThinkingLoader statusHistory={statusHistory} />}
+              {isGenerating && <ThinkingLoader searchStatus={statusHistory[statusHistory.length - 1] || "Working..."} />}
               <div ref={messagesEndRef} />
             </div>
           )}
