@@ -176,7 +176,6 @@ const ChatPage = () => {
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
-    setStatusHistory([]);
     setSearchStatus("");
     setPendingQuestions([]);
     const { data: conv } = await supabase.from("conversations").select("title, is_shared, share_id, is_pinned").eq("id", id).single();
@@ -196,7 +195,7 @@ const ChatPage = () => {
 
   const handleCancel = () => {
     if (abortControllerRef.current) {abortControllerRef.current.abort();abortControllerRef.current = null;}
-    setIsLoading(false);setIsThinking(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);
+    setIsLoading(false);setIsThinking(false);setSearchStatus("");
     setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);
   };
 
@@ -281,9 +280,7 @@ const ChatPage = () => {
     const currentFiles = [...attachedFiles];
     setAttachedFiles([]);
     setIsLoading(true);setIsThinking(true);
-    setPendingQuestions([]); // Clear previous questions on new send
-    setStatusHistory([]); // Clear status history for new message
-    setBrowserLiveState(null);
+    setPendingQuestions([]);
 
     const conversationPromise = createOrUpdateConversation(userInput || "File analysis").catch(() => null);
     void conversationPromise.then(async (resolvedConversationId) => {
@@ -394,7 +391,7 @@ const ChatPage = () => {
           await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", resolvedConversationId);
         }
       },
-      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);isSubmittingRef.current = false;},
+      onError: (err) => {toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);isSubmittingRef.current = false;},
       signal: controller.signal
     });
   };
@@ -406,7 +403,7 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setStatusHistory([]);setBrowserLiveState(null);setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
+    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
