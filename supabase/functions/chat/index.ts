@@ -477,7 +477,7 @@ serve(async (req) => {
     const needsBrowser = !!HB_API_KEY && needsBrowserIntent;
 
     // System prompt
-    let systemPrompt = buildSystemPrompt(isShopping ? "shopping" : effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext, latestUserText, activeAgent);
+    let systemPrompt = buildSystemPrompt(isShopping ? "shopping" : effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext, latestUserText, activeAgent, shoppingPrefs);
 
     if (computerUseEnabled && HB_API_KEY) {
       systemPrompt += `\n\nCOMPUTER USE (Megsy Computer):
@@ -713,7 +713,7 @@ serve(async (req) => {
 });
 
 // ── Build system prompt ──
-function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string, latestUserText: string, activeAgent?: string): string {
+function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string, latestUserText: string, activeAgent?: string, shoppingPrefs?: { country?: string; currency?: string } | null): string {
   if (mode === "files") {
     return `You are Megsy, a smart AI File Agent made by Megsy AI. The current year is 2026. You are a decision-making agent, not a simple chatbot.
 
