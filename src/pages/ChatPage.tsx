@@ -101,8 +101,6 @@ const ChatPage = () => {
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
   const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
-  const [statusHistory, setStatusHistory] = useState<string[]>([]);
-  const [browserLiveState, setBrowserLiveState] = useState<BrowserLiveState | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareMode, setShareMode] = useState<"private" | "public">("public");
   const [isShared, setIsShared] = useState(false);
@@ -369,21 +367,13 @@ const ChatPage = () => {
       },
       onStatus: (status) => {
         const normalizedStatus = normalizeStatusLabel(status);
-        setSearchStatus(normalizedStatus);
-        setIsThinking(true);
-        if (!isBrowserStatus(status)) return;
-        setStatusHistory(prev => {
-          if (prev.length > 0 && prev[prev.length - 1] === status) return prev;
-          return [...prev, status];
-        });
-      },
-      onBrowser: (browser) => {
-        setBrowserLiveState((prev) => ({ ...prev, ...browser }));
-        if (browser.currentStep) {
-          setStatusHistory((prev) => prev[prev.length - 1] === browser.currentStep ? prev : [...prev, browser.currentStep]);
-          setSearchStatus(normalizeStatusLabel(browser.currentStep));
+        if (normalizedStatus) {
+          setSearchStatus(normalizedStatus);
+          setIsThinking(true);
         }
-        setIsThinking(true);
+      },
+      onBrowser: () => {
+        // Browser state no longer tracked in UI
       },
       onDone: async () => {
         setIsLoading(false);setIsThinking(false);setSearchStatus("");
