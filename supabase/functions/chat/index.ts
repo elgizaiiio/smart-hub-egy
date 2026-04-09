@@ -858,12 +858,18 @@ ${userContext}`;
 
   // Shopping mode
   if (mode === "shopping") {
-    // Detect user location/currency from their text AND user context
+    // Use stored preferences or detect from text
+    const hasStoredPrefs = shoppingPrefs?.country && shoppingPrefs?.currency;
     const combinedText = (userContext + " " + latestUserText).toLowerCase();
-    const isEgypt = /(مصر|egypt|القاهرة|cairo|جنيه|egp|اسكندرية|الجيزة|نون مصر|جوميا|امازون مصر|بي تك)/i.test(combinedText) || /[\u0600-\u06FF]/.test(latestUserText);
-    const isSaudi = /(السعودية|saudi|riyal|sar|جدة|الرياض|نون السعودية)/i.test(combinedText);
-    const localCurrency = isEgypt ? "EGP (الجنيه المصري)" : isSaudi ? "SAR (الريال السعودي)" : "the user's local currency";
+    const isEgypt = hasStoredPrefs ? /egypt|مصر/i.test(shoppingPrefs!.country!) : (/(مصر|egypt|القاهرة|cairo|جنيه|egp|اسكندرية|الجيزة|نون مصر|جوميا|امازون مصر|بي تك)/i.test(combinedText) || /[\u0600-\u06FF]/.test(latestUserText));
+    const isSaudi = hasStoredPrefs ? /saudi|السعودية/i.test(shoppingPrefs!.country!) : /(السعودية|saudi|riyal|sar|جدة|الرياض|نون السعودية)/i.test(combinedText);
+    const localCurrency = hasStoredPrefs ? shoppingPrefs!.currency! : (isEgypt ? "EGP (الجنيه المصري)" : isSaudi ? "SAR (الريال السعودي)" : "");
     const localStores = isEgypt ? "Noon Egypt, Jumia Egypt, Amazon.eg, B.Tech, 2B" : isSaudi ? "Noon KSA, Amazon.sa, Jarir, Extra" : "local online stores";
+    
+    const askForCountryPrompt = !hasStoredPrefs && !isEgypt && !isSaudi
+      ? `\n\nIMPORTANT: You don't know the user's country or preferred currency yet. Before searching for ANY products, you MUST ask the user: "What country are you in, and what currency do you prefer?" — then remember their answer for all future shopping queries. Do NOT guess.`
+      : "";
+    const currencyNote = localCurrency ? `- ALL prices MUST be in ${localCurrency}` : "- Show prices in the user's preferred currency";
     
     return `You are Megsy, a smart AI Shopping Assistant made by Megsy AI. The current year is 2026.
 
