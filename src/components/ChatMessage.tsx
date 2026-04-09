@@ -420,7 +420,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
         <ThinkingLoader searchQuery={searchQuery} searchStatus={searchStatus} statusHistory={statusHistory} browserLiveState={browserLiveState} />
       ) : (
         <>
-          {images && images.length > 0 && (
+          {images && images.length > 0 && !(products && products.length > 0) && (
             <div className="flex gap-3 mb-3 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory touch-pan-x">
               {images.map((img, i) => (
                 <img key={i} src={img} alt="" className="shrink-0 snap-start w-[74vw] max-w-[18rem] aspect-[4/3] rounded-xl border border-border/40 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(img, '_blank')} />
