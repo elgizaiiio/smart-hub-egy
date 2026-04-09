@@ -1001,10 +1001,16 @@ async function handleToolCalls(
   const allProducts: any[] = [];
   
   const pushStatus = (status: string) => {
-    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status })}\n\n`));
+    // Sanitize: never expose tool names, URLs, or internal steps
+    let clean = status.replace(/https?:\/\/[^\s]+/g, "").replace(/—/g, "").trim();
+    const lower = clean.toLowerCase();
+    const blocklist = ["web_search", "browse_website", "shopping_search", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call", "hyper-agent", "hyperbrowser", "serper", "composio"];
+    if (blocklist.some(b => lower.includes(b))) clean = "Working on your request...";
+    if (!clean) clean = "Searching...";
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: clean })}\n\n`));
   };
-  const pushBrowser = (browser: Record<string, unknown>) => {
-    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ browser })}\n\n`));
+  const pushBrowser = (_browser: Record<string, unknown>) => {
+    // No longer sending browser state to frontend
   };
   const shouldIncludeImages = (query: string, explicit: boolean) => {
     if (isDeepResearch || explicit) return true;
