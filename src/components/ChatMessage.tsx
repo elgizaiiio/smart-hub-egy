@@ -532,6 +532,11 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
           onClose={() => setPreviewCode(null)}
         />
       )}
+
+      <ImagePreviewModal
+        url={previewImageUrl}
+        onClose={() => setPreviewImageUrl(null)}
+      />
     </div>
   );
 };
