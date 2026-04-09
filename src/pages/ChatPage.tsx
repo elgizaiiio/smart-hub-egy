@@ -68,8 +68,6 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
 
 const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 
-const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
-
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
   const lower = status.toLowerCase();
