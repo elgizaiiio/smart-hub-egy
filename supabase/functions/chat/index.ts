@@ -271,6 +271,22 @@ serve(async (req) => {
     const isShopping = effectiveMode === "shopping" || hasShoppingIntent(latestUserText);
     const isLearning = effectiveMode === "learning";
 
+    // Fetch shopping preferences from user_memory_entries if shopping
+    let shoppingPrefs: { country?: string; currency?: string } | null = null;
+    if (isShopping && user_id) {
+      try {
+        const { data: memData } = await sb.from("user_memory_entries")
+          .select("summary")
+          .eq("user_id", user_id)
+          .eq("scope", "account")
+          .ilike("title", "%shopping_preferences%")
+          .maybeSingle();
+        if (memData?.summary) {
+          try { shoppingPrefs = JSON.parse(memData.summary); } catch { /* ignore */ }
+        }
+      } catch { /* silently skip */ }
+    }
+
     // ── Fetch user context (optimized — skip heavy queries for casual) ──
     let userContext = "";
     // Detect casual early to skip expensive context fetching
