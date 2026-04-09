@@ -531,7 +531,7 @@ serve(async (req) => {
       body.tool_choice = "auto";
     }
 
-    const shouldForceComputerFlow = !!HB_API_KEY && !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || needsSearch);
+    const shouldForceComputerFlow = !!HB_API_KEY && !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || isDeepResearch);
     const forcedToolCalls = shouldForceComputerFlow
       ? buildForcedToolCalls({
           latestUserText,
@@ -1106,9 +1106,9 @@ async function handleToolCalls(
         const HB_BASE = "https://api.hyperbrowser.ai";
         const fullTask = browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal;
 
-        pushStatus("Opening smart browser...");
-        pushBrowser({ currentStep: "بدأت استخدام Megsy Computer", currentUrl: browseUrl || "about:blank" });
-        if (browseUrl) pushStatus("Navigating to the website...");
+        pushStatus("Opening Megsy Computer...");
+        pushBrowser({ currentStep: "Starting Megsy Computer", currentUrl: browseUrl || undefined });
+        if (browseUrl) pushStatus("Navigating to a website...");
 
         try {
           const startResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent`, {
@@ -1126,10 +1126,9 @@ async function handleToolCalls(
           const jobId = startData.jobId;
           if (!jobId) { pushStatus("No task ID returned"); continue; }
 
-          pushStatus("Browser opened — executing task...");
+          pushStatus("Megsy Computer is working...");
           pushBrowser({
-            currentStep: "المتصفح يعمل الآن",
-            currentUrl: browseUrl || startData.url || "about:blank",
+            currentStep: "Browsing the web",
             liveUrl: startData.liveUrl || startData.sessionUrl || startData.previewUrl || undefined,
             screenshotUrl: startData.screenshotUrl || undefined,
           });
@@ -1154,7 +1153,6 @@ async function handleToolCalls(
 
               const statusData = await statusResp.json();
               pushBrowser({
-                currentUrl: statusData.currentUrl || statusData.url || browseUrl || undefined,
                 liveUrl: statusData.liveUrl || statusData.sessionUrl || statusData.previewUrl || startData.liveUrl || undefined,
                 screenshotUrl: statusData.screenshotUrl || statusData.latestScreenshot || undefined,
                 currentStep: statusData.currentStep || undefined,
@@ -1164,12 +1162,10 @@ async function handleToolCalls(
                 const newSteps = statusData.steps.slice(lastStepCount);
                 for (const step of newSteps) {
                   const desc = step.description || step.next_goal || step.action || "";
-                  const stepUrl = step.url || statusData.currentUrl || statusData.url || "";
                   if (desc) {
-                    pushStatus(stepUrl ? `${desc} — ${stepUrl}` : desc);
+                    pushStatus(desc);
                     pushBrowser({
                       currentStep: desc,
-                      currentUrl: stepUrl || undefined,
                       liveUrl: statusData.liveUrl || statusData.sessionUrl || statusData.previewUrl || undefined,
                       screenshotUrl: step.screenshotUrl || statusData.screenshotUrl || statusData.latestScreenshot || undefined,
                     });
@@ -1193,8 +1189,7 @@ async function handleToolCalls(
             const output = finalResult.output || finalResult.result || JSON.stringify(finalResult);
             pushStatus("Browsing completed");
             pushBrowser({
-              currentStep: "انتهيت من جمع البيانات",
-              currentUrl: finalResult.currentUrl || finalResult.url || browseUrl || undefined,
+              currentStep: "Data collection completed",
               liveUrl: finalResult.liveUrl || finalResult.sessionUrl || finalResult.previewUrl || undefined,
               screenshotUrl: finalResult.screenshotUrl || finalResult.latestScreenshot || undefined,
             });
