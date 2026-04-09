@@ -1,209 +1,213 @@
 
 
-# Comprehensive Fix Plan — 10 Issues
+# Plan: Agent System Overhaul + Remove Megsy Computer UI
 
-## Summary of Problems Found
-
-After thorough code review, here are the root causes:
-
-1. **Computer opens without analyzing** — `buildForcedToolCalls` triggers `BROWSE_WEBSITE` on ANY search intent, even simple questions. The AI model never gets a chance to think first.
-2. **View Live shows nothing real** — The dialog only shows `friendlyHistory` (deduplicated static labels), not real-time browser data. No live iframe/screenshot stream.
-3. **Deep Research exposes internal operations** — Status messages like "Searching stores...", "Gathering trusted sources..." and raw tool markers leak to the user.
-4. **"الاطلاع على الصورة" button** — `artifactActions` in `ChatMessage.tsx` (line 327-344) builds buttons for ANY image URL including search result images. Must be removed entirely.
-5. **Images open externally** — `onClick={() => window.open(img, '_blank')}` on line 426 opens images in a new tab instead of an in-app `ImagePreviewModal`.
-6. **Shopping doesn't ask for country/currency** — The system prompt guesses from Arabic text, never actually asks the user. No account-wide memory storage.
-7. **Megsy Computer badge layout** — Currently shown as a full card (lines 97-128). Should be: star + "Megsy Computer" + small button on ONE line, then a second line with star + status text.
-8. **Files page broken** — Uses direct `fetch` to chat function, no Manus integration, no real preview system.
-9. **Programming preview** — Already works via `react-runner` inline. The user confirmed "Inline preview tab" is the desired behavior.
-10. **Voice tools via Manus** — No Manus integration exists anywhere in the codebase yet.
+## What You'll Get
+A completely rebuilt agent orchestration backend for Shopping, Deep Research, and Normal Chat — with modular functions, retry logic, currency conversion, validation, confidence scoring, and cross-agent collaboration. Plus removal of the Megsy Computer badge/box from the chat UI.
 
 ---
 
-## Phase 1: Fix Computer Use Intelligence (P0)
+## Phase 1: Remove Megsy Computer UI from Chat (Frontend)
 
-### Problem
-`shouldForceComputerFlow` (chat/index.ts line 534) forces browser for ALL search intents. This means even "what is React?" opens the browser.
+**Files:** `ChatPage.tsx`, `ChatMessage.tsx`, `ThinkingLoader.tsx`
 
-### Solution
-- Remove `buildForcedToolCalls` for normal chat mode entirely
-- Keep forced tool calls ONLY for `shopping` mode and `deep-research` mode
-- For normal chat: let the AI model decide via `tool_choice: "auto"` whether to call `BROWSE_WEBSITE`
-- Add a stronger system prompt hint: "Only use BROWSE_WEBSITE when the task genuinely requires visiting a real website"
-- The model already has the tool definitions — let it reason instead of force-calling
+1. **ChatPage.tsx:**
+   - Remove `ThinkingLoader` import and all `browserLiveState` state
+   - Remove `statusHistory` state and all `setBrowserLiveState` / `setStatusHistory` calls
+   - Remove `BROWSER_STATUS_REGEX`, `isBrowserStatus`, `normalizeStatusLabel` — replace with a simple inline status text
+   - Remove Megsy Computer toggle from plus menu
+   - Remove `computerUseEnabled` state entirely
+   - Keep `searchStatus` as a simple one-line text under the assistant bubble (e.g., "Searching..." or "Comparing options...")
+   - Remove all `browserLiveState` props from `ChatMessage`
 
-### Files
-- `supabase/functions/chat/index.ts` — modify `shouldForceComputerFlow` condition
+2. **ChatMessage.tsx:**
+   - Remove `ThinkingLoader` component usage
+   - Remove `browserLiveState`, `statusHistory` props
+   - Keep `searchStatus` as a simple animated text line with a spinning star, no dialog, no "View Live" button
+   - Show only generic labels: "Thinking...", "Searching the web...", "Comparing options...", "Writing response..."
 
----
-
-## Phase 2: Real-time View Live Dialog (P0)
-
-### Problem
-The "View Live" dialog shows only static `friendlyHistory`. The `browserLiveState` has `screenshotUrl` and `liveUrl` but they're barely used.
-
-### Solution
-Redesign `ThinkingLoader.tsx`:
-- **Default state**: One line — animated star + "Megsy Computer" text + small "View" pill button
-- **Second line below**: animated star + dynamic status text ("Searching the web...", "Collecting data...")
-- **View Live dialog**: Show `browserLiveState.screenshotUrl` as a refreshing image (poll every 2s), real-time step log from `statusHistory`, and current generic status (never show URLs)
-- **Obfuscate all URLs**: Replace any URL in status with "a website" or just remove it
-- All text in English
-
-### Files
-- `src/components/ThinkingLoader.tsx` — full redesign
+3. **ThinkingLoader.tsx:**
+   - Simplify to a minimal component: animated star + one-line status text
+   - Remove the entire View Live dialog, screenshot polling, activity log
+   - No "Megsy Computer" branding visible to user
 
 ---
 
-## Phase 3: Hide Internal Operations from Deep Research (P0)
+## Phase 2: Modular Backend Functions (Edge Function)
 
-### Problem
-Status messages like tool names and raw search queries appear in the chat.
+**File:** `supabase/functions/chat/index.ts`
 
-### Solution
-- In `ChatPage.tsx` `onStatus` callback (line 376-385): filter out ANY status that contains tool names or raw queries
-- `normalizeStatusLabel` already exists but doesn't catch everything
-- Add a blocklist: any status containing "BROWSE_WEBSITE", "WEB_SEARCH", "SHOPPING_SEARCH", "Running", raw URLs, or query strings should be mapped to generic labels
-- Only show: "Thinking...", "Searching the web...", "Analyzing results...", "Writing the report..."
+Create reusable internal functions at the top of the file:
 
-### Files
-- `src/pages/ChatPage.tsx` — enhance `normalizeStatusLabel` and `onStatus` filter
+```text
+┌─────────────────────────────┐
+│  Modular Function Library   │
+├─────────────────────────────┤
+│ searchProducts(query, opts) │  → Serper shopping + validation
+│ searchWeb(query, opts)      │  → Serper web search + images
+│ browseWebsite(goal, url)    │  → Hyperbrowser agent
+│ convertCurrency(amount,     │  → Exchange rate API
+│   from, to)                 │
+│ extractText(html)           │  → Clean text extraction
+│ summarizeText(text, limit)  │  → Truncate + summarize
+│ validateProduct(product)    │  → Check all fields exist
+│ generatePreview(data)       │  → HTML preview builder
+│ retryWithFallback(fn, opts) │  → Adaptive retry wrapper
+└─────────────────────────────┘
+```
 
----
-
-## Phase 4: Remove "الاطلاع على الصورة" Button Completely (P0)
-
-### Problem
-`artifactActions` in `ChatMessage.tsx` generates Arabic buttons for every image/URL.
-
-### Solution
-- Delete the entire `artifactActions` useMemo block (lines 327-344)
-- Delete the rendering block (lines 499-513) that displays these buttons
-- Delete `getArtifactActionLabel` function (lines 50-56)
-
-### Files
-- `src/components/ChatMessage.tsx`
-
----
-
-## Phase 5: In-app Image Preview (P1)
-
-### Problem
-Search result images open in new tab via `window.open`.
-
-### Solution
-- Import `ImagePreviewModal` in `ChatMessage.tsx`
-- Add state `const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)`
-- Change image `onClick` from `window.open(img, '_blank')` to `setPreviewImageUrl(img)`
-- Render `<ImagePreviewModal url={previewImageUrl} onClose={() => setPreviewImageUrl(null)} />` at end of component
-
-### Files
-- `src/components/ChatMessage.tsx`
+Key additions:
+- `retryWithFallback(fn, maxRetries, backoffStrategy)` — wraps any async call with exponential backoff, different strategy per error type (network → retry fast, 429 → wait longer, 4xx → try fallback source)
+- `validateProduct(p)` — ensures title, price, link all exist; drops invalid entries
+- `convertCurrency(amount, from, to)` — calls exchangerate-api.com (free tier) for real-time conversion
+- `confidenceScore(result)` — returns 0-1 based on data completeness
 
 ---
 
-## Phase 6: Shopping Country/Currency Memory (P1)
+## Phase 3: Shopping Agent Overhaul
 
-### Problem
-System prompt guesses country from Arabic text. Never asks user. No persistent memory.
+**File:** `supabase/functions/chat/index.ts` — `handleToolCalls` section
 
-### Solution
-- On first shopping message, if no `user_memory_entries` record exists with `scope='account'` and key `shopping_preferences`, the system prompt instructs the AI to ask the user for their country and preferred currency
-- When the AI gets the answer, the backend saves it to `user_memory_entries` table
-- On subsequent shopping sessions, the backend fetches this preference and injects it into the system prompt
-- Add to `chat/index.ts`: query `user_memory_entries` for shopping preferences when `isShopping`
+Changes to `SHOPPING_SEARCH` handler:
+1. Search with Serper Shopping API (existing)
+2. **NEW:** Validate every product with `validateProduct()` — drop broken entries
+3. **NEW:** Convert all prices to user's preferred currency using `convertCurrency()`
+4. **NEW:** Add `confidence` score per product (0-1)
+5. **NEW:** If Serper fails, retry with `retryWithFallback()`, then fallback to `BROWSE_WEBSITE` for live store scraping
+6. **NEW:** Send products progressively (incremental SSE updates as each batch is ready)
+7. **NEW:** Structured JSON output format per product:
+   ```json
+   {"title":"...", "price_local":"...", "price_original":"...", "image":"...", "link":"...", "confidence":0.9}
+   ```
+8. Status messages: only generic ("Searching stores...", "Comparing prices...", "Converting currency...")
+9. **NEW:** Log each step to console for debugging (never expose to user)
 
-### Files
-- `supabase/functions/chat/index.ts` — fetch and use shopping preferences from memory
-- DB migration: ensure `user_memory_entries` table works for this (it already exists in schema)
-
----
-
-## Phase 7: Files Page — Manus AI Integration (P1)
-
-### Problem
-Files page generates HTML locally and preview is broken.
-
-### Solution (Hybrid approach as user requested)
-1. Create `supabase/functions/manus-agent/index.ts` edge function:
-   - Accept task description, use Manus API when available (need API key)
-   - Fallback: use Hyperbrowser to automate manus.im website
-   - Smart key rotation from `api_keys` table (service='manus')
-   - Stream progress steps back via SSE
-2. Update `FilesPage.tsx`:
-   - For slides/documents: call `manus-agent` function instead of direct chat
-   - Display real-time progress from Manus (like the reference screenshots)
-   - Preview: render returned HTML in an iframe
-   - Redesign page with landing page aesthetic (dark bg, gradient text, modern cards)
-3. Add Manus key management via Telegram bot (extend existing bot)
-
-### Files
-- `supabase/functions/manus-agent/index.ts` (new)
-- `src/pages/FilesPage.tsx` (redesign)
-- `supabase/functions/telegram-bot/index.ts` (extend for Manus keys)
+Changes to system prompt:
+- Instruct model to NEVER mention tool names
+- Instruct to present results naturally in user's language
+- Use stored country/currency from `user_memory_entries`
 
 ---
 
-## Phase 8: Voice Tools via Manus AI (P2)
+## Phase 4: Deep Research Agent Overhaul
 
-### Problem
-Voice tools call `generate-voice` edge function which has issues.
+**File:** `supabase/functions/chat/index.ts`
 
-### Solution
-- Create voice task routing through Manus for complex tasks (podcast creation, music with lyrics)
-- Keep simple TTS/STT through existing Deepgram/OpenRouter
-- For music generation: AI analyzes prompt → generates lyrics/genre → sends to provider
-- Update `generate-voice` function to route appropriately
+Changes to `WEB_SEARCH` handler (when `isDeepResearch`):
+1. **NEW:** Context awareness — track already-searched queries in `allSearchResults` to avoid duplicate searches
+2. **NEW:** Text extraction — when browser results return HTML, run `extractText()` to clean
+3. **NEW:** Summarization — if extracted text > 2000 chars, auto-summarize before adding to context
+4. **NEW:** Retry mechanism — if a search fails, try alternative query phrasing
+5. **NEW:** Image collection — always `include_images=true`, validate image URLs
+6. **NEW:** Confidence scoring per source
+7. **NEW:** Fallback sources — if Serper fails, use BROWSE_WEBSITE to scrape Google directly
 
-### Files
-- `supabase/functions/generate-voice/index.ts` (update routing)
-- `supabase/functions/manus-agent/index.ts` (add voice task support)
-
----
-
-## Phase 9: Programming Preview (Already Working)
-
-The programming workspace already has an inline preview tab using `react-runner`. No changes needed per user confirmation.
+Synthesis prompt improvements:
+- Strictly forbid showing raw data, tool names, search queries
+- Force language matching (Arabic query → Arabic report)
+- Require inline images with `![](url)` format
+- Structured report format with proper sections
 
 ---
 
-## Phase 10: Obfuscate Browser Status in ThinkingLoader
+## Phase 5: Normal Chat Agent — Decision Layer
 
-### Already covered in Phase 2
-- `pushBrowser` sends Arabic text like "بدأت استخدام Megsy Computer" — change to English
-- Remove `currentUrl` from display, replace with generic "Searching the web"
-- `toFriendlyStep` already maps most statuses but needs more coverage
+**File:** `supabase/functions/chat/index.ts`
 
-### Files
-- `supabase/functions/chat/index.ts` — change Arabic browser status messages to English
-- `src/components/ThinkingLoader.tsx` — expand `toFriendlyStep` mapping
+The normal chat agent gets a **Decision Layer**:
+1. **Before any tool call**, the model analyzes the request intent:
+   - Needs live web data? → Use `WEB_SEARCH` or `BROWSE_WEBSITE`
+   - Mentions prices/products? → Reuse `searchProducts()` from Shopping module
+   - Needs currency info? → Use `convertCurrency()`
+   - Simple question? → Answer directly, no tools
+2. **Agent Collaboration:** When normal chat detects shopping or research intent, it calls the same modular functions as those agents (not duplicating logic)
+3. `tool_choice: "auto"` stays — let the model decide
+4. System prompt enhanced to explain the decision framework
+5. Context tracking — log which tools were used per conversation for future optimization
+
+---
+
+## Phase 6: Cross-Agent Collaboration Layer
+
+**File:** `supabase/functions/chat/index.ts`
+
+Architecture:
+```text
+User Request
+    │
+    ▼
+┌──────────────┐
+│ Decision      │  Analyzes intent, picks mode
+│ Layer         │
+└──────┬───────┘
+       │
+   ┌───┼───────────────┐
+   ▼   ▼               ▼
+Shopping  Research    Direct
+Agent     Agent      Response
+   │       │
+   └───┬───┘
+       ▼
+  Shared Functions
+  (search, browse, convert, validate)
+```
+
+- All three agents share the same modular functions
+- If normal chat needs product data → calls `searchProducts()` directly
+- If shopping needs reviews → calls `searchWeb()` directly
+- No duplicate API calls — results cached within request lifecycle
+- Each agent logs its steps internally (never exposed to user)
+
+---
+
+## Phase 7: Status Messages Cleanup
+
+**Files:** `ChatPage.tsx`, `supabase/functions/chat/index.ts`
+
+Backend changes:
+- Replace ALL `pushStatus()` calls with generic English labels only:
+  - "Searching..." / "Comparing options..." / "Writing response..." / "Almost done..."
+- Remove ALL `pushBrowser()` calls — no browser state sent to frontend
+- Never send tool names, URLs, or raw queries in status
+
+Frontend changes:
+- `onStatus` handler: simple setter, no filtering needed (backend sends clean data)
+- `onBrowser` handler: removed entirely
+- Status shown as: animated star + text, nothing else
 
 ---
 
 ## Implementation Order
-
-1. Phase 1 — Fix computer use intelligence (stop force-triggering)
-2. Phase 3 — Hide internal operations
-3. Phase 4 — Remove "الاطلاع على الصورة"
-4. Phase 5 — In-app image preview
-5. Phase 2 — Redesign ThinkingLoader + View Live
-6. Phase 10 — Obfuscate browser status (merged with Phase 2)
-7. Phase 6 — Shopping memory
-8. Phase 7 — Files page Manus integration
-9. Phase 8 — Voice tools Manus routing
+1. Phase 1 — Remove Megsy Computer UI (fast, visible improvement)
+2. Phase 2 — Build modular functions
+3. Phase 3 — Shopping agent with currency + validation
+4. Phase 4 — Deep Research with summarization + dedup
+5. Phase 5 — Normal chat decision layer
+6. Phase 6 — Cross-agent collaboration
+7. Phase 7 — Status cleanup
 
 ---
 
-## Technical Details
+## Technical Notes
 
-**Key files to modify:**
-- `supabase/functions/chat/index.ts` — line 534 `shouldForceComputerFlow`, lines 1109-1210 browser status messages
-- `src/components/ThinkingLoader.tsx` — full redesign
-- `src/components/ChatMessage.tsx` — remove artifact buttons, add ImagePreviewModal
-- `src/pages/ChatPage.tsx` — enhance status filtering
-- `src/pages/FilesPage.tsx` — full redesign with Manus
-- `supabase/functions/manus-agent/index.ts` — new edge function
+**Currency API:** Free tier of exchangerate-api.com or open.er-api.com (no key needed for basic rates). Cache exchange rates for 1 hour in memory.
 
-**New edge function needed:** `manus-agent` for file generation and complex voice tasks
+**Confidence scoring formula:**
+- Has title: +0.2
+- Has valid price: +0.3
+- Has image URL that responds: +0.2
+- Has valid purchase link: +0.2
+- Has seller name: +0.1
 
-**DB migration needed:** Insert shopping preferences into `user_memory_entries` (table already exists)
+**Retry strategy:**
+- Network timeout → retry after 1s, 2s, 4s (exponential)
+- HTTP 429 → wait 5s then retry once
+- HTTP 4xx → skip to fallback source
+- HTTP 5xx → retry after 2s, then fallback
+
+**Files modified:**
+- `supabase/functions/chat/index.ts` — major refactor (~60% of changes)
+- `src/pages/ChatPage.tsx` — remove browser state, simplify status
+- `src/components/ChatMessage.tsx` — remove ThinkingLoader complexity
+- `src/components/ThinkingLoader.tsx` — simplify to one-line status
 
