@@ -271,6 +271,22 @@ serve(async (req) => {
     const isShopping = effectiveMode === "shopping" || hasShoppingIntent(latestUserText);
     const isLearning = effectiveMode === "learning";
 
+    // Fetch shopping preferences from user_memory_entries if shopping
+    let shoppingPrefs: { country?: string; currency?: string } | null = null;
+    if (isShopping && user_id) {
+      try {
+        const { data: memData } = await sb.from("user_memory_entries")
+          .select("summary")
+          .eq("user_id", user_id)
+          .eq("scope", "account")
+          .ilike("title", "%shopping_preferences%")
+          .maybeSingle();
+        if (memData?.summary) {
+          try { shoppingPrefs = JSON.parse(memData.summary); } catch { /* ignore */ }
+        }
+      } catch { /* silently skip */ }
+    }
+
     // ── Fetch user context (optimized — skip heavy queries for casual) ──
     let userContext = "";
     // Detect casual early to skip expensive context fetching
@@ -461,7 +477,7 @@ serve(async (req) => {
     const needsBrowser = !!HB_API_KEY && needsBrowserIntent;
 
     // System prompt
-    let systemPrompt = buildSystemPrompt(isShopping ? "shopping" : effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext, latestUserText, activeAgent);
+    let systemPrompt = buildSystemPrompt(isShopping ? "shopping" : effectiveMode, isDeepResearch, searchEnabled, wantsHamzaProfile, userContext, latestUserText, activeAgent, shoppingPrefs);
 
     if (computerUseEnabled && HB_API_KEY) {
       systemPrompt += `\n\nCOMPUTER USE (Megsy Computer):
@@ -531,7 +547,7 @@ serve(async (req) => {
       body.tool_choice = "auto";
     }
 
-    const shouldForceComputerFlow = !!HB_API_KEY && !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || needsSearch);
+    const shouldForceComputerFlow = !!HB_API_KEY && !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || isDeepResearch);
     const forcedToolCalls = shouldForceComputerFlow
       ? buildForcedToolCalls({
           latestUserText,
@@ -697,7 +713,7 @@ serve(async (req) => {
 });
 
 // ── Build system prompt ──
-function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string, latestUserText: string, activeAgent?: string): string {
+function buildSystemPrompt(mode: string | undefined, isDeepResearch: boolean, searchEnabled: boolean | undefined, wantsHamzaProfile: boolean, userContext: string, latestUserText: string, activeAgent?: string, shoppingPrefs?: { country?: string; currency?: string } | null): string {
   if (mode === "files") {
     return `You are Megsy, a smart AI File Agent made by Megsy AI. The current year is 2026. You are a decision-making agent, not a simple chatbot.
 
@@ -842,12 +858,18 @@ ${userContext}`;
 
   // Shopping mode
   if (mode === "shopping") {
-    // Detect user location/currency from their text AND user context
+    // Use stored preferences or detect from text
+    const hasStoredPrefs = shoppingPrefs?.country && shoppingPrefs?.currency;
     const combinedText = (userContext + " " + latestUserText).toLowerCase();
-    const isEgypt = /(مصر|egypt|القاهرة|cairo|جنيه|egp|اسكندرية|الجيزة|نون مصر|جوميا|امازون مصر|بي تك)/i.test(combinedText) || /[\u0600-\u06FF]/.test(latestUserText);
-    const isSaudi = /(السعودية|saudi|riyal|sar|جدة|الرياض|نون السعودية)/i.test(combinedText);
-    const localCurrency = isEgypt ? "EGP (الجنيه المصري)" : isSaudi ? "SAR (الريال السعودي)" : "the user's local currency";
+    const isEgypt = hasStoredPrefs ? /egypt|مصر/i.test(shoppingPrefs!.country!) : (/(مصر|egypt|القاهرة|cairo|جنيه|egp|اسكندرية|الجيزة|نون مصر|جوميا|امازون مصر|بي تك)/i.test(combinedText) || /[\u0600-\u06FF]/.test(latestUserText));
+    const isSaudi = hasStoredPrefs ? /saudi|السعودية/i.test(shoppingPrefs!.country!) : /(السعودية|saudi|riyal|sar|جدة|الرياض|نون السعودية)/i.test(combinedText);
+    const localCurrency = hasStoredPrefs ? shoppingPrefs!.currency! : (isEgypt ? "EGP (الجنيه المصري)" : isSaudi ? "SAR (الريال السعودي)" : "");
     const localStores = isEgypt ? "Noon Egypt, Jumia Egypt, Amazon.eg, B.Tech, 2B" : isSaudi ? "Noon KSA, Amazon.sa, Jarir, Extra" : "local online stores";
+    
+    const askForCountryPrompt = !hasStoredPrefs && !isEgypt && !isSaudi
+      ? `\n\nIMPORTANT: You don't know the user's country or preferred currency yet. Before searching for ANY products, you MUST ask the user: "What country are you in, and what currency do you prefer?" — then remember their answer for all future shopping queries. Do NOT guess.`
+      : "";
+    const currencyNote = localCurrency ? `- ALL prices MUST be in ${localCurrency}` : "- Show prices in the user's preferred currency";
     
     return `You are Megsy, a smart AI Shopping Assistant made by Megsy AI. The current year is 2026.
 
@@ -859,13 +881,16 @@ YOUR CAPABILITIES:
 - You have BROWSE_WEBSITE tool to open a real browser and browse stores like ${localStores} to get live prices and availability
 - ALWAYS use SHOPPING_SEARCH first with locale-specific queries (e.g., add "مصر" or "egypt" to queries)
 - Then use BROWSE_WEBSITE to verify prices on ${localStores} for accurate local pricing
-- ALWAYS show prices in ${localCurrency}. NEVER show USD unless the user explicitly asks
+${currencyNote}. NEVER show USD unless the user explicitly asks
 
-CRITICAL CURRENCY RULE:
-- Detect the user's country from their language, dialect, or explicit mentions
-- ALL prices MUST be in ${localCurrency}
+CRITICAL RULES:
+${currencyNote}
 - If search results show USD, convert or search again with local store names
 - Search queries should include the country name for local results
+- NEVER expose internal tool names, raw search results, or processing steps to the user
+- Talk naturally — never say "I'm using SHOPPING_SEARCH" or "Running BROWSE_WEBSITE"
+- Present results as if you found them yourself
+${askForCountryPrompt}
 
 RESPONSE FORMAT for products:
 When you get shopping results, present them in a clean organized format with:
@@ -1106,9 +1131,9 @@ async function handleToolCalls(
         const HB_BASE = "https://api.hyperbrowser.ai";
         const fullTask = browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal;
 
-        pushStatus("Opening smart browser...");
-        pushBrowser({ currentStep: "بدأت استخدام Megsy Computer", currentUrl: browseUrl || "about:blank" });
-        if (browseUrl) pushStatus("Navigating to the website...");
+        pushStatus("Opening Megsy Computer...");
+        pushBrowser({ currentStep: "Starting Megsy Computer", currentUrl: browseUrl || undefined });
+        if (browseUrl) pushStatus("Navigating to a website...");
 
         try {
           const startResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent`, {
@@ -1126,10 +1151,9 @@ async function handleToolCalls(
           const jobId = startData.jobId;
           if (!jobId) { pushStatus("No task ID returned"); continue; }
 
-          pushStatus("Browser opened — executing task...");
+          pushStatus("Megsy Computer is working...");
           pushBrowser({
-            currentStep: "المتصفح يعمل الآن",
-            currentUrl: browseUrl || startData.url || "about:blank",
+            currentStep: "Browsing the web",
             liveUrl: startData.liveUrl || startData.sessionUrl || startData.previewUrl || undefined,
             screenshotUrl: startData.screenshotUrl || undefined,
           });
@@ -1154,7 +1178,6 @@ async function handleToolCalls(
 
               const statusData = await statusResp.json();
               pushBrowser({
-                currentUrl: statusData.currentUrl || statusData.url || browseUrl || undefined,
                 liveUrl: statusData.liveUrl || statusData.sessionUrl || statusData.previewUrl || startData.liveUrl || undefined,
                 screenshotUrl: statusData.screenshotUrl || statusData.latestScreenshot || undefined,
                 currentStep: statusData.currentStep || undefined,
@@ -1164,12 +1187,10 @@ async function handleToolCalls(
                 const newSteps = statusData.steps.slice(lastStepCount);
                 for (const step of newSteps) {
                   const desc = step.description || step.next_goal || step.action || "";
-                  const stepUrl = step.url || statusData.currentUrl || statusData.url || "";
                   if (desc) {
-                    pushStatus(stepUrl ? `${desc} — ${stepUrl}` : desc);
+                    pushStatus(desc);
                     pushBrowser({
                       currentStep: desc,
-                      currentUrl: stepUrl || undefined,
                       liveUrl: statusData.liveUrl || statusData.sessionUrl || statusData.previewUrl || undefined,
                       screenshotUrl: step.screenshotUrl || statusData.screenshotUrl || statusData.latestScreenshot || undefined,
                     });
@@ -1193,8 +1214,7 @@ async function handleToolCalls(
             const output = finalResult.output || finalResult.result || JSON.stringify(finalResult);
             pushStatus("Browsing completed");
             pushBrowser({
-              currentStep: "انتهيت من جمع البيانات",
-              currentUrl: finalResult.currentUrl || finalResult.url || browseUrl || undefined,
+              currentStep: "Data collection completed",
               liveUrl: finalResult.liveUrl || finalResult.sessionUrl || finalResult.previewUrl || undefined,
               screenshotUrl: finalResult.screenshotUrl || finalResult.latestScreenshot || undefined,
             });

@@ -81,14 +81,28 @@ const isBrowserStatus = (status: string) => BROWSER_STATUS_REGEX.test(status);
 
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
+  const lower = status.toLowerCase();
+  // Block internal tool names and raw queries from leaking
+  const blocklist = ["web_search", "browse_website", "shopping_search", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call"];
+  if (blocklist.some(b => lower.includes(b))) return "Working on your request...";
+  // Block raw URLs from showing
+  if (/https?:\/\//i.test(status)) {
+    // Extract meaningful part before URL
+    const cleaned = status.replace(/https?:\/\/[^\s]+/g, "").replace(/—/g, "").trim();
+    if (cleaned) return cleaned;
+    return "Searching the web...";
+  }
   if (isBrowserStatus(status)) return status;
-  if (/writing the report/i.test(status)) return "Writing the final report...";
-  if (/analyzing products/i.test(status)) return "Comparing the best options...";
-  if (/searching for products/i.test(status)) return "Searching stores...";
-  if (/searching:/i.test(status)) return "Searching the web...";
-  if (/found\s+\d+\s+(results|products)/i.test(status)) return "Reviewing the results...";
-  if (/search completed/i.test(status)) return "Search completed.";
-  if (/running /i.test(status)) return "Working on your request...";
+  if (/writing the report/i.test(lower)) return "Writing the final report...";
+  if (/analyzing products/i.test(lower)) return "Comparing the best options...";
+  if (/searching for products|searching stores/i.test(lower)) return "Searching stores...";
+  if (/searching:|gathering/i.test(lower)) return "Searching the web...";
+  if (/found\s+\d+\s+(results|products)/i.test(lower)) return "Reviewing the results...";
+  if (/search completed/i.test(lower)) return "Search completed.";
+  if (/browsing completed/i.test(lower)) return "Browsing completed.";
+  if (/opening megsy|starting megsy/i.test(lower)) return "Opening Megsy Computer...";
+  if (/megsy computer is working/i.test(lower)) return "Megsy Computer is working...";
+  if (/reviewing/i.test(lower)) return "Reviewing the sources...";
   return "Working on your request...";
 };
 

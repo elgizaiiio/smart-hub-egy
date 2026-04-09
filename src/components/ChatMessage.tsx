@@ -8,6 +8,7 @@ import ThinkingLoader from "./ThinkingLoader";
 import FlowCard from "./FlowCard";
 import InfoCards from "./InfoCards";
 import CodePreviewModal from "./CodePreviewModal";
+import ImagePreviewModal from "./ImagePreviewModal";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -47,13 +48,7 @@ const getFavicon = (url: string) => {
   try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`; } catch { return null; }
 };
 
-const getArtifactActionLabel = (url: string): string | null => {
-  if (/\.(png|jpe?g|webp|gif|svg)(\?|#|$)/i.test(url)) return "الاطلاع على الصورة";
-  if (/\.pptx?(\?|#|$)/i.test(url) || /canva\.com/i.test(url)) return "الاطلاع على العرض";
-  if (/\.(pdf|docx?|xlsx?|csv)(\?|#|$)/i.test(url)) return "الاطلاع على المستند";
-  if (/\.html?(\?|#|$)/i.test(url)) return "فتح المعاينة";
-  return null;
-};
+// getArtifactActionLabel removed — no longer needed
 
 function parseStructuredBlocks(content: string): { type: "text" | "questions" | "flow" | "cards"; data: any; raw: string }[] {
   const blocks: { type: "text" | "questions" | "flow" | "cards"; data: any; raw: string }[] = [];
@@ -324,24 +319,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
     links.push({ text: urlMatch[1], url: urlMatch[2] });
   }
   const uniqueLinks = links.filter((link, i, arr) => arr.findIndex(l => l.url === link.url) === i);
-  const artifactActions = useMemo(() => {
-    const actionMap = new Map<string, { label: string; url: string }>();
-
-    images?.forEach((url, index) => {
-      actionMap.set(url, {
-        url,
-        label: images.length > 1 ? `الاطلاع على الصورة ${index + 1}` : "الاطلاع على الصورة",
-      });
-    });
-
-    uniqueLinks.forEach(({ url }) => {
-      const label = getArtifactActionLabel(url);
-      if (!label) return;
-      actionMap.set(url, { url, label });
-    });
-
-    return Array.from(actionMap.values());
-  }, [images, uniqueLinks]);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   if (role === "user") {
     return (
@@ -423,7 +401,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
           {images && images.length > 0 && !(products && products.length > 0) && (
             <div className="flex gap-3 mb-3 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory touch-pan-x">
               {images.map((img, i) => (
-                <img key={i} src={img} alt="" className="shrink-0 snap-start w-[74vw] max-w-[18rem] aspect-[4/3] rounded-xl border border-border/40 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(img, '_blank')} />
+                <img key={i} src={img} alt="" className="shrink-0 snap-start w-[74vw] max-w-[18rem] aspect-[4/3] rounded-xl border border-border/40 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setPreviewImageUrl(img)} />
               ))}
             </div>
           )}
@@ -496,21 +474,6 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             </div>
           )}
 
-          {!isStreaming && artifactActions.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {artifactActions.map((action, index) => (
-                <button
-                  key={`${action.url}-${index}`}
-                  type="button"
-                  onClick={() => window.open(action.url, "_blank", "noopener,noreferrer")}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border/40 bg-secondary/35 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-secondary/55"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  <span>{action.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Sources */}
           {!isStreaming && uniqueLinks.length > 0 && (
@@ -569,6 +532,11 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
           onClose={() => setPreviewCode(null)}
         />
       )}
+
+      <ImagePreviewModal
+        url={previewImageUrl}
+        onClose={() => setPreviewImageUrl(null)}
+      />
     </div>
   );
 };
