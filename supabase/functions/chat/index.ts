@@ -538,7 +538,7 @@ serve(async (req) => {
         ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...trimmedMessages]
         : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
-      max_tokens: isCasualMessage ? 100 : (isDeepResearch ? 3072 : (mode === "files" ? 2048 : 768)),
+      max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 4096 : (mode === "files" ? 2048 : 1024)),
       temperature: isCasualMessage ? 0.2 : 0.5,
     };
 
@@ -1161,9 +1161,9 @@ async function handleToolCalls(
         const HB_BASE = "https://api.hyperbrowser.ai";
         const fullTask = browseUrl ? `Go to ${browseUrl} and ${browseGoal}` : browseGoal;
 
-        pushStatus("Opening Megsy Computer...");
-        pushBrowser({ currentStep: "Starting Megsy Computer", currentUrl: browseUrl || undefined });
-        if (browseUrl) pushStatus("Navigating to a website...");
+        pushStatus("Navigating...");
+        pushBrowser({ currentStep: "Starting browser", currentUrl: browseUrl || undefined });
+        if (browseUrl) pushStatus("Loading page...");
 
         try {
           const startResp = await fetchWithTimeout(`${HB_BASE}/api/task/hyper-agent`, {
@@ -1181,7 +1181,7 @@ async function handleToolCalls(
           const jobId = startData.jobId;
           if (!jobId) { pushStatus("No task ID returned"); continue; }
 
-          pushStatus("Megsy Computer is working...");
+          pushStatus("Working on it...");
           pushBrowser({
             currentStep: "Browsing the web",
             liveUrl: startData.liveUrl || startData.sessionUrl || startData.previewUrl || undefined,
