@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ArrowLeft, Check, Loader2, Search, ExternalLink } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Search, ChevronRight, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,91 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DesktopSettingsLayout } from "@/components/DesktopSettingsLayout";
 import { integrations, INTEGRATION_CATEGORIES, type Integration } from "@/lib/integrationsData";
+import IntegrationDetailModal from "@/components/IntegrationDetailModal";
+
+const ICON_BASE = "https://cdn.jsdelivr.net/npm/simple-icons@v13/icons";
+
+function getIntegrationIcon(app: string): string | null {
+  const map: Record<string, string> = {
+    gmail: "gmail", outlook: "microsoftoutlook", slack: "slack", discord: "discord",
+    microsoftteams: "microsoftteams", zoom: "zoom", telegram: "telegram",
+    whatsapp: "whatsapp", twilio: "twilio", sendgrid: "sendgrid", mailchimp: "mailchimp",
+    intercom: "intercom", notion: "notion", googlecalendar: "googlecalendar",
+    todoist: "todoist", trello: "trello", evernote: "evernote", asana: "asana",
+    clickup: "clickup", monday: "monday", github: "github", gitlab: "gitlab",
+    bitbucket: "bitbucket", jira: "jira", linear: "linear", vercel: "vercel",
+    netlify: "netlify", docker: "docker", kubernetes: "kubernetes",
+    salesforce: "salesforce", hubspot: "hubspot", pipedrive: "pipedrive",
+    stripe: "stripe", paypal: "paypal", shopify: "shopify",
+    instagram: "instagram", twitter: "x", facebook: "facebook", linkedin: "linkedin",
+    tiktok: "tiktok", youtube: "youtube", pinterest: "pinterest", reddit: "reddit",
+    googledrive: "googledrive", dropbox: "dropbox", onedrive: "microsoftonedrive",
+    box: "box", figma: "figma", canva: "canva", adobephotoshop: "adobephotoshop",
+    googleanalytics: "googleanalytics", mixpanel: "mixpanel", segment: "segment",
+    zendesk: "zendesk", freshdesk: "freshdesk", wordpress: "wordpress",
+    wix: "wix", squarespace: "squarespace", aws: "amazonwebservices",
+    googlecloud: "googlecloud", azure: "microsoftazure",
+    postgresql: "postgresql", mongodb: "mongodb", mysql: "mysql", redis: "redis",
+    firebase: "firebase", supabase: "supabase", airtable: "airtable",
+    twitch: "twitch", spotify: "spotify", vimeo: "vimeo",
+    zapier: "zapier", ifttt: "ifttt", make: "make",
+    openai: "openai", anthropic: "anthropic",
+    googlesheets: "googlesheets", googledocs: "googledocs", microsoftexcel: "microsoftexcel",
+    confluence: "confluence", bamboohr: "bamboohr", gusto: "gusto",
+    quickbooks: "quickbooks", xero: "xero", freshbooks: "freshbooks",
+    mailgun: "mailgun", postmark: "postmark", brevo: "brevo",
+    calendly: "calendly", typeform: "typeform", surveymonkey: "surveymonkey",
+    miro: "miro", loom: "loom", webflow: "webflow",
+    sentry: "sentry", datadog: "datadog", newrelic: "newrelic",
+    grafana: "grafana", elasticsearch: "elasticsearch",
+    pagerduty: "pagerduty", statuspage: "statuspage",
+    tableau: "tableau", powerbi: "powerbi",
+    algolia: "algolia", cloudflare: "cloudflare",
+    heroku: "heroku", digitalocean: "digitalocean",
+  };
+  return map[app] ? `${ICON_BASE}/${map[app]}.svg` : null;
+}
+
+// Floating icons animation for hero
+const FloatingIcons = () => {
+  const icons = ["gmail", "slack", "github", "notion", "figma", "discord", "stripe", "shopify", "zoom", "linkedin"];
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {icons.map((name, i) => {
+        const iconUrl = getIntegrationIcon(name);
+        const angle = (i / icons.length) * 360;
+        const radius = 120;
+        const x = Math.cos((angle * Math.PI) / 180) * radius;
+        const y = Math.sin((angle * Math.PI) / 180) * radius;
+        return (
+          <motion.div
+            key={name}
+            className="absolute w-10 h-10 rounded-xl bg-card/80 border border-border/30 flex items-center justify-center backdrop-blur-sm"
+            style={{ left: `calc(50% + ${x}px - 20px)`, top: `calc(50% + ${y}px - 20px)` }}
+            animate={{
+              y: [0, -8, 0, 8, 0],
+              x: [0, 4, 0, -4, 0],
+              rotate: [0, 3, 0, -3, 0],
+            }}
+            transition={{ duration: 4 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
+          >
+            {iconUrl && <img src={iconUrl} alt="" className="w-5 h-5 dark:invert opacity-70" loading="lazy" />}
+          </motion.div>
+        );
+      })}
+      {/* Center pulsing orb */}
+      <motion.div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center"
+        animate={{ scale: [1, 1.08, 1], boxShadow: ["0 0 0 0 hsl(var(--primary)/0)", "0 0 30px 10px hsl(var(--primary)/0.15)", "0 0 0 0 hsl(var(--primary)/0)"] }}
+        transition={{ duration: 3, repeat: Infinity }}
+      >
+        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const IntegrationsPage = () => {
   const navigate = useNavigate();
@@ -17,6 +102,7 @@ const IntegrationsPage = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showConnectedOnly, setShowConnectedOnly] = useState(false);
+  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
 
   useEffect(() => { loadConnections(); }, []);
 
@@ -50,12 +136,10 @@ const IntegrationsPage = () => {
       });
       if (error) throw error;
       if (data?.redirectUrl) {
-        // Open in same window for proper OAuth redirect back
         const returnUrl = window.location.href;
         const redirectWithReturn = data.redirectUrl + (data.redirectUrl.includes("?") ? "&" : "?") + `redirect_url=${encodeURIComponent(returnUrl)}`;
         const authWindow = window.open(redirectWithReturn, "_blank", "width=600,height=700");
         if (!authWindow) {
-          // Fallback: redirect current page
           window.location.href = redirectWithReturn;
           return;
         }
@@ -64,7 +148,6 @@ const IntegrationsPage = () => {
           try {
             if (authWindow.closed) {
               clearInterval(pollInterval);
-              // Re-check connections after window closes
               await loadConnections();
               setLoadingApp(null);
               return;
@@ -89,16 +172,13 @@ const IntegrationsPage = () => {
             }
           } catch {}
         }, 2500);
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          setLoadingApp(null);
-        }, 120000);
+        setTimeout(() => { clearInterval(pollInterval); setLoadingApp(null); }, 120000);
         return;
       } else if (data?.connectionStatus === "ACTIVE") {
         toast.success(`${integration.name} connected`);
         setConnectedApps((prev) => ({ ...prev, [integration.app]: data.id }));
       }
-    } catch (e: any) {
+    } catch {
       toast.error(`Failed to connect ${integration.name}`);
     } finally {
       setLoadingApp(null);
@@ -114,11 +194,7 @@ const IntegrationsPage = () => {
         body: { action: "disconnect", connectionId, userId: "default" },
       });
       if (error) throw error;
-      setConnectedApps((prev) => {
-        const next = { ...prev };
-        delete next[integration.app];
-        return next;
-      });
+      setConnectedApps((prev) => { const next = { ...prev }; delete next[integration.app]; return next; });
       toast.success(`${integration.name} disconnected`);
     } catch {
       toast.error("Failed to disconnect");
@@ -132,57 +208,44 @@ const IntegrationsPage = () => {
 
   const filtered = useMemo(() => {
     return integrations.filter((i) => {
-      const matchesSearch =
-        !search ||
+      const matchesSearch = !search ||
         i.name.toLowerCase().includes(search.toLowerCase()) ||
-        i.description.toLowerCase().includes(search.toLowerCase()) ||
-        i.category.toLowerCase().includes(search.toLowerCase());
+        i.description.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = selectedCategory === "All" || i.category === selectedCategory;
       const matchesConnected = !showConnectedOnly || isConnected(i.app);
       return matchesSearch && matchesCategory && matchesConnected;
     });
   }, [search, selectedCategory, showConnectedOnly, connectedApps]);
 
-  // Group by category for display
-  const grouped = useMemo(() => {
-    if (selectedCategory !== "All") return { [selectedCategory]: filtered };
-    const groups: Record<string, Integration[]> = {};
-    filtered.forEach((i) => {
-      if (!groups[i.category]) groups[i.category] = [];
-      groups[i.category].push(i);
-    });
-    return groups;
-  }, [filtered, selectedCategory]);
+  const featured = useMemo(() => {
+    const featuredApps = ["gmail", "slack", "notion", "github", "googledrive", "discord", "stripe", "shopify", "figma", "hubspot"];
+    return integrations.filter(i => featuredApps.includes(i.app));
+  }, []);
 
   const content = (
     <div className="min-h-screen bg-background">
-      {/* Hero */}
+      {/* Hero with floating animation */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/3 via-transparent to-transparent" />
-        <div className="relative max-w-5xl mx-auto px-4 pt-12 pb-8">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
+        <div className="relative max-w-3xl mx-auto px-4 pt-10 pb-6">
           {isMobile && (
-            <button
-              onClick={() => navigate("/settings")}
-              className="absolute left-4 top-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <button onClick={() => navigate("/settings")} className="absolute left-4 top-4 p-2 text-muted-foreground hover:text-foreground transition-colors z-10">
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="text-center"
-          >
-            <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight leading-[1.1]">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center">
+            {/* Animation zone */}
+            <div className="relative h-64 mb-4">
+              <FloatingIcons />
+            </div>
+            <h1 className="text-2xl md:text-4xl font-black text-foreground tracking-tight leading-[1.1]">
               {integrations.length}+ Integrations
             </h1>
-            <p className="text-muted-foreground mt-3 text-sm md:text-base max-w-lg mx-auto">
+            <p className="text-muted-foreground mt-2 text-sm max-w-md mx-auto">
               Connect your favorite tools and automate workflows directly from the chat.
-              Powered by Composio — secure OAuth2 with encrypted tokens.
             </p>
             {connectedCount > 0 && (
-              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 {connectedCount} connected
               </div>
@@ -191,32 +254,20 @@ const IntegrationsPage = () => {
         </div>
       </div>
 
-      {/* Search & Filters */}
-      <div className="max-w-5xl mx-auto px-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search integrations..."
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-secondary/20 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50"
-            />
-          </div>
-          <button
-            onClick={() => setShowConnectedOnly(!showConnectedOnly)}
-            className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors whitespace-nowrap ${
-              showConnectedOnly
-                ? "bg-primary/10 border-primary/30 text-primary"
-                : "bg-secondary/20 border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Connected only
-          </button>
+      {/* Search */}
+      <div className="max-w-3xl mx-auto px-4 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search integrations..."
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-secondary/20 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50"
+          />
         </div>
 
         {/* Category pills */}
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
           {INTEGRATION_CATEGORIES.map((cat) => (
             <button
               key={cat}
@@ -231,99 +282,121 @@ const IntegrationsPage = () => {
             </button>
           ))}
         </div>
+
+        {/* Connected only toggle */}
+        {connectedCount > 0 && (
+          <button
+            onClick={() => setShowConnectedOnly(!showConnectedOnly)}
+            className={`mt-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+              showConnectedOnly ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/20 border-border text-muted-foreground"
+            }`}
+          >
+            Connected only
+          </button>
+        )}
       </div>
 
-      {/* Integration Grid */}
-      <div className="max-w-5xl mx-auto px-4 pb-20">
+      {/* Featured row (only when no search) */}
+      {!search && selectedCategory === "All" && !showConnectedOnly && (
+        <div className="max-w-3xl mx-auto px-4 mb-6">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Featured</p>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+            {featured.map((integration) => {
+              const connected = isConnected(integration.app);
+              const iconUrl = getIntegrationIcon(integration.app);
+              return (
+                <button
+                  key={integration.id}
+                  onClick={() => setSelectedIntegration(integration)}
+                  className="shrink-0 w-20 flex flex-col items-center gap-1.5 group"
+                >
+                  <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all ${
+                    connected ? "bg-primary/5 border-primary/20" : "bg-card border-border/30 group-hover:border-border/60"
+                  }`}>
+                    {iconUrl ? (
+                      <img src={iconUrl} alt="" className="w-7 h-7 dark:invert" loading="lazy" />
+                    ) : (
+                      <span className="text-base font-bold text-muted-foreground">{integration.name.charAt(0)}</span>
+                    )}
+                    {connected && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">{integration.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Integration List */}
+      <div className="max-w-3xl mx-auto px-4 pb-20">
         {isLoadingConnections ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-        ) : Object.keys(grouped).length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground text-sm">
-            No integrations found matching your search
-          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground text-sm">No integrations found</div>
         ) : (
-          <div className="space-y-10">
-            {Object.entries(grouped).map(([category, items]) => (
-              <motion.div
-                key={category}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                {selectedCategory === "All" && (
-                  <div className="flex items-center gap-3 mb-4">
-                    <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
-                      {category}
-                    </h2>
-                    <div className="flex-1 h-px bg-border/30" />
-                    <span className="text-xs text-muted-foreground">{items.length}</span>
+          <div className="space-y-1">
+            {filtered.map((integration, i) => {
+              const connected = isConnected(integration.app);
+              const isLoading = loadingApp === integration.id;
+              const iconUrl = getIntegrationIcon(integration.app);
+              return (
+                <motion.button
+                  key={integration.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.015, 0.3) }}
+                  onClick={() => setSelectedIntegration(integration)}
+                  className="w-full flex items-center gap-3 py-3 px-3 rounded-xl hover:bg-muted/30 transition-colors text-left"
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${
+                    connected ? "bg-primary/5 border-primary/20" : "bg-card border-border/30"
+                  }`}>
+                    {iconUrl ? (
+                      <img src={iconUrl} alt="" className="w-5 h-5 dark:invert" loading="lazy" />
+                    ) : (
+                      <span className="text-sm font-bold text-muted-foreground">{integration.name.charAt(0)}</span>
+                    )}
                   </div>
-                )}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-                  {items.map((integration, i) => {
-                    const connected = isConnected(integration.app);
-                    const isLoading = loadingApp === integration.id;
-                    return (
-                      <motion.button
-                        key={integration.id}
-                        initial={{ opacity: 0, scale: 0.97 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                        onClick={() =>
-                          connected
-                            ? handleDisconnect(integration)
-                            : handleConnect(integration)
-                        }
-                        disabled={isLoading}
-                        className={`relative text-left p-3 rounded-xl border transition-all group ${
-                          connected
-                            ? "bg-primary/5 border-primary/20 hover:border-primary/40"
-                            : "bg-secondary/10 border-border/20 hover:border-border/50 hover:bg-secondary/20"
-                        }`}
-                      >
-                        {connected && (
-                          <div className="absolute top-2 right-2">
-                            <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-                              <Check className="w-2.5 h-2.5 text-white" />
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="w-7 h-7 rounded-lg bg-secondary/30 flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
-                            {integration.name.charAt(0)}
-                          </div>
-                        </div>
-                        <p className="text-xs font-semibold text-foreground leading-tight truncate">
-                          {integration.name}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight line-clamp-2">
-                          {integration.description}
-                        </p>
-                        {isLoading && (
-                          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                          </div>
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{integration.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{integration.description}</p>
+                  </div>
+                  {connected && (
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-emerald-500" />
+                    </div>
+                  )}
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />}
+                  <ChevronRight className="w-4 h-4 text-muted-foreground/30 shrink-0" />
+                </motion.button>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Detail Modal */}
+      <IntegrationDetailModal
+        integration={selectedIntegration}
+        isConnected={selectedIntegration ? isConnected(selectedIntegration.app) : false}
+        isLoading={selectedIntegration ? loadingApp === selectedIntegration.id : false}
+        onConnect={() => selectedIntegration && handleConnect(selectedIntegration)}
+        onDisconnect={() => selectedIntegration && handleDisconnect(selectedIntegration)}
+        onClose={() => setSelectedIntegration(null)}
+      />
     </div>
   );
 
   if (!isMobile) {
     return (
-      <DesktopSettingsLayout
-        title="Integrations"
-        subtitle={`${integrations.length}+ apps available`}
-      >
+      <DesktopSettingsLayout title="Integrations" subtitle={`${integrations.length}+ apps available`}>
         {content}
       </DesktopSettingsLayout>
     );
