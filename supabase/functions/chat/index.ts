@@ -538,7 +538,7 @@ serve(async (req) => {
         ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...trimmedMessages]
         : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
-      max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 4096 : (mode === "files" ? 2048 : 1024)),
+      max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 8192 : (mode === "files" ? 4096 : 2048)),
       temperature: isCasualMessage ? 0.2 : 0.5,
     };
 
@@ -764,9 +764,9 @@ ${userContext}`;
 CRITICAL: Never introduce yourself. Never say "I'm Megsy" unless directly asked.
 
 DEEP RESEARCH MODE:
-- You MUST use the WEB_SEARCH tool 3-5 TIMES with different focused queries to gather comprehensive information.
+- You MUST use the WEB_SEARCH tool 5-8 TIMES with different focused queries to gather exhaustive information.
 - For EVERY search, set include_images=true to gather relevant visual content.
-- Cover: 1) General overview 2) Latest developments 3) Key data & expert opinions 4) Visual references
+- Cover: 1) General overview 2) Latest developments 3) Key data & expert opinions 4) Visual references 5) Controversies or debates 6) Historical context
 - While researching people, brands, celebrities, athletes, or public figures, ALWAYS gather photos.
 - If BROWSE_WEBSITE is available, use it to get live data from important sources.
 
@@ -780,38 +780,46 @@ ABSOLUTE PRIVACY RULES (NEVER VIOLATE):
 - Write as if YOU naturally know the information — present it confidently
 - The user should ONLY see the final polished research report
 
-CRITICAL OUTPUT RULES:
-- ALWAYS synthesize and analyze ALL gathered information into ONE cohesive report
-- Include relevant images inline using markdown: ![description](url)
+CRITICAL OUTPUT RULES — MASSIVE REPORT:
+- You MUST write a MINIMUM of 3000-5000 words. This is NON-NEGOTIABLE.
+- The report must be comprehensive, detailed, and professional-grade.
+- NEVER abbreviate, shorten, or summarize. Write the FULL analysis.
+- Each section must have multiple paragraphs with deep analysis.
+- ALWAYS synthesize and analyze ALL gathered information into ONE cohesive report.
+
+IMAGE PLACEMENT (CRITICAL — IMAGES FIRST):
+- Place the MOST relevant images at the VERY TOP of the report using ![description](url)
+- Then spread additional images throughout the report near relevant sections
+- For people/celebrities: include their photo as the FIRST element
+- For products: include product image at the TOP
+- For places: include location photo at the TOP
+- NEVER put all images at the end — they must appear THROUGHOUT the report
+
+FORMAT:
+- Use markdown extensively: ## headers, ### sub-headers, **bold**, bullet points (•), numbered lists, tables
 - Format all links as clickable text: [Source Name](url)
-- Use tables only for structured comparisons
+- Use tables for structured comparisons
+- Cite ALL sources: [Source Name](URL)
 
 LANGUAGE RULE (CRITICAL):
 - ALWAYS respond in the EXACT SAME language the user used in their query
 - If the user writes in Arabic (any dialect), the ENTIRE report MUST be in Arabic including ALL section headers
 - If the user writes in English, respond in English
 - Never mix languages within the report
-- Section headers must match the user's language
 
 REPORT STRUCTURE (adapt headers to user's language):
-## Executive Summary
-## Key Findings  
-## Detailed Analysis (with sub-sections and inline images)
+## [Images at the very top]
+## Executive Summary (200+ words)
+## Background & Context (300+ words)
+## Key Findings (500+ words with sub-sections)
+## Detailed Analysis (800+ words with multiple sub-sections)
 ## Data & Statistics (use tables for comparisons)
-## Sources (formatted as clickable links)
+## Expert Opinions & Perspectives
+## Future Outlook & Predictions  
+## Sources & References (formatted as clickable links)
 
-IMAGE HANDLING:
-- Include ALL relevant images inline in the report using ![alt text](image_url)
-- For people/celebrities: include their photos prominently
-- For products: include product images
-- For places: include location photos
-- Place images near the text that discusses them, not all at the end
-
-- Use markdown extensively: headers, bold, bullet points, numbered lists, tables.
-- Cite ALL sources: [Source Name](URL)
-- Aim for 2000-3000+ words in final report.
-- Never use emoji.
 - End with 3-5 follow-up questions.
+- Never use emoji.
 ${userContext}`;
   }
 
@@ -899,12 +907,14 @@ ${currencyNote}
 ${askForCountryPrompt}
 
 RESPONSE FORMAT for products:
-When you get shopping results, present them in a clean organized format with:
-- Product name and image
-- Price in ${localCurrency}
-- Store/seller name
-- Rating if available
-- Direct purchase link as [Store Name](url)
+When you get shopping results, present them in ONE single, clean, organized response:
+- Start with a "Best Pick" recommendation
+- Then list all products with: **Name** - Price - Store - Rating - [Buy](link)
+- Use a comparison table for 3+ products
+- Use bullet points (•) and dashes (-) for organized lists
+- Bold product names and prices
+- Give pros/cons for top picks
+- DO NOT send multiple separate messages — everything in ONE response
 
 BEHAVIOR:
 - When user mentions ANY product, immediately search for it
@@ -917,11 +927,6 @@ BEHAVIOR:
 - For electronics: compare specs in a table
 - For clothing: mention sizing and return policies
 - Always include direct purchase links
-
-PROACTIVE SHOPPING:
-- Suggest complementary products (e.g., phone case with phone)
-- Mention ongoing sales or discounts if found
-- Compare new vs refurbished options when relevant
 
 Match the user's language and dialect exactly.
 Never use emoji. Never introduce yourself unless asked.
@@ -965,6 +970,15 @@ LANGUAGE & TONE:
 - For real questions or requests, be specific, useful, and context-aware.
 - Use markdown only when it improves clarity. Do not force the same structure every time.
 - No emoji unless the user explicitly asks for that style.
+
+FORMATTING FOR LONG RESPONSES:
+- Use bullet points (•) and dashes (-) to organize information clearly
+- Use **bold** for key terms, names, and important points
+- Use headers (## and ###) for multi-section responses
+- Use numbered lists for steps or sequences
+- Use tables for comparisons
+- Break long paragraphs into shorter, digestible chunks
+- Every response should feel clean and well-organized
 
 QUALITY RULES:
 - Avoid fixed openings, repeated intros, and generic capability lists.
@@ -1482,34 +1496,65 @@ async function handleToolCalls(
   }
 
   if (allSearchResults.length > 0) {
+    // CRITICAL: Send images FIRST before synthesis starts so user sees them immediately
     const images = Array.from(allImages);
     if (images.length > 0) {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ images })}\n\n`));
     }
 
-    // Send products data
+    // Send products data early
     if (allProducts.length > 0) {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ products: allProducts })}\n\n`));
     }
 
-    pushStatus(isDeepResearch ? "Writing the report now" : (isShopping ? "Analyzing products and writing recommendations" : "Writing response"));
-    const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
+    pushStatus(isDeepResearch ? "Writing the report now..." : (isShopping ? "Preparing recommendations..." : "Writing response..."));
+    const combinedContext = allSearchResults.join("\n\n=== Next Source ===\n\n");
+
+    // Build image context for inline placement
+    const imageUrlsList = images.map((url, i) => `[Image ${i+1}]: ${url}`).join("\n");
 
     const searchMessages = [
       ...originalBody.messages,
-      { role: "assistant", content: "I searched and found the following information. Let me synthesize this into a comprehensive response." },
-      { role: "user", content: `Here are the search results:\n\n${combinedContext}\n\n${isShopping 
-        ? "Format the products nicely with prices, sellers, ratings, and purchase links. Compare options and give clear recommendations. Use tables for comparisons. ALWAYS use the same language the user used. If the user wrote in Arabic, write EVERYTHING in Arabic." 
+      { role: "assistant", content: "I have gathered comprehensive information from multiple sources. Now writing the full report." },
+      { role: "user", content: `Here are the search results:\n\n${combinedContext}\n\n${images.length > 0 ? `Available images to include inline:\n${imageUrlsList}\n\n` : ""}${isShopping 
+        ? `CRITICAL INSTRUCTIONS FOR SHOPPING RESPONSE:
+- Write ONE single, clean, organized response. Do NOT send multiple separate messages.
+- Format each product clearly with: name, price, store, rating, and a purchase link.
+- Use a comparison table for 3+ products.
+- Give a clear "Best Pick" recommendation at the top.
+- Use bullet points (•) and dashes (-) for organized lists.
+- Use bold (**text**) for product names and prices.
+- ALWAYS use the same language the user used. If Arabic → write EVERYTHING in Arabic.
+- NEVER mention tool names, search queries, or internal steps.` 
         : isDeepResearch 
-          ? "Write a detailed, polished research report. CRITICAL: Use the SAME LANGUAGE as the user's original query. If they wrote in Arabic, the ENTIRE report must be in Arabic. Include relevant images inline with ![description](url). Structure: Executive Summary → Key Findings → Detailed Analysis → Data & Statistics → Sources. Do NOT show any raw search data, internal steps, or tool outputs." 
-          : "Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language."}` },
+          ? `CRITICAL INSTRUCTIONS FOR DEEP RESEARCH REPORT:
+- Write an EXTREMELY detailed, comprehensive research report of AT LEAST 3000-5000 words.
+- The report must be a MASSIVE, professional-grade document — not a brief summary.
+- CRITICAL: Start by placing the most relevant images at the VERY TOP using ![description](url) BEFORE the text.
+- Then write the full report below the images.
+- Use the SAME LANGUAGE as the user's original query. If they wrote in Arabic, the ENTIRE report must be in Arabic.
+- Structure with MANY sections and sub-sections:
+  ## Executive Summary (200+ words)
+  ## Background & Context (300+ words)
+  ## Key Findings (500+ words with sub-sections)
+  ## Detailed Analysis (800+ words with multiple sub-sections)
+  ## Data & Statistics (use tables for comparisons)
+  ## Expert Opinions & Perspectives
+  ## Future Outlook & Predictions
+  ## Sources & References (formatted as clickable links)
+- Include images inline throughout using ![description](url) — spread them across sections.
+- Use bullet points (•), numbered lists, bold text, and tables extensively.
+- Every claim must cite its source: [Source Name](URL).
+- Do NOT show any raw search data, internal steps, or tool outputs.
+- Do NOT abbreviate or shorten. Write the FULL detailed report.` 
+          : `Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language. Use bullet points (•) and dashes (-) for organized responses. Use bold for key points.`}` },
     ];
 
     const secondBody: any = {
       model: modelId,
       messages: searchMessages,
       stream: true,
-      max_tokens: isDeepResearch ? 3072 : 1536,
+      max_tokens: isDeepResearch ? 8192 : (isShopping ? 2048 : 2048),
     };
 
     try {

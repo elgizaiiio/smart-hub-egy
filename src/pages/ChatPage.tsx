@@ -321,12 +321,17 @@ const ChatPage = () => {
     const allMessages = [...messages, userMsg].map((m) => {
       const imgs = m.attachedImages || [];
       if (imgs.length > 0) {
-        const content: any[] = imgs.map((imgData) => ({
-          type: "image_url" as const,
-          image_url: { url: imgData }
-        }));
-        if (m.content) {
+        // IMPORTANT: Put text FIRST so the model sees the user's question, then images
+        const content: any[] = [];
+        if (m.content && m.content.trim()) {
           content.push({ type: "text" as const, text: m.content });
+        }
+        imgs.forEach((imgData) => {
+          content.push({ type: "image_url" as const, image_url: { url: imgData } });
+        });
+        // Ensure there's always at least text content
+        if (content.length === 0) {
+          content.push({ type: "text" as const, text: "Please analyze this image." });
         }
         return { role: m.role, content };
       }
