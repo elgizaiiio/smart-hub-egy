@@ -538,7 +538,7 @@ serve(async (req) => {
         ? [{ role: "system", content: `You are Megsy, a fast and friendly AI assistant. Reply briefly and naturally. Match the user's language.${userContext}` }, ...trimmedMessages]
         : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
       stream: true,
-      max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 4096 : (mode === "files" ? 2048 : 1024)),
+      max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 8192 : (mode === "files" ? 4096 : 2048)),
       temperature: isCasualMessage ? 0.2 : 0.5,
     };
 
@@ -1482,34 +1482,65 @@ async function handleToolCalls(
   }
 
   if (allSearchResults.length > 0) {
+    // CRITICAL: Send images FIRST before synthesis starts so user sees them immediately
     const images = Array.from(allImages);
     if (images.length > 0) {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ images })}\n\n`));
     }
 
-    // Send products data
+    // Send products data early
     if (allProducts.length > 0) {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ products: allProducts })}\n\n`));
     }
 
-    pushStatus(isDeepResearch ? "Writing the report now" : (isShopping ? "Analyzing products and writing recommendations" : "Writing response"));
-    const combinedContext = allSearchResults.join("\n\n=== Next Search ===\n\n");
+    pushStatus(isDeepResearch ? "Writing the report now..." : (isShopping ? "Preparing recommendations..." : "Writing response..."));
+    const combinedContext = allSearchResults.join("\n\n=== Next Source ===\n\n");
+
+    // Build image context for inline placement
+    const imageUrlsList = images.map((url, i) => `[Image ${i+1}]: ${url}`).join("\n");
 
     const searchMessages = [
       ...originalBody.messages,
-      { role: "assistant", content: "I searched and found the following information. Let me synthesize this into a comprehensive response." },
-      { role: "user", content: `Here are the search results:\n\n${combinedContext}\n\n${isShopping 
-        ? "Format the products nicely with prices, sellers, ratings, and purchase links. Compare options and give clear recommendations. Use tables for comparisons. ALWAYS use the same language the user used. If the user wrote in Arabic, write EVERYTHING in Arabic." 
+      { role: "assistant", content: "I have gathered comprehensive information from multiple sources. Now writing the full report." },
+      { role: "user", content: `Here are the search results:\n\n${combinedContext}\n\n${images.length > 0 ? `Available images to include inline:\n${imageUrlsList}\n\n` : ""}${isShopping 
+        ? `CRITICAL INSTRUCTIONS FOR SHOPPING RESPONSE:
+- Write ONE single, clean, organized response. Do NOT send multiple separate messages.
+- Format each product clearly with: name, price, store, rating, and a purchase link.
+- Use a comparison table for 3+ products.
+- Give a clear "Best Pick" recommendation at the top.
+- Use bullet points (•) and dashes (-) for organized lists.
+- Use bold (**text**) for product names and prices.
+- ALWAYS use the same language the user used. If Arabic → write EVERYTHING in Arabic.
+- NEVER mention tool names, search queries, or internal steps.` 
         : isDeepResearch 
-          ? "Write a detailed, polished research report. CRITICAL: Use the SAME LANGUAGE as the user's original query. If they wrote in Arabic, the ENTIRE report must be in Arabic. Include relevant images inline with ![description](url). Structure: Executive Summary → Key Findings → Detailed Analysis → Data & Statistics → Sources. Do NOT show any raw search data, internal steps, or tool outputs." 
-          : "Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language."}` },
+          ? `CRITICAL INSTRUCTIONS FOR DEEP RESEARCH REPORT:
+- Write an EXTREMELY detailed, comprehensive research report of AT LEAST 3000-5000 words.
+- The report must be a MASSIVE, professional-grade document — not a brief summary.
+- CRITICAL: Start by placing the most relevant images at the VERY TOP using ![description](url) BEFORE the text.
+- Then write the full report below the images.
+- Use the SAME LANGUAGE as the user's original query. If they wrote in Arabic, the ENTIRE report must be in Arabic.
+- Structure with MANY sections and sub-sections:
+  ## Executive Summary (200+ words)
+  ## Background & Context (300+ words)
+  ## Key Findings (500+ words with sub-sections)
+  ## Detailed Analysis (800+ words with multiple sub-sections)
+  ## Data & Statistics (use tables for comparisons)
+  ## Expert Opinions & Perspectives
+  ## Future Outlook & Predictions
+  ## Sources & References (formatted as clickable links)
+- Include images inline throughout using ![description](url) — spread them across sections.
+- Use bullet points (•), numbered lists, bold text, and tables extensively.
+- Every claim must cite its source: [Source Name](URL).
+- Do NOT show any raw search data, internal steps, or tool outputs.
+- Do NOT abbreviate or shorten. Write the FULL detailed report.` 
+          : `Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language. Use bullet points (•) and dashes (-) for organized responses. Use bold for key points.`}` },
     ];
 
     const secondBody: any = {
       model: modelId,
       messages: searchMessages,
       stream: true,
-      max_tokens: isDeepResearch ? 3072 : 1536,
+      max_tokens: isDeepResearch ? 8192 : (isShopping ? 2048 : 2048),
     };
 
     try {
