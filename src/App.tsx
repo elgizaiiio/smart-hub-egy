@@ -73,6 +73,7 @@ const VoiceTranslatePage = lazy(() => import("./pages/voice/VoiceTranslatePage")
 const VoiceStudioPage = lazy(() => import("./pages/voice/VoiceStudioPage"));
 const VideoToTextPage = lazy(() => import("./pages/tools/VideoToTextPage"));
 const AIPersonalizationPage = lazy(() => import("./pages/AIPersonalizationPage"));
+const MemoryPage = lazy(() => import("./pages/MemoryPage"));
 const InpaintPage = lazy(() => import("./pages/tools/InpaintPage"));
 const ClothesChangerPage = lazy(() => import("./pages/tools/ClothesChangerPage"));
 const HeadshotPage = lazy(() => import("./pages/tools/HeadshotPage"));
@@ -267,6 +268,7 @@ const App = () => {
                   <Route path="/settings/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
                   <Route path="/settings/language" element={<ProtectedRoute><LanguagePage /></ProtectedRoute>} />
                   <Route path="/settings/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
+                  <Route path="/settings/memory" element={<ProtectedRoute><MemoryPage /></ProtectedRoute>} />
                   <Route path="/settings/change-email" element={<ProtectedRoute><ChangeEmailPage /></ProtectedRoute>} />
                   <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
                   <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
