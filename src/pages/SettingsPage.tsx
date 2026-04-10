@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ChevronRight, Globe2, Brush, Cable, UserRound, CreditCard,
-  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown, Bell,
+  Gift, SquareCode, Radio, CircleHelp, LogOut, Crown, Bell, Brain,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +69,7 @@ const SettingsPage = () => {
     { icon: UserRound, label: "Account", desc: "Profile & security", path: "/settings/profile" },
     { icon: CreditCard, label: "Billing", desc: "MC & payments", path: "/settings/billing" },
     { icon: Brush, label: "AI Personalization", desc: "Customize AI behavior", path: "/settings/ai-personalization" },
+    { icon: Brain, label: "Memory", desc: "AI memory & data", path: "/settings/memory" },
     { icon: Globe2, label: "Language", desc: "Auto-translate UI", path: "/settings/language" },
     { icon: Bell, label: "Notifications", desc: "Alerts & email prefs", path: "/settings/notifications" },
     { icon: SquareCode, label: "APIs", desc: "Developer access", path: "https://api.megsyai.com", external: true },
