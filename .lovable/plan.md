@@ -1,213 +1,103 @@
 
 
-# Plan: Agent System Overhaul + Remove Megsy Computer UI
+# Files Page Complete Overhaul
 
-## What You'll Get
-A completely rebuilt agent orchestration backend for Shopping, Deep Research, and Normal Chat — with modular functions, retry logic, currency conversion, validation, confidence scoring, and cross-agent collaboration. Plus removal of the Megsy Computer badge/box from the chat UI.
+## Problems Identified
 
----
+1. **2Slides API is completely wrong** - Current code calls `https://api.2slides.com/v1/presentations` which doesn't exist. The real API is at `https://2slides.com/api/v1/slides/generate` (Fast PPT) and `https://2slides.com/api/v1/slides/create-pdf-slides` (Nano Banana Pro)
+2. **Template images use ibb.co share URLs** (not direct image URLs) - they won't render. Need to use 2slides.com's own preview URLs instead
+3. **HTML file generation relies on AI outputting raw HTML** which is unreliable - often returns markdown mixed with HTML, causing broken previews
+4. **No job polling** - 2Slides API is async for Pro mode, requires polling `/api/v1/jobs/{jobId}` every 20-30s
+5. **No deep research before file creation** - current research step is fragile and often returns empty
+6. **Status feedback is minimal** - no progressive updates during generation
+7. **Image search for documents uses Serper** but doesn't use stock photo APIs (no Pexels/Unsplash key available, so we'll use Serper images which is already working)
 
-## Phase 1: Remove Megsy Computer UI from Chat (Frontend)
+## What I'll Build
 
-**Files:** `ChatPage.tsx`, `ChatMessage.tsx`, `ThinkingLoader.tsx`
+### 1. Fix `generate-slides` Edge Function (Complete Rewrite)
 
-1. **ChatPage.tsx:**
-   - Remove `ThinkingLoader` import and all `browserLiveState` state
-   - Remove `statusHistory` state and all `setBrowserLiveState` / `setStatusHistory` calls
-   - Remove `BROWSER_STATUS_REGEX`, `isBrowserStatus`, `normalizeStatusLabel` — replace with a simple inline status text
-   - Remove Megsy Computer toggle from plus menu
-   - Remove `computerUseEnabled` state entirely
-   - Keep `searchStatus` as a simple one-line text under the assistant bubble (e.g., "Searching..." or "Comparing options...")
-   - Remove all `browserLiveState` props from `ChatMessage`
+Use the correct 2Slides API endpoints:
 
-2. **ChatMessage.tsx:**
-   - Remove `ThinkingLoader` component usage
-   - Remove `browserLiveState`, `statusHistory` props
-   - Keep `searchStatus` as a simple animated text line with a spinning star, no dialog, no "View Live" button
-   - Show only generic labels: "Thinking...", "Searching the web...", "Comparing options...", "Writing response..."
+**Normal Mode (Fast PPT):**
+- `POST https://2slides.com/api/v1/slides/generate`
+- Body: `{ themeId, userInput, responseLanguage: "Auto", mode: "sync" }`
+- Returns `downloadUrl` directly
 
-3. **ThinkingLoader.tsx:**
-   - Simplify to a minimal component: animated star + one-line status text
-   - Remove the entire View Live dialog, screenshot polling, activity log
-   - No "Megsy Computer" branding visible to user
+**Pro Mode (Nano Banana):**
+- `POST https://2slides.com/api/v1/slides/create-pdf-slides`
+- Body: `{ userInput, mode: "async" }`
+- Returns `jobId` → poll `GET https://2slides.com/api/v1/jobs/{jobId}` every 20s until `status: "success"`
+- Then return `downloadUrl`
 
----
+### 2. Fix Template Data
 
-## Phase 2: Modular Backend Functions (Edge Function)
-
-**File:** `supabase/functions/chat/index.ts`
-
-Create reusable internal functions at the top of the file:
-
-```text
-┌─────────────────────────────┐
-│  Modular Function Library   │
-├─────────────────────────────┤
-│ searchProducts(query, opts) │  → Serper shopping + validation
-│ searchWeb(query, opts)      │  → Serper web search + images
-│ browseWebsite(goal, url)    │  → Hyperbrowser agent
-│ convertCurrency(amount,     │  → Exchange rate API
-│   from, to)                 │
-│ extractText(html)           │  → Clean text extraction
-│ summarizeText(text, limit)  │  → Truncate + summarize
-│ validateProduct(product)    │  → Check all fields exist
-│ generatePreview(data)       │  → HTML preview builder
-│ retryWithFallback(fn, opts) │  → Adaptive retry wrapper
-└─────────────────────────────┘
+Replace broken ibb.co URLs with 2slides.com's own preview images:
 ```
-
-Key additions:
-- `retryWithFallback(fn, maxRetries, backoffStrategy)` — wraps any async call with exponential backoff, different strategy per error type (network → retry fast, 429 → wait longer, 4xx → try fallback source)
-- `validateProduct(p)` — ensures title, price, link all exist; drops invalid entries
-- `convertCurrency(amount, from, to)` — calls exchangerate-api.com (free tier) for real-time conversion
-- `confidenceScore(result)` — returns 0-1 based on data completeness
-
----
-
-## Phase 3: Shopping Agent Overhaul
-
-**File:** `supabase/functions/chat/index.ts` — `handleToolCalls` section
-
-Changes to `SHOPPING_SEARCH` handler:
-1. Search with Serper Shopping API (existing)
-2. **NEW:** Validate every product with `validateProduct()` — drop broken entries
-3. **NEW:** Convert all prices to user's preferred currency using `convertCurrency()`
-4. **NEW:** Add `confidence` score per product (0-1)
-5. **NEW:** If Serper fails, retry with `retryWithFallback()`, then fallback to `BROWSE_WEBSITE` for live store scraping
-6. **NEW:** Send products progressively (incremental SSE updates as each batch is ready)
-7. **NEW:** Structured JSON output format per product:
-   ```json
-   {"title":"...", "price_local":"...", "price_original":"...", "image":"...", "link":"...", "confidence":0.9}
-   ```
-8. Status messages: only generic ("Searching stores...", "Comparing prices...", "Converting currency...")
-9. **NEW:** Log each step to console for debugging (never expose to user)
-
-Changes to system prompt:
-- Instruct model to NEVER mention tool names
-- Instruct to present results naturally in user's language
-- Use stored country/currency from `user_memory_entries`
-
----
-
-## Phase 4: Deep Research Agent Overhaul
-
-**File:** `supabase/functions/chat/index.ts`
-
-Changes to `WEB_SEARCH` handler (when `isDeepResearch`):
-1. **NEW:** Context awareness — track already-searched queries in `allSearchResults` to avoid duplicate searches
-2. **NEW:** Text extraction — when browser results return HTML, run `extractText()` to clean
-3. **NEW:** Summarization — if extracted text > 2000 chars, auto-summarize before adding to context
-4. **NEW:** Retry mechanism — if a search fails, try alternative query phrasing
-5. **NEW:** Image collection — always `include_images=true`, validate image URLs
-6. **NEW:** Confidence scoring per source
-7. **NEW:** Fallback sources — if Serper fails, use BROWSE_WEBSITE to scrape Google directly
-
-Synthesis prompt improvements:
-- Strictly forbid showing raw data, tool names, search queries
-- Force language matching (Arabic query → Arabic report)
-- Require inline images with `![](url)` format
-- Structured report format with proper sections
-
----
-
-## Phase 5: Normal Chat Agent — Decision Layer
-
-**File:** `supabase/functions/chat/index.ts`
-
-The normal chat agent gets a **Decision Layer**:
-1. **Before any tool call**, the model analyzes the request intent:
-   - Needs live web data? → Use `WEB_SEARCH` or `BROWSE_WEBSITE`
-   - Mentions prices/products? → Reuse `searchProducts()` from Shopping module
-   - Needs currency info? → Use `convertCurrency()`
-   - Simple question? → Answer directly, no tools
-2. **Agent Collaboration:** When normal chat detects shopping or research intent, it calls the same modular functions as those agents (not duplicating logic)
-3. `tool_choice: "auto"` stays — let the model decide
-4. System prompt enhanced to explain the decision framework
-5. Context tracking — log which tools were used per conversation for future optimization
-
----
-
-## Phase 6: Cross-Agent Collaboration Layer
-
-**File:** `supabase/functions/chat/index.ts`
-
-Architecture:
-```text
-User Request
-    │
-    ▼
-┌──────────────┐
-│ Decision      │  Analyzes intent, picks mode
-│ Layer         │
-└──────┬───────┘
-       │
-   ┌───┼───────────────┐
-   ▼   ▼               ▼
-Shopping  Research    Direct
-Agent     Agent      Response
-   │       │
-   └───┬───┘
-       ▼
-  Shared Functions
-  (search, browse, convert, validate)
+image: "https://2slides.com/login_preview/st-1763716811881-gt30ikwgk_slide1.webp"
 ```
+These are the real hosted preview images from 2slides.com's CDN.
 
-- All three agents share the same modular functions
-- If normal chat needs product data → calls `searchProducts()` directly
-- If shopping needs reviews → calls `searchWeb()` directly
-- No duplicate API calls — results cached within request lifecycle
-- Each agent logs its steps internally (never exposed to user)
+### 3. Redesign FilesPage.tsx (Full Rewrite)
 
----
+**Hero section:** Large gradient text "CREATE ANYTHING" with animated subtitle cycling through capabilities
 
-## Phase 7: Status Messages Cleanup
+**Input bar:** Larger rectangular input (min-h-[100px]) with:
+- Plus button for file attachments
+- Send button
+- Active service badge
 
-**Files:** `ChatPage.tsx`, `supabase/functions/chat/index.ts`
+**Service buttons:** Single horizontal scroll row below input:
+- Slides, Slides Pro, Document, Resume, Report, Spreadsheet, Letter
 
-Backend changes:
-- Replace ALL `pushStatus()` calls with generic English labels only:
-  - "Searching..." / "Comparing options..." / "Writing response..." / "Almost done..."
-- Remove ALL `pushBrowser()` calls — no browser state sent to frontend
-- Never send tool names, URLs, or raw queries in status
+**Template picker:** When "Slides" is selected, show templates in a horizontal scroll with real preview images from 2slides.com
 
-Frontend changes:
-- `onStatus` handler: simple setter, no filtering needed (backend sends clean data)
-- `onBrowser` handler: removed entirely
-- Status shown as: animated star + text, nothing else
+**Chat area:** Clean message bubbles with:
+- User messages right-aligned
+- Assistant messages with markdown rendering
+- Download buttons for completed files
+- Preview button for HTML files
+- Progressive status updates during generation
 
----
+### 4. Improve File Generation Logic
 
-## Implementation Order
-1. Phase 1 — Remove Megsy Computer UI (fast, visible improvement)
-2. Phase 2 — Build modular functions
-3. Phase 3 — Shopping agent with currency + validation
-4. Phase 4 — Deep Research with summarization + dedup
-5. Phase 5 — Normal chat decision layer
-6. Phase 6 — Cross-agent collaboration
-7. Phase 7 — Status cleanup
+**For Slides (Normal):**
+1. AI enhances user's topic into detailed slide content
+2. Call 2Slides API with selected themeId + enhanced content
+3. Return download link + friendly summary
 
----
+**For Slides Pro:**
+1. Deep research via chat function with web search
+2. Call 2Slides create-pdf-slides API (async)
+3. Poll job status with progressive updates
+4. Return download link
+5. Deduct 2 credits
+
+**For Documents/Resumes/Reports/Letters:**
+1. AI generates comprehensive HTML with proper structure
+2. Use existing `buildPreviewHtml` for rendering
+3. Show preview + download options
+
+**Dynamic AI response:** Instead of static "Your file is ready" messages, ask the AI to write a natural summary of what it created.
+
+### 5. Robust Streaming & Error Handling
+
+- Proper SSE parsing with buffer management
+- Fallback to HTML slides if 2Slides API fails
+- Toast notifications for errors
+- Retry logic for failed API calls
+
+## Files Changed
+
+| File | Action |
+|------|--------|
+| `supabase/functions/generate-slides/index.ts` | **Rewrite** - correct API endpoints, add job polling |
+| `src/pages/FilesPage.tsx` | **Rewrite** - new UI, fixed logic, real template images |
 
 ## Technical Notes
 
-**Currency API:** Free tier of exchangerate-api.com or open.er-api.com (no key needed for basic rates). Cache exchange rates for 1 hour in memory.
-
-**Confidence scoring formula:**
-- Has title: +0.2
-- Has valid price: +0.3
-- Has image URL that responds: +0.2
-- Has valid purchase link: +0.2
-- Has seller name: +0.1
-
-**Retry strategy:**
-- Network timeout → retry after 1s, 2s, 4s (exponential)
-- HTTP 429 → wait 5s then retry once
-- HTTP 4xx → skip to fallback source
-- HTTP 5xx → retry after 2s, then fallback
-
-**Files modified:**
-- `supabase/functions/chat/index.ts` — major refactor (~60% of changes)
-- `src/pages/ChatPage.tsx` — remove browser state, simplify status
-- `src/components/ChatMessage.tsx` — remove ThinkingLoader complexity
-- `src/components/ThinkingLoader.tsx` — simplify to one-line status
+- Template preview images: `https://2slides.com/_next/image?url=/login_preview/{templateId}_slide1.webp&w=640&q=75`
+- Fast PPT costs 10 credits/slide on 2Slides side (their credits, not ours)
+- Nano Banana Pro costs 100 credits/slide on 2Slides (their credits) + 2 of our credits
+- Job polling interval: 20 seconds, max 12 attempts (4 minutes timeout)
+- No new secrets needed - `TWOSLIDES_API_KEY` already exists
 
