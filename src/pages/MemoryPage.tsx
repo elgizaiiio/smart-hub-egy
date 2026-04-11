@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -15,22 +15,18 @@ interface MemoryEntry {
   created_at: string;
 }
 
-// Butterfly SVG component
-const Butterfly = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg className={className} style={style} width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    {/* Left wing */}
-    <g style={{ transformOrigin: "50px 50px", animation: "wingLeft 0.3s ease-in-out infinite alternate" }}>
+// Butterfly SVG component with CSS wing animation
+const ButterflyIcon = () => (
+  <svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <g className="butterfly-left-wing">
       <ellipse cx="30" cy="35" rx="25" ry="18" fill="hsl(var(--primary))" opacity="0.6" transform="rotate(-20, 30, 35)" />
       <ellipse cx="28" cy="55" rx="18" ry="14" fill="hsl(var(--primary))" opacity="0.4" transform="rotate(-10, 28, 55)" />
     </g>
-    {/* Right wing */}
-    <g style={{ transformOrigin: "50px 50px", animation: "wingRight 0.35s ease-in-out infinite alternate" }}>
+    <g className="butterfly-right-wing">
       <ellipse cx="70" cy="35" rx="25" ry="18" fill="hsl(var(--primary))" opacity="0.6" transform="rotate(20, 70, 35)" />
       <ellipse cx="72" cy="55" rx="18" ry="14" fill="hsl(var(--primary))" opacity="0.4" transform="rotate(10, 72, 55)" />
     </g>
-    {/* Body */}
     <ellipse cx="50" cy="50" rx="3" ry="20" fill="hsl(var(--foreground))" opacity="0.5" />
-    {/* Antennae */}
     <line x1="50" y1="30" x2="40" y2="18" stroke="hsl(var(--foreground))" strokeWidth="1" opacity="0.4" />
     <line x1="50" y1="30" x2="60" y2="18" stroke="hsl(var(--foreground))" strokeWidth="1" opacity="0.4" />
     <circle cx="40" cy="18" r="2" fill="hsl(var(--foreground))" opacity="0.4" />
@@ -38,28 +34,44 @@ const Butterfly = ({ className, style }: { className?: string; style?: React.CSS
   </svg>
 );
 
-// Floating butterfly that moves around
-const FloatingButterfly = ({ delay, duration }: { delay: number; duration: number }) => {
-  const startX = Math.random() * 80 + 10;
-  const startY = Math.random() * 60 + 20;
+const FloatingButterfly = ({ delay, duration, id }: { delay: number; duration: number; id: number }) => {
+  const [touched, setTouched] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const startX = id === 0 ? 15 : 75;
+  const startY = id === 0 ? 25 : 60;
+
+  const handleTouch = () => {
+    setTouched(true);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setTouched(false), 2500);
+  };
 
   return (
     <motion.div
-      className="fixed pointer-events-none z-0"
+      className="fixed pointer-events-auto z-[5] cursor-pointer"
       style={{ left: `${startX}%`, top: `${startY}%` }}
       animate={{
         x: [0, 80, -60, 120, -40, 0],
         y: [0, -40, 60, -80, 30, 0],
         rotate: [0, 15, -10, 20, -15, 0],
       }}
-      transition={{
-        duration,
-        repeat: Infinity,
-        ease: "easeInOut",
-        delay,
-      }}
+      transition={{ duration, repeat: Infinity, ease: "easeInOut", delay }}
+      onClick={handleTouch}
+      onTouchStart={handleTouch}
     >
-      <Butterfly />
+      <ButterflyIcon />
+      <AnimatePresence>
+        {touched && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.8 }}
+            animate={{ opacity: 1, y: -10, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.8 }}
+            className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-xl bg-primary/90 text-primary-foreground text-xs font-medium shadow-lg"
+          >
+            Don't touch me, you fool!
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
@@ -72,9 +84,7 @@ const MemoryPage = () => {
   const [isClearing, setIsClearing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadMemories();
-  }, []);
+  useEffect(() => { loadMemories(); }, []);
 
   const loadMemories = async () => {
     try {
@@ -126,24 +136,18 @@ const MemoryPage = () => {
 
   const content = (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Butterflies */}
-      <FloatingButterfly delay={0} duration={20} />
-      <FloatingButterfly delay={3} duration={25} />
-      <FloatingButterfly delay={7} duration={18} />
+      {/* Only 2 butterflies */}
+      <FloatingButterfly delay={0} duration={20} id={0} />
+      <FloatingButterfly delay={5} duration={25} id={1} />
 
       <style>{`
-        @keyframes wingLeft {
-          from { transform: rotateY(0deg); }
-          to { transform: rotateY(50deg); }
-        }
-        @keyframes wingRight {
-          from { transform: rotateY(0deg); }
-          to { transform: rotateY(-50deg); }
-        }
+        .butterfly-left-wing { transform-origin: 50px 50px; animation: bfWingL 0.25s ease-in-out infinite alternate; }
+        .butterfly-right-wing { transform-origin: 50px 50px; animation: bfWingR 0.3s ease-in-out infinite alternate; }
+        @keyframes bfWingL { from { transform: rotateY(0deg); } to { transform: rotateY(50deg); } }
+        @keyframes bfWingR { from { transform: rotateY(0deg); } to { transform: rotateY(-50deg); } }
       `}</style>
 
       <div className="relative z-10 max-w-lg mx-auto px-4 pb-20">
-        {/* Header */}
         <div className="flex items-center justify-between py-4">
           {isMobile && (
             <button onClick={() => navigate("/settings")} className="p-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -155,14 +159,12 @@ const MemoryPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          {/* Info */}
           <div className="p-4 rounded-2xl bg-muted/20 border border-border/20 mb-6">
             <p className="text-sm text-muted-foreground leading-relaxed">
               Megsy remembers important details about you to provide better, more personalized responses. These memories are private and only visible to you.
             </p>
           </div>
 
-          {/* Clear all */}
           {memories.length > 0 && (
             <button
               onClick={handleClearAll}
@@ -174,7 +176,6 @@ const MemoryPage = () => {
             </button>
           )}
 
-          {/* Memory list */}
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -196,15 +197,11 @@ const MemoryPage = () => {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      {memory.title && (
-                        <p className="text-xs font-semibold text-foreground mb-0.5 truncate">{memory.title}</p>
-                      )}
+                      {memory.title && <p className="text-xs font-semibold text-foreground mb-0.5 truncate">{memory.title}</p>}
                       <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{memory.summary}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-[10px] text-muted-foreground/50 capitalize">{memory.scope}</span>
-                        <span className="text-[10px] text-muted-foreground/30">
-                          {new Date(memory.created_at).toLocaleDateString()}
-                        </span>
+                        <span className="text-[10px] text-muted-foreground/30">{new Date(memory.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                     <button
@@ -212,11 +209,7 @@ const MemoryPage = () => {
                       disabled={deletingId === memory.id}
                       className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all shrink-0"
                     >
-                      {deletingId === memory.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
+                      {deletingId === memory.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </motion.div>
