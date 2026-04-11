@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,72 +9,52 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { topic, slide_count, style, content_outline, language } = await req.json();
+    const { topic, content, templateId, tier } = await req.json();
     if (!topic) throw new Error("Topic is required");
 
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Get MagicSlides API key from api_keys table with rotation
-    const { data: keys } = await sb
-      .from("api_keys")
-      .select("id, api_key, usage_count")
-      .eq("service", "magicslides")
-      .eq("is_active", true)
-      .eq("is_blocked", false)
-      .limit(10);
-
-    if (!keys || keys.length === 0) {
-      // Fallback: generate HTML slides via AI
+    const apiKey = Deno.env.get("TWOSLIDES_API_KEY");
+    if (!apiKey) {
       return new Response(JSON.stringify({
         success: false,
         fallback: true,
-        error: "Slide service not configured. Please add MagicSlides API keys.",
+        error: "2Slides API key not configured.",
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const key = keys[Math.floor(Math.random() * keys.length)];
+    const isPro = tier === "pro";
 
-    // Call MagicSlides API
-    const slideCount = Math.min(Math.max(slide_count || 10, 5), 20);
+    // Build request body for 2slides.com API
     const body: Record<string, any> = {
       topic,
-      slide_count: slideCount,
-      style: style || "professional",
-      language: language || "auto",
+      content: content || topic,
     };
-    if (content_outline) body.content = content_outline;
 
-    const resp = await fetch("https://api.magicslides.app/v1/presentations", {
+    if (templateId) {
+      body.template_id = templateId;
+    }
+
+    if (isPro) {
+      body.model = "nano-banana-pro";
+    }
+
+    console.log("Calling 2slides API with:", JSON.stringify({ topic, templateId, isPro }));
+
+    const resp = await fetch("https://api.2slides.com/v1/presentations", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${key.api_key}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
 
-    // Track usage
-    sb.from("api_keys").update({
-      usage_count: (key.usage_count || 0) + 1,
-      last_used_at: new Date().toISOString(),
-    }).eq("id", key.id).then(() => {});
-
     if (!resp.ok) {
       const errText = await resp.text();
-      console.error("MagicSlides error:", resp.status, errText);
-      if (resp.status === 401 || resp.status === 403) {
-        sb.from("api_keys").update({
-          is_blocked: true,
-          block_reason: `HTTP ${resp.status}`,
-        }).eq("id", key.id).then(() => {});
-      }
+      console.error("2slides error:", resp.status, errText);
       return new Response(JSON.stringify({
         success: false,
         fallback: true,
-        error: "Presentation service temporarily unavailable. Please try again.",
+        error: "Slide generation service temporarily unavailable.",
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -83,18 +62,19 @@ serve(async (req) => {
     const downloadUrl = data.download_url || data.url || data.pptx_url;
 
     return new Response(JSON.stringify({
-      success: true,
-      download_url: downloadUrl,
+      success: !!downloadUrl,
+      download_url: downloadUrl || null,
       preview_url: data.preview_url || null,
-      slide_count: slideCount,
+      slide_count: data.slide_count || 10,
       title: data.title || topic,
+      fallback: !downloadUrl,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {
     console.error("generate-slides error:", e);
     return new Response(
-      JSON.stringify({ error: "Presentation generation failed. Please try again." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, fallback: true, error: "Presentation generation failed." }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

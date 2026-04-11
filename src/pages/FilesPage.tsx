@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Eye, Download, X, Presentation, FileSpreadsheet, ScrollText, PenTool, Maximize2, Minimize2, FileText, Play, Send, Plus, Paperclip, Search, Sparkles } from "lucide-react";
+import { Menu, Eye, Download, X, Maximize2, Minimize2, FileText, Play, Send, Plus, Paperclip, Search, Sparkles, ArrowUp, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ interface ChatMsg {
   role: "user" | "assistant";
   content: string;
   htmlContent?: string;
+  downloadUrl?: string;
 }
 
 interface AttachedFile {
@@ -36,11 +37,38 @@ interface SavedFile {
   mode: string;
 }
 
+interface SlideTemplate {
+  id: string;
+  templateId: string;
+  image: string;
+  tier: "normal" | "pro";
+}
+
+const SLIDE_TEMPLATES: SlideTemplate[] = [
+  { id: "t1", templateId: "st-1763716811881-gt30ikwgk", image: "https://ibb.co/rfwY1TTp", tier: "normal" },
+  { id: "t2", templateId: "st-1756352953459-hwsql8clr", image: "https://ibb.co/0j47NPc9", tier: "normal" },
+  { id: "t3", templateId: "st-1756528389081-5tkg6rjik", image: "https://ibb.co/nq66npvk", tier: "normal" },
+  { id: "t4", templateId: "st-1755604888327-tlfcbvqc0", image: "https://ibb.co/tpSGLfBH", tier: "normal" },
+  { id: "t5", templateId: "st-1756355004023-d2a6piyey", image: "https://ibb.co/sdMtpT9Q", tier: "normal" },
+  { id: "t6", templateId: "st-1755571178740-cz8irzztb", image: "https://ibb.co/PsKHC9LB", tier: "normal" },
+  { id: "t7", templateId: "st-1763383163914-9ftifz8jv", image: "https://ibb.co/9mTYRRG2", tier: "normal" },
+  { id: "t8", templateId: "st-1760154259733-pbb2sepyi", image: "https://ibb.co/Y4JsnhrC", tier: "normal" },
+  { id: "t9", templateId: "st-1757852235756-9gemf3hif", image: "https://ibb.co/LzFQKy0D", tier: "normal" },
+  { id: "t10", templateId: "st-1756809498727-b1v5lrdi5", image: "https://ibb.co/hJDcn7rK", tier: "normal" },
+  { id: "t11", templateId: "st-1762156533929-uk6qvhdj9", image: "https://ibb.co/rR7Nfnx6", tier: "normal" },
+  { id: "t12", templateId: "st-1756529191038-cv70otsc6", image: "https://ibb.co/DH35k3wt", tier: "normal" },
+  { id: "t13", templateId: "st-1759491551977-aasrhh1st", image: "https://ibb.co/3ynp5jdw", tier: "normal" },
+  { id: "t14", templateId: "st-1764300180558-f7bnjhoem", image: "https://ibb.co/jvyCKMFP", tier: "normal" },
+];
+
 const FILE_SERVICES = [
-  { id: "slides", label: "Slides", icon: Presentation, gradient: "from-violet-500 to-purple-600" },
-  { id: "resume", label: "Resume", icon: PenTool, gradient: "from-emerald-500 to-teal-600" },
-  { id: "spreadsheet", label: "Spreadsheet", icon: FileSpreadsheet, gradient: "from-blue-500 to-cyan-600" },
-  { id: "document", label: "Document", icon: ScrollText, gradient: "from-orange-500 to-amber-600" },
+  { id: "slides", label: "Slides", gradient: "from-violet-500 to-purple-600" },
+  { id: "slides-pro", label: "Slides Pro", gradient: "from-amber-500 to-orange-600" },
+  { id: "resume", label: "Resume", gradient: "from-emerald-500 to-teal-600" },
+  { id: "spreadsheet", label: "Spreadsheet", gradient: "from-blue-500 to-cyan-600" },
+  { id: "document", label: "Document", gradient: "from-orange-500 to-amber-600" },
+  { id: "report", label: "Report", gradient: "from-rose-500 to-pink-600" },
+  { id: "letter", label: "Letter", gradient: "from-indigo-500 to-blue-600" },
 ];
 
 const FilesPage = () => {
@@ -58,9 +86,12 @@ const FilesPage = () => {
   const [pendingQuestions, setPendingQuestions] = useState<SmartQuestion[]>([]);
   const [savedFiles, setSavedFiles] = useState<SavedFile[]>([]);
   const [statusHistory, setStatusHistory] = useState<string[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<SlideTemplate | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const servicesScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,13 +129,22 @@ const FilesPage = () => {
     if (questions.length > 0) setPendingQuestions(questions);
   }, [messages, isGenerating]);
 
-  // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
   }, [input]);
+
+  // Show templates when slides is selected
+  useEffect(() => {
+    if (activeAgent === "slides") {
+      setShowTemplates(true);
+    } else {
+      setShowTemplates(false);
+      setSelectedTemplate(null);
+    }
+  }, [activeAgent]);
 
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -141,7 +181,7 @@ const FilesPage = () => {
       for (const m of msgs) {
         const msg: ChatMsg = { role: m.role as "user" | "assistant", content: m.content };
         if (m.role === "assistant" && m.images && m.images.length > 0) {
-          try { const meta = JSON.parse(m.images[0]); if (meta.htmlContent) msg.htmlContent = meta.htmlContent; } catch {}
+          try { const meta = JSON.parse(m.images[0]); if (meta.htmlContent) msg.htmlContent = meta.htmlContent; if (meta.downloadUrl) msg.downloadUrl = meta.downloadUrl; } catch {}
         }
         loaded.push(msg);
       }
@@ -149,8 +189,8 @@ const FilesPage = () => {
     }
   };
 
-  const saveMessage = async (convId: string, role: string, content: string, htmlContent?: string) => {
-    const images = htmlContent ? [JSON.stringify({ htmlContent })] : null;
+  const saveMessage = async (convId: string, role: string, content: string, meta?: { htmlContent?: string; downloadUrl?: string }) => {
+    const images = meta ? [JSON.stringify(meta)] : null;
     await supabase.from("messages").insert({ conversation_id: convId, role, content, images });
   };
 
@@ -170,101 +210,80 @@ const FilesPage = () => {
     if (convId) await saveMessage(convId, "user", userContent);
 
     try {
-      const AGENT_PROMPTS: Record<string, string> = {
-        slides: `You are a Slides Agent. Generate a premium single-file presentation as HTML with embedded CSS and vanilla JavaScript:
-- DARK themed slideshow with 10+ slides
-- Full-viewport sections (100vh) with scroll-snap
-- Distinct layouts, strong visual hierarchy, and polished transitions
-- Professional typography, gradients, responsive spacing, and keyboard navigation
-- Include comprehensive, well-researched content
-Output ONLY the complete HTML code with no explanations.`,
-        resume: "Generate a professional HTML resume/CV. Modern dark theme. Output ONLY HTML.",
-        spreadsheet: "Generate a complete HTML table/spreadsheet. Dark theme. Output ONLY HTML.",
-        document: "Generate a comprehensive HTML document. Dark theme. Include well-researched content. Output ONLY HTML.",
-      };
+      const isSlides = activeAgent === "slides" || activeAgent === "slides-pro";
+      const isPro = activeAgent === "slides-pro";
 
-      const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted HTML document. Dark theme, professional. Output ONLY HTML.";
-      let prompt = `${agentPrompt}\n\nUser request: ${userInput}`;
+      if (isSlides) {
+        // Use 2slides.com API
+        setStatusHistory(["Researching topic..."]);
+        
+        // Deep research first
+        const researchResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: `Research this topic thoroughly and provide comprehensive content for a presentation. Topic: ${userInput}. Provide detailed points, statistics, and key information. Be thorough.` }],
+            model: "moonshotai/kimi-k2.5:nitro",
+            mode: "files",
+            searchEnabled: true,
+          }),
+        });
 
-      // Search for images for slides
-      if (activeAgent === "slides") {
-        setStatusHistory(prev => [...prev, "Searching for visuals..."]);
-        try {
-          const { data: slideImages } = await supabase.functions.invoke("search", {
-            body: { query: `${userInput} presentation visuals high quality editorial photos` },
-          });
-          const urls = Array.isArray(slideImages?.images) ? slideImages.images.slice(0, 4) : [];
-          if (urls.length > 0) {
-            prompt += `\n\nUse these visual URLs in the presentation:\n${urls.map((url: string, index: number) => `${index + 1}. ${url}`).join("\n")}`;
+        let researchContent = "";
+        if (researchResp.ok && researchResp.body) {
+          const reader = researchResp.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let newlineIndex: number;
+            while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+              let line = buffer.slice(0, newlineIndex);
+              buffer = buffer.slice(newlineIndex + 1);
+              if (line.endsWith("\r")) line = line.slice(0, -1);
+              if (!line.startsWith("data: ")) continue;
+              const jsonStr = line.slice(6).trim();
+              if (jsonStr === "[DONE]") break;
+              try { const parsed = JSON.parse(jsonStr); const delta = parsed.choices?.[0]?.delta?.content; if (delta) researchContent += delta; } catch {}
+            }
           }
-        } catch {}
-        setStatusHistory(prev => [...prev, "Generating presentation..."]);
-      }
-
-      const fileAttachments = files.filter(f => f.type !== "image");
-      if (fileAttachments.length > 0) {
-        prompt += "\n\n--- Attached Documents ---\n";
-        fileAttachments.forEach(f => { prompt += `\n--- ${f.name} ---\n${f.data}\n`; });
-      }
-
-      const historyMessages = messages.map(m => ({ role: m.role, content: m.content }));
-      const imageAttachments = files.filter(f => f.type === "image");
-      let userMessage: any;
-      if (imageAttachments.length > 0) {
-        const content: any[] = imageAttachments.map(img => ({ type: "image_url", image_url: { url: img.data } }));
-        content.push({ type: "text", text: prompt });
-        userMessage = { role: "user", content };
-      } else {
-        userMessage = { role: "user", content: prompt };
-      }
-
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ messages: [...historyMessages, userMessage], model: "moonshotai/kimi-k2.5:nitro", mode: "files", searchEnabled }),
-      });
-
-      if (!resp.ok || !resp.body) {
-        setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]);
-        setIsGenerating(false);
-        return;
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let content = "";
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try { const parsed = JSON.parse(jsonStr); const delta = parsed.choices?.[0]?.delta?.content; if (delta) content += delta; } catch {}
         }
+
+        setStatusHistory(prev => [...prev, "Creating slides..."]);
+
+        // Call generate-slides edge function
+        const slideResp = await supabase.functions.invoke("generate-slides", {
+          body: {
+            topic: userInput,
+            content: researchContent || userInput,
+            templateId: selectedTemplate?.templateId || undefined,
+            tier: isPro ? "pro" : "normal",
+          },
+        });
+
+        if (slideResp.data?.success && slideResp.data?.download_url) {
+          // Deduct credits for pro
+          if (isPro) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.rpc("deduct_credits", { p_user_id: user.id, p_amount: 2, p_action_type: "slides_pro", p_description: "Slides Pro generation" });
+            }
+          }
+          
+          const description = `Your presentation "${userInput}" is ready with ${slideResp.data.slide_count || 10} slides. You can download it directly.`;
+          setMessages(prev => [...prev, { role: "assistant", content: description, downloadUrl: slideResp.data.download_url }]);
+          if (convId) await saveMessage(convId, "assistant", description, { downloadUrl: slideResp.data.download_url });
+        } else {
+          // Fallback to HTML slides
+          setStatusHistory(prev => [...prev, "Creating HTML presentation..."]);
+          await generateHtmlFile(userInput, files, researchContent, convId);
+        }
+      } else {
+        // Regular file generation (documents, resumes, etc.)
+        await generateHtmlFile(userInput, files, "", convId);
       }
-
-      const hasQuestions = content.includes('"type":"questions"') || content.includes('"type": "questions"');
-      if (hasQuestions) {
-        setMessages(prev => [...prev, { role: "assistant", content }]);
-        if (convId) await saveMessage(convId, "assistant", content);
-        setIsGenerating(false);
-        return;
-      }
-
-      const html = buildPreviewHtml({ content, agent: activeAgent, request: userInput });
-      const agentLabel = activeAgent ? FILE_SERVICES.find(s => s.id === activeAgent)?.label || "Document" : "Document";
-      const description = `Your ${agentLabel.toLowerCase()} is ready. Tap Preview to view it.`;
-
-      setMessages(prev => [...prev, { role: "assistant", content: description, htmlContent: html }]);
-      if (convId) await saveMessage(convId, "assistant", description, html);
 
       // Refresh saved files
       const { data: { user } } = await supabase.auth.getUser();
@@ -277,7 +296,108 @@ Output ONLY the complete HTML code with no explanations.`,
     }
     setIsGenerating(false);
     setStatusHistory([]);
-  }, [input, attachedFiles, messages, activeAgent, searchEnabled, conversationId]);
+  }, [input, attachedFiles, messages, activeAgent, searchEnabled, conversationId, selectedTemplate]);
+
+  const generateHtmlFile = async (userInput: string, files: AttachedFile[], researchContent: string, convId: string | null) => {
+    const AGENT_PROMPTS: Record<string, string> = {
+      slides: `You are a Slides Agent. Generate a premium single-file presentation as HTML with embedded CSS and vanilla JavaScript. DARK themed slideshow with 10+ slides, full-viewport sections with scroll-snap, distinct layouts, professional typography. Include comprehensive, well-researched content. Output ONLY the complete HTML code.`,
+      "slides-pro": `You are a Premium Slides Agent. Generate a stunning single-file presentation as HTML. DARK themed, cinematic quality, 12+ slides with advanced animations, parallax effects, and premium typography. Output ONLY HTML.`,
+      resume: "Generate a professional HTML resume/CV. Modern dark theme with elegant typography. Output ONLY HTML.",
+      spreadsheet: "Generate a complete HTML table/spreadsheet with interactive features. Dark theme. Output ONLY HTML.",
+      document: "Generate a comprehensive HTML document with professional formatting. Dark theme. Include well-researched content. Output ONLY HTML.",
+      report: "Generate a detailed professional report as HTML. Dark theme, charts if needed, executive summary. Output ONLY HTML.",
+      letter: "Generate a formal business letter as HTML. Professional formatting, dark theme. Output ONLY HTML.",
+    };
+
+    const agentPrompt = activeAgent && AGENT_PROMPTS[activeAgent] ? AGENT_PROMPTS[activeAgent] : "Generate a complete, well-formatted HTML document. Dark theme, professional. Output ONLY HTML.";
+    let prompt = `${agentPrompt}\n\nUser request: ${userInput}`;
+
+    if (researchContent) {
+      prompt += `\n\nResearch findings to incorporate:\n${researchContent.slice(0, 4000)}`;
+    }
+
+    // Search for images
+    if (activeAgent === "slides" || activeAgent === "slides-pro" || activeAgent === "document" || activeAgent === "report") {
+      setStatusHistory(prev => [...prev, "Finding visuals..."]);
+      try {
+        const { data: imgData } = await supabase.functions.invoke("search", {
+          body: { query: `${userInput} high quality photos` },
+        });
+        const urls = Array.isArray(imgData?.images) ? imgData.images.slice(0, 6) : [];
+        if (urls.length > 0) {
+          prompt += `\n\nUse these image URLs:\n${urls.map((url: string, i: number) => `${i + 1}. ${url}`).join("\n")}`;
+        }
+      } catch {}
+    }
+
+    const fileAttachments = files.filter(f => f.type !== "image");
+    if (fileAttachments.length > 0) {
+      prompt += "\n\n--- Attached Documents ---\n";
+      fileAttachments.forEach(f => { prompt += `\n--- ${f.name} ---\n${f.data}\n`; });
+    }
+
+    // Also ask AI to write a summary message
+    prompt += `\n\nIMPORTANT: After generating the HTML, write a brief friendly summary message (2-3 sentences) describing what you created. Start the summary with "---SUMMARY---" on a new line.`;
+
+    const historyMessages = messages.map(m => ({ role: m.role, content: m.content }));
+    const imageAttachments = files.filter(f => f.type === "image");
+    let userMessage: any;
+    if (imageAttachments.length > 0) {
+      const content: any[] = [{ type: "text", text: prompt }];
+      imageAttachments.forEach(img => content.push({ type: "image_url", image_url: { url: img.data } }));
+      userMessage = { role: "user", content };
+    } else {
+      userMessage = { role: "user", content: prompt };
+    }
+
+    setStatusHistory(prev => [...prev, "Generating..."]);
+
+    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+      body: JSON.stringify({ messages: [...historyMessages, userMessage], model: "moonshotai/kimi-k2.5:nitro", mode: "files", searchEnabled }),
+    });
+
+    if (!resp.ok || !resp.body) {
+      setMessages(prev => [...prev, { role: "assistant", content: "Generation failed. Please try again." }]);
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let content = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+        let line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (!line.startsWith("data: ")) continue;
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") break;
+        try { const parsed = JSON.parse(jsonStr); const delta = parsed.choices?.[0]?.delta?.content; if (delta) content += delta; } catch {}
+      }
+    }
+
+    // Extract summary if present
+    let summary = "";
+    const summaryMatch = content.match(/---SUMMARY---([\s\S]*?)$/);
+    if (summaryMatch) {
+      summary = summaryMatch[1].trim();
+      content = content.replace(/---SUMMARY---[\s\S]*?$/, "").trim();
+    }
+
+    const html = buildPreviewHtml({ content, agent: activeAgent, request: userInput });
+    const description = summary || `Your file is ready. Tap Preview to view it.`;
+
+    setMessages(prev => [...prev, { role: "assistant", content: description, htmlContent: html }]);
+    if (convId) await saveMessage(convId, "assistant", description, { htmlContent: html });
+  };
 
   const handleDownloadHtml = (html: string) => {
     const blob = new Blob([html], { type: "text/html" });
@@ -299,63 +419,10 @@ Output ONLY the complete HTML code with no explanations.`,
   const newChat = () => {
     setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]);
     setConversationId(null); setActiveAgent(null); setPendingQuestions([]);
-    setStatusHistory([]);
+    setStatusHistory([]); setShowTemplates(false); setSelectedTemplate(null);
   };
 
   const hasMessages = messages.length > 0;
-
-  // Input bar component (shared between empty/chat states)
-  const InputBar = ({ compact }: { compact?: boolean }) => (
-    <div className="w-full">
-      {/* Active agent badge ABOVE the input */}
-      {activeAgent && (
-        <div className="flex items-center gap-2 mb-2 px-1">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
-            <Sparkles className="w-3 h-3" />
-            {FILE_SERVICES.find(s => s.id === activeAgent)?.label}
-            <button onClick={() => setActiveAgent(null)} className="ml-1 hover:text-foreground">
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-      )}
-      {/* Attached files */}
-      {attachedFiles.length > 0 && (
-        <div className="flex gap-2 mb-2 px-1 flex-wrap">
-          {attachedFiles.map((f, i) => (
-            <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/60 border border-border/30 text-xs text-foreground">
-              <Paperclip className="w-3 h-3 text-muted-foreground" />
-              <span className="truncate max-w-[100px]">{f.name}</span>
-              <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className={`flex items-end gap-2 rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm px-3 py-2 ${compact ? "" : "min-h-[56px]"}`}>
-        <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
-          <Plus className="w-5 h-5" />
-        </button>
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-          placeholder="Describe what you want to create..."
-          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 resize-none outline-none min-h-[24px] max-h-[160px] py-1"
-          rows={1}
-        />
-        <button
-          onClick={() => handleGenerate()}
-          disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
-          className="p-2 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90"
-        >
-          <Send className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <AppLayout onSelectConversation={loadOldConversation} onNewChat={newChat} activeConversationId={conversationId}>
@@ -399,53 +466,126 @@ Output ONLY the complete HTML code with no explanations.`,
           {!hasMessages ? (
             <div className="flex flex-col items-center justify-center min-h-full px-4">
               <div className="flex-1" />
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-xl w-full">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center mx-auto mb-5">
-                  <FileText className="w-8 h-8 text-primary" />
-                </div>
-                <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight leading-tight">
-                  Create Anything
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-2xl w-full">
+                <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.05]">
+                  <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">CREATE</span>
+                  <br />
+                  <span className="text-foreground">ANYTHING</span>
                 </h1>
-                <p className="text-muted-foreground mt-2 mb-8 text-sm">Slides, resumes, spreadsheets, documents — powered by AI</p>
+                <p className="text-muted-foreground mt-3 mb-8 text-sm md:text-base">
+                  Slides, documents, resumes, reports — AI-powered file creation
+                </p>
 
-                <div className="max-w-lg mx-auto mb-6">
-                  <InputBar />
-                </div>
-
-                <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-                  {FILE_SERVICES.map((svc, i) => (
-                    <motion.button
-                      key={svc.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15 + i * 0.06 }}
-                      onClick={() => setActiveAgent(activeAgent === svc.id ? null : svc.id)}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all text-sm ${
-                        activeAgent === svc.id
-                          ? "bg-primary/10 border-primary/30 text-primary"
-                          : "bg-secondary/40 border-border/30 hover:border-primary/20 text-foreground/80"
-                      }`}
+                {/* Large rectangular input */}
+                <div className="max-w-xl mx-auto mb-4">
+                  {activeAgent && (
+                    <div className="flex items-center gap-2 mb-2 px-1">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+                        <Sparkles className="w-3 h-3" />
+                        {FILE_SERVICES.find(s => s.id === activeAgent)?.label}
+                        <button onClick={() => setActiveAgent(null)} className="ml-1 hover:text-foreground"><X className="w-3 h-3" /></button>
+                      </div>
+                      {selectedTemplate && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-medium">
+                          Template selected
+                          <button onClick={() => setSelectedTemplate(null)} className="ml-1 hover:text-foreground"><X className="w-3 h-3" /></button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {attachedFiles.length > 0 && (
+                    <div className="flex gap-2 mb-2 px-1 flex-wrap">
+                      {attachedFiles.map((f, i) => (
+                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/60 border border-border/30 text-xs text-foreground">
+                          <Paperclip className="w-3 h-3 text-muted-foreground" />
+                          <span className="truncate max-w-[100px]">{f.name}</span>
+                          <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-end gap-2 rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm px-4 py-3 min-h-[80px]">
+                    <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
+                      <Plus className="w-5 h-5" />
+                    </button>
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                      placeholder="Describe what you want to create..."
+                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 resize-none outline-none min-h-[40px] max-h-[160px] py-1"
+                      rows={2}
+                    />
+                    <button
+                      onClick={() => handleGenerate()}
+                      disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
+                      className="p-2.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90"
                     >
-                      <svc.icon className="w-4 h-4" />
-                      <span className="font-medium">{svc.label}</span>
-                    </motion.button>
-                  ))}
+                      {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Horizontal scrollable service buttons */}
+                <div className="max-w-xl mx-auto mb-6">
+                  <div ref={servicesScrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
+                    {FILE_SERVICES.map((svc) => (
+                      <button
+                        key={svc.id}
+                        onClick={() => setActiveAgent(activeAgent === svc.id ? null : svc.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-sm whitespace-nowrap shrink-0 ${
+                          activeAgent === svc.id
+                            ? "bg-primary/10 border-primary/30 text-primary"
+                            : "bg-secondary/40 border-border/30 hover:border-primary/20 text-foreground/80"
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${svc.gradient}`} />
+                        <span className="font-medium">{svc.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Slide templates */}
+                <AnimatePresence>
+                  {showTemplates && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="max-w-xl mx-auto mb-6 overflow-hidden">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 text-left px-1">Choose a template</p>
+                      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none px-1">
+                        {SLIDE_TEMPLATES.map((tmpl) => (
+                          <button
+                            key={tmpl.id}
+                            onClick={() => setSelectedTemplate(selectedTemplate?.id === tmpl.id ? null : tmpl)}
+                            className={`shrink-0 w-36 rounded-xl border-2 overflow-hidden transition-all ${
+                              selectedTemplate?.id === tmpl.id ? "border-primary shadow-lg shadow-primary/20" : "border-border/30 hover:border-border/60"
+                            }`}
+                          >
+                            <div className="aspect-[16/10] bg-secondary/50 flex items-center justify-center">
+                              <img src={tmpl.image} alt="" className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
 
-              <div className="flex-1 flex flex-col justify-start pt-4 max-w-lg w-full px-4">
+              {/* Recent files */}
+              <div className="flex-1 flex flex-col justify-start pt-4 max-w-xl w-full px-4">
                 {savedFiles.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Recent</p>
-                    {savedFiles.slice(0, 4).map((f, i) => (
+                    {savedFiles.slice(0, 4).map((f) => (
                       <motion.button
                         key={f.id}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => loadOldConversation(f.id)}
                         className="w-full flex items-center gap-3 p-3 rounded-2xl bg-secondary/30 border border-border/20 text-left hover:bg-secondary/50 transition-colors"
                       >
-                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${FILE_SERVICES[i % FILE_SERVICES.length].gradient} flex items-center justify-center shrink-0 opacity-60`}>
-                          <FileText className="w-4 h-4 text-white" />
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center shrink-0">
+                          <FileText className="w-4 h-4 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
@@ -476,12 +616,14 @@ Output ONLY the complete HTML code with no explanations.`,
                             <Eye className="w-4 h-4" /> Preview
                           </button>
                           <button onClick={() => handleDownloadHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-foreground text-sm hover:bg-accent transition-colors">
-                            <Download className="w-4 h-4" /> HTML
-                          </button>
-                          <button onClick={() => handleDownloadPdf(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-foreground text-sm hover:bg-accent transition-colors">
-                            <Download className="w-4 h-4" /> PDF
+                            <Download className="w-4 h-4" /> Download
                           </button>
                         </div>
+                      )}
+                      {msg.downloadUrl && (
+                        <a href={msg.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+                          <Download className="w-4 h-4" /> Download Presentation
+                        </a>
                       )}
                     </div>
                   )}
@@ -502,7 +644,26 @@ Output ONLY the complete HTML code with no explanations.`,
         {hasMessages && (
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
             <div className="max-w-2xl mx-auto">
-              <InputBar compact />
+              <div className="flex items-end gap-2 rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm px-3 py-2">
+                <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
+                  <Plus className="w-5 h-5" />
+                </button>
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                  placeholder="Ask for changes..."
+                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 resize-none outline-none min-h-[24px] max-h-[120px] py-1"
+                  rows={1}
+                />
+                <button
+                  onClick={() => handleGenerate()}
+                  disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
+                  className="p-2 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90"
+                >
+                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
         )}

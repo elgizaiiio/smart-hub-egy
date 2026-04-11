@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { ArrowLeft, Check, Loader2, Search, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, Loader2, Search, ChevronRight, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -52,43 +52,45 @@ function getIntegrationIcon(app: string): string | null {
   return map[app] ? `${ICON_BASE}/${map[app]}.svg` : null;
 }
 
-// Floating icons animation for hero
-const FloatingIcons = () => {
-  const icons = ["gmail", "slack", "github", "notion", "figma", "discord", "stripe", "shopify", "zoom", "linkedin"];
+// Hero: Metallic M with lines connecting to app icons
+const HeroConnection = () => {
+  const apps = ["gmail", "slack", "github", "notion", "figma", "discord", "stripe", "shopify"];
+  const iconPositions = apps.map((_, i) => {
+    const angle = (i / apps.length) * 360 - 90;
+    const r = 110;
+    return {
+      x: Math.cos((angle * Math.PI) / 180) * r,
+      y: Math.sin((angle * Math.PI) / 180) * r,
+    };
+  });
+
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {icons.map((name, i) => {
-        const iconUrl = getIntegrationIcon(name);
-        const angle = (i / icons.length) * 360;
-        const radius = 120;
-        const x = Math.cos((angle * Math.PI) / 180) * radius;
-        const y = Math.sin((angle * Math.PI) / 180) * radius;
+    <div className="relative w-64 h-64 mx-auto">
+      <svg className="absolute inset-0 w-full h-full" viewBox="-140 -140 280 280">
+        {iconPositions.map((pos, i) => (
+          <line key={i} x1="0" y1="0" x2={pos.x} y2={pos.y} stroke="hsl(var(--primary))" strokeWidth="1" opacity="0.2" />
+        ))}
+      </svg>
+      {apps.map((app, i) => {
+        const pos = iconPositions[i];
+        const iconUrl = getIntegrationIcon(app);
         return (
-          <motion.div
-            key={name}
-            className="absolute w-10 h-10 rounded-xl bg-card/80 border border-border/30 flex items-center justify-center backdrop-blur-sm"
-            style={{ left: `calc(50% + ${x}px - 20px)`, top: `calc(50% + ${y}px - 20px)` }}
-            animate={{
-              y: [0, -8, 0, 8, 0],
-              x: [0, 4, 0, -4, 0],
-              rotate: [0, 3, 0, -3, 0],
+          <div
+            key={app}
+            className="absolute w-9 h-9 rounded-xl bg-card/80 border border-border/30 flex items-center justify-center"
+            style={{
+              left: `calc(50% + ${pos.x}px - 18px)`,
+              top: `calc(50% + ${pos.y}px - 18px)`,
             }}
-            transition={{ duration: 4 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
           >
-            {iconUrl && <img src={iconUrl} alt="" className="w-5 h-5 dark:invert opacity-70" loading="lazy" />}
-          </motion.div>
+            {iconUrl && <img src={iconUrl} alt="" className="w-4 h-4 invert" loading="lazy" />}
+          </div>
         );
       })}
-      {/* Center pulsing orb */}
-      <motion.div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center"
-        animate={{ scale: [1, 1.08, 1], boxShadow: ["0 0 0 0 hsl(var(--primary)/0)", "0 0 30px 10px hsl(var(--primary)/0.15)", "0 0 0 0 hsl(var(--primary)/0)"] }}
-        transition={{ duration: 3, repeat: Infinity }}
-      >
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        </div>
-      </motion.div>
+      {/* Center M */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-2xl bg-gradient-to-br from-zinc-300 via-zinc-100 to-zinc-400 dark:from-zinc-600 dark:via-zinc-400 dark:to-zinc-700 flex items-center justify-center shadow-xl border border-white/20">
+        <span className="text-2xl font-black text-zinc-800 dark:text-white select-none" style={{ fontFamily: "system-ui", textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>M</span>
+      </div>
     </div>
   );
 };
@@ -101,7 +103,6 @@ const IntegrationsPage = () => {
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [showConnectedOnly, setShowConnectedOnly] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
 
   useEffect(() => { loadConnections(); }, []);
@@ -139,33 +140,20 @@ const IntegrationsPage = () => {
         const returnUrl = window.location.href;
         const redirectWithReturn = data.redirectUrl + (data.redirectUrl.includes("?") ? "&" : "?") + `redirect_url=${encodeURIComponent(returnUrl)}`;
         const authWindow = window.open(redirectWithReturn, "_blank", "width=600,height=700");
-        if (!authWindow) {
-          window.location.href = redirectWithReturn;
-          return;
-        }
+        if (!authWindow) { window.location.href = redirectWithReturn; return; }
         toast.success(`Opening ${integration.name} authorization...`);
         const pollInterval = setInterval(async () => {
           try {
-            if (authWindow.closed) {
-              clearInterval(pollInterval);
-              await loadConnections();
-              setLoadingApp(null);
-              return;
-            }
+            if (authWindow.closed) { clearInterval(pollInterval); await loadConnections(); setLoadingApp(null); return; }
             const { data: checkData } = await supabase.functions.invoke("composio", {
               body: { action: "list-connections", userId: "default" },
             });
             const items = checkData?.items || checkData || [];
             if (Array.isArray(items)) {
-              const found = items.find(
-                (item: any) =>
-                  (item.appName || item.appUniqueId || "").toLowerCase() === integration.app &&
-                  item.status === "ACTIVE"
-              );
+              const found = items.find((item: any) => (item.appName || item.appUniqueId || "").toLowerCase() === integration.app && item.status === "ACTIVE");
               if (found) {
-                clearInterval(pollInterval);
-                authWindow.close();
-                setConnectedApps((prev) => ({ ...prev, [integration.app]: found.id }));
+                clearInterval(pollInterval); authWindow.close();
+                setConnectedApps(prev => ({ ...prev, [integration.app]: found.id }));
                 toast.success(`${integration.name} connected successfully`);
                 setLoadingApp(null);
               }
@@ -176,7 +164,7 @@ const IntegrationsPage = () => {
         return;
       } else if (data?.connectionStatus === "ACTIVE") {
         toast.success(`${integration.name} connected`);
-        setConnectedApps((prev) => ({ ...prev, [integration.app]: data.id }));
+        setConnectedApps(prev => ({ ...prev, [integration.app]: data.id }));
       }
     } catch {
       toast.error(`Failed to connect ${integration.name}`);
@@ -194,7 +182,7 @@ const IntegrationsPage = () => {
         body: { action: "disconnect", connectionId, userId: "default" },
       });
       if (error) throw error;
-      setConnectedApps((prev) => { const next = { ...prev }; delete next[integration.app]; return next; });
+      setConnectedApps(prev => { const next = { ...prev }; delete next[integration.app]; return next; });
       toast.success(`${integration.name} disconnected`);
     } catch {
       toast.error("Failed to disconnect");
@@ -204,52 +192,34 @@ const IntegrationsPage = () => {
   };
 
   const isConnected = (app: string) => !!connectedApps[app];
-  const connectedCount = Object.keys(connectedApps).length;
 
   const filtered = useMemo(() => {
-    return integrations.filter((i) => {
-      const matchesSearch = !search ||
-        i.name.toLowerCase().includes(search.toLowerCase()) ||
-        i.description.toLowerCase().includes(search.toLowerCase());
+    return integrations.filter(i => {
+      const matchesSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || i.description.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = selectedCategory === "All" || i.category === selectedCategory;
-      const matchesConnected = !showConnectedOnly || isConnected(i.app);
-      return matchesSearch && matchesCategory && matchesConnected;
+      return matchesSearch && matchesCategory;
     });
-  }, [search, selectedCategory, showConnectedOnly, connectedApps]);
-
-  const featured = useMemo(() => {
-    const featuredApps = ["gmail", "slack", "notion", "github", "googledrive", "discord", "stripe", "shopify", "figma", "hubspot"];
-    return integrations.filter(i => featuredApps.includes(i.app));
-  }, []);
+  }, [search, selectedCategory]);
 
   const content = (
     <div className="min-h-screen bg-background">
-      {/* Hero with floating animation */}
+      {/* Hero */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
-        <div className="relative max-w-3xl mx-auto px-4 pt-10 pb-6">
+        <div className="relative max-w-3xl mx-auto px-4 pt-8 pb-6">
           {isMobile && (
             <button onClick={() => navigate("/settings")} className="absolute left-4 top-4 p-2 text-muted-foreground hover:text-foreground transition-colors z-10">
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center">
-            {/* Animation zone */}
-            <div className="relative h-64 mb-4">
-              <FloatingIcons />
-            </div>
-            <h1 className="text-2xl md:text-4xl font-black text-foreground tracking-tight leading-[1.1]">
+            <HeroConnection />
+            <h1 className="text-2xl md:text-4xl font-black text-foreground tracking-tight leading-[1.1] mt-4">
               {integrations.length}+ Integrations
             </h1>
             <p className="text-muted-foreground mt-2 text-sm max-w-md mx-auto">
               Connect your favorite tools and automate workflows directly from the chat.
             </p>
-            {connectedCount > 0 && (
-              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                {connectedCount} connected
-              </div>
-            )}
           </motion.div>
         </div>
       </div>
@@ -265,72 +235,20 @@ const IntegrationsPage = () => {
             className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-secondary/20 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50"
           />
         </div>
-
-        {/* Category pills */}
         <div className="mt-3 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {INTEGRATION_CATEGORIES.map((cat) => (
+          {INTEGRATION_CATEGORIES.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === cat
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary/30 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                selectedCategory === cat ? "bg-primary text-primary-foreground" : "bg-secondary/30 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               }`}
             >
               {cat}
             </button>
           ))}
         </div>
-
-        {/* Connected only toggle */}
-        {connectedCount > 0 && (
-          <button
-            onClick={() => setShowConnectedOnly(!showConnectedOnly)}
-            className={`mt-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-              showConnectedOnly ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/20 border-border text-muted-foreground"
-            }`}
-          >
-            Connected only
-          </button>
-        )}
       </div>
-
-      {/* Featured row (only when no search) */}
-      {!search && selectedCategory === "All" && !showConnectedOnly && (
-        <div className="max-w-3xl mx-auto px-4 mb-6">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Featured</p>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-            {featured.map((integration) => {
-              const connected = isConnected(integration.app);
-              const iconUrl = getIntegrationIcon(integration.app);
-              return (
-                <button
-                  key={integration.id}
-                  onClick={() => setSelectedIntegration(integration)}
-                  className="shrink-0 w-20 flex flex-col items-center gap-1.5 group"
-                >
-                  <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all ${
-                    connected ? "bg-primary/5 border-primary/20" : "bg-card border-border/30 group-hover:border-border/60"
-                  }`}>
-                    {iconUrl ? (
-                      <img src={iconUrl} alt="" className="w-7 h-7 dark:invert" loading="lazy" />
-                    ) : (
-                      <span className="text-base font-bold text-muted-foreground">{integration.name.charAt(0)}</span>
-                    )}
-                    {connected && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground text-center leading-tight truncate w-full">{integration.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Integration List */}
       <div className="max-w-3xl mx-auto px-4 pb-20">
@@ -359,7 +277,7 @@ const IntegrationsPage = () => {
                     connected ? "bg-primary/5 border-primary/20" : "bg-card border-border/30"
                   }`}>
                     {iconUrl ? (
-                      <img src={iconUrl} alt="" className="w-5 h-5 dark:invert" loading="lazy" />
+                      <img src={iconUrl} alt="" className="w-5 h-5 invert" loading="lazy" />
                     ) : (
                       <span className="text-sm font-bold text-muted-foreground">{integration.name.charAt(0)}</span>
                     )}
@@ -382,7 +300,6 @@ const IntegrationsPage = () => {
         )}
       </div>
 
-      {/* Detail Modal */}
       <IntegrationDetailModal
         integration={selectedIntegration}
         isConnected={selectedIntegration ? isConnected(selectedIntegration.app) : false}
