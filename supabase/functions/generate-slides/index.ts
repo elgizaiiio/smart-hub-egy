@@ -6,24 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function pollJob(jobId: string, apiKey: string, maxAttempts = 12): Promise<{ status: string; downloadUrl?: string }> {
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, 20000)); // 20s interval
-    const resp = await fetch(`https://2slides.com/api/v1/jobs/${jobId}`, {
-      headers: { "Authorization": `Bearer ${apiKey}` },
-    });
-    if (!resp.ok) continue;
-    const data = await resp.json();
-    console.log(`Poll attempt ${i + 1}:`, JSON.stringify(data));
-    if (data.status === "success" || data.status === "completed") {
-      return { status: "success", downloadUrl: data.downloadUrl || data.download_url || data.url };
-    }
-    if (data.status === "failed" || data.status === "error") {
-      return { status: "failed" };
-    }
-  }
-  return { status: "timeout" };
-}
+const BASE_URL = "https://2slides.com";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -42,19 +25,30 @@ serve(async (req) => {
     const isPro = tier === "pro";
     console.log("generate-slides:", JSON.stringify({ topic: topic.slice(0, 50), templateId, isPro }));
 
+    const authHeaders = {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    };
+
     if (isPro) {
-      // Pro Mode: Nano Banana - async with job polling
-      const body = {
+      // Nano Banana Pro: POST /api/v1/slides/create-like-this (synchronous)
+      const body: Record<string, any> = {
         userInput: content || topic,
-        mode: "async",
+        responseLanguage: "Auto",
+        aspectRatio: "16:9",
+        resolution: "2K",
+        page: 0, // auto-detect
+        contentDetail: "standard",
       };
 
-      const resp = await fetch("https://2slides.com/api/v1/slides/create-pdf-slides", {
+      // For pro without template, we need a referenceImageUrl
+      // Use a generic professional slide reference
+      body.referenceImageUrl = "https://2slides.com/_next/image?url=/login_preview/st-1763716811881-gt30ikwgk_slide1.webp&w=640&q=75";
+
+      console.log("Calling create-like-this (Pro)...");
+      const resp = await fetch(`${BASE_URL}/api/v1/slides/create-like-this`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
+        headers: authHeaders,
         body: JSON.stringify(body),
       });
 
@@ -67,45 +61,30 @@ serve(async (req) => {
       }
 
       const data = await resp.json();
-      const jobId = data.jobId || data.job_id || data.id;
+      console.log("Pro response:", JSON.stringify(data));
 
-      if (!jobId) {
-        // Maybe it returned synchronously
-        const downloadUrl = data.downloadUrl || data.download_url || data.url;
-        if (downloadUrl) {
-          // Deduct credits
-          if (userId) {
-            const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-            await sb.rpc("deduct_credits", { p_user_id: userId, p_amount: 2, p_action_type: "slides_pro", p_description: "Slides Pro generation" });
-          }
-          return new Response(JSON.stringify({
-            success: true, download_url: downloadUrl, slide_count: data.slideCount || 10, title: topic,
-          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          success: false, fallback: true, error: "No job ID returned.",
-        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
+      const downloadUrl = data?.data?.downloadUrl || data?.downloadUrl;
+      const slideCount = data?.data?.slidePageCount || data?.data?.successCount || 10;
 
-      // Poll for completion
-      const result = await pollJob(jobId, apiKey);
-      if (result.status === "success" && result.downloadUrl) {
+      if (data?.success && downloadUrl) {
         // Deduct credits
         if (userId) {
-          const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-          await sb.rpc("deduct_credits", { p_user_id: userId, p_amount: 2, p_action_type: "slides_pro", p_description: "Slides Pro generation" });
+          try {
+            const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+            await sb.rpc("deduct_credits", { p_user_id: userId, p_amount: 2, p_action_type: "slides_pro", p_description: "Slides Pro generation" });
+          } catch (e) { console.error("Credit deduction failed:", e); }
         }
         return new Response(JSON.stringify({
-          success: true, download_url: result.downloadUrl, slide_count: 10, title: topic,
+          success: true, download_url: downloadUrl, slide_count: slideCount, title: topic,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       return new Response(JSON.stringify({
-        success: false, fallback: true, error: result.status === "timeout" ? "Generation timed out." : "Generation failed.",
+        success: false, fallback: true, error: data?.data?.message || "Pro generation failed.",
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     } else {
-      // Normal Mode: Fast PPT with template
+      // Fast PPT: POST /api/v1/slides/generate (sync mode)
       const body: Record<string, any> = {
         userInput: content || topic,
         responseLanguage: "Auto",
@@ -116,12 +95,10 @@ serve(async (req) => {
         body.themeId = templateId;
       }
 
-      const resp = await fetch("https://2slides.com/api/v1/slides/generate", {
+      console.log("Calling slides/generate (Fast PPT)...");
+      const resp = await fetch(`${BASE_URL}/api/v1/slides/generate`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
+        headers: authHeaders,
         body: JSON.stringify(body),
       });
 
@@ -134,16 +111,43 @@ serve(async (req) => {
       }
 
       const data = await resp.json();
-      const downloadUrl = data.downloadUrl || data.download_url || data.url || data.pptx_url;
+      console.log("Fast PPT response:", JSON.stringify(data));
+
+      // Response: { success: true, data: { downloadUrl, slidePageCount, ... } }
+      const downloadUrl = data?.data?.downloadUrl || data?.downloadUrl;
+      const slideCount = data?.data?.slidePageCount || 10;
+      const jobId = data?.data?.jobId;
+
+      if (data?.success && downloadUrl) {
+        return new Response(JSON.stringify({
+          success: true, download_url: downloadUrl, slide_count: slideCount, title: topic,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // If async job was returned instead of sync result, poll for it
+      if (data?.success && jobId && !downloadUrl) {
+        console.log("Got jobId, polling:", jobId);
+        for (let i = 0; i < 12; i++) {
+          await new Promise(r => setTimeout(r, 15000));
+          try {
+            const jobResp = await fetch(`${BASE_URL}/api/v1/jobs/${jobId}`, { headers: authHeaders });
+            if (!jobResp.ok) continue;
+            const jobData = await jobResp.json();
+            console.log(`Poll ${i + 1}:`, JSON.stringify(jobData));
+            const jd = jobData?.data || jobData;
+            if (jd.status === "success") {
+              return new Response(JSON.stringify({
+                success: true, download_url: jd.downloadUrl, slide_count: jd.slidePageCount || 10, title: topic,
+              }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+            if (jd.status === "failed") break;
+          } catch {}
+        }
+      }
 
       return new Response(JSON.stringify({
-        success: !!downloadUrl,
-        download_url: downloadUrl || null,
-        preview_url: data.preview_url || data.previewUrl || null,
-        slide_count: data.slideCount || data.slide_count || 10,
-        title: data.title || topic,
-        fallback: !downloadUrl,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        success: false, fallback: true, error: "Slide generation did not return a download.",
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
   } catch (e) {
