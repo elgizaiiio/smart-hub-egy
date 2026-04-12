@@ -3270,7 +3270,69 @@ serve(async (req) => {
         return new Response("OK");
       }
 
-      if ((session as any)?.adminAction === "tt_awaiting_prompt" && text) {
+      // Slide template: awaiting template ID
+      if ((session as any)?.adminAction === "st_awaiting_id" && text) {
+        (session as any).stTemplateId = text.trim();
+        (session as any).adminAction = "st_awaiting_image";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ Template ID: \`${text.trim()}\`\n\nأرسل صورة المعاينة:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي (بدون صورة)", callback_data: "st_skip_image" }], [{ text: "❌ إلغاء", callback_data: "slide_templates_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      // Slide template: awaiting image (for new or update)
+      if ((session as any)?.adminAction === "st_awaiting_image" && ((session as any)?.stTemplateId || (session as any)?.adminModelId)) {
+        let imageUrl: string | null = null;
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document?.mime_type?.startsWith("image/")) fileId = message.document.file_id;
+
+        if (fileId) {
+          const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+          const filePath = fileInfo.result?.file_path;
+          if (filePath) {
+            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+            const fileResp = await fetch(fileUrl);
+            const fileBuffer = await fileResp.arrayBuffer();
+            const ext = filePath.split(".").pop() || "jpg";
+            const storagePath = `slide-templates/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, { contentType: `image/${ext}`, upsert: true });
+            if (!uploadError) {
+              const { data: publicUrlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+              imageUrl = publicUrlData.publicUrl;
+            }
+          }
+        }
+
+        if ((session as any)?.adminModelId) {
+          // Updating existing template image
+          if (imageUrl) await sb.from("slide_templates").update({ image_url: imageUrl }).eq("id", (session as any).adminModelId);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: imageUrl ? "✅ تم تحديث صورة القالب" : "❌ فشل رفع الصورة", parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        // Creating new template
+        const { count } = await sb.from("slide_templates").select("*", { count: "exact", head: true });
+        await sb.from("slide_templates").insert({
+          template_id: (session as any).stTemplateId,
+          image_url: imageUrl,
+          display_order: (count || 0) + 1,
+          is_active: true,
+        });
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ تم إضافة القالب: \`${(session as any).stTemplateId}\``, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
         (session as any).ttPrompt = text.trim();
         (session as any).adminAction = "tt_awaiting_image";
         await saveSession(sb, chatId, session as any);
