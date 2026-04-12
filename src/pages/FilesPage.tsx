@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Eye, Download, X, Maximize2, Minimize2, FileText, Play, Plus, Paperclip, Sparkles, ArrowUp, Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
@@ -31,38 +30,20 @@ interface SavedFile {
 
 interface SlideTemplate {
   id: string;
-  templateId: string;
-  image: string;
+  template_id: string;
+  image_url: string | null;
 }
 
-const SLIDE_TEMPLATES: SlideTemplate[] = [
-  { id: "t1", templateId: "st-1763716811881-gt30ikwgk", image: "https://2slides.com/_next/image?url=/login_preview/st-1763716811881-gt30ikwgk_slide1.webp&w=640&q=75" },
-  { id: "t2", templateId: "st-1756352953459-hwsql8clr", image: "https://2slides.com/_next/image?url=/login_preview/st-1756352953459-hwsql8clr_slide1.webp&w=640&q=75" },
-  { id: "t3", templateId: "st-1756528389081-5tkg6rjik", image: "https://2slides.com/_next/image?url=/login_preview/st-1756528389081-5tkg6rjik_slide1.webp&w=640&q=75" },
-  { id: "t4", templateId: "st-1755604888327-tlfcbvqc0", image: "https://2slides.com/_next/image?url=/login_preview/st-1755604888327-tlfcbvqc0_slide1.webp&w=640&q=75" },
-  { id: "t5", templateId: "st-1756355004023-d2a6piyey", image: "https://2slides.com/_next/image?url=/login_preview/st-1756355004023-d2a6piyey_slide1.webp&w=640&q=75" },
-  { id: "t6", templateId: "st-1755571178740-cz8irzztb", image: "https://2slides.com/_next/image?url=/login_preview/st-1755571178740-cz8irzztb_slide1.webp&w=640&q=75" },
-  { id: "t7", templateId: "st-1763383163914-9ftifz8jv", image: "https://2slides.com/_next/image?url=/login_preview/st-1763383163914-9ftifz8jv_slide1.webp&w=640&q=75" },
-  { id: "t8", templateId: "st-1760154259733-pbb2sepyi", image: "https://2slides.com/_next/image?url=/login_preview/st-1760154259733-pbb2sepyi_slide1.webp&w=640&q=75" },
-  { id: "t9", templateId: "st-1757852235756-9gemf3hif", image: "https://2slides.com/_next/image?url=/login_preview/st-1757852235756-9gemf3hif_slide1.webp&w=640&q=75" },
-  { id: "t10", templateId: "st-1756809498727-b1v5lrdi5", image: "https://2slides.com/_next/image?url=/login_preview/st-1756809498727-b1v5lrdi5_slide1.webp&w=640&q=75" },
-  { id: "t11", templateId: "st-1762156533929-uk6qvhdj9", image: "https://2slides.com/_next/image?url=/login_preview/st-1762156533929-uk6qvhdj9_slide1.webp&w=640&q=75" },
-  { id: "t12", templateId: "st-1756529191038-cv70otsc6", image: "https://2slides.com/_next/image?url=/login_preview/st-1756529191038-cv70otsc6_slide1.webp&w=640&q=75" },
-  { id: "t13", templateId: "st-1759491551977-aasrhh1st", image: "https://2slides.com/_next/image?url=/login_preview/st-1759491551977-aasrhh1st_slide1.webp&w=640&q=75" },
-  { id: "t14", templateId: "st-1764300180558-f7bnjhoem", image: "https://2slides.com/_next/image?url=/login_preview/st-1764300180558-f7bnjhoem_slide1.webp&w=640&q=75" },
-];
-
 const FILE_SERVICES = [
-  { id: "slides", label: "Slides", gradient: "from-violet-500 to-purple-600" },
-  { id: "slides-pro", label: "Slides Pro", gradient: "from-amber-500 to-orange-600", icon: Crown },
-  { id: "document", label: "Document", gradient: "from-cyan-500 to-blue-600" },
-  { id: "resume", label: "Resume", gradient: "from-emerald-500 to-teal-600" },
-  { id: "report", label: "Report", gradient: "from-rose-500 to-pink-600" },
-  { id: "spreadsheet", label: "Spreadsheet", gradient: "from-blue-500 to-indigo-600" },
-  { id: "letter", label: "Letter", gradient: "from-orange-500 to-amber-600" },
+  { id: "slides", label: "Slides", color: "hsl(var(--primary))" },
+  { id: "slides-pro", label: "Slides Pro", color: "hsl(38 92% 50%)" },
+  { id: "document", label: "Document", color: "hsl(190 80% 50%)" },
+  { id: "resume", label: "Resume", color: "hsl(160 60% 45%)" },
+  { id: "report", label: "Report", color: "hsl(350 80% 55%)" },
+  { id: "spreadsheet", label: "Spreadsheet", color: "hsl(220 70% 55%)" },
+  { id: "letter", label: "Letter", color: "hsl(30 80% 55%)" },
 ];
 
-// SSE stream parser helper
 async function readSSEStream(body: ReadableStream<Uint8Array>): Promise<string> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -104,11 +85,20 @@ const FilesPage = () => {
   const [statusText, setStatusText] = useState("");
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<SlideTemplate | null>(null);
+  const [slideTemplates, setSlideTemplates] = useState<SlideTemplate[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isGenerating]);
+
+  // Load slide templates from DB
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("slide_templates").select("*").eq("is_active", true).order("display_order");
+      if (data && data.length > 0) setSlideTemplates(data);
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -196,28 +186,23 @@ const FilesPage = () => {
   const generateSlides = async (userInput: string, researchContent: string, convId: string | null) => {
     const isPro = activeAgent === "slides-pro";
     setStatusText(isPro ? "Creating Pro slides (this may take a few minutes)..." : "Creating slides...");
-
     const { data: { user } } = await supabase.auth.getUser();
 
     const { data, error } = await supabase.functions.invoke("generate-slides", {
       body: {
         topic: userInput,
         content: researchContent || userInput,
-        templateId: selectedTemplate?.templateId || undefined,
+        templateId: selectedTemplate?.template_id || undefined,
         tier: isPro ? "pro" : "normal",
         userId: user?.id,
       },
     });
 
-    if (error) {
-      console.error("generate-slides invoke error:", error);
-      return null;
-    }
+    if (error) { console.error("generate-slides invoke error:", error); return null; }
 
     if (data?.success && data?.download_url) {
-      // Ask AI for a nice summary
       setStatusText("Finishing up...");
-      let summary = `✅ Your presentation "${userInput}" is ready with ${data.slide_count || 10} professional slides.`;
+      let summary = `Your presentation "${userInput}" is ready with ${data.slide_count || 10} professional slides.`;
       try {
         const summaryResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
           method: "POST",
@@ -238,8 +223,6 @@ const FilesPage = () => {
       if (convId) await saveMsg(convId, "assistant", summary, { downloadUrl: data.download_url });
       return true;
     }
-
-    // Fallback
     return null;
   };
 
@@ -258,7 +241,6 @@ const FilesPage = () => {
     let prompt = `${agentPrompt}\n\nUser request: ${userInput}`;
     if (researchContent) prompt += `\n\nResearch to incorporate:\n${researchContent.slice(0, 4000)}`;
 
-    // Search images for visual content types
     if (["slides", "slides-pro", "document", "report"].includes(activeAgent || "")) {
       setStatusText("Finding visuals...");
       try {
@@ -289,7 +271,6 @@ const FilesPage = () => {
     }
 
     let content = await readSSEStream(resp.body);
-
     let summary = "";
     const summaryMatch = content.match(/---SUMMARY---([\s\S]*?)$/);
     if (summaryMatch) {
@@ -321,8 +302,6 @@ const FilesPage = () => {
 
     try {
       const isSlides = activeAgent === "slides" || activeAgent === "slides-pro";
-
-      // Deep research for slides and reports
       let research = "";
       if (isSlides || activeAgent === "report") {
         research = await doResearch(userInput);
@@ -331,7 +310,6 @@ const FilesPage = () => {
       if (isSlides) {
         const result = await generateSlides(userInput, research, convId);
         if (!result) {
-          // Fallback to HTML slides
           setStatusText("Generating HTML presentation...");
           await generateHtmlFile(userInput, files, research, convId);
         }
@@ -339,7 +317,6 @@ const FilesPage = () => {
         await generateHtmlFile(userInput, files, research, convId);
       }
 
-      // Refresh saved files
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.from("conversations").select("id, title, created_at, mode").eq("user_id", user.id).eq("mode", "files").order("created_at", { ascending: false }).limit(10);
@@ -389,12 +366,12 @@ const FilesPage = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-background flex flex-col">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/30 bg-secondary/30 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"><X className="w-4 h-4" /></button>
+                  <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-sm">✕</button>
                   <p className="text-sm font-medium text-foreground">Preview</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setPreviewFullscreen(!previewFullscreen)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-                    {previewFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  <button onClick={() => setPreviewFullscreen(!previewFullscreen)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-xs">
+                    {previewFullscreen ? "↙" : "↗"}
                   </button>
                   <button onClick={() => downloadHtml(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors">HTML</button>
                   <button onClick={() => printPdf(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">PDF</button>
@@ -411,9 +388,7 @@ const FilesPage = () => {
 
         {/* Mobile header */}
         <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3">
-          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-            <Menu className="w-5 h-5" />
-          </button>
+          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-lg">☰</button>
           <div className="w-9" />
         </div>
 
@@ -424,32 +399,31 @@ const FilesPage = () => {
               <div className="flex-1" />
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center max-w-2xl w-full">
-                {/* Hero */}
-                <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.95] mb-2">
-                  <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">CREATE</span>
-                  <br />
-                  <span className="text-foreground">ANYTHING</span>
+                {/* Hero - matching CodeWorkspace style */}
+                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-[0.95] mb-2">
+                  <span className="bg-gradient-to-r from-primary via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Create</span>
+                  {" "}
+                  <span className="text-foreground">anything.</span>
                 </h1>
-                <p className="text-muted-foreground/70 text-sm md:text-base mb-8 max-w-md mx-auto">
-                  Slides, documents, resumes, reports — powered by deep research & AI
+                <p className="text-muted-foreground/60 text-sm mb-8 max-w-sm mx-auto">
+                  Slides, documents, resumes, reports — powered by AI
                 </p>
 
-                {/* Input */}
+                {/* Input area - clean rectangular design */}
                 <div className="max-w-xl mx-auto mb-4">
                   {/* Active badges */}
                   {(activeAgent || selectedTemplate) && (
                     <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
                       {activeAgent && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
-                          <Sparkles className="w-3 h-3" />
                           {FILE_SERVICES.find(s => s.id === activeAgent)?.label}
-                          <button onClick={() => setActiveAgent(null)} className="ml-1 hover:text-foreground"><X className="w-3 h-3" /></button>
+                          <button onClick={() => setActiveAgent(null)} className="ml-1 hover:text-foreground">✕</button>
                         </div>
                       )}
                       {selectedTemplate && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-medium">
                           Template
-                          <button onClick={() => setSelectedTemplate(null)} className="ml-1 hover:text-foreground"><X className="w-3 h-3" /></button>
+                          <button onClick={() => setSelectedTemplate(null)} className="ml-1 hover:text-foreground">✕</button>
                         </div>
                       )}
                     </div>
@@ -460,18 +434,15 @@ const FilesPage = () => {
                     <div className="flex gap-2 mb-2 px-1 flex-wrap">
                       {attachedFiles.map((f, i) => (
                         <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/60 border border-border/30 text-xs text-foreground">
-                          <Paperclip className="w-3 h-3 text-muted-foreground" />
                           <span className="truncate max-w-[100px]">{f.name}</span>
-                          <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
+                          <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">✕</button>
                         </div>
                       ))}
                     </div>
                   )}
 
                   <div className="flex items-end gap-2 rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm px-4 py-3 min-h-[100px]">
-                    <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
-                      <Plus className="w-5 h-5" />
-                    </button>
+                    <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end text-lg">+</button>
                     <textarea
                       ref={textareaRef}
                       value={input}
@@ -484,14 +455,14 @@ const FilesPage = () => {
                     <button
                       onClick={() => handleGenerate()}
                       disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
-                      className="p-2.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90"
+                      className="p-2.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90 text-sm font-bold"
                     >
-                      {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                      {isGenerating ? "..." : "→"}
                     </button>
                   </div>
                 </div>
 
-                {/* Services row */}
+                {/* Services row - single horizontal scroll, no icons */}
                 <div className="max-w-xl mx-auto mb-5">
                   <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
                     {FILE_SERVICES.map(svc => (
@@ -502,21 +473,20 @@ const FilesPage = () => {
                           activeAgent === svc.id ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/40 border-border/30 hover:border-primary/20 text-foreground/80"
                         }`}
                       >
-                        <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${svc.gradient}`} />
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: svc.color }} />
                         <span className="font-medium">{svc.label}</span>
-                        {svc.icon && <svc.icon className="w-3 h-3 text-amber-400" />}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Templates */}
+                {/* Templates from DB */}
                 <AnimatePresence>
-                  {showTemplates && (
+                  {showTemplates && slideTemplates.length > 0 && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="max-w-xl mx-auto mb-6 overflow-hidden">
                       <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 text-left px-1">Choose a template</p>
                       <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none px-1">
-                        {SLIDE_TEMPLATES.map(tmpl => (
+                        {slideTemplates.map(tmpl => (
                           <button
                             key={tmpl.id}
                             onClick={() => setSelectedTemplate(selectedTemplate?.id === tmpl.id ? null : tmpl)}
@@ -524,18 +494,14 @@ const FilesPage = () => {
                               selectedTemplate?.id === tmpl.id ? "border-primary shadow-lg shadow-primary/20 scale-105" : "border-border/30 hover:border-border/60"
                             }`}
                           >
-                            <div className="aspect-[16/10] bg-secondary/50 flex items-center justify-center relative">
-                              <img
-                                src={tmpl.image}
-                                alt="Template preview"
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                onError={e => {
-                                  const el = e.target as HTMLImageElement;
-                                  el.style.display = "none";
-                                  el.parentElement!.innerHTML = `<div class="flex items-center justify-center w-full h-full text-muted-foreground text-xs">Template ${tmpl.id.replace('t','')}</div>`;
-                                }}
-                              />
+                            <div className="aspect-[16/10] bg-secondary/50 flex items-center justify-center">
+                              {tmpl.image_url ? (
+                                <img src={tmpl.image_url} alt="Template" className="w-full h-full object-cover" loading="lazy"
+                                  onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                />
+                              ) : (
+                                <span className="text-xs text-muted-foreground">{tmpl.template_id.slice(-6)}</span>
+                              )}
                             </div>
                           </button>
                         ))}
@@ -557,13 +523,11 @@ const FilesPage = () => {
                         onClick={() => loadConversation(f.id)}
                         className="w-full flex items-center gap-3 p-3 rounded-2xl bg-secondary/30 border border-border/20 text-left hover:bg-secondary/50 transition-colors"
                       >
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center shrink-0">
-                          <FileText className="w-4 h-4 text-primary" />
-                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center shrink-0 text-xs font-bold text-primary">F</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
                         </div>
-                        <Play className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                        <span className="text-muted-foreground/40 shrink-0 text-xs">→</span>
                       </motion.button>
                     ))}
                   </div>
@@ -587,16 +551,16 @@ const FilesPage = () => {
                       {msg.htmlContent && (
                         <div className="flex gap-2 flex-wrap">
                           <button onClick={() => setPreviewHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                            <Eye className="w-4 h-4" /> Preview
+                            Preview
                           </button>
                           <button onClick={() => downloadHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-foreground text-sm hover:bg-accent transition-colors">
-                            <Download className="w-4 h-4" /> Download
+                            Download
                           </button>
                         </div>
                       )}
                       {msg.downloadUrl && (
                         <a href={msg.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                          <Download className="w-4 h-4" /> Download Presentation
+                          Download Presentation
                         </a>
                       )}
                     </div>
@@ -614,9 +578,7 @@ const FilesPage = () => {
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
             <div className="max-w-2xl mx-auto">
               <div className="flex items-end gap-2 rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm px-3 py-2">
-                <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
-                  <Plus className="w-5 h-5" />
-                </button>
+                <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end text-lg">+</button>
                 <textarea
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -628,9 +590,9 @@ const FilesPage = () => {
                 <button
                   onClick={() => handleGenerate()}
                   disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
-                  className="p-2 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90"
+                  className="p-2 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90 text-sm font-bold"
                 >
-                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                  {isGenerating ? "..." : "→"}
                 </button>
               </div>
             </div>
