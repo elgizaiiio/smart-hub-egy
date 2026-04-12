@@ -994,6 +994,24 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      if (d === "st_skip_image") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        const { count } = await sb.from("slide_templates").select("*", { count: "exact", head: true });
+        await sb.from("slide_templates").insert({
+          template_id: (session as any).stTemplateId,
+          image_url: null,
+          display_order: (count || 0) + 1,
+          is_active: true,
+        });
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId,
+          `✅ تم إضافة القالب: \`${(session as any).stTemplateId}\` بدون صورة`,
+          [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]]
+        );
+        return new Response("OK");
+      }
+
       // ==================== Voice Templates ====================
       if (d === "voice_templates_menu") {
         const { data: templates, count } = await sb.from("voice_templates").select("id, name, is_active, audio_file_url", { count: "exact" });
