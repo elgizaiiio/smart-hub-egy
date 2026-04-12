@@ -1,62 +1,65 @@
 
 
-# Three Changes: Shopping API Integration, Deep Research Cleanup, iOS Glassmorphism
+# iOS 26 Liquid Glass Effect — Full Chat Page
 
-## 1. Integrate Shoppy-Wise-AI as Shopping Tool
+## Problem
+Current glassmorphism uses hardcoded `bg-white/10` and `border-white/20` which only works on dark themes. The project already has theme-aware CSS variables (`--glass`, `--glass-border`, `--glass-blur`) but they're not being used on the chat page.
 
-The shoppy-wise-ai project is a **free, open API** (no API key needed) at:
-`https://ygsoyowrumtntnlasmmh.supabase.co/functions/v1`
+## What Changes
 
-**Changes in `supabase/functions/chat/index.ts`:**
-- Replace the Serper `SHOPPING_SEARCH` tool execution with calls to the Shoppy-Wise API
-- `GET /shopping-search?q={query}&currency={currency}&country={country}&type={type}&limit=20`
-- Parse response: `data.products` array with `title, price, converted_price, source, image, url`
-- Also add `CONVERT_CURRENCY` tool: `GET /currency-convert?amount={amount}&from={from}&to={to}`
-- Remove the external redirect from Shopping Mode in `ChatPage.tsx` — shopping now works natively again via the API
-- Keep Serper `WEB_SEARCH` for product reviews/comparisons alongside the new shopping API
+### 1. New CSS Classes (`src/index.css`)
+Add reusable `liquid-glass` utility classes that use the existing theme variables + iOS 26 characteristics:
 
-## 2. Deep Research: Hide Internal Results & Remove Sources
+- **`.liquid-glass`** — Primary surface (input bar, plus menu, dialogs): strong blur (40px), translucent bg from `--glass`, specular top highlight (inset white border), deep shadow
+- **`.liquid-glass-subtle`** — Secondary surface (user bubbles, mode badges, nav buttons): lighter blur (24px), subtler bg
+- **`.liquid-glass-button`** — Interactive elements (Photos/Files/Videos/Code pills, action buttons, toggle switches): micro glass with hover state enhancement
+- **`.liquid-glass-hover`** — Hover-only glass (copy/like/dislike buttons): transparent at rest, glass on hover
 
-**Changes in `supabase/functions/chat/index.ts`:**
-- In the deep research synthesis prompt, add explicit instruction: "Do NOT include a Sources/References section at the end"
-- Add stronger filtering in `pushStatus()` to suppress any internal step leaks
+All classes reference `--glass`, `--glass-border`, `--glass-blur` so they automatically adapt to every theme (dark, Ocean, Sahara, Aurora, Ember, Citrus).
 
-**Changes in `src/components/ChatMessage.tsx`:**
-- When rendering deep research messages, hide the "Sources" footer section (the favicon row at the bottom)
-- Detect deep research context via a new `isDeepResearch` prop or by checking if the message is long (3000+ chars with research structure)
+### 2. AnimatedInput.tsx
+Replace hardcoded `border-white/15 bg-white/[0.08] backdrop-blur-3xl` with `liquid-glass` class.
 
-**Changes in `src/pages/ChatPage.tsx`:**
-- Pass `isDeepResearch` flag to ChatMessage for the assistant messages when `chatMode === "deep-research"`
-- Filter out any status messages that leak tool names in `normalizeStatusLabel`
+### 3. ChatMessage.tsx
+- **User bubbles**: Replace `bg-white/10 backdrop-blur-2xl border-white/20` with `liquid-glass-subtle`
+- **Action buttons** (Copy, Like, Dislike): Replace `hover:bg-white/10 hover:backdrop-blur-xl` with `liquid-glass-hover`
+- **Product cards**: Add `liquid-glass-subtle` to shopping result cards
+- **Context menu**: Use `liquid-glass` for the long-press popup
 
-## 3. iOS Glassmorphism Effect on Chat Page
+### 4. ChatPage.tsx
+- **Navigation pills** (Photos, Files, Videos, Code): Replace `bg-secondary/40 border-border/50` with `liquid-glass-button`
+- **Plus menu container**: Replace hardcoded glass with `liquid-glass`
+- **Plus menu buttons** (Camera, Photos, Files): Add `liquid-glass-hover`
+- **Mode toggles** (Web search, Learning, Shopping, Deep Research): Add `liquid-glass-hover`
+- **Mode badges** (above input): Add `liquid-glass-subtle`
+- **Scroll-to-bottom button**: Replace `bg-white/10 backdrop-blur-2xl border-white/20` with `liquid-glass-subtle`
+- **Share/Rename/Invite dialogs**: Replace `glassDialogClass` with `liquid-glass`
+- **Header menu dropdown**: Add `liquid-glass`
+- **Attachment chips**: Add `liquid-glass-button`
 
-Inspired by the iPhone glass animation, apply premium glassmorphism to:
-
-**User message bubbles:**
-- `bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.3)]`
-
-**Input bar container:**
-- `bg-white/8 backdrop-blur-3xl border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_20px_60px_rgba(0,0,0,0.4)]`
-- Subtle gradient overlay on the border for the "light refraction" effect
-
-**Plus menu & mode badges:**
-- Enhanced glass: `bg-white/5 backdrop-blur-3xl border border-white/10`
-
-**Action buttons (Copy, Like, Dislike):**
-- Glass hover states: `hover:bg-white/10 hover:backdrop-blur-xl`
-
-**Scroll-to-bottom button:**
-- Glass circle: `bg-white/10 backdrop-blur-2xl border border-white/20`
-
-All changes use CSS-only glassmorphism (no heavy animations), matching the premium iOS aesthetic the user saw.
+### 5. Key CSS Properties (iOS 26 Liquid Glass recipe)
+```css
+.liquid-glass {
+  background: hsl(var(--glass));
+  border: 1px solid hsl(var(--glass-border));
+  backdrop-filter: blur(40px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.12),  /* specular highlight */
+    inset 0 -1px 0 0 hsl(0 0% 0% / 0.05),    /* bottom edge */
+    0 8px 40px hsl(0 0% 0% / 0.15),           /* depth shadow */
+    0 2px 8px hsl(0 0% 0% / 0.1);             /* close shadow */
+}
+```
 
 ## Files Changed
 
 | File | Changes |
 |------|---------|
-| `supabase/functions/chat/index.ts` | Replace SHOPPING_SEARCH with Shoppy-Wise API, hide sources in deep research prompt, strengthen status filtering |
-| `src/pages/ChatPage.tsx` | Remove shopping redirect (back to native mode), pass `isDeepResearch` to ChatMessage, apply glass styles to input area |
-| `src/components/ChatMessage.tsx` | Add `isDeepResearch` prop, hide sources section for deep research, apply glass styles to user bubbles and buttons |
-| `src/components/AnimatedInput.tsx` | Apply glassmorphism to input container |
+| `src/index.css` | Add 4 `liquid-glass` utility classes |
+| `src/components/AnimatedInput.tsx` | Use `liquid-glass` class |
+| `src/components/ChatMessage.tsx` | Use `liquid-glass-subtle` and `liquid-glass-hover` |
+| `src/pages/ChatPage.tsx` | Apply liquid glass to ALL interactive elements |
+
+## Theme Compatibility
+All classes use the existing `--glass` / `--glass-border` / `--glass-blur` variables which are already defined for every theme, so the effect automatically adapts.
 
