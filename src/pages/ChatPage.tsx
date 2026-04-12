@@ -300,6 +300,7 @@ const ChatPage = () => {
         "BROWSE_WEBSITE",
         "WEB_SEARCH",
         "SHOPPING_SEARCH",
+        "CONVERT_CURRENCY",
         "GENERATE_IMAGE",
         "GENERATE_VIDEO",
         "GENERATE_VOICE",

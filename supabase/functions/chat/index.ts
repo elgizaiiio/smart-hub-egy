@@ -160,6 +160,7 @@ function isToolMarkerChunk(content: string): boolean {
     "WEB_SEARCH",
     "BROWSE_WEBSITE",
     "SHOPPING_SEARCH",
+    "CONVERT_CURRENCY",
     "GENERATE_IMAGE",
     "GENERATE_VIDEO",
     "GENERATE_VOICE",
