@@ -707,46 +707,46 @@ Ask me anything to get started!`;
   const renderPlusMenu = () =>
   <>
       <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-white/10 bg-white/5 backdrop-blur-3xl p-3 w-72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_24px_80px_rgba(0,0,0,0.5)]">
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl liquid-glass p-3 w-72">
         <div className="grid grid-cols-3 gap-2 mb-3">
-          <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
-            <Camera className="w-5 h-5 text-white/60" />
-            <span className="text-[11px] text-white/80">Camera</span>
+          <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl liquid-glass-hover transition-colors">
+            <Camera className="w-5 h-5 text-muted-foreground" />
+            <span className="text-[11px] text-foreground/80">Camera</span>
           </button>
-          <button onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
-            <Image className="w-5 h-5 text-white/60" />
-            <span className="text-[11px] text-white/80">Photos</span>
+          <button onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl liquid-glass-hover transition-colors">
+            <Image className="w-5 h-5 text-muted-foreground" />
+            <span className="text-[11px] text-foreground/80">Photos</span>
           </button>
-          <button onClick={() => {fileInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
-            <FileUp className="w-5 h-5 text-white/60" />
-            <span className="text-[11px] text-white/80">Files</span>
+          <button onClick={() => {fileInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl liquid-glass-hover transition-colors">
+            <FileUp className="w-5 h-5 text-muted-foreground" />
+            <span className="text-[11px] text-foreground/80">Files</span>
           </button>
         </div>
-        <div className="border-t border-white/10 pt-2 space-y-1">
-          <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">
-            <span className="text-sm text-white/80">Web search</span>
-            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-white/20 justify-start"}`}>
-              <div className="w-4 h-4 rounded-full bg-white mx-0.5" />
+        <div className="border-t border-border/20 pt-2 space-y-1">
+          <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg liquid-glass-hover transition-colors">
+            <span className="text-sm text-foreground/80">Web search</span>
+            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-muted justify-start"}`}>
+              <div className="w-4 h-4 rounded-full bg-foreground mx-0.5" />
             </div>
           </button>
-          <div className="border-t border-white/10 mt-1 pt-1">
-            <p className="text-[10px] text-white/30 uppercase px-3 py-1.5">Modes</p>
-            <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
+          <div className="border-t border-border/20 mt-1 pt-1">
+            <p className="text-[10px] text-muted-foreground/50 uppercase px-3 py-1.5">Modes</p>
+            <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}>
               <span className="text-sm">Learning Mode</span>
               {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
-            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
+            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}>
               <span className="text-sm">Shopping Mode</span>
               {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
-            <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
+            <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}>
               <span className="text-sm">Deep Research</span>
               {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
           </div>
-          <div className="border-t border-white/10 mt-1 pt-1">
-            <button onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left hover:bg-white/5 transition-colors">
-              <span className="text-sm text-white/70">Integrations</span>
+          <div className="border-t border-border/20 mt-1 pt-1">
+            <button onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left liquid-glass-hover transition-colors">
+              <span className="text-sm text-foreground/70">Integrations</span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
             </button>
           </div>
@@ -760,7 +760,7 @@ Ask me anything to get started!`;
     return (
       <div className="flex gap-2 px-2 overflow-x-auto pb-1 mb-1">
         {attachedFiles.map((f, i) =>
-        <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary text-xs text-foreground border border-border shrink-0">
+        <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg liquid-glass-button text-xs text-foreground shrink-0">
             {f.type === "image" ? <img src={f.data} alt="" className="w-8 h-8 rounded object-cover" /> : <FileUp className="w-3 h-3" />}
             <span className="truncate max-w-[100px]">{f.name}</span>
             <button onClick={() => setAttachedFiles((prev) => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">
@@ -772,7 +772,7 @@ Ask me anything to get started!`;
   };
 
   // Glass dialog class
-  const glassDialogClass = "max-w-[calc(100vw-2rem)] sm:max-w-[400px] p-0 gap-0 overflow-hidden rounded-2xl border-white/10 bg-black/80 backdrop-blur-2xl shadow-[0_32px_100px_rgba(0,0,0,0.5)]";
+  const glassDialogClass = "max-w-[calc(100vw-2rem)] sm:max-w-[400px] p-0 gap-0 overflow-hidden rounded-2xl liquid-glass";
 
   return (
     <AppLayout
@@ -812,7 +812,7 @@ Ask me anything to get started!`;
                     <MoreVertical className="w-5 h-5" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-xl border border-white/10 bg-black/80 backdrop-blur-2xl shadow-xl p-1.5">
+                <DropdownMenuContent align="end" className="w-48 rounded-xl liquid-glass p-1.5">
                   <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
                     <Share2 className="w-4 h-4 text-white/40" />
                     Share
@@ -853,16 +853,16 @@ Ask me anything to get started!`;
                 </div>
 
                 <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
-                  <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                  <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
                     Photos
                   </button>
-                  <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                  <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
                     Files
                   </button>
-                  <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                  <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
                     Videos
                   </button>
-                  <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full border border-border/50 bg-secondary/40 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+                  <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
                     Code
                   </button>
                 </div>
@@ -901,7 +901,7 @@ Ask me anything to get started!`;
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={scrollToBottom}
-                className="fixed bottom-36 right-4 z-20 w-9 h-9 rounded-full bg-white/10 backdrop-blur-2xl border border-white/20 flex items-center justify-center text-muted-foreground hover:text-foreground shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-colors"
+                className="fixed bottom-36 right-4 z-20 w-9 h-9 rounded-full liquid-glass-subtle flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowDown className="w-4 h-4" />
               </motion.button>
@@ -921,10 +921,10 @@ Ask me anything to get started!`;
                     exit={{ opacity: 0, y: 8 }}
                     className="flex items-center"
                   >
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium backdrop-blur-sm border border-border/30 ${
-                      chatMode === "learning" ? "bg-emerald-500/15 text-emerald-400" :
-                      chatMode === "shopping" ? "bg-amber-500/15 text-amber-400" :
-                      chatMode === "deep-research" ? "bg-violet-500/15 text-violet-400" : "bg-accent/40 text-foreground"
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium liquid-glass-subtle ${
+                      chatMode === "learning" ? "text-emerald-400" :
+                      chatMode === "shopping" ? "text-amber-400" :
+                      chatMode === "deep-research" ? "text-violet-400" : "text-foreground"
                     }`}>
                       {chatMode === "learning" && <GraduationCap className="w-3.5 h-3.5" />}
                       {chatMode === "shopping" && <ShoppingCart className="w-3.5 h-3.5" />}

@@ -331,7 +331,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             onTouchStart={handleLongPressStart}
             onTouchEnd={clearLongPress}
             onTouchCancel={clearLongPress}
-            className="bg-white/10 backdrop-blur-2xl text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-[0.9375rem] leading-relaxed border border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.3)]"
+            className="liquid-glass-subtle text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-[0.9375rem] leading-relaxed"
           >
             {content}
           </div>
@@ -345,7 +345,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.92 }}
                   transition={{ duration: 0.18 }}
-                  className="fixed z-50 overflow-hidden rounded-2xl border border-border/40 bg-popover/95 backdrop-blur-2xl shadow-[0_24px_80px_hsl(var(--foreground)/0.2)]"
+                  className="fixed z-50 overflow-hidden rounded-2xl liquid-glass"
                   style={{ left: `min(${menuPosition.x}px, calc(100vw - 14rem))`, top: `min(${menuPosition.y}px, calc(100vh - 14rem))`, width: "13rem" }}
                 >
                   <div className="p-1.5">
@@ -394,7 +394,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             <div className="mb-4 flex gap-3 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory touch-pan-x">
               {products.map((product, index) => {
                 const card = (
-                  <div className="w-[16.5rem] shrink-0 snap-start rounded-2xl border border-border/40 bg-secondary/30 overflow-hidden">
+                  <div className="w-[16.5rem] shrink-0 snap-start rounded-2xl liquid-glass-subtle overflow-hidden">
                     {product.image ? (
                       <img src={product.image} alt={product.title} className="h-36 w-full object-cover" />
                     ) : (
@@ -477,12 +477,12 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
           {/* Action buttons */}
           {!isStreaming && content && (
             <div className="flex items-center gap-1 mt-2">
-              <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-white/10 hover:backdrop-blur-xl transition-all" title="Copy">
+              <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground liquid-glass-hover transition-all" title="Copy">
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
               <motion.button
                 onClick={() => handleLikeAction(liked === true ? null : true)}
-                className={`p-1.5 rounded-lg transition-all ${liked === true ? "text-primary" : "text-muted-foreground/50 hover:text-foreground hover:bg-white/10 hover:backdrop-blur-xl"}`}
+                className={`p-1.5 rounded-lg transition-all ${liked === true ? "text-primary" : "text-muted-foreground/50 hover:text-foreground liquid-glass-hover"}`}
                 title="Like"
                 whileTap={{ scale: 1.3 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -491,7 +491,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
               </motion.button>
               <motion.button
                 onClick={() => handleLikeAction(liked === false ? null : false)}
-                className={`p-1.5 rounded-lg transition-all ${liked === false ? "text-destructive" : "text-muted-foreground/50 hover:text-foreground hover:bg-white/10 hover:backdrop-blur-xl"}`}
+                className={`p-1.5 rounded-lg transition-all ${liked === false ? "text-destructive" : "text-muted-foreground/50 hover:text-foreground liquid-glass-hover"}`}
                 title="Dislike"
                 whileTap={{ scale: 1.3 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -499,7 +499,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
                 <ThumbsDown className="w-3.5 h-3.5" />
               </motion.button>
               {onShare && (
-                <button onClick={onShare} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-white/10 hover:backdrop-blur-xl transition-all" title="More">
+                <button onClick={onShare} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground liquid-glass-hover transition-all" title="More">
                   <Ellipsis className="w-3.5 h-3.5" />
                 </button>
               )}
