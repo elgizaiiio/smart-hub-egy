@@ -1561,6 +1561,33 @@ export type Database = {
         }
         Relationships: []
       }
+      slide_templates: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          template_id?: string
+        }
+        Relationships: []
+      }
       spreadsheet_projects: {
         Row: {
           created_at: string
