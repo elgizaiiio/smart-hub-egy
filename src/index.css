@@ -4,14 +4,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Allow text selection globally */
+/* Allow text selection globally, protect UI elements */
 * {
   -webkit-user-select: text;
   -moz-user-select: text;
   user-select: text;
 }
+button, [role="button"], nav, .cookie-card, .no-select,
+[data-landing] h1, [data-landing] h2, [data-landing] .hero-text,
+.badge, .tab-label {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
 img, video {
   -webkit-user-drag: none;
+}
+/* Prevent zoom on iOS */
+input, textarea, select {
+  font-size: 16px !important;
 }
 
 /* Fancy button background for sidebar user section */
