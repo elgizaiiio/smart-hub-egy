@@ -71,7 +71,7 @@ const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
   const lower = status.toLowerCase();
-  const blocklist = ["web_search", "browse_website", "shopping_search", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call"];
+  const blocklist = ["web_search", "browse_website", "shopping_search", "convert_currency", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call"];
   if (blocklist.some(b => lower.includes(b))) return "Working on your request...";
   if (/https?:\/\//i.test(status)) return "Searching the web...";
   if (/writing the report/i.test(lower)) return "Writing the final report...";
@@ -707,7 +707,7 @@ Ask me anything to get started!`;
   const renderPlusMenu = () =>
   <>
       <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/70 backdrop-blur-2xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-white/10 bg-white/5 backdrop-blur-3xl p-3 w-72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_24px_80px_rgba(0,0,0,0.5)]">
         <div className="grid grid-cols-3 gap-2 mb-3">
           <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
             <Camera className="w-5 h-5 text-white/60" />
