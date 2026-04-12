@@ -287,6 +287,7 @@ function mainMenuKB() {
     [{ text: "🔐 API Keys (AgentRouter/Serper/WaveSpeed/HB)", callback_data: "apikeys_menu" }],
     [{ text: "🖼 Landing Page Photos", callback_data: "tools_menu" }],
     [{ text: "📋 Tool Templates (قوالب)", callback_data: "tool_templates_menu" }],
+    [{ text: "🎞️ Slide Templates", callback_data: "slide_templates_menu" }],
     [{ text: "📷 Headshot (قوالب)", callback_data: "headshot_menu" }],
     [{ text: "🎤 Voice Templates", callback_data: "voice_templates_menu" }],
     [{ text: "🔊 TTS Voices", callback_data: "tts_voices_menu" }],
@@ -739,6 +740,66 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      // ==================== Slide Templates ====================
+      if (d === "slide_templates_menu") {
+        const { data: templates, count } = await sb.from("slide_templates").select("*", { count: "exact" }).order("display_order");
+        const rows: { text: string; callback_data: string }[][] = [];
+        if (templates && templates.length > 0) {
+          for (let i = 0; i < templates.length; i += 2) {
+            const row: { text: string; callback_data: string }[] = [];
+            row.push({ text: `${templates[i].template_id.slice(-8)}`, callback_data: `st_view_${templates[i].id}` });
+            if (templates[i + 1]) row.push({ text: `${templates[i + 1].template_id.slice(-8)}`, callback_data: `st_view_${templates[i + 1].id}` });
+            rows.push(row);
+          }
+        }
+        rows.push([{ text: "➕ إضافة قالب", callback_data: "st_add" }]);
+        rows.push([{ text: "🔙 رجوع", callback_data: "main_menu" }]);
+        await send(BOT_TOKEN, chatId, msgId, `🎞️ *قوالب العروض (Slides)*\n\nالعدد: ${count || 0}`, rows);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("st_view_")) {
+        const templateId = d.replace("st_view_", "");
+        const { data: t } = await sb.from("slide_templates").select("*").eq("id", templateId).single();
+        if (!t) { await send(BOT_TOKEN, chatId, msgId, "❌ قالب غير موجود", [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]]); return new Response("OK"); }
+        const text = `🎞️ *Slide Template*\n\nID: \`${t.template_id}\`\nالحالة: ${t.is_active ? "✅ نشط" : "⏸ معطل"}\nالترتيب: ${t.display_order}\n${t.image_url ? `الصورة: [عرض](${t.image_url})` : "بدون صورة"}`;
+        await send(BOT_TOKEN, chatId, msgId, text, [
+          [{ text: t.is_active ? "⏸ تعطيل" : "✅ تفعيل", callback_data: `st_toggle_${t.id}` }],
+          [{ text: "🖼 تغيير الصورة", callback_data: `st_img_${t.id}` }],
+          [{ text: "🗑 حذف", callback_data: `st_del_${t.id}` }],
+          [{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }],
+        ]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("st_toggle_")) {
+        const templateId = d.replace("st_toggle_", "");
+        const { data: t } = await sb.from("slide_templates").select("is_active").eq("id", templateId).single();
+        if (t) await sb.from("slide_templates").update({ is_active: !t.is_active }).eq("id", templateId);
+        await send(BOT_TOKEN, chatId, msgId, `✅ تم ${t?.is_active ? "تعطيل" : "تفعيل"} القالب`, [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("st_del_")) {
+        const templateId = d.replace("st_del_", "");
+        await sb.from("slide_templates").delete().eq("id", templateId);
+        await send(BOT_TOKEN, chatId, msgId, "✅ تم حذف القالب", [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d.startsWith("st_img_")) {
+        const templateId = d.replace("st_img_", "");
+        await saveSession(sb, chatId, { adminAction: "st_awaiting_image", adminModelId: templateId } as any);
+        await send(BOT_TOKEN, chatId, msgId, "🖼 أرسل الصورة الجديدة للقالب:", [[{ text: "❌ إلغاء", callback_data: "slide_templates_menu" }]]);
+        return new Response("OK");
+      }
+
+      if (d === "st_add") {
+        await saveSession(sb, chatId, { adminAction: "st_awaiting_id" } as any);
+        await send(BOT_TOKEN, chatId, msgId, "➕ *إضافة قالب عرض*\n\nأرسل معرف القالب (template\\_id) من 2Slides:", [[{ text: "❌ إلغاء", callback_data: "slide_templates_menu" }]]);
+        return new Response("OK");
+      }
+
       // ==================== Tool Templates (قوالب الأدوات) ====================
       if (d === "tool_templates_menu") {
         const toolsWithTemplates = [
@@ -929,6 +990,24 @@ serve(async (req) => {
         await send(BOT_TOKEN, chatId, msgId,
           error ? `❌ خطأ: ${error.message}` : `✅ تم إضافة قالب *${(session as any).ttName}* بدون صورة`,
           [[{ text: "➕ آخر", callback_data: `tt_add_${toolId}` }], [{ text: "📋 القوالب", callback_data: `tt_tool_${toolId}` }]]
+        );
+        return new Response("OK");
+      }
+
+      if (d === "st_skip_image") {
+        const session = await loadSession(sb, chatId);
+        if (!session) return new Response("OK");
+        const { count } = await sb.from("slide_templates").select("*", { count: "exact", head: true });
+        await sb.from("slide_templates").insert({
+          template_id: (session as any).stTemplateId,
+          image_url: null,
+          display_order: (count || 0) + 1,
+          is_active: true,
+        });
+        await clearSession(sb, chatId);
+        await send(BOT_TOKEN, chatId, msgId,
+          `✅ تم إضافة القالب: \`${(session as any).stTemplateId}\` بدون صورة`,
+          [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]]
         );
         return new Response("OK");
       }
@@ -3205,6 +3284,69 @@ serve(async (req) => {
             [{ text: "⏭ تخطي", callback_data: "tt_gender_skip" }],
             [{ text: "❌ إلغاء", callback_data: `tt_tool_${toolId}` }],
           ]}),
+        });
+        return new Response("OK");
+      }
+
+      // Slide template: awaiting template ID
+      if ((session as any)?.adminAction === "st_awaiting_id" && text) {
+        (session as any).stTemplateId = text.trim();
+        (session as any).adminAction = "st_awaiting_image";
+        await saveSession(sb, chatId, session as any);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ Template ID: \`${text.trim()}\`\n\nأرسل صورة المعاينة:`, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "⏭ تخطي (بدون صورة)", callback_data: "st_skip_image" }], [{ text: "❌ إلغاء", callback_data: "slide_templates_menu" }]] }),
+        });
+        return new Response("OK");
+      }
+
+      // Slide template: awaiting image (for new or update)
+      if ((session as any)?.adminAction === "st_awaiting_image" && ((session as any)?.stTemplateId || (session as any)?.adminModelId)) {
+        let imageUrl: string | null = null;
+        let fileId: string | null = null;
+        if (message.photo?.length > 0) fileId = message.photo[message.photo.length - 1].file_id;
+        else if (message.document?.mime_type?.startsWith("image/")) fileId = message.document.file_id;
+
+        if (fileId) {
+          const fileInfo = await tg(BOT_TOKEN, "getFile", { file_id: fileId });
+          const filePath = fileInfo.result?.file_path;
+          if (filePath) {
+            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+            const fileResp = await fetch(fileUrl);
+            const fileBuffer = await fileResp.arrayBuffer();
+            const ext = filePath.split(".").pop() || "jpg";
+            const storagePath = `slide-templates/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadError } = await sb.storage.from("model-media").upload(storagePath, fileBuffer, { contentType: `image/${ext}`, upsert: true });
+            if (!uploadError) {
+              const { data: publicUrlData } = sb.storage.from("model-media").getPublicUrl(storagePath);
+              imageUrl = publicUrlData.publicUrl;
+            }
+          }
+        }
+
+        if ((session as any)?.adminModelId) {
+          // Updating existing template image
+          if (imageUrl) await sb.from("slide_templates").update({ image_url: imageUrl }).eq("id", (session as any).adminModelId);
+          await clearSession(sb, chatId);
+          await tg(BOT_TOKEN, "sendMessage", {
+            chat_id: chatId, text: imageUrl ? "✅ تم تحديث صورة القالب" : "❌ فشل رفع الصورة", parse_mode: "Markdown",
+            reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]] }),
+          });
+          return new Response("OK");
+        }
+
+        // Creating new template
+        const { count } = await sb.from("slide_templates").select("*", { count: "exact", head: true });
+        await sb.from("slide_templates").insert({
+          template_id: (session as any).stTemplateId,
+          image_url: imageUrl,
+          display_order: (count || 0) + 1,
+          is_active: true,
+        });
+        await clearSession(sb, chatId);
+        await tg(BOT_TOKEN, "sendMessage", {
+          chat_id: chatId, text: `✅ تم إضافة القالب: \`${(session as any).stTemplateId}\``, parse_mode: "Markdown",
+          reply_markup: JSON.stringify({ inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "slide_templates_menu" }]] }),
         });
         return new Response("OK");
       }

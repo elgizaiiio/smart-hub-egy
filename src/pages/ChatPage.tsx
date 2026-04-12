@@ -734,9 +734,9 @@ Ask me anything to get started!`;
               <span className="text-sm">Learning Mode</span>
               {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
-            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
+            <button onClick={() => { window.open("https://shoppy-wise-ai.lovable.app/", "_blank"); setPlusMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors hover:bg-white/5 text-white/70`}>
               <span className="text-sm">Shopping Mode</span>
-              {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
+              <span className="ml-auto text-xs text-muted-foreground">↗</span>
             </button>
             <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
               <span className="text-sm">Deep Research</span>
