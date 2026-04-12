@@ -28,6 +28,7 @@ interface ChatMessageProps {
   searchStatus?: string;
   onEditUserMessage?: (text: string) => void;
   onEditUserMessageAt?: (index: number, text: string) => void;
+  isDeepResearch?: boolean;
 }
 
 const getDomain = (url: string) => {
@@ -207,7 +208,7 @@ const MarkdownRenderer = ({ content, onLinkClick, onPreviewCode }: {
   </ReactMarkdown>
 );
 
-const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchStatus, onEditUserMessage, onEditUserMessageAt }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchStatus, onEditUserMessage, onEditUserMessageAt, isDeepResearch }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -330,7 +331,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             onTouchStart={handleLongPressStart}
             onTouchEnd={clearLongPress}
             onTouchCancel={clearLongPress}
-            className="bg-secondary/70 text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-[0.9375rem] leading-relaxed border border-border/30 shadow-[0_12px_32px_hsl(var(--foreground)/0.06)]"
+            className="bg-white/10 backdrop-blur-2xl text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-[0.9375rem] leading-relaxed border border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.3)]"
           >
             {content}
           </div>
@@ -457,8 +458,8 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             </div>
           )}
 
-          {/* Sources */}
-          {!isStreaming && uniqueLinks.length > 0 && (
+          {/* Sources — hidden for deep research */}
+          {!isStreaming && !isDeepResearch && uniqueLinks.length > 0 && (
             <div className="mt-3 pt-3 border-t border-border/40">
               <div className="flex items-center gap-3 overflow-x-auto pb-1">
                 {uniqueLinks.slice(0, 8).map((link, i) => (
@@ -476,12 +477,12 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
           {/* Action buttons */}
           {!isStreaming && content && (
             <div className="flex items-center gap-1 mt-2">
-              <button onClick={handleCopy} className="p-1.5 text-muted-foreground/50 hover:text-foreground transition-colors" title="Copy">
+              <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-white/10 hover:backdrop-blur-xl transition-all" title="Copy">
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
               <motion.button
                 onClick={() => handleLikeAction(liked === true ? null : true)}
-                className={`p-1.5 transition-colors ${liked === true ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}
+                className={`p-1.5 rounded-lg transition-all ${liked === true ? "text-primary" : "text-muted-foreground/50 hover:text-foreground hover:bg-white/10 hover:backdrop-blur-xl"}`}
                 title="Like"
                 whileTap={{ scale: 1.3 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -490,7 +491,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
               </motion.button>
               <motion.button
                 onClick={() => handleLikeAction(liked === false ? null : false)}
-                className={`p-1.5 transition-colors ${liked === false ? "text-destructive" : "text-muted-foreground/50 hover:text-foreground"}`}
+                className={`p-1.5 rounded-lg transition-all ${liked === false ? "text-destructive" : "text-muted-foreground/50 hover:text-foreground hover:bg-white/10 hover:backdrop-blur-xl"}`}
                 title="Dislike"
                 whileTap={{ scale: 1.3 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -498,7 +499,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
                 <ThumbsDown className="w-3.5 h-3.5" />
               </motion.button>
               {onShare && (
-                <button onClick={onShare} className="p-1.5 text-muted-foreground/50 hover:text-foreground transition-colors" title="More">
+                <button onClick={onShare} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-white/10 hover:backdrop-blur-xl transition-all" title="More">
                   <Ellipsis className="w-3.5 h-3.5" />
                 </button>
               )}

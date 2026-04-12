@@ -734,9 +734,9 @@ Ask me anything to get started!`;
               <span className="text-sm">Learning Mode</span>
               {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
-            <button onClick={() => { window.open("https://shoppy-wise-ai.lovable.app/", "_blank"); setPlusMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors hover:bg-white/5 text-white/70`}>
+            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
               <span className="text-sm">Shopping Mode</span>
-              <span className="ml-auto text-xs text-muted-foreground">↗</span>
+              {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
             <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
               <span className="text-sm">Deep Research</span>
@@ -886,7 +886,8 @@ Ask me anything to get started!`;
                   onLikeMessage={handleLikeMessage}
                   onShare={undefined}
                   onStructuredAction={handleStructuredAction}
-                  onEditUserMessageAt={msg.role === "user" ? handleEditUserMessageAt : undefined} />
+                  onEditUserMessageAt={msg.role === "user" ? handleEditUserMessageAt : undefined}
+                  isDeepResearch={chatMode === "deep-research"} />
               )}
               <div ref={messagesEndRef} />
             </div>
@@ -899,7 +900,7 @@ Ask me anything to get started!`;
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={scrollToBottom}
-                className="fixed bottom-36 right-4 z-20 w-9 h-9 rounded-full bg-secondary/80 backdrop-blur-lg border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground shadow-lg transition-colors"
+                className="fixed bottom-36 right-4 z-20 w-9 h-9 rounded-full bg-white/10 backdrop-blur-2xl border border-white/20 flex items-center justify-center text-muted-foreground hover:text-foreground shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-colors"
               >
                 <ArrowDown className="w-4 h-4" />
               </motion.button>

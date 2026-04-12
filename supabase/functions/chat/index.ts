@@ -9,6 +9,7 @@ const corsHeaders = {
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v1";
 const LEMONDATA_URL = "https://api.lemondata.cc/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const SHOPPY_WISE_BASE = "https://ygsoyowrumtntnlasmmh.supabase.co/functions/v1";
 const DEFAULT_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 const COMPLEX_MODEL = "moonshotai/kimi-k2.5:nitro";
 const OPENROUTER_FALLBACK_MODELS = [DEFAULT_MODEL, "google/gemini-2.5-flash", "google/gemini-3-flash-preview"];
@@ -442,24 +443,32 @@ serve(async (req) => {
       },
     ] : [];
 
-    // Shopping search tool
-    const shoppingTools = (isShopping && SERPER_API_KEY) ? [
+    // Shopping search tool (Shoppy-Wise API — no key needed)
+    const shoppingTools = isShopping ? [
       {
         type: "function",
         function: {
           name: "SHOPPING_SEARCH",
-          description: "Search for products across online stores. Returns product images, prices, sellers, ratings, and links. ALWAYS use this when the user asks about buying, prices, products, or shopping. You can call it multiple times with different queries to find the best deals.",
-          parameters: { type: "object", properties: { query: { type: "string", description: "Product search query" }, num: { type: "number", description: "Number of results (default 10)" } }, required: ["query"] },
+          description: "Search for products across online stores using Shoppy-Wise. Returns product images, prices, sellers, and links. ALWAYS use this when the user asks about buying, prices, products, or shopping.",
+          parameters: { type: "object", properties: { query: { type: "string", description: "Product search query" }, currency: { type: "string", description: "Currency code like EGP, SAR, USD" }, country: { type: "string", description: "Country like egypt, saudi" }, type: { type: "string", description: "Search type: google, amazon, noon" } }, required: ["query"] },
         },
       },
       {
+        type: "function",
+        function: {
+          name: "CONVERT_CURRENCY",
+          description: "Convert a price amount from one currency to another. Use when product prices are in a different currency than the user prefers.",
+          parameters: { type: "object", properties: { amount: { type: "number", description: "Amount to convert" }, from: { type: "string", description: "Source currency code (e.g. USD)" }, to: { type: "string", description: "Target currency code (e.g. EGP)" } }, required: ["amount", "from", "to"] },
+        },
+      },
+      ...(SERPER_API_KEY ? [{
         type: "function",
         function: {
           name: "WEB_SEARCH",
           description: "Search the web for product reviews, comparisons, or general information to help the user make better purchasing decisions.",
           parameters: { type: "object", properties: { query: { type: "string", description: "Search query" }, include_images: { type: "boolean" } }, required: ["query"] },
         },
-      },
+      }] : []),
     ] : [];
 
     // Browser tool (Computer Use via Hyperbrowser)
@@ -1042,9 +1051,9 @@ async function handleToolCalls(
     // Sanitize: never expose tool names, URLs, or internal steps
     let clean = status.replace(/https?:\/\/[^\s]+/g, "").replace(/—/g, "").trim();
     const lower = clean.toLowerCase();
-    const blocklist = ["web_search", "browse_website", "shopping_search", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call", "hyper-agent", "hyperbrowser", "serper", "composio"];
+    const blocklist = ["web_search", "browse_website", "shopping_search", "convert_currency", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call", "hyper-agent", "hyperbrowser", "serper", "composio", "shoppy", "currency-convert", "shopping-search", "step ", "action:", "next_goal"];
     if (blocklist.some(b => lower.includes(b))) clean = "Working on your request...";
-    if (!clean) clean = "Searching...";
+    if (!clean || clean.length < 3) clean = "Searching...";
     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: clean })}\n\n`));
   };
   const pushBrowser = (_browser: Record<string, unknown>) => {
@@ -1060,48 +1069,77 @@ async function handleToolCalls(
       const toolName = tc.function?.name;
       const toolArgs = safeParseToolArgs(tc.function?.arguments || "{}");
 
-      // Shopping search
-      if (toolName === "SHOPPING_SEARCH" && SERPER_API_KEY) {
+      // Shopping search via Shoppy-Wise API
+      if (toolName === "SHOPPING_SEARCH") {
         const searchQuery = String(toolArgs.query || "").trim();
         if (!searchQuery) continue;
 
         pushStatus("Searching stores...");
 
-        const shopResp = await fetchWithTimeout("https://google.serper.dev/shopping", {
-          method: "POST",
-          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ q: searchQuery, num: Number(toolArgs.num) || 10 }),
-        }, 10000);
+        const params = new URLSearchParams({ q: searchQuery, limit: "20" });
+        if (toolArgs.currency) params.set("currency", String(toolArgs.currency));
+        if (toolArgs.country) params.set("country", String(toolArgs.country));
+        if (toolArgs.type) params.set("type", String(toolArgs.type));
 
-        if (shopResp.ok) {
-          const shopData = await shopResp.json();
-          if (shopData.shopping?.length) {
-            const products = shopData.shopping.map((p: any) => ({
-              title: p.title || "",
-              price: p.price || "N/A",
-              image: p.imageUrl || p.thumbnailUrl || "",
-              link: p.link || "",
-              seller: p.source || "",
-              rating: p.rating ? `${p.rating}/5` : null,
-              delivery: p.delivery || null,
-            }));
-            allProducts.push(...products);
+        try {
+          const shopResp = await fetchWithTimeout(`${SHOPPY_WISE_BASE}/shopping-search?${params}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }, 15000);
 
-            const context = `Shopping results for "${searchQuery}":\n` + 
-              products.map((p: any, i: number) => 
-                `[${i+1}] ${p.title} - ${p.price} from ${p.seller}${p.rating ? ` (${p.rating})` : ""}\nLink: ${p.link}`
-              ).join("\n\n");
-            allSearchResults.push(context);
-            
-            pushStatus("Comparing the best product options...");
+          if (shopResp.ok) {
+            const shopData = await shopResp.json();
+            const rawProducts = shopData.data?.products || shopData.products || [];
+            if (rawProducts.length > 0) {
+              const products = rawProducts.map((p: any) => ({
+                title: p.title || "",
+                price: p.converted_price || p.price || "N/A",
+                image: p.image || p.thumbnail || "",
+                link: p.url || p.link || "",
+                seller: p.source || p.store || "",
+                rating: p.rating ? `${p.rating}/5` : null,
+                delivery: p.delivery || null,
+              }));
+              allProducts.push(...products);
 
-            // Send product images
-            const productImages = products.filter((p: any) => p.image).map((p: any) => p.image);
-            if (productImages.length > 0) {
-              productImages.forEach((img: string) => allImages.add(img));
+              const context = `Shopping results for "${searchQuery}":\n` + 
+                products.map((p: any, i: number) => 
+                  `[${i+1}] ${p.title} - ${p.price} from ${p.seller}${p.rating ? ` (${p.rating})` : ""}\nLink: ${p.link}`
+                ).join("\n\n");
+              allSearchResults.push(context);
+              
+              pushStatus("Comparing the best product options...");
+
+              const productImages = products.filter((p: any) => p.image).map((p: any) => p.image);
+              if (productImages.length > 0) {
+                productImages.forEach((img: string) => allImages.add(img));
+              }
             }
           }
+        } catch (shopErr) {
+          console.error("Shoppy-Wise error:", shopErr);
+          pushStatus("Shopping search failed, continuing...");
         }
+        continue;
+      }
+
+      // Currency conversion via Shoppy-Wise API
+      if (toolName === "CONVERT_CURRENCY") {
+        const amount = Number(toolArgs.amount) || 0;
+        const from = String(toolArgs.from || "USD").toUpperCase();
+        const to = String(toolArgs.to || "EGP").toUpperCase();
+        if (!amount) continue;
+
+        try {
+          const convResp = await fetchWithTimeout(`${SHOPPY_WISE_BASE}/currency-convert?amount=${amount}&from=${from}&to=${to}`, {
+            method: "GET",
+          }, 8000);
+          if (convResp.ok) {
+            const convData = await convResp.json();
+            const converted = convData.converted || convData.result || convData;
+            allSearchResults.push(`Currency conversion: ${amount} ${from} = ${typeof converted === "object" ? JSON.stringify(converted) : converted} ${to}`);
+          }
+        } catch { /* skip */ }
         continue;
       }
 
@@ -1541,12 +1579,11 @@ async function handleToolCalls(
   ## Data & Statistics (use tables for comparisons)
   ## Expert Opinions & Perspectives
   ## Future Outlook & Predictions
-  ## Sources & References (formatted as clickable links)
+- Do NOT include a "Sources", "References", or "Sources & References" section at the end. Cite sources INLINE only using [Source Name](URL) within the text.
 - Include images inline throughout using ![description](url) — spread them across sections.
 - Use bullet points (•), numbered lists, bold text, and tables extensively.
-- Every claim must cite its source: [Source Name](URL).
 - Do NOT show any raw search data, internal steps, or tool outputs.
-- Do NOT abbreviate or shorten. Write the FULL detailed report.` 
+- Do NOT abbreviate or shorten. Write the FULL detailed report.`
           : `Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language. Use bullet points (•) and dashes (-) for organized responses. Use bold for key points.`}` },
     ];
 
