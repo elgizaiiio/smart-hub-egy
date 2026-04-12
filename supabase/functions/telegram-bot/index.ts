@@ -3351,6 +3351,7 @@ serve(async (req) => {
         return new Response("OK");
       }
 
+      if ((session as any)?.adminAction === "tt_awaiting_prompt" && text) {
         (session as any).ttPrompt = text.trim();
         (session as any).adminAction = "tt_awaiting_image";
         await saveSession(sb, chatId, session as any);
