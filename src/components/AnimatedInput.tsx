@@ -265,7 +265,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           />
         )}
       </AnimatePresence>
-      <div className="rounded-2xl border border-border/40 bg-background/40 backdrop-blur-xl overflow-hidden shadow-[0_18px_60px_hsl(var(--foreground)/0.06)]">
+      <div className="rounded-2xl border border-white/15 bg-white/[0.08] backdrop-blur-3xl overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_20px_60px_rgba(0,0,0,0.4)]">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
             <motion.div

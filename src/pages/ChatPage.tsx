@@ -71,7 +71,7 @@ const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
   const lower = status.toLowerCase();
-  const blocklist = ["web_search", "browse_website", "shopping_search", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call"];
+  const blocklist = ["web_search", "browse_website", "shopping_search", "convert_currency", "generate_image", "generate_video", "generate_voice", "canva_create_slides", "running ", "tool_call", "function_call"];
   if (blocklist.some(b => lower.includes(b))) return "Working on your request...";
   if (/https?:\/\//i.test(status)) return "Searching the web...";
   if (/writing the report/i.test(lower)) return "Writing the final report...";
@@ -300,6 +300,7 @@ const ChatPage = () => {
         "BROWSE_WEBSITE",
         "WEB_SEARCH",
         "SHOPPING_SEARCH",
+        "CONVERT_CURRENCY",
         "GENERATE_IMAGE",
         "GENERATE_VIDEO",
         "GENERATE_VOICE",
@@ -706,7 +707,7 @@ Ask me anything to get started!`;
   const renderPlusMenu = () =>
   <>
       <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-border/30 bg-black/70 backdrop-blur-2xl p-3 w-72 shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl border border-white/10 bg-white/5 backdrop-blur-3xl p-3 w-72 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_24px_80px_rgba(0,0,0,0.5)]">
         <div className="grid grid-cols-3 gap-2 mb-3">
           <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-white/5 transition-colors">
             <Camera className="w-5 h-5 text-white/60" />
@@ -734,9 +735,9 @@ Ask me anything to get started!`;
               <span className="text-sm">Learning Mode</span>
               {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
-            <button onClick={() => { window.open("https://shoppy-wise-ai.lovable.app/", "_blank"); setPlusMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors hover:bg-white/5 text-white/70`}>
+            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
               <span className="text-sm">Shopping Mode</span>
-              <span className="ml-auto text-xs text-muted-foreground">↗</span>
+              {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
             </button>
             <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/15 text-primary" : "hover:bg-white/5 text-white/70"}`}>
               <span className="text-sm">Deep Research</span>
@@ -886,7 +887,8 @@ Ask me anything to get started!`;
                   onLikeMessage={handleLikeMessage}
                   onShare={undefined}
                   onStructuredAction={handleStructuredAction}
-                  onEditUserMessageAt={msg.role === "user" ? handleEditUserMessageAt : undefined} />
+                  onEditUserMessageAt={msg.role === "user" ? handleEditUserMessageAt : undefined}
+                  isDeepResearch={chatMode === "deep-research"} />
               )}
               <div ref={messagesEndRef} />
             </div>
@@ -899,7 +901,7 @@ Ask me anything to get started!`;
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={scrollToBottom}
-                className="fixed bottom-36 right-4 z-20 w-9 h-9 rounded-full bg-secondary/80 backdrop-blur-lg border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground shadow-lg transition-colors"
+                className="fixed bottom-36 right-4 z-20 w-9 h-9 rounded-full bg-white/10 backdrop-blur-2xl border border-white/20 flex items-center justify-center text-muted-foreground hover:text-foreground shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-colors"
               >
                 <ArrowDown className="w-4 h-4" />
               </motion.button>
