@@ -812,9 +812,12 @@ FORMAT:
 - Cite ALL sources: [Source Name](URL)
 
 LANGUAGE RULE (CRITICAL):
-- ALWAYS respond in the EXACT SAME language the user used in their query
+- ALWAYS respond in the EXACT SAME language the user used in their LATEST query message
 - If the user writes in Arabic (any dialect), the ENTIRE report MUST be in Arabic including ALL section headers
-- If the user writes in English, respond in English
+- If the user writes in English, respond ENTIRELY in English
+- If the user writes in French, respond ENTIRELY in French
+- If the user writes in any other language, respond ENTIRELY in that same language
+- DETECT the language from the user's actual input text, do NOT default to Arabic
 - Never mix languages within the report
 
 REPORT STRUCTURE (adapt headers to user's language):
@@ -1092,20 +1095,32 @@ async function handleToolCalls(
             const shopData = await shopResp.json();
             const rawProducts = shopData.data?.products || shopData.products || [];
             if (rawProducts.length > 0) {
-              const products = rawProducts.map((p: any) => ({
-                title: p.title || "",
-                price: p.converted_price || p.price || "N/A",
-                image: p.image || p.thumbnail || "",
-                link: p.url || p.link || "",
-                seller: p.source || p.store || "",
-                rating: p.rating ? `${p.rating}/5` : null,
-                delivery: p.delivery || null,
-              }));
+              const products = rawProducts.map((p: any) => {
+                // Fix product links: ensure they are valid absolute URLs
+                let productLink = p.url || p.link || p.product_url || p.productUrl || "";
+                if (productLink && !productLink.startsWith("http")) {
+                  // Try to construct a valid URL from the source/store
+                  const source = (p.source || p.store || "").toLowerCase();
+                  if (source.includes("amazon")) productLink = `https://www.amazon.com/dp/${productLink}`;
+                  else if (source.includes("noon")) productLink = `https://www.noon.com/product/${productLink}`;
+                  else if (source.includes("jumia")) productLink = `https://www.jumia.com/product/${productLink}`;
+                  else productLink = `https://${productLink}`;
+                }
+                return {
+                  title: p.title || p.name || "",
+                  price: p.converted_price || p.price || "N/A",
+                  image: p.image || p.thumbnail || p.imageUrl || "",
+                  link: productLink,
+                  seller: p.source || p.store || p.merchant || "",
+                  rating: p.rating ? `${p.rating}${String(p.rating).includes('/') ? '' : '/5'}` : null,
+                  delivery: p.delivery || p.shipping || null,
+                };
+              });
               allProducts.push(...products);
 
               const context = `Shopping results for "${searchQuery}":\n` + 
                 products.map((p: any, i: number) => 
-                  `[${i+1}] ${p.title} - ${p.price} from ${p.seller}${p.rating ? ` (${p.rating})` : ""}\nLink: ${p.link}`
+                  `[${i+1}] ${p.title} - ${p.price} from ${p.seller}${p.rating ? ` (${p.rating})` : ""}${p.link ? `\nBuy: ${p.link}` : ""}`
                 ).join("\n\n");
               allSearchResults.push(context);
               
@@ -1571,7 +1586,12 @@ async function handleToolCalls(
 - The report must be a MASSIVE, professional-grade document — not a brief summary.
 - CRITICAL: Start by placing the most relevant images at the VERY TOP using ![description](url) BEFORE the text.
 - Then write the full report below the images.
-- Use the SAME LANGUAGE as the user's original query. If they wrote in Arabic, the ENTIRE report must be in Arabic.
+- LANGUAGE (MOST CRITICAL): DETECT the language of the user's ORIGINAL query and write the ENTIRE report in that EXACT language.
+  * If the user wrote in English → write EVERYTHING in English
+  * If the user wrote in Arabic → write EVERYTHING in Arabic  
+  * If the user wrote in French → write EVERYTHING in French
+  * If the user wrote in ANY other language → write EVERYTHING in that language
+  * Do NOT default to Arabic. DETECT from the actual user text.
 - Structure with MANY sections and sub-sections:
   ## Executive Summary (200+ words)
   ## Background & Context (300+ words)
