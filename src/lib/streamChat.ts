@@ -69,9 +69,18 @@ export async function streamChat({
       onDone();
       return;
     }
+    if (resp.status === 503) {
+      onError?.("Service temporarily unavailable. Please try again in a moment.");
+      onDone();
+      return;
+    }
     if (!resp.ok || !resp.body) {
       const errorText = await resp.text().catch(() => "");
-      onError?.(errorText || "Failed to connect to AI. Please try again.");
+      // Don't show generic connection error for server errors - show specific message
+      const msg = resp.status >= 500 
+        ? "AI service is temporarily busy. Please try again." 
+        : (errorText || "Something went wrong. Please try again.");
+      onError?.(msg);
       onDone();
       return;
     }
@@ -141,7 +150,13 @@ export async function streamChat({
       return;
     }
     console.error("Stream error:", e);
-    onError?.("Connection error. Please check your internet and try again.");
+    // Check if it's actually a network error vs other errors
+    const isNetworkError = !navigator.onLine || e?.message?.includes("Failed to fetch") || e?.message?.includes("NetworkError") || e?.message?.includes("ERR_NETWORK");
+    if (isNetworkError) {
+      onError?.("Connection error. Please check your internet and try again.");
+    } else {
+      onError?.("Something went wrong. Please try again.");
+    }
     onDone();
   }
 }
