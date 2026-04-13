@@ -417,7 +417,8 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
                     <a
                       key={`${product.link}-${index}`}
                       href={product.link}
-                      onClick={(e) => handleLinkClick(e, product.link!)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="block"
                     >
                       {card}
