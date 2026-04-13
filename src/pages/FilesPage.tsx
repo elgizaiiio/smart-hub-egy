@@ -7,6 +7,7 @@ import AppLayout from "@/layouts/AppLayout";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import ReactMarkdown from "react-markdown";
 import { buildPreviewHtml } from "@/lib/filesHtmlBuilders";
+import { Menu, ArrowUp, Plus, X, Download, Eye, FileText } from "lucide-react";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -35,13 +36,13 @@ interface SlideTemplate {
 }
 
 const FILE_SERVICES = [
-  { id: "slides", label: "Slides", color: "hsl(var(--primary))" },
-  { id: "slides-pro", label: "Slides Pro", color: "hsl(38 92% 50%)" },
-  { id: "document", label: "Document", color: "hsl(190 80% 50%)" },
-  { id: "resume", label: "Resume", color: "hsl(160 60% 45%)" },
-  { id: "report", label: "Report", color: "hsl(350 80% 55%)" },
-  { id: "spreadsheet", label: "Spreadsheet", color: "hsl(220 70% 55%)" },
-  { id: "letter", label: "Letter", color: "hsl(30 80% 55%)" },
+  { id: "slides", label: "Slides", gradient: "from-violet-500 to-purple-600" },
+  { id: "slides-pro", label: "Slides Pro", gradient: "from-amber-500 to-orange-600" },
+  { id: "document", label: "Document", gradient: "from-cyan-500 to-blue-600" },
+  { id: "resume", label: "Resume", gradient: "from-emerald-500 to-teal-600" },
+  { id: "report", label: "Report", gradient: "from-rose-500 to-pink-600" },
+  { id: "spreadsheet", label: "Spreadsheet", gradient: "from-blue-500 to-indigo-600" },
+  { id: "letter", label: "Letter", gradient: "from-orange-500 to-amber-600" },
 ];
 
 async function readSSEStream(body: ReadableStream<Uint8Array>): Promise<string> {
@@ -92,7 +93,6 @@ const FilesPage = () => {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isGenerating]);
 
-  // Load slide templates from DB
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from("slide_templates").select("*").eq("is_active", true).order("display_order");
@@ -185,7 +185,7 @@ const FilesPage = () => {
 
   const generateSlides = async (userInput: string, researchContent: string, convId: string | null) => {
     const isPro = activeAgent === "slides-pro";
-    setStatusText(isPro ? "Creating Pro slides (this may take a few minutes)..." : "Creating slides...");
+    setStatusText(isPro ? "Creating Pro slides..." : "Creating slides...");
     const { data: { user } } = await supabase.auth.getUser();
 
     const { data, error } = await supabase.functions.invoke("generate-slides", {
@@ -364,21 +364,23 @@ const FilesPage = () => {
         <AnimatePresence>
           {previewHtml && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-background flex flex-col">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/30 bg-secondary/30 backdrop-blur-sm">
+              <div className="flex items-center justify-between px-4 py-2.5 liquid-glass border-b-0">
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-sm">✕</button>
+                  <button onClick={() => setPreviewHtml(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors text-sm">
+                    <X className="w-4 h-4" />
+                  </button>
                   <p className="text-sm font-medium text-foreground">Preview</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => setPreviewFullscreen(!previewFullscreen)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-xs">
                     {previewFullscreen ? "↙" : "↗"}
                   </button>
-                  <button onClick={() => downloadHtml(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-secondary text-foreground hover:bg-accent transition-colors">HTML</button>
-                  <button onClick={() => printPdf(previewHtml)} className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">PDF</button>
+                  <button onClick={() => downloadHtml(previewHtml)} className="text-xs px-3 py-1.5 rounded-xl liquid-glass-button text-foreground">HTML</button>
+                  <button onClick={() => printPdf(previewHtml)} className="text-xs px-3 py-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">PDF</button>
                 </div>
               </div>
               <div className={`flex-1 ${previewFullscreen ? "" : "p-4 md:p-8"}`}>
-                <div className={previewFullscreen ? "w-full h-full" : "max-w-5xl mx-auto h-full rounded-xl overflow-hidden border border-border/20 shadow-2xl"}>
+                <div className={previewFullscreen ? "w-full h-full" : "max-w-5xl mx-auto h-full rounded-xl overflow-hidden liquid-glass-subtle shadow-2xl"}>
                   <iframe srcDoc={previewHtml} className="w-full h-full bg-white" sandbox="allow-scripts" />
                 </div>
               </div>
@@ -388,7 +390,9 @@ const FilesPage = () => {
 
         {/* Mobile header */}
         <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3">
-          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-lg">☰</button>
+          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Menu className="w-5 h-5" />
+          </button>
           <div className="w-9" />
         </div>
 
@@ -399,32 +403,32 @@ const FilesPage = () => {
               <div className="flex-1" />
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center max-w-2xl w-full">
-                {/* Hero - matching CodeWorkspace style */}
-                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-[0.95] mb-2">
-                  <span className="bg-gradient-to-r from-primary via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Create</span>
-                  {" "}
-                  <span className="text-foreground">anything.</span>
+                {/* Hero text — Landing page style */}
+                <h1 className="font-display text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] mb-3">
+                  <span className="text-foreground">CREATE</span>
+                  <br />
+                  <span className="bg-gradient-to-r from-primary via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">ANYTHING</span>
                 </h1>
-                <p className="text-muted-foreground/60 text-sm mb-8 max-w-sm mx-auto">
+                <p className="text-muted-foreground/50 text-sm mb-10 max-w-xs mx-auto">
                   Slides, documents, resumes, reports — powered by AI
                 </p>
 
-                {/* Input area - clean rectangular design */}
-                <div className="max-w-xl mx-auto mb-4">
+                {/* Input area — iOS 26 liquid glass */}
+                <div className="max-w-xl mx-auto mb-5">
                   {/* Active badges */}
                   {(activeAgent || selectedTemplate) && (
                     <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
                       {activeAgent && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-subtle text-xs font-medium text-primary">
                           {FILE_SERVICES.find(s => s.id === activeAgent)?.label}
-                          <button onClick={() => setActiveAgent(null)} className="ml-1 hover:text-foreground">✕</button>
-                        </div>
+                          <button onClick={() => setActiveAgent(null)} className="ml-0.5 hover:text-foreground"><X className="w-3 h-3" /></button>
+                        </span>
                       )}
                       {selectedTemplate && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-subtle text-xs font-medium text-violet-400">
                           Template
-                          <button onClick={() => setSelectedTemplate(null)} className="ml-1 hover:text-foreground">✕</button>
-                        </div>
+                          <button onClick={() => setSelectedTemplate(null)} className="ml-0.5 hover:text-foreground"><X className="w-3 h-3" /></button>
+                        </span>
                       )}
                     </div>
                   )}
@@ -433,65 +437,70 @@ const FilesPage = () => {
                   {attachedFiles.length > 0 && (
                     <div className="flex gap-2 mb-2 px-1 flex-wrap">
                       {attachedFiles.map((f, i) => (
-                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/60 border border-border/30 text-xs text-foreground">
+                        <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl liquid-glass-button text-xs text-foreground">
                           <span className="truncate max-w-[100px]">{f.name}</span>
-                          <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground">✕</button>
+                          <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <div className="flex items-end gap-2 rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm px-4 py-3 min-h-[100px]">
-                    <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end text-lg">+</button>
-                    <textarea
-                      ref={textareaRef}
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                      placeholder="Describe what you want to create..."
-                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 resize-none outline-none min-h-[60px] max-h-[160px] py-1"
-                      rows={3}
-                    />
-                    <button
-                      onClick={() => handleGenerate()}
-                      disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
-                      className="p-2.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90 text-sm font-bold"
-                    >
-                      {isGenerating ? "..." : "→"}
-                    </button>
+                  <div className="liquid-glass rounded-2xl overflow-hidden">
+                    <div className="flex items-end gap-2 px-4 py-3 min-h-[100px]">
+                      <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors self-end">
+                        <Plus className="w-5 h-5" />
+                      </button>
+                      <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                        placeholder="Describe what you want to create..."
+                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none min-h-[60px] max-h-[160px] py-1"
+                        rows={3}
+                      />
+                      <button
+                        onClick={() => handleGenerate()}
+                        disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
+                        className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors self-end disabled:opacity-20"
+                      >
+                        {isGenerating ? <span className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Services row - single horizontal scroll, no icons */}
-                <div className="max-w-xl mx-auto mb-5">
+                {/* Services — pill buttons with glass */}
+                <div className="max-w-xl mx-auto mb-6">
                   <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
                     {FILE_SERVICES.map(svc => (
                       <button
                         key={svc.id}
                         onClick={() => setActiveAgent(activeAgent === svc.id ? null : svc.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-sm whitespace-nowrap shrink-0 ${
-                          activeAgent === svc.id ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/40 border-border/30 hover:border-primary/20 text-foreground/80"
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm whitespace-nowrap shrink-0 transition-all ${
+                          activeAgent === svc.id
+                            ? `bg-gradient-to-r ${svc.gradient} text-white shadow-lg`
+                            : "liquid-glass-button text-foreground/70 hover:text-foreground"
                         }`}
                       >
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: svc.color }} />
                         <span className="font-medium">{svc.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Templates from DB */}
+                {/* Templates */}
                 <AnimatePresence>
                   {showTemplates && slideTemplates.length > 0 && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="max-w-xl mx-auto mb-6 overflow-hidden">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 text-left px-1">Choose a template</p>
+                      <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider mb-3 text-left px-1">Choose a template</p>
                       <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none px-1">
                         {slideTemplates.map(tmpl => (
                           <button
                             key={tmpl.id}
                             onClick={() => setSelectedTemplate(selectedTemplate?.id === tmpl.id ? null : tmpl)}
-                            className={`shrink-0 w-36 rounded-xl border-2 overflow-hidden transition-all ${
-                              selectedTemplate?.id === tmpl.id ? "border-primary shadow-lg shadow-primary/20 scale-105" : "border-border/30 hover:border-border/60"
+                            className={`shrink-0 w-36 rounded-xl overflow-hidden transition-all ${
+                              selectedTemplate?.id === tmpl.id ? "ring-2 ring-primary shadow-lg shadow-primary/20 scale-105" : "liquid-glass-subtle hover:scale-[1.02]"
                             }`}
                           >
                             <div className="aspect-[16/10] bg-secondary/50 flex items-center justify-center">
@@ -512,22 +521,24 @@ const FilesPage = () => {
               </motion.div>
 
               {/* Recent files */}
-              <div className="flex-1 flex flex-col justify-start pt-4 max-w-xl w-full px-4">
+              <div className="flex-1 flex flex-col justify-start pt-6 max-w-xl w-full px-4">
                 {savedFiles.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-widest text-muted-foreground/60 font-medium">Recent</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40 font-medium">Recent</p>
                     {savedFiles.slice(0, 4).map(f => (
                       <motion.button
                         key={f.id}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => loadConversation(f.id)}
-                        className="w-full flex items-center gap-3 p-3 rounded-2xl bg-secondary/30 border border-border/20 text-left hover:bg-secondary/50 transition-colors"
+                        className="w-full flex items-center gap-3 p-3 rounded-2xl liquid-glass-button text-left"
                       >
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center shrink-0 text-xs font-bold text-primary">F</div>
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center shrink-0">
+                          <FileText className="w-4 h-4 text-primary" />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{f.title}</p>
                         </div>
-                        <span className="text-muted-foreground/40 shrink-0 text-xs">→</span>
+                        <span className="text-muted-foreground/30 shrink-0 text-xs">→</span>
                       </motion.button>
                     ))}
                   </div>
@@ -541,27 +552,34 @@ const FilesPage = () => {
                 <div key={i}>
                   {msg.role === "user" ? (
                     <div className="flex justify-end mb-4">
-                      <div className="max-w-[80%] bg-secondary/70 text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-sm leading-relaxed border border-border/30">{msg.content}</div>
+                      <div className="max-w-[80%] liquid-glass-subtle text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-sm leading-relaxed">{msg.content}</div>
                     </div>
                   ) : (
                     <div className="mb-4 space-y-3">
                       <div className="prose-chat text-foreground text-sm">
                         <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "").replace(/```html[\s\S]*?```/g, "").replace(/```[\s\S]*?```/g, "").trim()}</ReactMarkdown>
                       </div>
-                      {msg.htmlContent && (
+                      {(msg.htmlContent || msg.downloadUrl) && (
                         <div className="flex gap-2 flex-wrap">
-                          <button onClick={() => setPreviewHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                            Preview
-                          </button>
-                          <button onClick={() => downloadHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-foreground text-sm hover:bg-accent transition-colors">
-                            Download
-                          </button>
+                          {msg.htmlContent && (
+                            <>
+                              <button onClick={() => setPreviewHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl liquid-glass-button text-sm font-medium text-foreground hover:text-primary transition-colors">
+                                <Eye className="w-4 h-4" />
+                                Preview
+                              </button>
+                              <button onClick={() => downloadHtml(msg.htmlContent!)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl liquid-glass-button text-sm text-foreground">
+                                <Download className="w-4 h-4" />
+                                HTML
+                              </button>
+                            </>
+                          )}
+                          {msg.downloadUrl && (
+                            <a href={msg.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+                              <Download className="w-4 h-4" />
+                              Download
+                            </a>
+                          )}
                         </div>
-                      )}
-                      {msg.downloadUrl && (
-                        <a href={msg.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                          Download Presentation
-                        </a>
                       )}
                     </div>
                   )}
@@ -577,23 +595,27 @@ const FilesPage = () => {
         {hasMessages && (
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
             <div className="max-w-2xl mx-auto">
-              <div className="flex items-end gap-2 rounded-2xl border border-border/40 bg-secondary/30 backdrop-blur-sm px-3 py-2">
-                <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end text-lg">+</button>
-                <textarea
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                  placeholder="Ask for changes..."
-                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 resize-none outline-none min-h-[24px] max-h-[120px] py-1"
-                  rows={1}
-                />
-                <button
-                  onClick={() => handleGenerate()}
-                  disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
-                  className="p-2 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 transition-all shrink-0 self-end hover:bg-primary/90 text-sm font-bold"
-                >
-                  {isGenerating ? "..." : "→"}
-                </button>
+              <div className="liquid-glass rounded-2xl overflow-hidden">
+                <div className="flex items-end gap-2 px-3 py-2">
+                  <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors self-end">
+                    <Plus className="w-5 h-5" />
+                  </button>
+                  <textarea
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                    placeholder="Ask for changes..."
+                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none min-h-[24px] max-h-[120px] py-2"
+                    rows={1}
+                  />
+                  <button
+                    onClick={() => handleGenerate()}
+                    disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
+                    className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors self-end disabled:opacity-20"
+                  >
+                    {isGenerating ? <span className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
