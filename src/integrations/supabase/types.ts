@@ -561,6 +561,45 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          input_data: Json
+          job_type: string
+          progress: number | null
+          result_data: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_data?: Json
+          job_type?: string
+          progress?: number | null
+          result_data?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_data?: Json
+          job_type?: string
+          progress?: number | null
+          result_data?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       headshot_templates: {
         Row: {
           created_at: string | null
