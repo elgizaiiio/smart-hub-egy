@@ -932,7 +932,7 @@ Ask me anything to get started!`;
                       <span>{chatMode === "learning" ? "Learning" : chatMode === "shopping" ? "Shopping" : "Deep Research"}</span>
                       <button
                         onClick={() => { setChatMode("normal"); setSelectedAgent(null); setSelectedModel(null); }}
-                        className="ml-0.5 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+                        className="ml-0.5 p-0.5 rounded-full hover:bg-accent/50 transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -951,7 +951,7 @@ Ask me anything to get started!`;
                       <span>{selectedAgent.label}</span>
                       <button
                         onClick={() => { setSelectedAgent(null); setSelectedModel(null); }}
-                        className="ml-0.5 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+                        className="ml-0.5 p-0.5 rounded-full hover:bg-accent/50 transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
