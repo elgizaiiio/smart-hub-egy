@@ -813,24 +813,24 @@ Ask me anything to get started!`;
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 rounded-xl liquid-glass p-1.5">
-                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
-                    <Share2 className="w-4 h-4 text-white/40" />
+                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-foreground/80">
+                    <Share2 className="w-4 h-4 text-muted-foreground" />
                     Share
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleInvite} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
-                    <UserPlus className="w-4 h-4 text-white/40" />
+                  <DropdownMenuItem onClick={handleInvite} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-foreground/80">
+                    <UserPlus className="w-4 h-4 text-muted-foreground" />
                     Invite
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
-                    <Pencil className="w-4 h-4 text-white/40" />
+                  <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-foreground/80">
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
                     Rename
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleTogglePin} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-white/80">
-                    <Pin className="w-4 h-4 text-white/40" />
+                  <DropdownMenuItem onClick={handleTogglePin} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-foreground/80">
+                    <Pin className="w-4 h-4 text-muted-foreground" />
                     {isPinned ? "Unpin" : "Pin"}
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1 bg-white/10" />
-                  <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-red-400 focus:text-red-400">
+                  <DropdownMenuSeparator className="my-1 bg-border/30" />
+                  <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
                     <Trash2 className="w-4 h-4" />
                     Delete
                   </DropdownMenuItem>
@@ -932,7 +932,7 @@ Ask me anything to get started!`;
                       <span>{chatMode === "learning" ? "Learning" : chatMode === "shopping" ? "Shopping" : "Deep Research"}</span>
                       <button
                         onClick={() => { setChatMode("normal"); setSelectedAgent(null); setSelectedModel(null); }}
-                        className="ml-0.5 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+                        className="ml-0.5 p-0.5 rounded-full hover:bg-accent/50 transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -951,7 +951,7 @@ Ask me anything to get started!`;
                       <span>{selectedAgent.label}</span>
                       <button
                         onClick={() => { setSelectedAgent(null); setSelectedModel(null); }}
-                        className="ml-0.5 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+                        className="ml-0.5 p-0.5 rounded-full hover:bg-accent/50 transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1011,42 +1011,42 @@ Ask me anything to get started!`;
           <DialogContent className={glassDialogClass}>
             <div className="px-5 pt-5 pb-3">
               <DialogHeader className="mb-0">
-                <DialogTitle className="text-base font-semibold text-left text-white">Share chat</DialogTitle>
-                <DialogDescription className="text-xs text-left text-white/50">Future messages aren't included</DialogDescription>
+                <DialogTitle className="text-base font-semibold text-left text-foreground">Share chat</DialogTitle>
+                <DialogDescription className="text-xs text-left text-muted-foreground">Future messages aren't included</DialogDescription>
               </DialogHeader>
             </div>
-            <div className="border-t border-white/10">
+            <div className="border-t border-border/30">
               <button
                 onClick={() => {setShareMode("private");setGeneratedShareUrl(null);}}
-                className={`w-full flex items-center gap-3 px-5 py-3.5 transition-colors ${shareMode === "private" ? "bg-white/5" : "hover:bg-white/5"}`}>
-                <Lock className="w-4 h-4 text-white/40 shrink-0" />
+                className={`w-full flex items-center gap-3 px-5 py-3.5 transition-colors ${shareMode === "private" ? "bg-accent/50" : "hover:bg-accent/30"}`}>
+                <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white/90">Keep private</p>
-                  <p className="text-[11px] text-white/40">Only you have access</p>
+                  <p className="text-sm font-medium text-foreground/90">Keep private</p>
+                  <p className="text-[11px] text-muted-foreground">Only you have access</p>
                 </div>
               </button>
-              <div className="h-px bg-white/10 mx-5" />
+              <div className="h-px bg-border/30 mx-5" />
               <button
                 onClick={() => setShareMode("public")}
-                className={`w-full flex items-center gap-3 px-5 py-3.5 transition-colors ${shareMode === "public" ? "bg-white/5" : "hover:bg-white/5"}`}>
-                <Globe className="w-4 h-4 text-white/40 shrink-0" />
+                className={`w-full flex items-center gap-3 px-5 py-3.5 transition-colors ${shareMode === "public" ? "bg-accent/50" : "hover:bg-accent/30"}`}>
+                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white/90">Create public link</p>
-                  <p className="text-[11px] text-white/40">Anyone with the link can view</p>
+                  <p className="text-sm font-medium text-foreground/90">Create public link</p>
+                  <p className="text-[11px] text-muted-foreground">Anyone with the link can view</p>
                 </div>
               </button>
             </div>
-            <div className="px-5 py-4 border-t border-white/10">
+            <div className="px-5 py-4 border-t border-border/30">
               {shareMode === "public" && generatedShareUrl ? (
-                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 max-w-full overflow-hidden">
-                  <span className="flex-1 text-[11px] text-white/50 truncate min-w-0 select-all">{generatedShareUrl}</span>
-                  <button onClick={handleCopyShareLink} className="shrink-0 p-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors" aria-label="Copy">
-                    <Copy className="w-4 h-4 text-white/70" />
+                <div className="flex items-center gap-2 rounded-xl liquid-glass-button px-3 py-2.5 max-w-full overflow-hidden">
+                  <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{generatedShareUrl}</span>
+                  <button onClick={handleCopyShareLink} className="shrink-0 p-2 rounded-lg liquid-glass-hover transition-colors" aria-label="Copy">
+                    <Copy className="w-4 h-4 text-foreground/70" />
                   </button>
                 </div>
               ) : (
                 <div className="flex justify-end">
-                  <button onClick={handleCreateShareLink} className="px-5 py-2.5 rounded-xl text-sm font-medium bg-white text-black hover:opacity-90 transition-opacity">
+                  <button onClick={handleCreateShareLink} className="px-5 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity">
                     {shareMode === "public" ? "Create link" : "Save"}
                   </button>
                 </div>
@@ -1060,17 +1060,17 @@ Ask me anything to get started!`;
           <DialogContent className={`${glassDialogClass} sm:max-w-sm`}>
             <div className="p-5 space-y-3">
               <DialogHeader>
-                <DialogTitle className="text-lg text-white">Rename chat</DialogTitle>
+                <DialogTitle className="text-lg text-foreground">Rename chat</DialogTitle>
               </DialogHeader>
               <Input
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
-                className="h-12 rounded-2xl border-white/10 bg-white/5 text-sm text-white placeholder:text-white/30"
+                className="h-12 rounded-2xl border-border/30 bg-accent/30 text-sm text-foreground placeholder:text-muted-foreground"
                 onKeyDown={(e) => e.key === "Enter" && handleRename()}
                 autoFocus />
               <div className="flex justify-end gap-2">
-                <button onClick={() => setIsRenaming(false)} className="px-4 py-2 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
-                <button onClick={handleRename} className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-black hover:opacity-90 transition-opacity">Save</button>
+                <button onClick={() => setIsRenaming(false)} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors">Cancel</button>
+                <button onClick={handleRename} className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity">Save</button>
               </div>
             </div>
           </DialogContent>
@@ -1081,32 +1081,32 @@ Ask me anything to get started!`;
           <DialogContent className={`${glassDialogClass} sm:max-w-[420px]`}>
             <div className="px-5 pt-5 pb-3">
               <DialogHeader className="mb-0">
-                <DialogTitle className="text-base font-semibold text-left flex items-center gap-2 text-white">
+                <DialogTitle className="text-base font-semibold text-left flex items-center gap-2 text-foreground">
                   <Users className="w-4 h-4 text-primary" />
                   Invite to conversation
                 </DialogTitle>
-                <DialogDescription className="text-xs text-left text-white/40">Invite someone to join and chat together with AI</DialogDescription>
+                <DialogDescription className="text-xs text-left text-muted-foreground">Invite someone to join and chat together with AI</DialogDescription>
               </DialogHeader>
             </div>
 
             <div className="px-5 pb-5 space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-white/40">Invite by email</label>
+                <label className="text-xs font-medium text-muted-foreground">Invite by email</label>
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder="friend@example.com"
-                      className="h-11 pl-9 rounded-xl border-white/10 bg-white/5 text-sm text-white placeholder:text-white/30"
+                      className="h-11 pl-9 rounded-xl border-border/30 bg-accent/30 text-sm text-foreground placeholder:text-muted-foreground"
                       onKeyDown={(e) => e.key === "Enter" && handleSendInviteEmail()}
                     />
                   </div>
                   <button
                     onClick={handleSendInviteEmail}
                     disabled={inviteLoading || !inviteEmail.trim()}
-                    className="px-4 h-11 rounded-xl text-sm font-medium bg-white text-black hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="px-4 h-11 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity disabled:opacity-50"
                   >
                     {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}
                   </button>
@@ -1114,24 +1114,24 @@ Ask me anything to get started!`;
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-[10px] text-white/30 uppercase">or</span>
-                <div className="flex-1 h-px bg-white/10" />
+                <div className="flex-1 h-px bg-border/30" />
+                <span className="text-[10px] text-muted-foreground uppercase">or</span>
+                <div className="flex-1 h-px bg-border/30" />
               </div>
 
               {inviteLink ? (
-                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 max-w-full overflow-hidden">
-                  <Link2 className="w-4 h-4 text-white/30 shrink-0" />
-                  <span className="flex-1 text-[11px] text-white/50 truncate min-w-0 select-all">{inviteLink}</span>
-                  <button onClick={handleCopyInviteLink} className="shrink-0 p-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
-                    <Copy className="w-4 h-4 text-white/70" />
+                <div className="flex items-center gap-2 rounded-xl liquid-glass-button px-3 py-2.5 max-w-full overflow-hidden">
+                  <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{inviteLink}</span>
+                  <button onClick={handleCopyInviteLink} className="shrink-0 p-2 rounded-lg liquid-glass-hover transition-colors">
+                    <Copy className="w-4 h-4 text-foreground/70" />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={handleGenerateInviteLink}
                   disabled={inviteLoading}
-                  className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-sm text-white/70"
+                  className="w-full flex items-center justify-center gap-2 h-11 rounded-xl liquid-glass-button text-sm text-foreground/70"
                 >
                   <Link2 className="w-4 h-4" />
                   Generate invite link
@@ -1139,19 +1139,19 @@ Ask me anything to get started!`;
               )}
 
               {members.length > 0 && (
-                <div className="pt-3 border-t border-white/10">
-                  <p className="text-[10px] text-white/30 uppercase mb-2">Members ({members.length + 1})</p>
+                <div className="pt-3 border-t border-border/30">
+                  <p className="text-[10px] text-muted-foreground uppercase mb-2">Members ({members.length + 1})</p>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
                       <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">You</div>
-                      <span className="text-xs text-white/70">Owner</span>
+                      <span className="text-xs text-foreground/70">Owner</span>
                     </div>
                     {members.map((m) => (
                       <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
-                        <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white/50">
+                        <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-xs font-medium text-muted-foreground">
                           {m.email ? m.email[0].toUpperCase() : "?"}
                         </div>
-                        <span className="text-xs text-white/50">{m.role}</span>
+                        <span className="text-xs text-muted-foreground">{m.role}</span>
                       </div>
                     ))}
                   </div>
