@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Paperclip, Image, Globe, ArrowUp, Loader2, X, FileText } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import MentionDropdown from "@/components/MentionDropdown";
 import type { AgentDef } from "@/lib/agentRegistry";
 
@@ -41,6 +42,7 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
   activeAgent, onAgentChange, attachedFiles, onAttach,
   onRemoveAttachment, searchEnabled, onToggleSearch,
 }, ref) => {
+  const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -53,10 +55,8 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
   const skipPlaceholderReset = useRef(false);
 
   useImperativeHandle(ref, () => ({ focus: () => textareaRef.current?.focus() }));
-
   useEffect(() => { inputRef.current = input; }, [input]);
 
-  // Typewriter placeholder - only runs when no input
   useEffect(() => {
     if (inputRef.current) { setDisplayedPlaceholder(""); return; }
     const target = FILE_PLACEHOLDERS[placeholderIdx];
@@ -70,18 +70,12 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
     return () => clearInterval(t);
   }, [placeholderIdx]);
 
-  // Clear placeholder when user starts typing - but DON'T cycle placeholder
   useEffect(() => {
-    if (input) {
-      setDisplayedPlaceholder("");
-    } else if (!skipPlaceholderReset.current) {
-      // Only reset placeholder cycle when input is cleared by user action
-      setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length);
-    }
+    if (input) setDisplayedPlaceholder("");
+    else if (!skipPlaceholderReset.current) setPlaceholderIdx(p => (p + 1) % FILE_PLACEHOLDERS.length);
     skipPlaceholderReset.current = false;
   }, [input]);
 
-  // Auto-resize textarea - use requestAnimationFrame to avoid layout thrashing
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -92,7 +86,6 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
     });
   }, [input, focused, compact]);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -113,11 +106,12 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
   }, [onInputChange]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // On mobile, Enter = new line (like ChatGPT). On desktop, Enter = send.
+    if (e.key === "Enter" && !e.shiftKey && !isMobile) {
       e.preventDefault();
       if (!mentionOpen) onSubmit();
     }
-  }, [mentionOpen, onSubmit]);
+  }, [mentionOpen, onSubmit, isMobile]);
 
   const handleAgentSelect = useCallback((agent: AgentDef) => {
     const cursorPos = textareaRef.current?.selectionStart || input.length;
@@ -127,19 +121,8 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
     onAgentChange(agent.id);
     setMentionOpen(false);
     setMentionQuery("");
-    // Use setTimeout to ensure React state updates before focusing
     setTimeout(() => textareaRef.current?.focus(), 50);
   }, [input, onInputChange, onAgentChange]);
-
-  const handleFocus = useCallback(() => setFocused(true), []);
-  const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Don't blur if clicking within the input bar container
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    if (relatedTarget && e.currentTarget.closest('.files-input-container')?.contains(relatedTarget)) {
-      return;
-    }
-    setFocused(false);
-  }, []);
 
   return (
     <div className={`files-input-container ${compact ? "max-w-2xl mx-auto w-full" : "max-w-xl mx-auto w-full"}`}>
@@ -157,31 +140,20 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
       <div className="relative">
         <AnimatePresence>
           {mentionOpen && (
-            <MentionDropdown
-              query={mentionQuery}
-              onSelect={handleAgentSelect}
-              onClose={() => setMentionOpen(false)}
-              visible={mentionOpen}
-              categories={["files"]}
-            />
+            <MentionDropdown query={mentionQuery} onSelect={handleAgentSelect} onClose={() => setMentionOpen(false)} visible={mentionOpen} categories={["files"]} />
           )}
         </AnimatePresence>
         <div className={`flex items-end gap-2 rounded-2xl border bg-secondary/80 backdrop-blur-sm px-4 py-3 transition-all duration-200 ${focused ? "border-primary/30 shadow-[0_0_20px_rgba(139,92,246,0.08)]" : "border-border/50"}`}>
           <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              type="button"
-              tabIndex={-1}
-              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            >
+            <button onClick={() => setMenuOpen(!menuOpen)} type="button" tabIndex={-1} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
               <Plus className="w-5 h-5" />
             </button>
             <AnimatePresence>
               {menuOpen && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 bg-black/80 backdrop-blur-2xl border border-border/30 rounded-xl shadow-lg p-1">
-                  <button onClick={() => { setMenuOpen(false); onAttach("file"); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5"><Paperclip className="w-4 h-4" /> Attach file</button>
-                  <button onClick={() => { setMenuOpen(false); onAttach("image"); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5"><Image className="w-4 h-4" /> Attach image</button>
-                  <button onClick={() => { setMenuOpen(false); onToggleSearch(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-white/5">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute bottom-full mb-2 left-0 z-40 w-48 liquid-glass rounded-xl shadow-lg p-1">
+                  <button onClick={() => { setMenuOpen(false); onAttach("file"); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent/30"><Paperclip className="w-4 h-4" /> Attach file</button>
+                  <button onClick={() => { setMenuOpen(false); onAttach("image"); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent/30"><Image className="w-4 h-4" /> Attach image</button>
+                  <button onClick={() => { setMenuOpen(false); onToggleSearch(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent/30">
                     <Globe className={`w-4 h-4 ${searchEnabled ? "text-primary" : ""}`} /> {searchEnabled ? "Web search ON" : "Web search"}
                   </button>
                 </motion.div>
@@ -194,14 +166,14 @@ const FilesInputBar = forwardRef<FilesInputBarRef, FilesInputBarProps>(({
               value={input}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
               placeholder={displayedPlaceholder || "Describe what you need..."}
               rows={1}
               autoComplete="off"
               autoCorrect="off"
-              enterKeyHint="send"
-              className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-2 max-h-[180px]"
+              enterKeyHint="enter"
+              className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 py-2 max-h-[180px] select-text"
               style={{ minHeight: focused || input ? "64px" : (compact ? "40px" : "56px") }}
             />
           </div>
