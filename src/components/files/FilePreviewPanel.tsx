@@ -10,40 +10,66 @@ interface FilePreviewPanelProps {
   fullscreen?: boolean;
 }
 
+const springTransition = { type: "spring" as const, damping: 22, stiffness: 350 };
+
 const FilePreviewPanel = ({ html, title, onClose, onEdit, onDownload }: FilePreviewPanelProps) => {
-  // Inject viewport meta + responsive CSS into the iframe content
   const responsiveHtml = html.replace(
     /<head([^>]*)>/i,
-    `<head$1><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><style>*{box-sizing:border-box}body{overflow-x:hidden;max-width:100vw}img{max-width:100%;height:auto}table{max-width:100%;overflow-x:auto;display:block}</style>`
+    `<head$1><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow-x:hidden;max-width:100vw;width:100%}img{max-width:100%;height:auto}table{max-width:100%;display:block;overflow-x:auto}pre{overflow-x:auto;max-width:100%}</style>`
   );
 
   return (
-    <div className="flex flex-col h-full relative">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={springTransition}
+      className="flex flex-col h-full relative"
+    >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 shrink-0">
-        <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          transition={springTransition}
+          onClick={onClose}
+          className="w-9 h-9 rounded-full liquid-glass-button flex items-center justify-center text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="w-4 h-4" />
-        </button>
-        <p className="text-sm font-medium text-foreground truncate">{title || "Preview"}</p>
+        </motion.button>
+        <p className="text-sm font-medium text-foreground truncate flex-1">{title || "Preview"}</p>
       </div>
 
       {/* Preview */}
-      <div className="flex-1 min-h-0">
-        <div className="w-full h-full overflow-hidden">
-          <iframe srcDoc={responsiveHtml} className="w-full h-full bg-white" sandbox="allow-scripts" title="File Preview" />
-        </div>
+      <div className="flex-1 min-h-0 mx-2 mb-2 rounded-2xl overflow-hidden border border-border/20">
+        <iframe
+          srcDoc={responsiveHtml}
+          className="w-full h-full bg-white"
+          sandbox="allow-scripts"
+          title="File Preview"
+        />
       </div>
 
       {/* Floating buttons */}
-      <div className="absolute bottom-6 right-6 flex items-center gap-3 z-10">
-        <motion.button whileTap={{ scale: 0.95 }} onClick={onEdit} className="w-12 h-12 rounded-full liquid-glass flex items-center justify-center text-foreground shadow-lg hover:scale-105 transition-transform">
+      <div className="absolute bottom-8 right-6 flex items-center gap-3 z-10">
+        <motion.button
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.92 }}
+          transition={springTransition}
+          onClick={onEdit}
+          className="w-12 h-12 rounded-full liquid-glass-milk flex items-center justify-center text-foreground"
+        >
           <Pencil className="w-5 h-5" />
         </motion.button>
-        <motion.button whileTap={{ scale: 0.95 }} onClick={() => onDownload()} className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
+        <motion.button
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.92 }}
+          transition={springTransition}
+          onClick={() => onDownload()}
+          className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/25"
+        >
           <Download className="w-5 h-5" />
         </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

@@ -704,51 +704,79 @@ Ask me anything to get started!`;
 
   const hasConversation = messages.length > 0;
 
+  const iosSpring = { type: "spring" as const, damping: 22, stiffness: 350 };
+
   const renderPlusMenu = () =>
   <>
       <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
-      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute bottom-full mb-2 left-0 z-[46] rounded-2xl liquid-glass p-3 w-72">
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.92 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.92 }}
+        transition={iosSpring}
+        className="absolute bottom-full mb-2 left-0 z-[46] rounded-3xl liquid-glass-milk p-3 w-72"
+      >
         <div className="grid grid-cols-3 gap-2 mb-3">
-          <button onClick={() => {cameraInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl liquid-glass-hover transition-colors">
-            <Camera className="w-5 h-5 text-muted-foreground" />
-            <span className="text-[11px] text-foreground/80">Camera</span>
-          </button>
-          <button onClick={() => {imageInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl liquid-glass-hover transition-colors">
-            <Image className="w-5 h-5 text-muted-foreground" />
-            <span className="text-[11px] text-foreground/80">Photos</span>
-          </button>
-          <button onClick={() => {fileInputRef.current?.click();setPlusMenuOpen(false);}} className="flex flex-col items-center gap-1.5 py-3 rounded-xl liquid-glass-hover transition-colors">
-            <FileUp className="w-5 h-5 text-muted-foreground" />
-            <span className="text-[11px] text-foreground/80">Files</span>
-          </button>
+          {[
+            { ref: cameraInputRef, icon: Camera, label: "Camera" },
+            { ref: imageInputRef, icon: Image, label: "Photos" },
+            { ref: fileInputRef, icon: FileUp, label: "Files" },
+          ].map(({ ref, icon: Icon, label }, i) => (
+            <motion.button
+              key={label}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...iosSpring, delay: i * 0.03 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => { ref.current?.click(); setPlusMenuOpen(false); }}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl liquid-glass-hover transition-colors ios-menu-item"
+            >
+              <Icon className="w-5 h-5 text-muted-foreground" />
+              <span className="text-[11px] text-foreground/80">{label}</span>
+            </motion.button>
+          ))}
         </div>
-        <div className="border-t border-border/20 pt-2 space-y-1">
-          <button onClick={handleSearchToggle} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg liquid-glass-hover transition-colors">
+        <div className="border-t border-border/15 pt-2 space-y-1">
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            transition={iosSpring}
+            onClick={handleSearchToggle}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl liquid-glass-hover transition-colors ios-menu-item"
+          >
             <span className="text-sm text-foreground/80">Web search</span>
             <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-muted justify-start"}`}>
-              <div className="w-4 h-4 rounded-full bg-foreground mx-0.5" />
+              <motion.div layout transition={iosSpring} className="w-4 h-4 rounded-full bg-foreground mx-0.5" />
             </div>
-          </button>
-          <div className="border-t border-border/20 mt-1 pt-1">
+          </motion.button>
+          <div className="border-t border-border/15 mt-1 pt-1">
             <p className="text-[10px] text-muted-foreground/50 uppercase px-3 py-1.5">Modes</p>
-            <button onClick={() => handleModeChange("learning")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "learning" ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}>
-              <span className="text-sm">Learning Mode</span>
-              {chatMode === "learning" && <span className="ml-auto text-xs text-primary">On</span>}
-            </button>
-            <button onClick={() => handleModeChange("shopping")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "shopping" ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}>
-              <span className="text-sm">Shopping Mode</span>
-              {chatMode === "shopping" && <span className="ml-auto text-xs text-primary">On</span>}
-            </button>
-            <button onClick={() => handleModeChange("deep-research")} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${chatMode === "deep-research" ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}>
-              <span className="text-sm">Deep Research</span>
-              {chatMode === "deep-research" && <span className="ml-auto text-xs text-primary">On</span>}
-            </button>
+            {[
+              { mode: "learning" as ChatMode, label: "Learning Mode" },
+              { mode: "shopping" as ChatMode, label: "Shopping Mode" },
+              { mode: "deep-research" as ChatMode, label: "Deep Research" },
+            ].map(({ mode, label }) => (
+              <motion.button
+                key={mode}
+                whileTap={{ scale: 0.97 }}
+                transition={iosSpring}
+                onClick={() => handleModeChange(mode)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ios-menu-item ${chatMode === mode ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}
+              >
+                <span className="text-sm">{label}</span>
+                {chatMode === mode && <span className="ml-auto text-xs text-primary">On</span>}
+              </motion.button>
+            ))}
           </div>
-          <div className="border-t border-border/20 mt-1 pt-1">
-            <button onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left liquid-glass-hover transition-colors">
+          <div className="border-t border-border/15 mt-1 pt-1">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              transition={iosSpring}
+              onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left liquid-glass-hover transition-colors ios-menu-item"
+            >
               <span className="text-sm text-foreground/70">Integrations</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">PRO</span>
-            </button>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">PRO</span>
+            </motion.button>
           </div>
         </div>
       </motion.div>

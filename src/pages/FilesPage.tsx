@@ -59,6 +59,8 @@ const SPREADSHEET_TEMPLATES = [
   { label: "Data Analysis", prompt: "Create a data analysis spreadsheet with sample dataset, summary statistics, pivot table, and trend analysis" },
 ];
 
+const spring = { type: "spring" as const, damping: 22, stiffness: 350 };
+
 async function readSSEStreamWithStatus(
   body: ReadableStream<Uint8Array>,
   onStatus?: (status: string) => void,
@@ -95,17 +97,11 @@ async function readSSEStreamWithStatus(
   return result;
 }
 
-// Strip HTML from chat display — only show summary text
 function extractChatDisplay(content: string): string {
-  // If content has HTML, extract only the SUMMARY part
   const summaryMatch = content.match(/---SUMMARY---([\s\S]*?)$/);
   if (summaryMatch) return summaryMatch[1].replace(/\[STATUS:\s*.*?\]/g, "").trim();
-  
-  // Strip any raw HTML tags for chat display
   const hasHtml = /<!doctype html|<html[\s>]|<body[\s>]|<div[\s>]|<section[\s>]|<table[\s>]/i.test(content);
   if (hasHtml) return "Your file is ready. Tap Preview to view it.";
-  
-  // Clean code fences and status markers
   return content
     .replace(/```html[\s\S]*?```/g, "")
     .replace(/```json[\s\S]*?```/g, "")
@@ -114,6 +110,8 @@ function extractChatDisplay(content: string): string {
     .replace(/<[^>]+>/g, "")
     .trim();
 }
+
+type AgentMode = "plan" | "work";
 
 const FilesPage = () => {
   const isMobile = useIsMobile();
@@ -137,6 +135,7 @@ const FilesPage = () => {
   const [undoStack, setUndoStack] = useState<ChatMsg[][]>([]);
   const [redoStack, setRedoStack] = useState<ChatMsg[][]>([]);
   const [plusMenuOpen, setPlusMenuOpen] = useState<"outer" | "inner" | null>(null);
+  const [agentMode, setAgentMode] = useState<AgentMode>("work");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -182,7 +181,6 @@ const FilesPage = () => {
     }
   }, [messages, conversationId, isMobile]);
 
-  // Close plus menu on outside click
   useEffect(() => {
     if (!plusMenuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -252,12 +250,7 @@ const FilesPage = () => {
   const doResearchWithStreaming = async (topic: string): Promise<string> => {
     setResearchSteps([{ id: "start", label: "Starting research...", status: "active" }]);
     const systemPrompt = `You are a deep research agent. Research the following topic thoroughly and provide comprehensive, detailed information.
-IMPORTANT: As you research, output [STATUS: description] markers to show your progress. Examples:
-[STATUS: Searching for historical information about the topic...]
-[STATUS: Found key data about ancient civilizations...]
-[STATUS: Gathering statistics and modern research...]
-[STATUS: Compiling comprehensive analysis...]
-
+IMPORTANT: As you research, output [STATUS: description] markers to show your progress.
 After all status updates, provide your full research findings in detail. Include facts, statistics, dates, names, and verified information.
 Write at least 2000 words of research content. Be thorough and accurate.
 Do NOT invent information. Only provide verified facts.`;
@@ -322,10 +315,9 @@ Do NOT invent information. Only provide verified facts.`;
     const textFiles = files.filter(f => f.type !== "image");
 
     const systemPrompt = `You are an intelligent file generation agent called Megsy.
-You have TWO modes:
-1. CHAT MODE: If the user asks a question, wants advice, or has a conversation — respond naturally in plain text. Do NOT generate any HTML or file content.
-2. GENERATE MODE: If the user wants a file (document, report, slides, spreadsheet, resume, letter, roadmap, mindmap, timeline) — generate it.
-
+Current mode: ${agentMode === "plan" ? "PLAN — Only discuss, plan, and ask clarifying questions. Do NOT generate any HTML or files." : "WORK — Generate files. You MUST output HTML content."}
+${agentMode === "work" ? `
+You MUST generate a complete HTML file. Do NOT respond with just text.
 Current file type: ${agentType}
 
 CRITICAL RULES FOR FILE GENERATION:
@@ -335,39 +327,27 @@ CRITICAL RULES FOR FILE GENERATION:
 - Do NOT add placeholder images, random tables, or filler content unless specifically requested.
 - Do NOT abbreviate, summarize, or truncate the user's request.
 - If the user attached images, analyze them carefully and incorporate the visual content into your response.
-- For GENERATE MODE: Output ONLY complete, valid HTML for file content. Do NOT wrap it in code fences.
-- For CHAT MODE: Output ONLY plain text. No HTML tags at all.
+- Output ONLY complete, valid HTML for file content. Do NOT wrap it in code fences.
 - Respond in the SAME LANGUAGE as the user's message.
-- Choose a unique design style that fits the topic from thousands of possible styles: academic, corporate, creative, medical, legal, tech, minimalist, colorful, editorial, etc. Pick colors, fonts, and layouts that match the content's domain.
+- Choose a unique design style that fits the topic.
 
-${agentType === "spreadsheet" ? `
-SPREADSHEET RULES:
-- Generate interactive tables with contenteditable cells
-- Add sort buttons on column headers
-- Include sum/total rows at the bottom
-- Make tables responsive with horizontal scroll on mobile
-- Use professional styling with alternating row colors
-` : ""}
-
-${agentType === "resume" ? `
-RESUME RULES:
-- Use ONLY the data provided by the user. Do NOT invent any information.
-- Include all sections: Contact Info, Summary, Experience, Education, Skills, Projects, Languages, Certifications.
-- Professional, clean design with proper typography.
-` : ""}
-
+${agentType === "spreadsheet" ? `SPREADSHEET RULES: Generate interactive tables with contenteditable cells, sort buttons, sum/total rows, responsive with horizontal scroll, professional styling.` : ""}
+${agentType === "resume" ? `RESUME RULES: Use ONLY user data. Include Contact Info, Summary, Experience, Education, Skills, Projects, Languages, Certifications.` : ""}
 ${agentType === "roadmap" ? "Generate a visual project roadmap as HTML with timeline-based layout, milestones, and phases." : ""}
 ${agentType === "mindmap" ? "Generate a visual mind map as HTML with hierarchical nodes, connecting lines, and proper spacing." : ""}
 ${agentType === "timeline" ? "Generate a visual chronological timeline as HTML with events, dates, and descriptions." : ""}
 
 After the HTML content, write a personalized summary starting with ---SUMMARY--- on a new line.
-The summary should describe exactly what you created, what sections it contains, and its key content. Be specific.
-As you work, output [STATUS: description] markers to show progress.`;
+As you work, output [STATUS: description] markers to show progress.` : `
+Current file type context: ${agentType}
+Help the user plan their ${agentType}. Ask clarifying questions about content, structure, style, and audience.
+Be conversational and helpful. Do NOT generate any HTML.
+Respond in the SAME LANGUAGE as the user's message.`}`;
 
     let prompt = `User request: ${userInput}`;
     if (researchContent) prompt += `\n\nResearch data to use (verified information):\n${researchContent.slice(0, 6000)}`;
 
-    if (["slides", "document", "report", "roadmap", "timeline"].includes(agentType) && !userInput.toLowerCase().includes("no image")) {
+    if (agentMode === "work" && ["slides", "document", "report", "roadmap", "timeline"].includes(agentType) && !userInput.toLowerCase().includes("no image")) {
       addResearchStep("Finding relevant images...");
       try {
         const { data: imgData } = await supabase.functions.invoke("search", { body: { query: `${userInput} high quality photos` } });
@@ -385,7 +365,7 @@ As you work, output [STATUS: description] markers to show progress.`;
         ]}
       : { role: "user", content: prompt };
 
-    addResearchStep("Writing content...");
+    addResearchStep(agentMode === "plan" ? "Thinking..." : "Writing content...");
     const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
@@ -403,13 +383,41 @@ As you work, output [STATUS: description] markers to show progress.`;
 
     let content = await readSSEStreamWithStatus(resp.body, (status) => { addResearchStep(status); });
 
-    // Check if AI decided to chat instead of generate
-    const hasHtml = /<!doctype html|<html[\s>]|<body[\s>]|<div[\s>]|<section[\s>]|<table[\s>]/i.test(content);
-    if (!hasHtml && !content.includes("---SUMMARY---")) {
-      const cleanContent = content.replace(/\[STATUS:\s*.*?\]/g, "").replace(/---SUMMARY---[\s\S]*$/, "").trim();
+    // In PLAN mode, always accept text response
+    if (agentMode === "plan") {
+      const cleanContent = content.replace(/\[STATUS:\s*.*?\]/g, "").replace(/---SUMMARY---[\s\S]*$/, "").replace(/<[^>]+>/g, "").trim();
       pushMessage({ role: "assistant", content: cleanContent });
       if (convId) await saveMsg(convId, "assistant", cleanContent);
       return;
+    }
+
+    // In WORK mode, check if AI generated HTML
+    const hasHtml = /<!doctype html|<html[\s>]|<body[\s>]|<div[\s>]|<section[\s>]|<table[\s>]/i.test(content);
+    if (!hasHtml && !content.includes("---SUMMARY---")) {
+      // AI didn't generate a file in work mode — retry with stronger instruction
+      addResearchStep("Retrying file generation...");
+      const retryResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: `You MUST generate a complete HTML file. Output ONLY HTML. Do not chat. Generate a ${agentType} about the user's topic. Respond in the user's language. After HTML, add ---SUMMARY--- with a brief description.` },
+            userMessage
+          ],
+          model: "moonshotai/kimi-k2.5:nitro",
+          mode: "files",
+        }),
+      });
+      if (retryResp.ok && retryResp.body) {
+        content = await readSSEStreamWithStatus(retryResp.body, (status) => { addResearchStep(status); });
+      }
+      const retryHasHtml = /<!doctype html|<html[\s>]|<body[\s>]|<div[\s>]|<section[\s>]|<table[\s>]/i.test(content);
+      if (!retryHasHtml) {
+        const cleanContent = content.replace(/\[STATUS:\s*.*?\]/g, "").replace(/<[^>]+>/g, "").trim();
+        pushMessage({ role: "assistant", content: cleanContent || "Could not generate the file. Please try with more details." });
+        if (convId) await saveMsg(convId, "assistant", cleanContent);
+        return;
+      }
     }
 
     let summary = "";
@@ -467,19 +475,24 @@ As you work, output [STATUS: description] markers to show progress.`;
     if (convId) await saveMsg(convId, "user", userContent);
 
     try {
-      const isSlides = activeAgent === "slides";
-      const needsResearch = ["slides", "report", "document", "roadmap", "mindmap", "timeline", "spreadsheet"].includes(activeAgent || "");
-
-      let research = "";
-      if (needsResearch && activeAgent !== "resume" && activeAgent !== "letter") {
-        research = await doResearchWithStreaming(userInput);
-      }
-
-      if (isSlides) {
-        const result = await generateSlides(userInput, research, convId);
-        if (!result) await generateHtmlFile(userInput, files, research, convId);
+      // In plan mode, skip research and slides — just chat
+      if (agentMode === "plan") {
+        await generateHtmlFile(userInput, files, "", convId);
       } else {
-        await generateHtmlFile(userInput, files, research, convId);
+        const isSlides = activeAgent === "slides";
+        const needsResearch = ["slides", "report", "document", "roadmap", "mindmap", "timeline", "spreadsheet"].includes(activeAgent || "");
+
+        let research = "";
+        if (needsResearch && activeAgent !== "resume" && activeAgent !== "letter") {
+          research = await doResearchWithStreaming(userInput);
+        }
+
+        if (isSlides) {
+          const result = await generateSlides(userInput, research, convId);
+          if (!result) await generateHtmlFile(userInput, files, research, convId);
+        } else {
+          await generateHtmlFile(userInput, files, research, convId);
+        }
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -495,7 +508,7 @@ As you work, output [STATUS: description] markers to show progress.`;
     setIsGenerating(false);
     setStatusText("");
     setResearchSteps([]);
-  }, [input, attachedFiles, activeAgent, conversationId, selectedTemplate, isMobile]);
+  }, [input, attachedFiles, activeAgent, conversationId, selectedTemplate, isMobile, agentMode]);
 
   const newChat = () => {
     setMessages([]); setInput(""); setPreviewHtml(null); setAttachedFiles([]);
@@ -507,45 +520,72 @@ As you work, output [STATUS: description] markers to show progress.`;
   const hasMessages = messages.length > 0;
   const showPreviewPanel = !isMobile && previewHtml && hasMessages;
 
+  // Segmented Plan/Work control
+  const ModeToggle = () => (
+    <div className="ios-segment-control">
+      {(["plan", "work"] as const).map(mode => (
+        <motion.button
+          key={mode}
+          onClick={() => setAgentMode(mode)}
+          className={`relative z-10 px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${
+            agentMode === mode ? "text-foreground" : "text-muted-foreground"
+          }`}
+          whileTap={{ scale: 0.95 }}
+          transition={spring}
+        >
+          {agentMode === mode && (
+            <motion.div
+              layoutId="mode-indicator"
+              className="absolute inset-0 rounded-full liquid-glass-button"
+              transition={spring}
+            />
+          )}
+          <span className="relative z-10">{mode === "plan" ? "Plan" : "Work"}</span>
+        </motion.button>
+      ))}
+    </div>
+  );
+
   // Plus menu component
   const PlusMenu = ({ context }: { context: "outer" | "inner" }) => (
     <AnimatePresence>
       {plusMenuOpen === context && (
         <motion.div
           ref={plusMenuRef}
-          initial={{ opacity: 0, y: 8, scale: 0.95 }}
+          initial={{ opacity: 0, y: 12, scale: 0.92 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 8, scale: 0.95 }}
-          transition={{ duration: 0.15 }}
-          className="absolute bottom-full mb-2 left-0 z-50 w-52 rounded-2xl p-1.5 shadow-2xl"
-          style={{ background: "rgba(30,30,40,0.75)", backdropFilter: "blur(40px) saturate(1.8)", WebkitBackdropFilter: "blur(40px) saturate(1.8)", border: "1px solid rgba(255,255,255,0.12)" }}
+          exit={{ opacity: 0, y: 12, scale: 0.92 }}
+          transition={spring}
+          className="absolute bottom-full mb-2 left-0 z-50 w-56 rounded-3xl p-2 shadow-2xl liquid-glass-milk"
         >
-          <button
-            onClick={() => { setPlusMenuOpen(null); fileInputRef.current?.click(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-white/90 hover:bg-white/10 transition-colors"
-          >
-            <Paperclip className="w-4 h-4 text-white/60" /> Attach File
-          </button>
-          <button
-            onClick={() => { setPlusMenuOpen(null); imageInputRef.current?.click(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-white/90 hover:bg-white/10 transition-colors"
-          >
-            <Image className="w-4 h-4 text-white/60" /> Attach Image
-          </button>
-          <button
-            onClick={() => { setPlusMenuOpen(null); fileInputRef.current?.click(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-white/90 hover:bg-white/10 transition-colors"
-          >
-            <Upload className="w-4 h-4 text-white/60" /> Upload from Device
-          </button>
-          <div className="border-t border-white/10 my-1" />
-          <button
+          {[
+            { icon: Paperclip, label: "Attach File", action: () => fileInputRef.current?.click() },
+            { icon: Image, label: "Attach Image", action: () => imageInputRef.current?.click() },
+            { icon: Upload, label: "Upload from Device", action: () => fileInputRef.current?.click() },
+          ].map((item, i) => (
+            <motion.button
+              key={item.label}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: i * 0.03 }}
+              onClick={() => { setPlusMenuOpen(null); item.action(); }}
+              className="ios-menu-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left text-sm text-foreground/90 hover:bg-accent/30"
+              whileTap={{ scale: 0.96 }}
+            >
+              <item.icon className="w-4 h-4 text-muted-foreground" /> {item.label}
+            </motion.button>
+          ))}
+          <div className="border-t border-border/15 my-1.5" />
+          <motion.button
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.09 }}
             disabled
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-white/40 cursor-not-allowed"
+            className="ios-menu-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left text-sm text-muted-foreground/40 cursor-not-allowed"
           >
             <HardDrive className="w-4 h-4" /> Google Drive
             <span className="ml-auto text-[10px] uppercase tracking-wider opacity-50">Soon</span>
-          </button>
+          </motion.button>
         </motion.div>
       )}
     </AnimatePresence>
@@ -553,18 +593,22 @@ As you work, output [STATUS: description] markers to show progress.`;
 
   const chatPanel = (
     <div className="flex flex-col h-full">
-      {/* Mobile header — transparent, no tabs */}
       {isMobile && (
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3">
-          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            transition={spring}
+            onClick={() => setSidebarOpen(true)}
+            className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          >
             <Menu className="w-5 h-5" />
-          </button>
+          </motion.button>
           <div className="flex items-center gap-1">
             {undoStack.length > 0 && (
-              <button onClick={handleUndo} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"><Undo2 className="w-4 h-4" /></button>
+              <motion.button whileTap={{ scale: 0.9 }} transition={spring} onClick={handleUndo} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"><Undo2 className="w-4 h-4" /></motion.button>
             )}
             {redoStack.length > 0 && (
-              <button onClick={handleRedo} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"><Redo2 className="w-4 h-4" /></button>
+              <motion.button whileTap={{ scale: 0.9 }} transition={spring} onClick={handleRedo} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"><Redo2 className="w-4 h-4" /></motion.button>
             )}
           </div>
         </div>
@@ -586,39 +630,60 @@ As you work, output [STATUS: description] markers to show progress.`;
               {/* Input area */}
               <div className="max-w-xl mx-auto mb-5">
                 {(activeAgent || selectedTemplate) && (
-                  <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
+                  <motion.div layout className="flex items-center gap-2 mb-2 px-1 flex-wrap">
                     {activeAgent && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-subtle text-xs font-medium text-primary">
+                      <motion.span
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={spring}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-pill text-xs font-medium text-primary"
+                      >
                         {FILE_SERVICES.find(s => s.id === activeAgent)?.label}
                         <button onClick={() => setActiveAgent(null)} className="ml-0.5 hover:text-foreground"><X className="w-3 h-3" /></button>
-                      </span>
+                      </motion.span>
                     )}
                     {selectedTemplate && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-subtle text-xs font-medium text-violet-400">
+                      <motion.span
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={spring}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-pill text-xs font-medium text-violet-400"
+                      >
                         Template
                         <button onClick={() => setSelectedTemplate(null)} className="ml-0.5 hover:text-foreground"><X className="w-3 h-3" /></button>
-                      </span>
+                      </motion.span>
                     )}
-                  </div>
+                  </motion.div>
                 )}
 
                 {attachedFiles.length > 0 && (
                   <div className="flex gap-2 mb-2 px-1 flex-wrap">
                     {attachedFiles.map((f, i) => (
-                      <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl liquid-glass-button text-xs text-foreground">
+                      <motion.div
+                        key={i}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={spring}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-button text-xs text-foreground"
+                      >
                         <span className="truncate max-w-[100px]">{f.name}</span>
                         <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 )}
 
-                <div className="liquid-glass rounded-2xl overflow-visible">
+                <div className="liquid-glass rounded-3xl overflow-visible">
                   <div className="flex items-end gap-2 px-4 py-3 min-h-[100px] relative">
                     <div className="relative self-end">
-                      <button onClick={() => setPlusMenuOpen(plusMenuOpen === "outer" ? null : "outer")} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors">
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        transition={spring}
+                        onClick={() => setPlusMenuOpen(plusMenuOpen === "outer" ? null : "outer")}
+                        className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                      >
                         <Plus className="w-5 h-5" />
-                      </button>
+                      </motion.button>
                       <PlusMenu context="outer" />
                     </div>
                     <textarea
@@ -628,18 +693,23 @@ As you work, output [STATUS: description] markers to show progress.`;
                       onKeyDown={e => {
                         if (e.key === "Enter" && !e.shiftKey && !isMobile) { e.preventDefault(); handleGenerate(); }
                       }}
-                      placeholder="Describe what you want to create..."
+                      placeholder={agentMode === "plan" ? "Describe your file idea..." : "Describe what you want to create..."}
                       className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none min-h-[60px] max-h-[160px] py-1 select-text"
                       rows={3}
                       enterKeyHint="enter"
                     />
-                    <button
-                      onClick={() => handleGenerate()}
-                      disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
-                      className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors self-end disabled:opacity-20"
-                    >
-                      {isGenerating ? <span className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                    </button>
+                    <div className="flex flex-col items-center gap-2 self-end">
+                      <ModeToggle />
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        transition={spring}
+                        onClick={() => handleGenerate()}
+                        disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
+                        className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors disabled:opacity-20"
+                      >
+                        {isGenerating ? <span className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -648,17 +718,19 @@ As you work, output [STATUS: description] markers to show progress.`;
               <div className="max-w-xl mx-auto mb-6">
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
                   {FILE_SERVICES.map(svc => (
-                    <button
+                    <motion.button
                       key={svc.id}
+                      whileTap={{ scale: 0.93 }}
+                      transition={spring}
                       onClick={() => setActiveAgent(activeAgent === svc.id ? null : svc.id)}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm whitespace-nowrap shrink-0 transition-all ${
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-all ${
                         activeAgent === svc.id
-                          ? "bg-primary text-primary-foreground shadow-lg"
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                           : "liquid-glass-button text-foreground/70 hover:text-foreground"
                       }`}
                     >
                       <span className="font-medium">{svc.label}</span>
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </div>
@@ -669,9 +741,9 @@ As you work, output [STATUS: description] markers to show progress.`;
                   <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider mb-3 text-left px-1">Quick Templates</p>
                   <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
                     {SPREADSHEET_TEMPLATES.map(tmpl => (
-                      <button key={tmpl.label} onClick={() => { setInput(tmpl.prompt); }} className="px-4 py-2 rounded-xl liquid-glass-button text-xs text-foreground/70 hover:text-foreground whitespace-nowrap shrink-0">
+                      <motion.button key={tmpl.label} whileTap={{ scale: 0.95 }} transition={spring} onClick={() => { setInput(tmpl.prompt); }} className="px-4 py-2 rounded-full liquid-glass-button text-xs text-foreground/70 hover:text-foreground whitespace-nowrap shrink-0">
                         {tmpl.label}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
@@ -680,15 +752,18 @@ As you work, output [STATUS: description] markers to show progress.`;
               {/* Slide templates */}
               <AnimatePresence>
                 {showTemplates && slideTemplates.length > 0 && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="max-w-xl mx-auto mb-6 overflow-hidden">
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={spring} className="max-w-xl mx-auto mb-6 overflow-hidden">
                     <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider mb-3 text-left px-1">Choose a template</p>
                     <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-none px-1">
                       {slideTemplates.map(tmpl => (
-                        <button
+                        <motion.button
                           key={tmpl.id}
+                          whileTap={{ scale: 0.95 }}
+                          whileHover={{ scale: 1.02 }}
+                          transition={spring}
                           onClick={() => setSelectedTemplate(selectedTemplate?.id === tmpl.id ? null : tmpl)}
-                          className={`shrink-0 w-36 rounded-xl overflow-hidden transition-all ${
-                            selectedTemplate?.id === tmpl.id ? "ring-2 ring-primary shadow-lg shadow-primary/20 scale-105" : "liquid-glass-subtle hover:scale-[1.02]"
+                          className={`shrink-0 w-36 rounded-2xl overflow-hidden transition-all ${
+                            selectedTemplate?.id === tmpl.id ? "ring-2 ring-primary shadow-lg shadow-primary/20 scale-105" : "liquid-glass-subtle"
                           }`}
                         >
                           <div className="aspect-[16/10] bg-secondary/50 flex items-center justify-center">
@@ -698,7 +773,7 @@ As you work, output [STATUS: description] markers to show progress.`;
                               <span className="text-xs text-muted-foreground">{tmpl.template_id.slice(-6)}</span>
                             )}
                           </div>
-                        </button>
+                        </motion.button>
                       ))}
                     </div>
                   </motion.div>
@@ -711,9 +786,18 @@ As you work, output [STATUS: description] markers to show progress.`;
               {savedFiles.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40 font-medium">Recent</p>
-                  {savedFiles.slice(0, 6).map(f => (
-                    <motion.button key={f.id} whileTap={{ scale: 0.98 }} onClick={() => loadConversation(f.id)} className="w-full flex items-center gap-3 p-3 rounded-2xl liquid-glass-button text-left">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center shrink-0">
+                  {savedFiles.slice(0, 6).map((f, i) => (
+                    <motion.button
+                      key={f.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...spring, delay: i * 0.04 }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => loadConversation(f.id)}
+                      className="w-full flex items-center gap-3 p-3.5 rounded-2xl liquid-glass-button text-left"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center shrink-0">
                         <FileText className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -731,20 +815,34 @@ As you work, output [STATUS: description] markers to show progress.`;
             {messages.map((msg, i) => (
               <div key={i}>
                 {msg.role === "user" ? (
-                  <div className="flex justify-end mb-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={spring}
+                    className="flex justify-end mb-4"
+                  >
                     <div className="max-w-[85%] liquid-glass-subtle text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-sm leading-relaxed select-text">{msg.content}</div>
-                  </div>
+                  </motion.div>
                 ) : (
-                  <div className="mb-4 space-y-3">
-                    {/* Clean chat display — no HTML */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={spring}
+                    className="mb-4 space-y-3"
+                  >
                     <div className="text-foreground text-sm select-text leading-relaxed whitespace-pre-wrap">
                       {extractChatDisplay(msg.content)}
                     </div>
                     
                     {/* File thumbnail card */}
                     {msg.htmlContent && (
-                      <div className="rounded-2xl overflow-hidden liquid-glass-subtle max-w-sm">
-                        <div className="relative h-[120px] overflow-hidden bg-white rounded-t-2xl">
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={spring}
+                        className="rounded-3xl overflow-hidden liquid-glass-subtle max-w-sm"
+                      >
+                        <div className="relative h-[120px] overflow-hidden bg-white rounded-t-3xl">
                           <iframe
                             srcDoc={msg.htmlContent}
                             className="w-full h-full pointer-events-none"
@@ -758,37 +856,47 @@ As you work, output [STATUS: description] markers to show progress.`;
                             {messages.find(m => m.role === "user")?.content?.slice(0, 40) || "Document"}
                           </p>
                           <div className="flex items-center gap-2 shrink-0">
-                            <button
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              transition={spring}
                               onClick={() => { if (isMobile) setActiveTab("chat"); textareaRef.current?.focus(); }}
-                              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg"
                             >
                               Edit
-                            </button>
-                            <button
+                            </motion.button>
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              transition={spring}
                               onClick={() => { setPreviewHtml(msg.htmlContent!); if (isMobile) setActiveTab("preview"); }}
-                              className="text-xs text-primary font-medium hover:text-primary/80 transition-colors"
+                              className="text-xs text-primary font-medium hover:text-primary/80 transition-colors px-2 py-1 rounded-lg"
                             >
                               Preview
-                            </button>
+                            </motion.button>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
 
-                    {/* Download button for slides */}
                     {msg.downloadUrl && (
-                      <a href={msg.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+                      <motion.a
+                        whileTap={{ scale: 0.95 }}
+                        transition={spring}
+                        href={msg.downloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                      >
                         <Download className="w-4 h-4" /> Download
-                      </a>
+                      </motion.a>
                     )}
-                  </div>
+                  </motion.div>
                 )}
               </div>
             ))}
             {isGenerating && researchSteps.length > 0 && <ResearchFlow steps={researchSteps} />}
             {isGenerating && researchSteps.length === 0 && (
               <div className="flex items-center gap-2.5 py-2">
-                <motion.svg width="16" height="16" viewBox="0 0 100 100" className="shrink-0 text-primary" animate={{ rotate: [0, 180, 360], scale: [1, 1.15, 1] }} transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}>
+                <motion.svg width="18" height="18" viewBox="0 0 100 100" className="shrink-0 text-primary" animate={{ rotate: [0, 180, 360], scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
                   <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
                 </motion.svg>
                 <span className="text-sm text-foreground">{statusText || "Working..."}</span>
@@ -799,19 +907,22 @@ As you work, output [STATUS: description] markers to show progress.`;
         )}
       </div>
 
-      {/* Floating Preview button — appears after generation */}
+      {/* Floating Preview button */}
       {hasMessages && previewHtml && !isGenerating && isMobile && activeTab === "chat" && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={spring}
           className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30"
         >
-          <button
+          <motion.button
+            whileTap={{ scale: 0.93 }}
+            transition={spring}
             onClick={() => setActiveTab("preview")}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all"
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/30"
           >
             <Eye className="w-4 h-4" /> Preview
-          </button>
+          </motion.button>
         </motion.div>
       )}
 
@@ -822,19 +933,30 @@ As you work, output [STATUS: description] markers to show progress.`;
             {attachedFiles.length > 0 && (
               <div className="flex gap-2 mb-2 flex-wrap">
                 {attachedFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl liquid-glass-button text-xs text-foreground">
+                  <motion.div
+                    key={i}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={spring}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-button text-xs text-foreground"
+                  >
                     <span className="truncate max-w-[100px]">{f.name}</span>
                     <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
-            <div className="liquid-glass rounded-2xl overflow-visible">
+            <div className="liquid-glass rounded-3xl overflow-visible">
               <div className="flex items-end gap-2 px-3 py-2 relative">
                 <div className="relative self-end">
-                  <button onClick={() => setPlusMenuOpen(plusMenuOpen === "inner" ? null : "inner")} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors">
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    transition={spring}
+                    onClick={() => setPlusMenuOpen(plusMenuOpen === "inner" ? null : "inner")}
+                    className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     <Plus className="w-5 h-5" />
-                  </button>
+                  </motion.button>
                   <PlusMenu context="inner" />
                 </div>
                 <textarea
@@ -843,18 +965,23 @@ As you work, output [STATUS: description] markers to show progress.`;
                   onKeyDown={e => {
                     if (e.key === "Enter" && !e.shiftKey && !isMobile) { e.preventDefault(); handleGenerate(); }
                   }}
-                  placeholder="Ask for changes..."
+                  placeholder={agentMode === "plan" ? "Discuss your plan..." : "Ask for changes..."}
                   className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none min-h-[24px] max-h-[120px] py-2 select-text"
                   rows={1}
                   enterKeyHint="enter"
                 />
-                <button
-                  onClick={() => handleGenerate()}
-                  disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
-                  className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors self-end disabled:opacity-20"
-                >
-                  {isGenerating ? <span className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                </button>
+                <div className="flex items-center gap-2 self-end">
+                  <ModeToggle />
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    transition={spring}
+                    onClick={() => handleGenerate()}
+                    disabled={isGenerating || (!input.trim() && attachedFiles.length === 0)}
+                    className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors disabled:opacity-20"
+                  >
+                    {isGenerating ? <span className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                  </motion.button>
+                </div>
               </div>
             </div>
           </div>
