@@ -4,14 +4,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
-import ThinkingLoader from "@/components/ThinkingLoader";
-import ReactMarkdown from "react-markdown";
 import ResearchFlow, { ResearchStep } from "@/components/files/ResearchFlow";
 import FilePreviewPanel from "@/components/files/FilePreviewPanel";
 import ExportDialog from "@/components/files/ExportDialog";
 import { buildPreviewHtml } from "@/lib/filesHtmlBuilders";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu, ArrowUp, Plus, X, Download, Eye, FileText, Undo2, Redo2 } from "lucide-react";
+import { Menu, ArrowUp, Plus, X, Download, Eye, FileText, Undo2, Redo2, Paperclip, Image, HardDrive, Upload } from "lucide-react";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -86,22 +84,35 @@ async function readSSEStreamWithStatus(
         const parsed = JSON.parse(json);
         const delta = parsed.choices?.[0]?.delta?.content;
         if (delta) {
-          // Parse [STATUS: ...] markers
           const statusMatch = delta.match(/\[STATUS:\s*(.*?)\]/);
-          if (statusMatch && onStatus) {
-            onStatus(statusMatch[1]);
-          }
-          // Remove status markers from visible content
+          if (statusMatch && onStatus) onStatus(statusMatch[1]);
           const cleanDelta = delta.replace(/\[STATUS:\s*.*?\]/g, "");
-          if (cleanDelta) {
-            result += cleanDelta;
-            onContent?.(cleanDelta);
-          }
+          if (cleanDelta) { result += cleanDelta; onContent?.(cleanDelta); }
         }
       } catch {}
     }
   }
   return result;
+}
+
+// Strip HTML from chat display — only show summary text
+function extractChatDisplay(content: string): string {
+  // If content has HTML, extract only the SUMMARY part
+  const summaryMatch = content.match(/---SUMMARY---([\s\S]*?)$/);
+  if (summaryMatch) return summaryMatch[1].replace(/\[STATUS:\s*.*?\]/g, "").trim();
+  
+  // Strip any raw HTML tags for chat display
+  const hasHtml = /<!doctype html|<html[\s>]|<body[\s>]|<div[\s>]|<section[\s>]|<table[\s>]/i.test(content);
+  if (hasHtml) return "Your file is ready. Tap Preview to view it.";
+  
+  // Clean code fences and status markers
+  return content
+    .replace(/```html[\s\S]*?```/g, "")
+    .replace(/```json[\s\S]*?```/g, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\[STATUS:\s*.*?\]/g, "")
+    .replace(/<[^>]+>/g, "")
+    .trim();
 }
 
 const FilesPage = () => {
@@ -125,9 +136,12 @@ const FilesPage = () => {
   const [activeTab, setActiveTab] = useState<"chat" | "preview">("chat");
   const [undoStack, setUndoStack] = useState<ChatMsg[][]>([]);
   const [redoStack, setRedoStack] = useState<ChatMsg[][]>([]);
+  const [plusMenuOpen, setPlusMenuOpen] = useState<"outer" | "inner" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const plusMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isGenerating]);
 
@@ -159,7 +173,6 @@ const FilesPage = () => {
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
   }, [input]);
 
-  // Auto-save
   useEffect(() => {
     if (!conversationId || messages.length === 0) return;
     const lastMsg = messages[messages.length - 1];
@@ -168,6 +181,16 @@ const FilesPage = () => {
       if (!isMobile) setActiveTab("preview");
     }
   }, [messages, conversationId, isMobile]);
+
+  // Close plus menu on outside click
+  useEffect(() => {
+    if (!plusMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) setPlusMenuOpen(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [plusMenuOpen]);
 
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -207,7 +230,6 @@ const FilesPage = () => {
         return msg;
       });
       setMessages(loaded);
-      // Show last preview
       const lastHtml = [...loaded].reverse().find(m => m.htmlContent);
       if (lastHtml?.htmlContent) {
         setPreviewHtml(lastHtml.htmlContent);
@@ -229,7 +251,6 @@ const FilesPage = () => {
 
   const doResearchWithStreaming = async (topic: string): Promise<string> => {
     setResearchSteps([{ id: "start", label: "Starting research...", status: "active" }]);
-
     const systemPrompt = `You are a deep research agent. Research the following topic thoroughly and provide comprehensive, detailed information.
 IMPORTANT: As you research, output [STATUS: description] markers to show your progress. Examples:
 [STATUS: Searching for historical information about the topic...]
@@ -256,9 +277,7 @@ Do NOT invent information. Only provide verified facts.`;
         }),
       });
       if (!resp.ok || !resp.body) return "";
-      return await readSSEStreamWithStatus(resp.body, (status) => {
-        addResearchStep(status);
-      });
+      return await readSSEStreamWithStatus(resp.body, (status) => { addResearchStep(status); });
     } catch { return ""; }
   };
 
@@ -304,7 +323,7 @@ Do NOT invent information. Only provide verified facts.`;
 
     const systemPrompt = `You are an intelligent file generation agent called Megsy.
 You have TWO modes:
-1. CHAT MODE: If the user asks a question, wants advice, or has a conversation — respond naturally. Do NOT generate any file.
+1. CHAT MODE: If the user asks a question, wants advice, or has a conversation — respond naturally in plain text. Do NOT generate any HTML or file content.
 2. GENERATE MODE: If the user wants a file (document, report, slides, spreadsheet, resume, letter, roadmap, mindmap, timeline) — generate it.
 
 Current file type: ${agentType}
@@ -316,8 +335,10 @@ CRITICAL RULES FOR FILE GENERATION:
 - Do NOT add placeholder images, random tables, or filler content unless specifically requested.
 - Do NOT abbreviate, summarize, or truncate the user's request.
 - If the user attached images, analyze them carefully and incorporate the visual content into your response.
-- Output ONLY complete, valid HTML for file content.
+- For GENERATE MODE: Output ONLY complete, valid HTML for file content. Do NOT wrap it in code fences.
+- For CHAT MODE: Output ONLY plain text. No HTML tags at all.
 - Respond in the SAME LANGUAGE as the user's message.
+- Choose a unique design style that fits the topic from thousands of possible styles: academic, corporate, creative, medical, legal, tech, minimalist, colorful, editorial, etc. Pick colors, fonts, and layouts that match the content's domain.
 
 ${agentType === "spreadsheet" ? `
 SPREADSHEET RULES:
@@ -340,13 +361,12 @@ ${agentType === "mindmap" ? "Generate a visual mind map as HTML with hierarchica
 ${agentType === "timeline" ? "Generate a visual chronological timeline as HTML with events, dates, and descriptions." : ""}
 
 After the HTML content, write a personalized summary starting with ---SUMMARY--- on a new line.
-The summary should describe exactly what you created, what sections it contains, and its key content.
+The summary should describe exactly what you created, what sections it contains, and its key content. Be specific.
 As you work, output [STATUS: description] markers to show progress.`;
 
     let prompt = `User request: ${userInput}`;
     if (researchContent) prompt += `\n\nResearch data to use (verified information):\n${researchContent.slice(0, 6000)}`;
 
-    // Fetch Pexels images for relevant types
     if (["slides", "document", "report", "roadmap", "timeline"].includes(agentType) && !userInput.toLowerCase().includes("no image")) {
       addResearchStep("Finding relevant images...");
       try {
@@ -381,14 +401,11 @@ As you work, output [STATUS: description] markers to show progress.`;
       return;
     }
 
-    let content = await readSSEStreamWithStatus(resp.body, (status) => {
-      addResearchStep(status);
-    });
+    let content = await readSSEStreamWithStatus(resp.body, (status) => { addResearchStep(status); });
 
     // Check if AI decided to chat instead of generate
     const hasHtml = /<!doctype html|<html[\s>]|<body[\s>]|<div[\s>]|<section[\s>]|<table[\s>]/i.test(content);
     if (!hasHtml && !content.includes("---SUMMARY---")) {
-      // Chat mode - just show the response
       const cleanContent = content.replace(/\[STATUS:\s*.*?\]/g, "").replace(/---SUMMARY---[\s\S]*$/, "").trim();
       pushMessage({ role: "assistant", content: cleanContent });
       if (convId) await saveMsg(convId, "assistant", cleanContent);
@@ -460,14 +477,11 @@ As you work, output [STATUS: description] markers to show progress.`;
 
       if (isSlides) {
         const result = await generateSlides(userInput, research, convId);
-        if (!result) {
-          await generateHtmlFile(userInput, files, research, convId);
-        }
+        if (!result) await generateHtmlFile(userInput, files, research, convId);
       } else {
         await generateHtmlFile(userInput, files, research, convId);
       }
 
-      // Refresh saved files
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.from("conversations").select("id, title, created_at, mode").eq("user_id", user.id).eq("mode", "files").order("created_at", { ascending: false }).limit(20);
@@ -491,24 +505,60 @@ As you work, output [STATUS: description] markers to show progress.`;
   };
 
   const hasMessages = messages.length > 0;
-
-  // Desktop: split pane. Mobile: tabs.
   const showPreviewPanel = !isMobile && previewHtml && hasMessages;
+
+  // Plus menu component
+  const PlusMenu = ({ context }: { context: "outer" | "inner" }) => (
+    <AnimatePresence>
+      {plusMenuOpen === context && (
+        <motion.div
+          ref={plusMenuRef}
+          initial={{ opacity: 0, y: 8, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 8, scale: 0.95 }}
+          transition={{ duration: 0.15 }}
+          className="absolute bottom-full mb-2 left-0 z-50 w-52 rounded-2xl p-1.5 shadow-2xl"
+          style={{ background: "rgba(30,30,40,0.75)", backdropFilter: "blur(40px) saturate(1.8)", WebkitBackdropFilter: "blur(40px) saturate(1.8)", border: "1px solid rgba(255,255,255,0.12)" }}
+        >
+          <button
+            onClick={() => { setPlusMenuOpen(null); fileInputRef.current?.click(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-white/90 hover:bg-white/10 transition-colors"
+          >
+            <Paperclip className="w-4 h-4 text-white/60" /> Attach File
+          </button>
+          <button
+            onClick={() => { setPlusMenuOpen(null); imageInputRef.current?.click(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-white/90 hover:bg-white/10 transition-colors"
+          >
+            <Image className="w-4 h-4 text-white/60" /> Attach Image
+          </button>
+          <button
+            onClick={() => { setPlusMenuOpen(null); fileInputRef.current?.click(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-white/90 hover:bg-white/10 transition-colors"
+          >
+            <Upload className="w-4 h-4 text-white/60" /> Upload from Device
+          </button>
+          <div className="border-t border-white/10 my-1" />
+          <button
+            disabled
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-white/40 cursor-not-allowed"
+          >
+            <HardDrive className="w-4 h-4" /> Google Drive
+            <span className="ml-auto text-[10px] uppercase tracking-wider opacity-50">Soon</span>
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 
   const chatPanel = (
     <div className="flex flex-col h-full">
-      {/* Mobile header */}
+      {/* Mobile header — transparent, no tabs */}
       {isMobile && (
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 liquid-glass">
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3">
           <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
             <Menu className="w-5 h-5" />
           </button>
-          {hasMessages && previewHtml && (
-            <div className="flex gap-1 liquid-glass-subtle rounded-xl p-1">
-              <button onClick={() => setActiveTab("chat")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === "chat" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Chat</button>
-              <button onClick={() => setActiveTab("preview")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === "preview" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Preview</button>
-            </div>
-          )}
           <div className="flex items-center gap-1">
             {undoStack.length > 0 && (
               <button onClick={handleUndo} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"><Undo2 className="w-4 h-4" /></button>
@@ -563,11 +613,14 @@ As you work, output [STATUS: description] markers to show progress.`;
                   </div>
                 )}
 
-                <div className="liquid-glass rounded-2xl overflow-hidden">
-                  <div className="flex items-end gap-2 px-4 py-3 min-h-[100px]">
-                    <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors self-end">
-                      <Plus className="w-5 h-5" />
-                    </button>
+                <div className="liquid-glass rounded-2xl overflow-visible">
+                  <div className="flex items-end gap-2 px-4 py-3 min-h-[100px] relative">
+                    <div className="relative self-end">
+                      <button onClick={() => setPlusMenuOpen(plusMenuOpen === "outer" ? null : "outer")} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors">
+                        <Plus className="w-5 h-5" />
+                      </button>
+                      <PlusMenu context="outer" />
+                    </div>
                     <textarea
                       ref={textareaRef}
                       value={input}
@@ -576,7 +629,7 @@ As you work, output [STATUS: description] markers to show progress.`;
                         if (e.key === "Enter" && !e.shiftKey && !isMobile) { e.preventDefault(); handleGenerate(); }
                       }}
                       placeholder="Describe what you want to create..."
-                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none min-h-[60px] max-h-[160px] py-1"
+                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 resize-none outline-none min-h-[60px] max-h-[160px] py-1 select-text"
                       rows={3}
                       enterKeyHint="enter"
                     />
@@ -683,38 +736,84 @@ As you work, output [STATUS: description] markers to show progress.`;
                   </div>
                 ) : (
                   <div className="mb-4 space-y-3">
-                    <div className="prose-chat text-foreground text-sm select-text">
-                      <ReactMarkdown>{msg.content.replace(/```json[\s\S]*?```/g, "").replace(/```html[\s\S]*?```/g, "").replace(/```[\s\S]*?```/g, "").trim()}</ReactMarkdown>
+                    {/* Clean chat display — no HTML */}
+                    <div className="text-foreground text-sm select-text leading-relaxed whitespace-pre-wrap">
+                      {extractChatDisplay(msg.content)}
                     </div>
-                    {(msg.htmlContent || msg.downloadUrl) && (
-                      <div className="flex gap-2 flex-wrap">
-                        {msg.htmlContent && (
-                          <>
-                            <button onClick={() => { setPreviewHtml(msg.htmlContent!); if (isMobile) setActiveTab("preview"); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl liquid-glass-button text-sm font-medium text-foreground hover:text-primary transition-colors">
-                              <Eye className="w-4 h-4" /> Preview
+                    
+                    {/* File thumbnail card */}
+                    {msg.htmlContent && (
+                      <div className="rounded-2xl overflow-hidden liquid-glass-subtle max-w-sm">
+                        <div className="relative h-[120px] overflow-hidden bg-white rounded-t-2xl">
+                          <iframe
+                            srcDoc={msg.htmlContent}
+                            className="w-full h-full pointer-events-none"
+                            sandbox=""
+                            title="File thumbnail"
+                            style={{ transform: "scale(0.5)", transformOrigin: "top left", width: "200%", height: "200%" }}
+                          />
+                        </div>
+                        <div className="px-4 py-3 flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium text-foreground truncate">
+                            {messages.find(m => m.role === "user")?.content?.slice(0, 40) || "Document"}
+                          </p>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => { if (isMobile) setActiveTab("chat"); textareaRef.current?.focus(); }}
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              Edit
                             </button>
-                            <button onClick={() => { setExportHtml(msg.htmlContent!); setShowExport(true); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl liquid-glass-button text-sm text-foreground">
-                              <Download className="w-4 h-4" /> Download
+                            <button
+                              onClick={() => { setPreviewHtml(msg.htmlContent!); if (isMobile) setActiveTab("preview"); }}
+                              className="text-xs text-primary font-medium hover:text-primary/80 transition-colors"
+                            >
+                              Preview
                             </button>
-                          </>
-                        )}
-                        {msg.downloadUrl && (
-                          <a href={msg.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                            <Download className="w-4 h-4" /> Download
-                          </a>
-                        )}
+                          </div>
+                        </div>
                       </div>
+                    )}
+
+                    {/* Download button for slides */}
+                    {msg.downloadUrl && (
+                      <a href={msg.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+                        <Download className="w-4 h-4" /> Download
+                      </a>
                     )}
                   </div>
                 )}
               </div>
             ))}
             {isGenerating && researchSteps.length > 0 && <ResearchFlow steps={researchSteps} />}
-            {isGenerating && researchSteps.length === 0 && <ThinkingLoader searchStatus={statusText || "Working..."} />}
+            {isGenerating && researchSteps.length === 0 && (
+              <div className="flex items-center gap-2.5 py-2">
+                <motion.svg width="16" height="16" viewBox="0 0 100 100" className="shrink-0 text-primary" animate={{ rotate: [0, 180, 360], scale: [1, 1.15, 1] }} transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}>
+                  <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
+                </motion.svg>
+                <span className="text-sm text-foreground">{statusText || "Working..."}</span>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}
       </div>
+
+      {/* Floating Preview button — appears after generation */}
+      {hasMessages && previewHtml && !isGenerating && isMobile && activeTab === "chat" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30"
+        >
+          <button
+            onClick={() => setActiveTab("preview")}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all"
+          >
+            <Eye className="w-4 h-4" /> Preview
+          </button>
+        </motion.div>
+      )}
 
       {/* Bottom input */}
       {hasMessages && (
@@ -730,11 +829,14 @@ As you work, output [STATUS: description] markers to show progress.`;
                 ))}
               </div>
             )}
-            <div className="liquid-glass rounded-2xl overflow-hidden">
-              <div className="flex items-end gap-2 px-3 py-2">
-                <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors self-end">
-                  <Plus className="w-5 h-5" />
-                </button>
+            <div className="liquid-glass rounded-2xl overflow-visible">
+              <div className="flex items-end gap-2 px-3 py-2 relative">
+                <div className="relative self-end">
+                  <button onClick={() => setPlusMenuOpen(plusMenuOpen === "inner" ? null : "inner")} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors">
+                    <Plus className="w-5 h-5" />
+                  </button>
+                  <PlusMenu context="inner" />
+                </div>
                 <textarea
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -760,6 +862,7 @@ As you work, output [STATUS: description] markers to show progress.`;
       )}
 
       <input ref={fileInputRef} type="file" accept=".txt,.pdf,.doc,.docx,.csv,.json,.md,.xlsx,.pptx,image/*" multiple className="hidden" onChange={handleFileAttach} />
+      <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileAttach} />
     </div>
   );
 
@@ -778,12 +881,10 @@ As you work, output [STATUS: description] markers to show progress.`;
       <div className="h-full flex flex-col bg-background overflow-x-hidden">
         <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={newChat} onSelectConversation={loadConversation} activeConversationId={conversationId} currentMode="files" />
 
-        {/* Export dialog */}
         <ExportDialog open={showExport} onClose={() => setShowExport(false)} html={exportHtml} fileName={activeAgent || "document"} isSpreadsheet={activeAgent === "spreadsheet"} />
 
-        {/* Layout */}
         {isMobile ? (
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 relative">
             {activeTab === "chat" ? chatPanel : (previewPanel || chatPanel)}
           </div>
         ) : (

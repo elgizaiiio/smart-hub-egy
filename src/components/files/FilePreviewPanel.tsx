@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Download, Pencil, Search, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Download, Pencil } from "lucide-react";
 
 interface FilePreviewPanelProps {
   html: string;
@@ -12,41 +11,26 @@ interface FilePreviewPanelProps {
 }
 
 const FilePreviewPanel = ({ html, title, onClose, onEdit, onDownload }: FilePreviewPanelProps) => {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  // Inject viewport meta + responsive CSS into the iframe content
+  const responsiveHtml = html.replace(
+    /<head([^>]*)>/i,
+    `<head$1><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><style>*{box-sizing:border-box}body{overflow-x:hidden;max-width:100vw}img{max-width:100%;height:auto}table{max-width:100%;overflow-x:auto;display:block}</style>`
+  );
 
   return (
     <div className="flex flex-col h-full relative">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 liquid-glass border-b border-border/20 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <p className="text-sm font-medium text-foreground truncate">{title || "Preview"}</p>
-        </div>
-        <button onClick={() => setSearchOpen(!searchOpen)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-          <Search className="w-4 h-4" />
+      <div className="flex items-center gap-3 px-4 py-3 shrink-0">
+        <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-4 h-4" />
         </button>
+        <p className="text-sm font-medium text-foreground truncate">{title || "Preview"}</p>
       </div>
 
-      {/* Search bar */}
-      <AnimatePresence>
-        {searchOpen && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden shrink-0">
-            <div className="flex items-center gap-2 px-4 py-2 border-b border-border/20">
-              <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search in document..." className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground/50" autoFocus />
-              <button onClick={() => { setSearchOpen(false); setSearchQuery(""); }} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Preview */}
-      <div className="flex-1 min-h-0 p-2 md:p-4">
-        <div className="w-full h-full rounded-xl overflow-hidden liquid-glass-subtle shadow-lg">
-          <iframe srcDoc={html} className="w-full h-full bg-white" sandbox="allow-scripts" title="File Preview" />
+      <div className="flex-1 min-h-0">
+        <div className="w-full h-full overflow-hidden">
+          <iframe srcDoc={responsiveHtml} className="w-full h-full bg-white" sandbox="allow-scripts" title="File Preview" />
         </div>
       </div>
 
