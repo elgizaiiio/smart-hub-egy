@@ -877,66 +877,63 @@ input, textarea, select {
 @keyframes orb-roundness { 0% { filter: contrast(15); } 20% { filter: contrast(3); } 40% { filter: contrast(3); } 60% { filter: contrast(15); } 100% { filter: contrast(15); } }
 @keyframes orb-colorize { 0% { filter: hue-rotate(0deg); } 20% { filter: hue-rotate(-30deg); } 40% { filter: hue-rotate(-60deg); } 60% { filter: hue-rotate(-90deg); } 80% { filter: hue-rotate(-45deg); } 100% { filter: hue-rotate(0deg); } }
 
-/* ─── iOS 26 Liquid Glass System v3 — Real Specular + Displacement + Spring ─── */
+/* ─── iOS 26 Liquid Glass System v4 — Authentic rgba + Real Refraction ─── */
 
-/* CSS Custom Properties for Glass */
 :root {
   --glass-radius: 28px;
-  --glass-blur-heavy: 100px;
-  --glass-blur-medium: 60px;
-  --glass-blur-light: 40px;
-  --glass-saturate: 2.5;
-  --glass-specular: linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 40%, transparent 60%);
-  --glass-specular-subtle: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.04) 35%, transparent 55%);
   --ios-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ios-spring-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --lg-specular: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.06) 40%, transparent 60%);
+  --lg-specular-subtle: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.03) 35%, transparent 55%);
+  --lg-shadow-blue: rgba(31,38,135,0.18);
+  --lg-shadow-dark: rgba(0,0,0,0.22);
 }
 
-/* Base Glass — Primary surfaces */
+/* ── Base Glass ── */
 .liquid-glass {
   position: relative;
-  background: hsl(var(--glass));
-  border: 1px solid hsl(var(--glass-border));
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   box-shadow:
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.2),
-    inset 0 -0.5px 0 0 hsl(0 0% 0% / 0.06),
-    0 8px 32px hsl(0 0% 0% / 0.12),
-    0 2px 8px hsl(0 0% 0% / 0.06);
+    inset 0 1px 0 0 rgba(255,255,255,0.18),
+    inset 0 -0.5px 0 0 rgba(0,0,0,0.05),
+    0 8px 32px var(--lg-shadow-blue),
+    0 2px 8px rgba(0,0,0,0.08);
 }
 .liquid-glass::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--glass-specular-subtle);
+  background: var(--lg-specular-subtle);
   pointer-events: none;
   z-index: 1;
 }
 
-/* Subtle Glass — Message bubbles, light surfaces */
+/* ── Subtle Glass — bubbles, light surfaces ── */
 .liquid-glass-subtle {
   position: relative;
-  background: hsl(var(--glass));
-  border: 1px solid hsl(var(--glass-border) / 0.4);
-  -webkit-backdrop-filter: blur(var(--glass-blur-light)) saturate(2);
-  backdrop-filter: blur(var(--glass-blur-light)) saturate(2);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
   box-shadow:
-    inset 0 0.5px 0 0 hsl(0 0% 100% / 0.12),
-    0 4px 20px hsl(0 0% 0% / 0.08);
+    inset 0 0.5px 0 0 rgba(255,255,255,0.1),
+    0 4px 16px rgba(31,38,135,0.1);
 }
 
-/* Button Glass — Interactive elements */
+/* ── Button Glass ── */
 .liquid-glass-button {
   position: relative;
-  background: hsl(var(--glass));
-  border: 1px solid hsl(var(--glass-border) / 0.35);
-  -webkit-backdrop-filter: blur(24px) saturate(2);
-  backdrop-filter: blur(24px) saturate(2);
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
   box-shadow:
-    inset 0 0.5px 0 0 hsl(0 0% 100% / 0.1),
-    0 2px 8px hsl(0 0% 0% / 0.06);
+    inset 0 0.5px 0 0 rgba(255,255,255,0.1),
+    0 2px 8px rgba(31,38,135,0.08);
   transition: all 0.15s var(--ios-spring-soft);
 }
 .liquid-glass-button::before {
@@ -944,76 +941,74 @@ input, textarea, select {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--glass-specular-subtle);
+  background: var(--lg-specular-subtle);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
 .liquid-glass-button:hover {
-  background: hsl(var(--glass-border) / 0.2);
+  background: rgba(255,255,255,0.12);
   box-shadow:
-    inset 0 0.5px 0 0 hsl(0 0% 100% / 0.15),
-    0 6px 24px hsl(0 0% 0% / 0.12);
+    inset 0 0.5px 0 0 rgba(255,255,255,0.15),
+    0 6px 24px rgba(31,38,135,0.14);
 }
-.liquid-glass-button:hover::before {
-  opacity: 1;
-}
+.liquid-glass-button:hover::before { opacity: 1; }
 .liquid-glass-button:active {
   transform: scale(0.94);
   transition: transform 0.12s var(--ios-spring);
 }
 
-/* Hover Glass — ghost to glass on hover */
+/* ── Hover Glass ── */
 .liquid-glass-hover {
   background: transparent;
   border: 1px solid transparent;
   transition: all 0.2s var(--ios-spring-soft);
 }
 .liquid-glass-hover:hover {
-  background: hsl(var(--glass));
-  border-color: hsl(var(--glass-border) / 0.3);
-  -webkit-backdrop-filter: blur(24px) saturate(2);
-  backdrop-filter: blur(24px) saturate(2);
-  box-shadow: inset 0 0.5px 0 0 hsl(0 0% 100% / 0.1);
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
+  box-shadow: inset 0 0.5px 0 0 rgba(255,255,255,0.08);
 }
 
-/* Milk Glass — Menus, floating panels, high-prominence surfaces */
+/* ── Milk Glass — menus, floating panels ── */
 .liquid-glass-milk {
   position: relative;
-  background: hsl(var(--glass));
-  border: 1px solid hsl(var(--glass-border) / 0.25);
-  -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturate));
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  backdrop-filter: blur(40px) saturate(1.8);
   box-shadow:
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.25),
-    inset 0 -0.5px 0 0 hsl(0 0% 0% / 0.04),
-    0 20px 60px hsl(0 0% 0% / 0.2),
-    0 8px 24px hsl(0 0% 0% / 0.1),
-    0 2px 6px hsl(0 0% 0% / 0.06);
+    inset 0 1px 0 0 rgba(255,255,255,0.22),
+    inset 0 -0.5px 0 0 rgba(0,0,0,0.04),
+    0 20px 60px var(--lg-shadow-dark),
+    0 8px 24px rgba(31,38,135,0.12),
+    0 2px 6px rgba(0,0,0,0.06);
 }
 .liquid-glass-milk::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--glass-specular);
+  background: var(--lg-specular);
   pointer-events: none;
   z-index: 1;
 }
 
-/* Card Glass — Large interactive cards */
+/* ── Card Glass ── */
 .liquid-glass-card {
   position: relative;
-  background: hsl(var(--glass));
-  border: 1px solid hsl(var(--glass-border) / 0.3);
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.13);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   border-radius: var(--glass-radius);
   box-shadow:
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.18),
-    inset 0 -0.5px 0 0 hsl(0 0% 0% / 0.04),
-    0 12px 40px hsl(0 0% 0% / 0.14),
-    0 4px 12px hsl(0 0% 0% / 0.06);
+    inset 0 1px 0 0 rgba(255,255,255,0.16),
+    inset 0 -0.5px 0 0 rgba(0,0,0,0.04),
+    0 12px 40px rgba(31,38,135,0.14),
+    0 4px 12px rgba(0,0,0,0.06);
   transition: all 0.2s var(--ios-spring-soft);
 }
 .liquid-glass-card::before {
@@ -1021,16 +1016,16 @@ input, textarea, select {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--glass-specular-subtle);
+  background: var(--lg-specular-subtle);
   pointer-events: none;
   z-index: 1;
 }
 .liquid-glass-card:hover {
   box-shadow:
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.22),
-    inset 0 -0.5px 0 0 hsl(0 0% 0% / 0.04),
-    0 16px 48px hsl(0 0% 0% / 0.18),
-    0 6px 16px hsl(0 0% 0% / 0.08);
+    inset 0 1px 0 0 rgba(255,255,255,0.2),
+    inset 0 -0.5px 0 0 rgba(0,0,0,0.04),
+    0 16px 48px rgba(31,38,135,0.18),
+    0 6px 16px rgba(0,0,0,0.08);
   transform: translateY(-1px);
 }
 .liquid-glass-card:active {
@@ -1038,44 +1033,45 @@ input, textarea, select {
   transition: transform 0.12s var(--ios-spring);
 }
 
-/* Menu Glass — Floating context menus with distortion */
+/* ── Menu Glass — with SVG distortion ── */
 .liquid-glass-menu {
   position: relative;
-  background: hsl(var(--glass));
-  border: 1px solid hsl(var(--glass-border) / 0.2);
-  -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturate));
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.16);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  backdrop-filter: blur(40px) saturate(1.8);
   border-radius: 22px;
   box-shadow:
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.28),
-    inset 0 -0.5px 0 0 hsl(0 0% 0% / 0.04),
-    0 24px 64px hsl(0 0% 0% / 0.22),
-    0 8px 24px hsl(0 0% 0% / 0.12),
-    0 2px 6px hsl(0 0% 0% / 0.08);
+    inset 0 1px 0 0 rgba(255,255,255,0.25),
+    inset 0 -0.5px 0 0 rgba(0,0,0,0.04),
+    0 24px 64px var(--lg-shadow-dark),
+    0 8px 24px rgba(31,38,135,0.12),
+    0 2px 6px rgba(0,0,0,0.08);
+  filter: url(#liquid-glass-refract);
 }
 .liquid-glass-menu::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--glass-specular);
+  background: var(--lg-specular);
   pointer-events: none;
   z-index: 1;
 }
 
-/* Input Glass — Text input fields */
+/* ── Input Glass ── */
 .liquid-glass-input {
   position: relative;
-  background: hsl(var(--glass));
-  border: 1px solid hsl(var(--glass-border) / 0.3);
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   border-radius: var(--glass-radius);
   box-shadow:
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.15),
-    inset 0 -0.5px 0 0 hsl(0 0% 0% / 0.04),
-    0 8px 32px hsl(0 0% 0% / 0.1),
-    0 2px 8px hsl(0 0% 0% / 0.05);
+    inset 0 1px 0 0 rgba(255,255,255,0.12),
+    inset 0 -0.5px 0 0 rgba(0,0,0,0.04),
+    0 8px 32px rgba(31,38,135,0.1),
+    0 2px 8px rgba(0,0,0,0.05);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .liquid-glass-input::before {
@@ -1083,52 +1079,74 @@ input, textarea, select {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--glass-specular-subtle);
+  background: var(--lg-specular-subtle);
   pointer-events: none;
   z-index: 1;
 }
 .liquid-glass-input:focus-within {
-  border-color: hsl(var(--primary) / 0.4);
+  border-color: rgba(139,92,246,0.4);
   box-shadow:
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.2),
-    0 0 0 3px hsl(var(--primary) / 0.1),
-    0 8px 32px hsl(0 0% 0% / 0.12);
+    inset 0 1px 0 0 rgba(255,255,255,0.18),
+    0 0 0 3px rgba(139,92,246,0.1),
+    0 8px 32px rgba(31,38,135,0.14);
 }
 
-/* Floating Pill — iOS 26 capsule buttons */
+/* ── Floating Pill ── */
 .liquid-glass-pill {
   position: relative;
-  background: hsl(var(--glass));
-  border: 1px solid hsl(var(--glass-border) / 0.25);
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur-medium)) saturate(var(--glass-saturate));
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   border-radius: 9999px;
   box-shadow:
-    inset 0 0.5px 0 0 hsl(0 0% 100% / 0.18),
-    0 8px 28px hsl(0 0% 0% / 0.14),
-    0 2px 8px hsl(0 0% 0% / 0.06);
+    inset 0 0.5px 0 0 rgba(255,255,255,0.15),
+    0 8px 28px rgba(31,38,135,0.12),
+    0 2px 8px rgba(0,0,0,0.06);
 }
 .liquid-glass-pill::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--glass-specular-subtle);
+  background: var(--lg-specular-subtle);
   pointer-events: none;
 }
 
-/* iOS 26 Segmented Control */
+/* ── Segmented Control ── */
 .ios-segment-control {
   display: flex;
   position: relative;
   border-radius: 9999px;
   padding: 3px;
-  background: hsl(var(--secondary));
-  border: 1px solid hsl(var(--border) / 0.4);
-  box-shadow: inset 0 0.5px 0 0 hsl(0 0% 100% / 0.06);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: inset 0 0.5px 0 0 rgba(255,255,255,0.06);
 }
 
-/* iOS 26 Spring Bounce Animation */
+/* ── Light theme overrides ── */
+:root .liquid-glass,
+[data-theme="light"] .liquid-glass { background: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.8); }
+:root .liquid-glass-subtle,
+[data-theme="light"] .liquid-glass-subtle { background: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.6); }
+:root .liquid-glass-button,
+[data-theme="light"] .liquid-glass-button { background: rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.6); }
+:root .liquid-glass-button:hover,
+[data-theme="light"] .liquid-glass-button:hover { background: rgba(255,255,255,0.7); }
+:root .liquid-glass-milk,
+[data-theme="light"] .liquid-glass-milk { background: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.85); }
+:root .liquid-glass-card,
+[data-theme="light"] .liquid-glass-card { background: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.7); }
+:root .liquid-glass-menu,
+[data-theme="light"] .liquid-glass-menu { background: rgba(255,255,255,0.78); border-color: rgba(255,255,255,0.85); }
+:root .liquid-glass-input,
+[data-theme="light"] .liquid-glass-input { background: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.65); }
+:root .liquid-glass-pill,
+[data-theme="light"] .liquid-glass-pill { background: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.7); }
+:root .ios-segment-control,
+[data-theme="light"] .ios-segment-control { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.06); }
+
+/* ── Animations ── */
 @keyframes ios-spring-bounce {
   0% { transform: scale(0.92); opacity: 0; }
   50% { transform: scale(1.02); }
@@ -1139,7 +1157,6 @@ input, textarea, select {
   animation: ios-spring-bounce 0.4s var(--ios-spring) forwards;
 }
 
-/* iOS 26 press animation */
 @keyframes ios-press {
   0% { transform: scale(1); }
   50% { transform: scale(0.94); }
@@ -1153,18 +1170,16 @@ input, textarea, select {
   transition: transform 0.12s var(--ios-spring);
 }
 
-/* iOS menu stagger item */
 .ios-menu-item {
   position: relative;
   transition: all 0.15s var(--ios-spring-soft);
 }
 .ios-menu-item:active {
-  background: hsl(0 0% 100% / 0.08);
+  background: rgba(255,255,255,0.08);
   transform: scale(0.97);
   transition: transform 0.1s var(--ios-spring);
 }
 
-/* iOS 26 Jelly deformation on press */
 @keyframes ios-jelly {
   0% { transform: scale(1, 1); }
   25% { transform: scale(0.95, 1.05); }
