@@ -326,26 +326,28 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
               ))}
             </div>
           )}
-          <div
+          <motion.div
             onContextMenu={handleContextMenu}
             onTouchStart={handleLongPressStart}
             onTouchEnd={clearLongPress}
             onTouchCancel={clearLongPress}
-            className="liquid-glass-subtle text-foreground px-4 py-2.5 rounded-[1.6rem] rounded-br-md text-[0.9375rem] leading-relaxed"
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: "spring", damping: 22, stiffness: 350 }}
+            className="liquid-glass-subtle text-foreground px-4 py-2.5 rounded-[22px] rounded-br-md text-[0.9375rem] leading-relaxed"
           >
             {content}
-          </div>
+          </motion.div>
 
           <AnimatePresence>
             {menuOpen && (
               <>
                 <button aria-label="Close" className="fixed inset-0 z-40 cursor-default" onClick={closeMenu} />
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.92 }}
-                  transition={{ duration: 0.18 }}
-                  className="fixed z-50 overflow-hidden rounded-2xl liquid-glass"
+                  initial={{ opacity: 0, scale: 0.88, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.88, y: 8 }}
+                  transition={{ type: "spring", damping: 22, stiffness: 350 }}
+                  className="fixed z-50 overflow-hidden rounded-[18px] liquid-glass-menu"
                   style={{ left: `min(${menuPosition.x}px, calc(100vw - 14rem))`, top: `min(${menuPosition.y}px, calc(100vh - 14rem))`, width: "13rem" }}
                 >
                   <div className="p-1.5">
@@ -354,15 +356,18 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
                       { icon: Share2, label: "Share", action: async () => { await handleUserShare(); closeMenu(); } },
                       { icon: Pencil, label: "Edit", action: () => { handleEditAction(); closeMenu(); } },
                       { icon: Type, label: "Select text", action: async () => { await handleSelectText(); closeMenu(); } },
-                    ].map(({ icon: Icon, label, action }) => (
-                      <button
+                    ].map(({ icon: Icon, label, action }, i) => (
+                      <motion.button
                         key={label}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03, type: "spring", damping: 22, stiffness: 350 }}
                         onClick={action}
-                        className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-foreground hover:bg-accent/50 transition-colors"
+                        className="w-full flex items-center gap-2.5 rounded-[12px] px-3.5 py-3 text-left text-sm text-foreground ios-menu-item"
                       >
                         <Icon className="w-4 h-4 text-muted-foreground" />
-                        <span>{label}</span>
-                      </button>
+                        <span className="font-medium">{label}</span>
+                      </motion.button>
                     ))}
                   </div>
                 </motion.div>
@@ -394,19 +399,19 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
             <div className="mb-4 flex gap-3 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory touch-pan-x">
               {products.map((product, index) => {
                 const card = (
-                  <div className="w-[16.5rem] shrink-0 snap-start rounded-2xl liquid-glass-subtle overflow-hidden">
+                  <div className="w-[16.5rem] shrink-0 snap-start rounded-[22px] liquid-glass-card overflow-hidden">
                     {product.image ? (
                       <img src={product.image} alt={product.title} className="h-36 w-full object-cover" />
                     ) : (
                       <div className="h-36 w-full bg-secondary" />
                     )}
-                    <div className="p-3 space-y-1.5">
+                    <div className="p-3.5 space-y-1.5">
                       <p className="text-sm font-semibold text-foreground line-clamp-2">{product.title}</p>
                       <p className="text-sm text-primary font-medium">{product.price}</p>
                       {product.seller && <p className="text-xs text-muted-foreground">{product.seller}</p>}
                       <div className="flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
-                        {product.rating && <span className="rounded-full bg-background/70 px-2 py-1 border border-border/40">{product.rating}</span>}
-                        {product.delivery && <span className="rounded-full bg-background/70 px-2 py-1 border border-border/40">{product.delivery}</span>}
+                        {product.rating && <span className="rounded-full bg-background/70 px-2.5 py-1 border border-border/30">{product.rating}</span>}
+                        {product.delivery && <span className="rounded-full bg-background/70 px-2.5 py-1 border border-border/30">{product.delivery}</span>}
                       </div>
                     </div>
                   </div>
@@ -477,13 +482,13 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
 
           {/* Action buttons */}
           {!isStreaming && content && (
-            <div className="flex items-center gap-1 mt-2">
-              <button onClick={handleCopy} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground liquid-glass-hover transition-all" title="Copy">
+            <div className="flex items-center gap-0.5 mt-2.5">
+              <motion.button whileTap={{ scale: 0.85 }} onClick={handleCopy} className="p-2 rounded-[10px] text-muted-foreground/50 hover:text-foreground liquid-glass-hover transition-all" title="Copy">
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
+              </motion.button>
               <motion.button
                 onClick={() => handleLikeAction(liked === true ? null : true)}
-                className={`p-1.5 rounded-lg transition-all ${liked === true ? "text-primary" : "text-muted-foreground/50 hover:text-foreground liquid-glass-hover"}`}
+                className={`p-2 rounded-[10px] transition-all ${liked === true ? "text-primary" : "text-muted-foreground/50 hover:text-foreground liquid-glass-hover"}`}
                 title="Like"
                 whileTap={{ scale: 1.3 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -492,7 +497,7 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
               </motion.button>
               <motion.button
                 onClick={() => handleLikeAction(liked === false ? null : false)}
-                className={`p-1.5 rounded-lg transition-all ${liked === false ? "text-destructive" : "text-muted-foreground/50 hover:text-foreground liquid-glass-hover"}`}
+                className={`p-2 rounded-[10px] transition-all ${liked === false ? "text-destructive" : "text-muted-foreground/50 hover:text-foreground liquid-glass-hover"}`}
                 title="Dislike"
                 whileTap={{ scale: 1.3 }}
                 transition={{ type: "spring", stiffness: 500, damping: 15 }}
@@ -500,9 +505,9 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
                 <ThumbsDown className="w-3.5 h-3.5" />
               </motion.button>
               {onShare && (
-                <button onClick={onShare} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground liquid-glass-hover transition-all" title="More">
+                <motion.button whileTap={{ scale: 0.85 }} onClick={onShare} className="p-2 rounded-[10px] text-muted-foreground/50 hover:text-foreground liquid-glass-hover transition-all" title="More">
                   <Ellipsis className="w-3.5 h-3.5" />
-                </button>
+                </motion.button>
               )}
             </div>
           )}

@@ -265,38 +265,40 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           />
         )}
       </AnimatePresence>
-      <div className="rounded-2xl liquid-glass overflow-hidden">
+      <div className="rounded-[var(--glass-radius)] liquid-glass-input overflow-hidden">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="border-b border-border/30 bg-secondary/15"
+              transition={{ type: "spring", damping: 22, stiffness: 350 }}
+              className="border-b border-border/20 bg-secondary/10"
             >
               <div className="p-3.5">
-                <div className="flex items-center justify-between mb-2 gap-2">
-                  <p className="text-sm font-medium text-foreground">{currentQuestion.title}</p>
+                <div className="flex items-center justify-between mb-2.5 gap-2">
+                  <p className="text-sm font-semibold text-foreground">{currentQuestion.title}</p>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] text-muted-foreground">{safeQuestionIndex + 1}/{pendingQuestions!.length}</span>
-                    <button onClick={onQuestionSkip} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors" aria-label="Skip smart question">
+                    <span className="text-[10px] text-muted-foreground/60 font-medium">{safeQuestionIndex + 1}/{pendingQuestions!.length}</span>
+                    <motion.button whileTap={{ scale: 0.85 }} onClick={onQuestionSkip} className="p-1.5 rounded-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors" aria-label="Skip smart question">
                       <X className="w-3.5 h-3.5" />
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {currentQuestion.options.map((opt, i) => (
-                    <button
+                    <motion.button
                       key={`${opt}-${i}`}
+                      whileTap={{ scale: 0.93 }}
                       onClick={() => handleQuestionSelect(opt)}
-                      className="px-3 py-1.5 rounded-full border border-border/40 bg-background/60 text-xs text-foreground hover:bg-accent/40 hover:border-primary/30 transition-colors"
+                      className="px-3.5 py-2 rounded-full border border-border/30 bg-background/50 text-xs font-medium text-foreground hover:bg-accent/30 hover:border-primary/25 transition-all ios-spring-press"
                     >
                       {opt}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
                 {currentQuestion.allowText && (
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-2.5">
                     <input
                       type="text"
                       autoComplete="off"
@@ -308,16 +310,17 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                         if (e.key === "Enter") { e.preventDefault(); handleQuestionTextSend(); }
                       }}
                       placeholder="Type your answer..."
-                      className="flex-1 bg-transparent border-none px-1 py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
+                      className="flex-1 bg-transparent border-none px-1 py-1.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/35"
                     />
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
                       onClick={handleQuestionTextSend}
                       disabled={!questionInput.trim()}
-                      className="w-6 h-6 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
+                      className="w-7 h-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-25 transition-opacity ios-spring-press"
                       aria-label="Send question answer"
                     >
                       <ArrowUp className="w-3 h-3" />
-                    </button>
+                    </motion.button>
                   </div>
                 )}
               </div>
@@ -326,13 +329,14 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
         </AnimatePresence>
 
         <div className="relative flex items-end gap-2 px-3 py-3">
-          <button
+          <motion.button
+            whileTap={{ scale: 0.85 }}
             onClick={onPlusClick}
             className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Open attachments"
           >
             <Plus className="w-5 h-5" />
-          </button>
+          </motion.button>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center min-h-[44px]">
@@ -343,29 +347,31 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
                 onKeyDown={handleKeyDown}
                 placeholder={displayedPlaceholder || " "}
                 rows={1}
-                className="flex-1 w-full min-w-0 bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
+                className="flex-1 w-full min-w-0 bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/40 py-2 px-1"
                 style={{ minHeight: "44px" }}
               />
             </div>
           </div>
 
           {isLoading ? (
-            <button
+            <motion.button
+              whileTap={{ scale: 0.85 }}
               onClick={onCancel}
-              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all animate-pulse-slow"
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all animate-pulse-slow ios-spring-press"
               aria-label="Stop generation"
             >
               <Square className="w-3.5 h-3.5" />
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
+              whileTap={{ scale: 0.85 }}
               onClick={onSend}
               disabled={!value.trim() || disabled}
-              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed ios-spring-press"
               aria-label="Send message"
             >
               <ArrowUp className="w-4 h-4" />
-            </button>
+            </motion.button>
           )}
         </div>
       </div>

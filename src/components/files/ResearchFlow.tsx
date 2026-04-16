@@ -11,6 +11,8 @@ interface ResearchFlowProps {
   outline?: string[] | null;
 }
 
+const spring = { type: "spring" as const, damping: 22, stiffness: 350 };
+
 const AnimatedStar = ({ size = 18, color = "hsl(var(--primary))" }: { size?: number; color?: string }) => (
   <motion.svg
     width={size}
@@ -18,15 +20,15 @@ const AnimatedStar = ({ size = 18, color = "hsl(var(--primary))" }: { size?: num
     viewBox="0 0 100 100"
     className="shrink-0"
     style={{ color }}
-    animate={{ rotate: [0, 180, 360], scale: [1, 1.2, 1] }}
-    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+    animate={{ rotate: [0, 180, 360], scale: [1, 1.25, 1] }}
+    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
   >
     <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
   </motion.svg>
 );
 
 const DoneStar = ({ size = 14 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0 text-primary/40">
+  <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0 text-primary/35">
     <path d="M50 5 L60 40 L95 50 L60 60 L50 95 L40 60 L5 50 L40 40 Z" fill="currentColor" />
   </svg>
 );
@@ -37,15 +39,15 @@ const ResearchFlow = ({ steps }: ResearchFlowProps) => {
       {steps.map((step, i) => (
         <motion.div
           key={step.id}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, x: -10, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ 
-            delay: i * 0.05, 
-            type: "spring", 
-            damping: 22, 
-            stiffness: 350 
+            ...spring,
+            delay: i * 0.04, 
           }}
-          className="flex items-center gap-3 py-1.5 px-1"
+          className={`flex items-center gap-3 py-2 px-2 rounded-[14px] transition-colors ${
+            step.status === "active" ? "bg-primary/5" : ""
+          }`}
         >
           <div className="shrink-0">
             {step.status === "active" ? (
@@ -56,8 +58,8 @@ const ResearchFlow = ({ steps }: ResearchFlowProps) => {
           </div>
           <span className={`text-sm leading-snug ${
             step.status === "active" 
-              ? "text-foreground font-medium" 
-              : "text-muted-foreground/45"
+              ? "text-foreground font-semibold" 
+              : "text-muted-foreground/40"
           }`}>
             {step.label}
           </span>
