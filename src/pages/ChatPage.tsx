@@ -710,13 +710,13 @@ Ask me anything to get started!`;
   <>
       <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
       <motion.div
-        initial={{ opacity: 0, y: 16, scale: 0.88 }}
+        initial={{ opacity: 0, y: 12, scale: 0.92 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 16, scale: 0.88 }}
+        exit={{ opacity: 0, y: 12, scale: 0.92 }}
         transition={iosSpring}
-        className="absolute bottom-full mb-3 left-0 z-[46] rounded-[22px] liquid-glass-menu p-2.5 w-72"
+        className="absolute bottom-full mb-2 left-0 z-[46] rounded-3xl liquid-glass-milk p-3 w-72"
       >
-        <div className="grid grid-cols-3 gap-2 mb-2.5">
+        <div className="grid grid-cols-3 gap-2 mb-3">
           {[
             { ref: cameraInputRef, icon: Camera, label: "Camera" },
             { ref: imageInputRef, icon: Image, label: "Photos" },
@@ -724,64 +724,58 @@ Ask me anything to get started!`;
           ].map(({ ref, icon: Icon, label }, i) => (
             <motion.button
               key={label}
-              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ ...iosSpring, delay: i * 0.04 }}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...iosSpring, delay: i * 0.03 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => { ref.current?.click(); setPlusMenuOpen(false); }}
-              className="flex flex-col items-center gap-2 py-3.5 rounded-[18px] liquid-glass-card transition-colors"
+              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl liquid-glass-hover transition-colors ios-menu-item"
             >
               <Icon className="w-5 h-5 text-muted-foreground" />
-              <span className="text-[11px] font-medium text-foreground/80">{label}</span>
+              <span className="text-[11px] text-foreground/80">{label}</span>
             </motion.button>
           ))}
         </div>
-        <div className="border-t border-border/10 pt-2 space-y-0.5">
+        <div className="border-t border-border/15 pt-2 space-y-1">
           <motion.button
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ ...iosSpring, delay: 0.12 }}
             whileTap={{ scale: 0.97 }}
+            transition={iosSpring}
             onClick={handleSearchToggle}
-            className="w-full flex items-center justify-between px-3.5 py-3 rounded-[16px] ios-menu-item transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl liquid-glass-hover transition-colors ios-menu-item"
           >
-            <span className="text-sm text-foreground/80 font-medium">Web search</span>
-            <div className={`w-10 h-[22px] rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-muted justify-start"}`}>
-              <motion.div layout transition={iosSpring} className="w-[18px] h-[18px] rounded-full bg-white shadow-sm mx-0.5" />
+            <span className="text-sm text-foreground/80">Web search</span>
+            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-muted justify-start"}`}>
+              <motion.div layout transition={iosSpring} className="w-4 h-4 rounded-full bg-foreground mx-0.5" />
             </div>
           </motion.button>
-          <div className="border-t border-border/10 mt-1 pt-1">
-            <p className="text-[10px] text-muted-foreground/40 uppercase tracking-[0.15em] font-semibold px-3.5 py-2">Modes</p>
+          <div className="border-t border-border/15 mt-1 pt-1">
+            <p className="text-[10px] text-muted-foreground/50 uppercase px-3 py-1.5">Modes</p>
             {[
               { mode: "learning" as ChatMode, label: "Learning Mode" },
               { mode: "shopping" as ChatMode, label: "Shopping Mode" },
               { mode: "deep-research" as ChatMode, label: "Deep Research" },
-            ].map(({ mode, label }, i) => (
+            ].map(({ mode, label }) => (
               <motion.button
                 key={mode}
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ ...iosSpring, delay: 0.15 + i * 0.03 }}
-                whileTap={{ scale: 0.96 }}
+                whileTap={{ scale: 0.97 }}
+                transition={iosSpring}
                 onClick={() => handleModeChange(mode)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[14px] text-left transition-all ios-menu-item ${chatMode === mode ? "bg-primary/12 text-primary" : "text-foreground/70"}`}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ios-menu-item ${chatMode === mode ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}
               >
-                <span className="text-sm font-medium">{label}</span>
-                {chatMode === mode && <span className="ml-auto text-[10px] text-primary font-semibold">On</span>}
+                <span className="text-sm">{label}</span>
+                {chatMode === mode && <span className="ml-auto text-xs text-primary">On</span>}
               </motion.button>
             ))}
           </div>
-          <div className="border-t border-border/10 mt-1 pt-1">
+          <div className="border-t border-border/15 mt-1 pt-1">
             <motion.button
-              initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ ...iosSpring, delay: 0.25 }}
               whileTap={{ scale: 0.97 }}
+              transition={iosSpring}
               onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-[14px] text-left ios-menu-item transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left liquid-glass-hover transition-colors ios-menu-item"
             >
-              <span className="text-sm text-foreground/70 font-medium">Integrations</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">PRO</span>
+              <span className="text-sm text-foreground/70">Integrations</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">PRO</span>
             </motion.button>
           </div>
         </div>
@@ -806,7 +800,7 @@ Ask me anything to get started!`;
   };
 
   // Glass dialog class
-  const glassDialogClass = "max-w-[calc(100vw-2rem)] sm:max-w-[400px] p-0 gap-0 overflow-hidden rounded-[22px] liquid-glass-menu";
+  const glassDialogClass = "max-w-[calc(100vw-2rem)] sm:max-w-[400px] p-0 gap-0 overflow-hidden rounded-2xl liquid-glass";
 
   return (
     <AppLayout
@@ -825,9 +819,9 @@ Ask me anything to get started!`;
 
         {/* Header */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 min-h-[48px] bg-transparent">
-          <motion.button whileTap={{ scale: 0.9 }} transition={iosSpring} onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-[14px] bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors ios-spring-press">
+          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
             <Menu className="w-5 h-5" />
-          </motion.button>
+          </button>
 
           {!hasConversation && (
             <div className="flex-1 flex justify-center">
@@ -838,32 +832,33 @@ Ask me anything to get started!`;
           )}
 
           <div className="flex items-center gap-1">
+
             {hasConversation && conversationId ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <motion.button whileTap={{ scale: 0.9 }} transition={iosSpring} className="w-9 h-9 flex items-center justify-center rounded-[14px] bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors ios-spring-press">
+                  <button className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
                     <MoreVertical className="w-5 h-5" />
-                  </motion.button>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 rounded-[18px] liquid-glass-menu p-1.5">
-                  <DropdownMenuItem onClick={handleShare} className="rounded-[12px] px-3.5 py-3 text-sm gap-3 cursor-pointer text-foreground/80 ios-menu-item">
+                <DropdownMenuContent align="end" className="w-48 rounded-xl liquid-glass p-1.5">
+                  <DropdownMenuItem onClick={handleShare} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-foreground/80">
                     <Share2 className="w-4 h-4 text-muted-foreground" />
                     Share
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleInvite} className="rounded-[12px] px-3.5 py-3 text-sm gap-3 cursor-pointer text-foreground/80 ios-menu-item">
+                  <DropdownMenuItem onClick={handleInvite} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-foreground/80">
                     <UserPlus className="w-4 h-4 text-muted-foreground" />
                     Invite
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-[12px] px-3.5 py-3 text-sm gap-3 cursor-pointer text-foreground/80 ios-menu-item">
+                  <DropdownMenuItem onClick={() => {setRenameValue(conversationTitle);setIsRenaming(true);}} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-foreground/80">
                     <Pencil className="w-4 h-4 text-muted-foreground" />
                     Rename
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleTogglePin} className="rounded-[12px] px-3.5 py-3 text-sm gap-3 cursor-pointer text-foreground/80 ios-menu-item">
+                  <DropdownMenuItem onClick={handleTogglePin} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-foreground/80">
                     <Pin className="w-4 h-4 text-muted-foreground" />
                     {isPinned ? "Unpin" : "Pin"}
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1 bg-border/20" />
-                  <DropdownMenuItem onClick={handleDelete} className="rounded-[12px] px-3.5 py-3 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive ios-menu-item">
+                  <DropdownMenuSeparator className="my-1 bg-border/30" />
+                  <DropdownMenuItem onClick={handleDelete} className="rounded-lg px-3 py-2.5 text-sm gap-3 cursor-pointer text-destructive focus:text-destructive">
                     <Trash2 className="w-4 h-4" />
                     Delete
                   </DropdownMenuItem>
@@ -880,30 +875,24 @@ Ask me anything to get started!`;
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
-                <div className="flex items-center justify-center gap-2 mb-5">
+                <div className="flex items-center justify-center gap-2 mb-4">
                   <PegtopIcon className="text-primary" />
                   <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
                 </div>
 
-                <div className="flex items-center justify-center gap-2.5 mb-6 flex-wrap">
-                  {[
-                    { label: "Photos", path: "/images" },
-                    { label: "Files", path: "/files" },
-                    { label: "Videos", path: "/videos" },
-                    { label: "Code", path: "/code" },
-                  ].map((item, i) => (
-                    <motion.button
-                      key={item.label}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...iosSpring, delay: 0.1 + i * 0.05 }}
-                      whileTap={{ scale: 0.93 }}
-                      onClick={() => navigate(item.path)}
-                      className="px-4 py-2 rounded-[14px] liquid-glass-card text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {item.label}
-                    </motion.button>
-                  ))}
+                <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+                  <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Photos
+                  </button>
+                  <button onClick={() => navigate("/files")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Files
+                  </button>
+                  <button onClick={() => navigate("/videos")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Videos
+                  </button>
+                  <button onClick={() => navigate("/code")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Code
+                  </button>
                 </div>
               </motion.div>
             </div>
@@ -939,9 +928,8 @@ Ask me anything to get started!`;
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                transition={iosSpring}
                 onClick={scrollToBottom}
-                className="fixed bottom-36 right-4 z-20 w-10 h-10 rounded-full liquid-glass-pill flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ios-spring-press"
+                className="fixed bottom-36 right-4 z-20 w-9 h-9 rounded-full liquid-glass-subtle flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowDown className="w-4 h-4" />
               </motion.button>
@@ -1048,51 +1036,47 @@ Ask me anything to get started!`;
 
         {/* Share Dialog - Glass */}
         <Dialog open={shareDialogOpen} onOpenChange={(open) => {setShareDialogOpen(open);if (!open) setGeneratedShareUrl(null);}}>
-          <DialogContent className={`${glassDialogClass} rounded-[22px]`}>
+          <DialogContent className={glassDialogClass}>
             <div className="px-5 pt-5 pb-3">
               <DialogHeader className="mb-0">
                 <DialogTitle className="text-base font-semibold text-left text-foreground">Share chat</DialogTitle>
                 <DialogDescription className="text-xs text-left text-muted-foreground">Future messages aren't included</DialogDescription>
               </DialogHeader>
             </div>
-            <div className="border-t border-border/20">
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                transition={iosSpring}
+            <div className="border-t border-border/30">
+              <button
                 onClick={() => {setShareMode("private");setGeneratedShareUrl(null);}}
-                className={`w-full flex items-center gap-3 px-5 py-4 transition-colors ios-menu-item ${shareMode === "private" ? "bg-accent/50" : "hover:bg-accent/30"}`}>
+                className={`w-full flex items-center gap-3 px-5 py-3.5 transition-colors ${shareMode === "private" ? "bg-accent/50" : "hover:bg-accent/30"}`}>
                 <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div className="text-left flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground/90">Keep private</p>
                   <p className="text-[11px] text-muted-foreground">Only you have access</p>
                 </div>
-              </motion.button>
-              <div className="h-px bg-border/20 mx-5" />
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                transition={iosSpring}
+              </button>
+              <div className="h-px bg-border/30 mx-5" />
+              <button
                 onClick={() => setShareMode("public")}
-                className={`w-full flex items-center gap-3 px-5 py-4 transition-colors ios-menu-item ${shareMode === "public" ? "bg-accent/50" : "hover:bg-accent/30"}`}>
+                className={`w-full flex items-center gap-3 px-5 py-3.5 transition-colors ${shareMode === "public" ? "bg-accent/50" : "hover:bg-accent/30"}`}>
                 <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div className="text-left flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground/90">Create public link</p>
                   <p className="text-[11px] text-muted-foreground">Anyone with the link can view</p>
                 </div>
-              </motion.button>
+              </button>
             </div>
-            <div className="px-5 py-4 border-t border-border/20">
+            <div className="px-5 py-4 border-t border-border/30">
               {shareMode === "public" && generatedShareUrl ? (
-                <div className="flex items-center gap-2 rounded-[16px] liquid-glass-card px-3 py-2.5 max-w-full overflow-hidden">
+                <div className="flex items-center gap-2 rounded-xl liquid-glass-button px-3 py-2.5 max-w-full overflow-hidden">
                   <span className="flex-1 text-[11px] text-muted-foreground truncate min-w-0 select-all">{generatedShareUrl}</span>
-                  <motion.button whileTap={{ scale: 0.9 }} transition={iosSpring} onClick={handleCopyShareLink} className="shrink-0 p-2 rounded-[12px] liquid-glass-button transition-colors" aria-label="Copy">
+                  <button onClick={handleCopyShareLink} className="shrink-0 p-2 rounded-lg liquid-glass-hover transition-colors" aria-label="Copy">
                     <Copy className="w-4 h-4 text-foreground/70" />
-                  </motion.button>
+                  </button>
                 </div>
               ) : (
                 <div className="flex justify-end">
-                  <motion.button whileTap={{ scale: 0.95 }} transition={iosSpring} onClick={handleCreateShareLink} className="px-5 py-2.5 rounded-[14px] text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity ios-spring-press">
+                  <button onClick={handleCreateShareLink} className="px-5 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity">
                     {shareMode === "public" ? "Create link" : "Save"}
-                  </motion.button>
+                  </button>
                 </div>
               )}
             </div>
