@@ -1,164 +1,128 @@
 
-# خطة شاملة — تحويل الشات والملفات بالكامل إلى iOS 26 الحقيقي + إصلاح منطق الملفات
 
-## ما الذي تأكدت منه
-- طلبك ليس عن زر واحد فقط، بل عن إعادة تصميم صفحة الشات الرئيسية وصفحة الملفات بالكامل بنفس لغة الصور المرجعية.
-- الصور تؤكد ستايل محدد جداً:
-  - طبقات ضبابية قوية فوق خلفية حيّة ومموهة
-  - كبسولات Floating pills
-  - حواف مضيئة رفيعة Specular highlights
-  - أزرار دائرية/كبسولية ناعمة جداً
-  - بطاقات كبيرة بزجاج حليبي فاتح
-  - أنيميشن iOS ناعم: ضغط، ارتداد، فتح وإغلاق، long-press، قوائم عائمة
-- الكود الحالي ما زال يستخدم Liquid Glass قديم ومسطح نسبياً، وليس نفس لغة الصور.
-- في صفحة الملفات يوجد خلل منطقي فعلاً: وضع العمل الحالي يسمح أحياناً برد نصّي فقط بدون ملف أو Preview.
+# خطة تطبيق iOS 26 Liquid Glass الحقيقي — مستوحاة من المستودعات المرجعية
 
-## المطلوب تنفيذه
-### 1) إعادة بناء نظام التصميم نفسه أولاً
-سأحوّل `src/index.css` من Glass عام إلى نظام iOS 26 فعلي مكوّن من:
-- طبقة زجاج أساسية قوية
-- طبقة زجاج فاتحة Milk Glass
-- كبسولات Pills
-- أزرار دائرية Floating
-- حواف لمعان داخلية
-- ظلال ناعمة متعددة الطبقات
-- حالات ضغط/لمس/فتح/إغلاق موحّدة
-- Motion tokens موحدة لكل الواجهات
+## ما تعلمته من المستودعات
 
-الهدف: نفس الإحساس الموجود في الصور، وليس مجرد `backdrop-blur`.
+### من `liquid_glass_widgets` (Flutter):
+- **37 عنصر زجاجي** مع blur حقيقي + specular highlights + spring/jelly animations
+- **GlassThemeData**: `thickness: 30-50`, `blur: 12-18`, `specularSharpness: soft/medium/sharp`
+- **GlassSegmentedControl**: مؤشر متحرك مع refraction حقيقي
+- **GlassMenu/GlassActionSheet**: قوائم عائمة بتأثير زجاجي كامل
+- **Spring physics**: ارتداد طبيعي عند الضغط + jelly deformation
 
-### 2) إعادة تصميم صفحة الشات بالكامل
-**الملفات المستهدفة:**
-- `src/pages/ChatPage.tsx`
-- `src/components/AnimatedInput.tsx`
-- `src/components/ChatMessage.tsx`
-- `src/index.css`
+### من `adaptive_platform_ui` (Flutter):
+- **Native UIButton**: spring animations + haptic feedback
+- **Native UISegmentedControl**: تأثير Liquid Glass على المؤشر
+- **Native UIToolbar/UITabBar**: blur effects + minimize behavior
+- **Context menus**: قوائم ضبابية مع preview + native animations
 
-سأعيد تصميم:
-- الهيدر العلوي
-- الرسائل
-- مربعات الإدخال
-- أزرار النسخ/الإعجاب/القائمة
-- قائمة +
-- الشارات فوق الإدخال
-- زر النزول للأسفل
-- القوائم المنبثقة وـ long press menu
+### من `GlassExplorer` (iOS Swift):
+- خصائص Glass الداخلية: `specular highlight angle`, `displacement`, `refraction depth`
+- تأثير العدسة الحقيقي: per-pixel refraction مع chromatic aberration
 
-ليصبحوا بنفس منطق الصور:
-- شفافية أعلى
-- زوايا أنعم
-- تباين خفيف
-- عناصر عائمة فوق الخلفية
-- أنيميشن spring تشبه iOS
-- حالات ضغط ولمس واضحة
+### من CSS/Web implementations:
+- **SVG displacement mapping** + `feDisplacementMap` + `feTurbulence` للتشوه الزجاجي الحقيقي
+- **Specular layer**: `::before` pseudo-element بتدرج أبيض رفيع
+- **Multi-layer shadows**: 3-4 طبقات ظل خفيفة بدل ظل واحد ثقيل
+- **CSS tokens**: `--lg-bg-color`, `--lg-highlight`, `--lg-specular`
 
-### 3) إعادة تصميم صفحة الملفات بالكامل
-**الملفات المستهدفة:**
-- `src/pages/FilesPage.tsx`
-- `src/components/files/FilePreviewPanel.tsx`
-- `src/components/files/ResearchFlow.tsx`
-- `src/components/files/FilesInputBar.tsx`
-- `src/index.css`
+---
 
-سأعيد تصميم:
-- الشاشة الفارغة
-- قائمة أنواع الملفات
-- Recent cards
-- شريط الإدخال الخارجي والداخلي
-- قائمة +
-- بطاقة المعاينة المصغرة
-- زر Preview السفلي
-- شاشة Preview نفسها
-- خطوات الوكيل أثناء العمل
+## التنفيذ
 
-### 4) إضافة زر Plan | Work داخل مربع الإدخال في الملفات
-**داخل `FilesPage.tsx` و/أو `FilesInputBar.tsx`**
-- زر مدمج على شكل segmented control بأسلوب iOS
-- `Plan`: الذكاء الاصطناعي يناقش، يسأل، يخطط، لا يولّد ملف
-- `Work`: الذكاء الاصطناعي ينشئ الملف فعلياً فقط
-- سيتم ربطه مباشرة بمنطق التوليد وليس بالشكل فقط
+### 1. نظام التصميم الجديد (`src/index.css`)
 
-### 5) إصلاح مشكلة: رد في الشات بدون ملف وبدون Preview
-**هذه نقطة أساسية**
-سأعدّل منطق `handleGenerate` و `generateHtmlFile` في `FilesPage.tsx` بحيث:
-- إذا كان الوضع `work` فلا يُقبل رد نصّي عادي كنجاح
-- يجب أن ينتج:
-  - HTML/preview صالح
-  - أو ملف slides صالح مع download/preview
-- إذا رجع النموذج رد محادثة فقط في `work`:
-  - تتم إعادة المحاولة تلقائياً بتوجيه أقوى
-  - أو تظهر رسالة خطأ واضحة بأن الملف لم يُنشأ بعد
-- أما في `plan` فالرد النصّي مسموح وطبيعي
+إضافة SVG filter مدمج في HTML + CSS classes محدّثة:
 
-### 6) منع ظهور HTML داخل المحادثة بشكل نهائي
-سأغلق المشكلة من الجذر:
-- تنظيف أي HTML خام أو code fences من رسائل الملفات
-- عرض النص الملخص فقط داخل المحادثة
-- نقل الناتج الكامل للبريفيو فقط
-- تحسين بطاقة المعاينة بحيث تصبح تمثيلاً نظيفاً للملف بدلاً من iframe بدائي
+**SVG Liquid Glass Filter** (يُضاف في `index.html`):
+```html
+<svg style="display:none">
+  <filter id="liquid-glass-distort">
+    <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="2" seed="92" result="noise"/>
+    <feGaussianBlur in="noise" stdDeviation="2" result="blurred"/>
+    <feDisplacementMap in="SourceGraphic" in2="blurred" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+```
 
-### 7) تحسين ResearchFlow وخطوات الوكيل
-**في `ResearchFlow.tsx`**
-- استخدام نجمة البراند بشكل مطابق أكثر لصفحة الشات
-- نصوص حقيقية مبنية على حالة الوكيل
-- أنيميشن دخول متدرج
-- active/completed states بأسلوب iOS
-- عرض أقرب لـ live activity بدل loader تقليدي
+**CSS Classes المحدّثة** — كل class سيحصل على:
+- **Specular highlight**: `::before` مع `linear-gradient(135deg, rgba(255,255,255,0.35) 0%, transparent 50%)`
+- **Multi-layer shadows**: 4 طبقات ظل (inner top light + inner bottom dark + medium spread + soft glow)
+- **Higher blur**: `blur(100px) saturate(2.5)` للـ milk glass
+- **Rounded corners**: CSS variable `--glass-radius: 28px`
+- **Active state**: `scale(0.94)` مع `transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1)` (spring overshoot)
 
-### 8) توحيد قائمة + في الشات والملفات
-الصور أوضحت الشكل المطلوب:
-- قائمة floating حليبية
-- عناصر كبيرة قابلة للمس
-- أيقونات واضحة
-- spacing أنظف
-- blur أقوى
-- ظل ناعم
-- فتح وإغلاق بانزلاق/scale ناعم
+إضافة classes جديدة:
+- `.liquid-glass-card` — بطاقات كبيرة مع specular + shadow lift
+- `.liquid-glass-menu` — قوائم عائمة مع `filter: url(#liquid-glass-distort)` + stagger
+- `.liquid-glass-input` — مربعات إدخال بحواف لمعان
+- `.liquid-glass-segment` — segmented control بخلفية زجاجية
+- `.ios-spring-bounce` — `@keyframes` مع overshoot طبيعي
 
-وسيتم توحيد نفس اللغة البصرية في:
-- `ChatPage`
-- `FilesPage`
-- `AnimatedInput`
-- `FilesInputBar`
+### 2. تحديث صفحة الشات (`ChatPage.tsx` + `AnimatedInput.tsx` + `ChatMessage.tsx`)
 
-### 9) إصلاح Preview على الهاتف
-**في `FilePreviewPanel.tsx`**
-سأحسن العرض على الهاتف لأن المشكلة الحالية معروفة:
-- iframe لا يملأ التجربة بشكل مثالي
-- بعض الملفات لا تبدو كاملة
-- الأزرار العائمة تحتاج إعادة تموضع
+- الهيدر: `liquid-glass-subtle` + `rounded-[28px]` margin
+- أزرار القائمة: `liquid-glass-button` + `rounded-2xl` + `active:scale-[0.94]`
+- DropdownMenu: `liquid-glass-menu` + `rounded-[22px]`
+- حالة الشاشة الفارغة: أزرار Photos/Files/Videos → `liquid-glass-card` + stagger animation
+- قائمة +: `liquid-glass-milk` + `rounded-[28px]` + عناصر `liquid-glass-card`
+- مربع الإدخال: `liquid-glass-input` + specular highlight
+- زر الإرسال: `rounded-2xl` + spring press
+- فقاعات الرسائل: `liquid-glass-subtle` + `rounded-[22px]`
+- أزرار النسخ/الإعجاب: `liquid-glass-button` + `rounded-xl`
 
-الخطة:
-- تحسين الـ viewport injection
-- إضافة wrapper ذكي للعرض
-- دعم scale fit للمحتوى الطويل
-- تحسين الحواف والأزرار العائمة
-- جعل تجربة المعاينة أقرب لورقة/لوحة زجاجية كاملة على الهاتف
+### 3. تحديث صفحة الملفات (`FilesPage.tsx`)
 
-### 10) الحفاظ على القيود التي طلبتها سابقاً
-سأراعي أثناء التنفيذ:
-- لا اختراع محتوى من عند النظام إلا إذا طلب المستخدم
-- لا تلخيص إلا إذا طلب المستخدم
-- الملف ليس موقعاً، فلا هيدر/أزرار داخل الملف نفسه
-- إزالة أي عناصر غير مرتبطة مثل Search داخل Preview إن وجدت
-- الإبقاء على سلوك Enter في الموبايل كسطر جديد
+- Plan|Work toggle: `liquid-glass-segment` + `layoutId` spring indicator
+- مربع الإدخال الخارجي والداخلي: `liquid-glass-input` + `rounded-[28px]`
+- أزرار الخدمات: `liquid-glass-card` + `whileTap={{ scale: 0.94 }}`
+- بطاقات Recent: `liquid-glass-card` + `rounded-[22px]` + hover lift
+- قائمة +: `liquid-glass-menu` + stagger entry
+- بطاقة Thumbnail: `liquid-glass-card` + `rounded-[22px]`
+- زر Preview العائم: `liquid-glass-pill` + spring press
 
-## الملفات التي سأعدلها
-- `src/index.css`
-- `src/pages/ChatPage.tsx`
-- `src/components/AnimatedInput.tsx`
-- `src/components/ChatMessage.tsx`
-- `src/pages/FilesPage.tsx`
-- `src/components/files/FilesInputBar.tsx`
-- `src/components/files/FilePreviewPanel.tsx`
-- `src/components/files/ResearchFlow.tsx`
+### 4. تحديث FilePreviewPanel + ResearchFlow
 
-## النتيجة النهائية المتوقعة
-- الشات والملفات سيبدوان كجيل جديد بالكامل، لا كنسخة من الواجهة القديمة
-- نفس روح الصور المرجعية: زجاج iOS 26 الحقيقي + حركة ناعمة + لمس احترافي
-- زر Plan | Work سيعمل فعلاً وليس شكلياً
-- وضع Work لن ينتهي برد شات عادي بعد الآن
-- صفحة الملفات ستعود وكيلة ذكية تنشئ ملفات مع Preview واضح ومنطقي
+- أزرار عائمة: `liquid-glass-card` + spring animation
+- خطوات البحث: specular highlight على النجمة النشطة
+- تحسين mobile viewport
 
-## ملاحظة تقنية مهمة
-تنفيذ هذا الطلب يحتاج تعديل فعلي على عدة ملفات وتجربة بصرية دقيقة على الهاتف، لذلك عند الموافقة سأبدأ بتنفيذ إعادة التصميم والمنطق معاً كحزمة واحدة حتى لا يخرج الشكل الجديد بدون إصلاحات العمل، أو العكس.
+### 5. إضافة SVG filter في `index.html`
+
+- فلتر SVG مخفي للـ displacement mapping
+- يستخدمه `.liquid-glass-menu` وعناصر أخرى
+
+### 6. إصلاح منطق Plan/Work + الأسئلة الذكية + Conversational Editing
+
+(كما في الخطة السابقة المعتمدة — بدون تغيير)
+
+---
+
+## الملفات المتأثرة
+
+| الملف | التغيير |
+|-------|---------|
+| `index.html` | إضافة SVG filter مخفي |
+| `src/index.css` | نظام iOS 26 كامل مع specular + displacement + spring |
+| `src/pages/ChatPage.tsx` | تحديث كل العناصر بالـ classes الجديدة |
+| `src/pages/FilesPage.tsx` | تحديث UI + Plan/Work + منطق التوليد |
+| `src/components/AnimatedInput.tsx` | تصميم زجاجي + spring press |
+| `src/components/ChatMessage.tsx` | فقاعات وأزرار iOS 26 |
+| `src/components/files/FilePreviewPanel.tsx` | أزرار + mobile fix |
+| `src/components/files/ResearchFlow.tsx` | تحسين animations |
+
+---
+
+## الفرق الجوهري عن النسخة الحالية
+
+| العنصر | الحالي | الجديد |
+|--------|--------|--------|
+| Blur | `60px` | `100px` + `saturate(2.5)` |
+| Specular | خط واحد `inset 0 0.5px` | `::before` gradient overlay + inner glow |
+| Distortion | لا يوجد | SVG `feDisplacementMap` على القوائم |
+| Press | `scale(0.97)` CSS | `scale(0.94)` مع spring overshoot curve |
+| Corners | `rounded-3xl` (~24px) | `rounded-[28px]` |
+| Shadows | 2 طبقات | 4 طبقات (inner top + inner bottom + medium + soft) |
+| Menu animation | بدون | Stagger + scale + opacity + spring |
+
