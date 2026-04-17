@@ -110,9 +110,9 @@ Respond in the same language as the subjects.`;
 
         <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-8">
           {!generated ? (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-md mx-auto py-6 space-y-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl mx-auto py-6 space-y-6">
               <div className="text-center mb-6">
-                <h2 className="font-display text-3xl font-black tracking-tight mb-2">
+                <h2 className="font-display text-3xl md:text-4xl font-black tracking-tight mb-2">
                   <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">Your Study Plan</span>
                 </h2>
                 <p className="text-muted-foreground/60 text-sm">AI creates a personalized plan based on your goals</p>
@@ -123,23 +123,25 @@ Respond in the same language as the subjects.`;
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subjects *</label>
                   <input value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="e.g. Math, Physics, Chemistry" className="w-full h-12 rounded-2xl liquid-glass px-4 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none" />
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Exam Date</label>
-                  <input type="date" value={examDate} onChange={e => setExamDate(e.target.value)} className="w-full h-12 rounded-2xl liquid-glass px-4 text-sm text-foreground outline-none" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-2 block">Hours per Day</label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 6].map(h => (
-                      <motion.button key={h} whileTap={{ scale: 0.95 }} onClick={() => setHoursPerDay(h)} className={`flex-1 py-2.5 rounded-xl text-xs font-medium transition-all ${hoursPerDay === h ? "bg-primary text-primary-foreground" : "liquid-glass-button text-foreground/70"}`}>{h}h</motion.button>
-                    ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Exam Date</label>
+                    <input type="date" value={examDate} onChange={e => setExamDate(e.target.value)} className="w-full h-12 rounded-2xl liquid-glass px-4 text-sm text-foreground outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-2 block">Hours per Day</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 4, 6].map(h => (
+                        <motion.button key={h} whileTap={{ scale: 0.95 }} onClick={() => setHoursPerDay(h)} className={`flex-1 min-w-[44px] py-2.5 rounded-xl text-xs font-medium transition-all ${hoursPerDay === h ? "bg-primary text-primary-foreground" : "liquid-glass-button text-foreground/70"}`}>{h}h</motion.button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-2 block">Level</label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {(["beginner", "intermediate", "advanced"] as const).map(l => (
-                      <motion.button key={l} whileTap={{ scale: 0.95 }} onClick={() => setLevel(l)} className={`flex-1 py-2.5 rounded-xl text-xs font-medium capitalize transition-all ${level === l ? "bg-primary text-primary-foreground" : "liquid-glass-button text-foreground/70"}`}>{l}</motion.button>
+                      <motion.button key={l} whileTap={{ scale: 0.95 }} onClick={() => setLevel(l)} className={`w-full py-2.5 rounded-xl text-xs font-medium capitalize transition-all truncate ${level === l ? "bg-primary text-primary-foreground" : "liquid-glass-button text-foreground/70"}`}>{l}</motion.button>
                     ))}
                   </div>
                 </div>

@@ -2,18 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
-  Menu, Plus, X, Globe, ArrowUp, Square, Image as ImageIcon, FileUp, Camera,
-  Search, Brain, GitCompare, FileText, CheckCircle2, MoreVertical, Download, Share2, Eye,
+  Menu, Plus, X, ArrowUp, Square, Image as ImageIcon, FileUp, Camera,
+  ChevronDown, MoreHorizontal, Download, Share2, FileText, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
-import ChatMessage from "@/components/ChatMessage";
 import { streamChat } from "@/lib/streamChat";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -21,31 +17,32 @@ import {
 interface TimelineStep {
   id: string;
   label: string;
+  detail: string;
   status: "active" | "done";
-  icon: typeof Search;
-  detail?: string;
   ts: number;
 }
 
 interface ResearchSession {
+  id: string;
   query: string;
   steps: TimelineStep[];
   images: string[];
   report: string;
+  expandedStep: string | null;
 }
 
 const RESEARCH_PROMPT =
-  "You are a Deep Research agent. Reply in the user's exact language. " +
-  "Produce a thorough, well-structured report with: Executive Summary, Key Findings, Sources, Conclusion. " +
-  "Use markdown headings, bullets, and tables where useful.";
+  "You are a Deep Research agent. CRITICAL: Reply in the user's exact language and dialect. " +
+  "Produce a clean, well-structured final report with: # Title, ## Introduction, ## Key Findings (with subsections), ## Analysis, ## Conclusion. " +
+  "Use markdown headings, bullets, and tables. NEVER expose internal thinking, plans, tool calls, or reasoning — only the final polished report.";
 
-const stepFromStatus = (s: string): { label: string; icon: typeof Search } => {
+const labelFromStatus = (s: string): string => {
   const l = s.toLowerCase();
-  if (/search|gathering|browsing|opening|navigat/i.test(l)) return { label: "Searching the web", icon: Search };
-  if (/analyz|reviewing|reading/i.test(l)) return { label: "Analyzing sources", icon: Brain };
-  if (/compar/i.test(l)) return { label: "Comparing findings", icon: GitCompare };
-  if (/writing|summar|report/i.test(l)) return { label: "Writing the report", icon: FileText };
-  return { label: "Working", icon: Brain };
+  if (/search|gathering|browsing|opening|navigat/i.test(l)) return "Searching the web";
+  if (/analyz|reviewing|reading/i.test(l)) return "Analyzing sources";
+  if (/compar/i.test(l)) return "Comparing findings";
+  if (/writing|summar|report|composing/i.test(l)) return "Writing the report";
+  return "Working on it";
 };
 
 const DeepResearchPage = () => {
@@ -56,7 +53,6 @@ const DeepResearchPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
-  const [previewOpen, setPreviewOpen] = useState<number | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +68,13 @@ const DeepResearchPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [sessions, isLoading]);
+
+  // Persist completed reports in sessionStorage so the preview route can read them
+  useEffect(() => {
+    if (sessions.length > 0) {
+      sessionStorage.setItem("dr_sessions", JSON.stringify(sessions));
+    }
+  }, [sessions]);
 
   const handleFile = useCallback((files: FileList | null, kind: "image" | "file") => {
     if (!files) return;
@@ -98,7 +101,10 @@ const DeepResearchPage = () => {
     if (!input.trim()) return;
     if (isLoading) return;
 
-    const newSession: ResearchSession = { query: input.trim(), steps: [], images: [], report: "" };
+    const sid = `dr-${Date.now()}`;
+    const newSession: ResearchSession = {
+      id: sid, query: input.trim(), steps: [], images: [], report: "", expandedStep: null,
+    };
     setSessions((s) => [...s, newSession]);
     const sentInput = input;
     setInput("");
@@ -116,31 +122,35 @@ const DeepResearchPage = () => {
 
     await streamChat({
       messages: apiMessages as any,
-      model: "google/gemini-2.5-flash-lite-preview-09-2025",
+      model: "moonshotai/kimi-k2.5:nitro",
       chatMode: "deep-research",
       deepResearch: true,
       searchEnabled: true,
       user_id: userId ?? undefined,
       signal: ac.signal,
       onStatus: (st) => {
-        const meta = stepFromStatus(st);
+        const label = labelFromStatus(st);
         updateLastSession((s) => {
           const last = s.steps[s.steps.length - 1];
-          if (last && last.label === meta.label) return s;
+          if (last && last.label === label) {
+            // Append detail to existing active step
+            const copy = [...s.steps];
+            copy[copy.length - 1] = { ...last, detail: (last.detail ? last.detail + "\n" : "") + st };
+            return { ...s, steps: copy };
+          }
           const updated: TimelineStep[] = s.steps.map((x) => ({ ...x, status: "done" }));
           updated.push({
             id: `${Date.now()}-${updated.length}`,
-            label: meta.label,
-            icon: meta.icon,
-            status: "active",
+            label,
             detail: st,
+            status: "active",
             ts: Date.now(),
           });
-          return { ...s, steps: updated };
+          return { ...s, steps: updated, expandedStep: updated[updated.length - 1].id };
         });
       },
       onImages: (imgs) => {
-        updateLastSession((s) => ({ ...s, images: imgs.slice(0, 12) }));
+        updateLastSession((s) => ({ ...s, images: imgs.slice(0, 20) }));
       },
       onDelta: (d) => {
         reportBuf += d;
@@ -150,6 +160,7 @@ const DeepResearchPage = () => {
         updateLastSession((s) => ({
           ...s,
           steps: s.steps.map((x) => ({ ...x, status: "done" as const })),
+          expandedStep: null,
         }));
         setIsLoading(false);
         abortRef.current = null;
@@ -160,12 +171,12 @@ const DeepResearchPage = () => {
 
   const stop = () => { abortRef.current?.abort(); setIsLoading(false); };
 
-  const downloadPdf = (s: ResearchSession) => {
+  const downloadReport = (s: ResearchSession) => {
     const blob = new Blob([`# ${s.query}\n\n${s.report}`], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `research-${Date.now()}.md`;
+    a.download = `${s.query.slice(0, 40).replace(/[^a-z0-9]/gi, "-")}.md`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Downloaded");
@@ -181,11 +192,32 @@ const DeepResearchPage = () => {
     }
   };
 
+  const openPreview = (s: ResearchSession) => {
+    sessionStorage.setItem(`dr_report_${s.id}`, JSON.stringify({ query: s.query, report: s.report, images: s.images }));
+    navigate(`/research/preview/${s.id}`);
+  };
+
+  const toggleStep = (sIdx: number, stepId: string) => {
+    setSessions((arr) => {
+      const copy = [...arr];
+      copy[sIdx] = { ...copy[sIdx], expandedStep: copy[sIdx].expandedStep === stepId ? null : stepId };
+      return copy;
+    });
+  };
+
   const hasResults = sessions.length > 0;
+
+  // Click-anywhere closes plus menu
+  useEffect(() => {
+    if (!plusOpen) return;
+    const close = () => setPlusOpen(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [plusOpen]);
 
   return (
     <AppLayout>
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => navigate("/")} />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => navigate("/")} currentMode="research" />
 
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFile(e.target.files, "file")} />
       <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFile(e.target.files, "image")} />
@@ -207,14 +239,6 @@ const DeepResearchPage = () => {
 
         {!hasResults ? (
           <div className="relative z-10 mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center px-5 py-24 text-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/5 px-4 py-1.5 backdrop-blur-xl"
-            >
-              <Globe className="h-3.5 w-3.5 text-violet-400" />
-              <span className="text-xs font-medium text-violet-300">Deep Research</span>
-            </motion.div>
-
             <motion.h1
               initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.1 }}
@@ -223,7 +247,6 @@ const DeepResearchPage = () => {
               RESEARCH <span className="bg-gradient-to-r from-violet-400 to-indigo-500 bg-clip-text text-transparent">DEEP.</span>
               <br />KNOW MORE.
             </motion.h1>
-
             <motion.p
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -233,107 +256,101 @@ const DeepResearchPage = () => {
             </motion.p>
           </div>
         ) : (
-          <div className="relative z-10 mx-auto max-w-3xl px-4 pb-48 pt-20 space-y-6">
+          <div className="relative z-10 mx-auto max-w-2xl px-4 pb-48 pt-20 space-y-8">
             {sessions.map((s, idx) => {
               const isLast = idx === sessions.length - 1;
               const isActive = isLast && isLoading;
               return (
-                <div key={idx} className="space-y-3">
-                  {/* Query */}
-                  <ChatMessage role="user" content={s.query} />
-
-                  {/* Live Timeline */}
-                  <div className="rounded-3xl border border-white/10 bg-background/40 p-4 backdrop-blur-xl">
-                    <div className="mb-3 flex items-center gap-2">
-                      <div className="relative">
-                        <div className={`h-2 w-2 rounded-full ${isActive ? "bg-violet-400" : "bg-emerald-400"}`} />
-                        {isActive && <div className="absolute inset-0 h-2 w-2 rounded-full bg-violet-400 animate-ping" />}
-                      </div>
-                      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {isActive ? "Researching live" : "Research complete"}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {s.steps.map((step) => {
-                        const Icon = step.icon;
-                        const isStepActive = step.status === "active";
-                        return (
-                          <motion.div
-                            key={step.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="flex items-center gap-3 text-sm"
-                          >
-                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                              isStepActive ? "bg-violet-500/20 text-violet-300" : "bg-emerald-500/15 text-emerald-300"
-                            }`}>
-                              {isStepActive ? <Icon className="h-4 w-4 animate-pulse" /> : <CheckCircle2 className="h-4 w-4" />}
-                            </div>
-                            <span className={isStepActive ? "text-foreground" : "text-muted-foreground"}>{step.label}</span>
-                            {isStepActive && (
-                              <span className="ml-auto text-[10px] text-violet-400">in progress</span>
-                            )}
-                          </motion.div>
-                        );
-                      })}
-                      {isActive && s.steps.length === 0 && (
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <div className="h-8 w-8 rounded-full bg-violet-500/20 flex items-center justify-center">
-                            <Search className="h-4 w-4 animate-pulse text-violet-300" />
-                          </div>
-                          <span>Starting research...</span>
-                        </div>
-                      )}
+                <div key={s.id} className="space-y-4">
+                  {/* User query as plain text right-aligned */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] rounded-3xl bg-foreground/5 px-4 py-2.5 text-sm text-foreground">
+                      {s.query}
                     </div>
                   </div>
 
-                  {/* Images grid */}
-                  {s.images.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                      {s.images.map((img, j) => (
-                        <a key={j} href={img} target="_blank" rel="noopener noreferrer" className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/5">
-                          <img src={img} alt="" className="h-full w-full object-cover transition hover:scale-110" loading="lazy" />
-                        </a>
-                      ))}
-                    </div>
-                  )}
+                  {/* Live timeline — Manus-style with star icon and collapsible details */}
+                  <div className="space-y-1.5">
+                    {s.steps.map((step) => {
+                      const isStepActive = step.status === "active";
+                      const isExpanded = s.expandedStep === step.id;
+                      return (
+                        <div key={step.id}>
+                          <button
+                            onClick={() => toggleStep(idx, step.id)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-full hover:bg-foreground/5 transition text-left"
+                          >
+                            {/* Single star icon — our brand */}
+                            <div className={`shrink-0 ${isStepActive ? "text-violet-400" : "text-emerald-400/70"}`}>
+                              <Sparkles className={`h-4 w-4 ${isStepActive ? "animate-pulse" : ""}`} />
+                            </div>
+                            <span className={`flex-1 text-sm truncate ${isStepActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                              {step.label}
+                            </span>
+                            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/60 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                          </button>
+                          <AnimatePresence initial={false}>
+                            {isExpanded && step.detail && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="ml-9 mr-3 my-1 px-4 py-3 rounded-2xl bg-foreground/[0.03] border border-foreground/5 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                  {step.detail}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                    {isActive && s.steps.length === 0 && (
+                      <div className="flex items-center gap-2.5 px-3 py-2">
+                        <Sparkles className="h-4 w-4 text-violet-400 animate-pulse" />
+                        <span className="text-sm text-muted-foreground">Starting research…</span>
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Report Preview Card */}
+                  {/* Report card — clean, no icons except subtle FileText, three-dot menu */}
                   {s.report && (
-                    <div className="relative rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/10 to-indigo-500/5 backdrop-blur-xl overflow-hidden">
+                    <div className="relative rounded-3xl border border-foreground/10 bg-background/60 backdrop-blur-xl overflow-hidden">
                       <button
-                        onClick={() => setPreviewOpen(idx)}
-                        className="block w-full p-5 text-left transition hover:bg-white/5"
+                        onClick={() => openPreview(s)}
+                        className="block w-full p-4 text-left transition hover:bg-foreground/[0.03]"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600">
-                            <FileText className="h-5 w-5 text-white" />
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
+                            <FileText className="h-5 w-5 text-blue-400" />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-display text-base font-bold text-foreground">Research Report</h3>
-                            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{s.query}</p>
-                            <p className="mt-2 line-clamp-3 text-xs text-foreground/70 leading-relaxed">
-                              {s.report.slice(0, 240).replace(/[#*`]/g, "")}...
+                          <div className="flex-1 min-w-0 pr-8">
+                            <h3 className="text-sm font-semibold text-foreground truncate">{s.query}</h3>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              Markdown · {(s.report.length / 1024).toFixed(1)} KB
                             </p>
-                            <div className="mt-3 flex items-center gap-2 text-[11px] text-violet-300">
-                              <Eye className="h-3 w-3" />
-                              <span>Open full report</span>
-                            </div>
+                            <p className="mt-2.5 line-clamp-3 text-xs text-foreground/60 leading-relaxed">
+                              {s.report.slice(0, 260).replace(/[#*`>]/g, "").trim()}
+                            </p>
                           </div>
                         </div>
                       </button>
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/10 transition">
-                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full hover:bg-foreground/10 transition"
+                          >
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-background/90 backdrop-blur-2xl border-white/10">
-                          <DropdownMenuItem onClick={() => downloadPdf(s)}>
-                            <Download className="mr-2 h-4 w-4" /> Download
+                        <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-2xl border-foreground/10 rounded-2xl">
+                          <DropdownMenuItem onClick={() => downloadReport(s)} className="rounded-xl">
+                            <Download className="mr-2 h-4 w-4" /> Download as PDF
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => share(s)}>
+                          <DropdownMenuItem onClick={() => share(s)} className="rounded-xl">
                             <Share2 className="mr-2 h-4 w-4" /> Share
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -347,22 +364,6 @@ const DeepResearchPage = () => {
           </div>
         )}
 
-        {/* Report Preview Dialog */}
-        <Dialog open={previewOpen !== null} onOpenChange={(o) => !o && setPreviewOpen(null)}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-background/95 backdrop-blur-2xl border-white/10">
-            <DialogHeader>
-              <DialogTitle className="font-display text-xl">
-                {previewOpen !== null && sessions[previewOpen]?.query}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="prose prose-invert prose-sm max-w-none">
-              {previewOpen !== null && (
-                <ChatMessage role="assistant" content={sessions[previewOpen].report} />
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
         {/* Input bar */}
         <div className="fixed bottom-0 left-0 right-0 z-40 px-3 pb-4 pt-2 pointer-events-none">
           <div className="mx-auto max-w-3xl pointer-events-auto">
@@ -370,39 +371,37 @@ const DeepResearchPage = () => {
               <div className="flex items-end gap-2">
                 <div className="relative">
                   <button
-                    onClick={() => setPlusOpen((v) => !v)}
+                    onClick={(e) => { e.stopPropagation(); setPlusOpen((v) => !v); }}
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 transition hover:bg-white/10 ${plusOpen ? "rotate-45" : ""}`}
                   >
                     <Plus className="h-5 w-5 text-foreground" />
                   </button>
                   <AnimatePresence>
                     {plusOpen && (
-                      <>
-                        <div className="fixed inset-0 z-[45]" onClick={() => setPlusOpen(false)} />
-                        <motion.div
-                          initial={{ opacity: 0, y: 12, scale: 0.92 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 12, scale: 0.92 }}
-                          className="absolute bottom-full mb-2 left-0 z-[46] w-72 rounded-3xl border border-white/10 bg-background/80 p-3 backdrop-blur-2xl shadow-2xl"
-                        >
-                          <div className="grid grid-cols-3 gap-2">
-                            {[
-                              { ref: cameraInputRef, icon: Camera, label: "Camera" },
-                              { ref: imageInputRef, icon: ImageIcon, label: "Photos" },
-                              { ref: fileInputRef, icon: FileUp, label: "Files" },
-                            ].map(({ ref, icon: Icon, label }) => (
-                              <button
-                                key={label}
-                                onClick={() => { ref.current?.click(); setPlusOpen(false); }}
-                                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 transition"
-                              >
-                                <Icon className="w-5 h-5 text-violet-400" />
-                                <span className="text-[11px] text-foreground/80">{label}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </motion.div>
-                      </>
+                      <motion.div
+                        initial={{ opacity: 0, y: 12, scale: 0.92 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 12, scale: 0.92 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute bottom-full mb-2 left-0 z-[46] w-72 rounded-3xl border border-white/10 bg-background/80 p-3 backdrop-blur-2xl shadow-2xl"
+                      >
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { ref: cameraInputRef, icon: Camera, label: "Camera" },
+                            { ref: imageInputRef, icon: ImageIcon, label: "Photos" },
+                            { ref: fileInputRef, icon: FileUp, label: "Files" },
+                          ].map(({ ref, icon: Icon, label }) => (
+                            <button
+                              key={label}
+                              onClick={() => { ref.current?.click(); setPlusOpen(false); }}
+                              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 transition"
+                            >
+                              <Icon className="w-5 h-5 text-violet-400" />
+                              <span className="text-[11px] text-foreground/80">{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
