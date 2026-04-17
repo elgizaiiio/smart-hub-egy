@@ -77,6 +77,7 @@ const MemoryPage = lazy(() => import("./pages/MemoryPage"));
 const LearningModePage = lazy(() => import("./pages/LearningModePage"));
 const ShoppingModePage = lazy(() => import("./pages/ShoppingModePage"));
 const DeepResearchPage = lazy(() => import("./pages/DeepResearchPage"));
+const ResearchPreviewPage = lazy(() => import("./pages/ResearchPreviewPage"));
 const InpaintPage = lazy(() => import("./pages/tools/InpaintPage"));
 const ClothesChangerPage = lazy(() => import("./pages/tools/ClothesChangerPage"));
 const HeadshotPage = lazy(() => import("./pages/tools/HeadshotPage"));
@@ -271,6 +272,7 @@ const App = () => {
                   <Route path="/learning" element={<ProtectedRoute><LearningModePage /></ProtectedRoute>} />
                   <Route path="/shopping" element={<ProtectedRoute><ShoppingModePage /></ProtectedRoute>} />
                   <Route path="/research" element={<ProtectedRoute><DeepResearchPage /></ProtectedRoute>} />
+                  <Route path="/research/preview/:id" element={<ProtectedRoute><ResearchPreviewPage /></ProtectedRoute>} />
                   <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                   <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
