@@ -761,6 +761,8 @@ Ask me anything to get started!`;
                 transition={iosSpring}
                 onClick={() => {
                   if (mode === "learning") { navigate("/learning"); setPlusMenuOpen(false); return; }
+                  if (mode === "shopping") { navigate("/shopping"); setPlusMenuOpen(false); return; }
+                  if (mode === "deep-research") { navigate("/research"); setPlusMenuOpen(false); return; }
                   handleModeChange(mode);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ios-menu-item ${chatMode === mode ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}
