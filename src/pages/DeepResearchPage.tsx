@@ -126,9 +126,8 @@ const DeepResearchPage = () => {
         const meta = stepFromStatus(st);
         updateLastSession((s) => {
           const last = s.steps[s.steps.length - 1];
-          // mark previous as done
-          const updated = s.steps.map((x) => ({ ...x, status: "done" as const }));
           if (last && last.label === meta.label) return s;
+          const updated: TimelineStep[] = s.steps.map((x) => ({ ...x, status: "done" }));
           updated.push({
             id: `${Date.now()}-${updated.length}`,
             label: meta.label,
