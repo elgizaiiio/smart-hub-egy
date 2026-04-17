@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2 } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, NotebookPen, ClipboardList, CalendarDays, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -767,6 +767,32 @@ Ask me anything to get started!`;
               </motion.button>
             ))}
           </div>
+          {chatMode === "learning" && (
+            <div className="border-t border-border/15 mt-1 pt-1">
+              <p className="text-[10px] text-muted-foreground/50 uppercase px-3 py-1.5">Study tools</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { path: "/tools/smart-notes", icon: NotebookPen, label: "Smart Notes" },
+                  { path: "/tools/exam-simulator", icon: ClipboardList, label: "Exam Simulator" },
+                  { path: "/tools/study-planner", icon: CalendarDays, label: "Study Planner" },
+                  { path: "/tools/focus-room", icon: Timer, label: "Focus Room" },
+                ].map(({ path, icon: Icon, label }, i) => (
+                  <motion.button
+                    key={path}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...iosSpring, delay: i * 0.03 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => { navigate(path); setPlusMenuOpen(false); }}
+                    className="flex items-center gap-2 px-2.5 py-2.5 rounded-xl liquid-glass-hover transition-colors ios-menu-item"
+                  >
+                    <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-[11px] text-foreground/85 leading-tight">{label}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="border-t border-border/15 mt-1 pt-1">
             <motion.button
               whileTap={{ scale: 0.97 }}

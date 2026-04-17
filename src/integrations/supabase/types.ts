@@ -525,6 +525,42 @@ export type Database = {
         }
         Relationships: []
       }
+      focus_sessions: {
+        Row: {
+          actual_seconds: number
+          completed: boolean
+          created_at: string
+          ended_at: string | null
+          id: string
+          planned_minutes: number
+          status: string
+          task_name: string
+          user_id: string
+        }
+        Insert: {
+          actual_seconds?: number
+          completed?: boolean
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          planned_minutes?: number
+          status?: string
+          task_name: string
+          user_id: string
+        }
+        Update: {
+          actual_seconds?: number
+          completed?: boolean
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          planned_minutes?: number
+          status?: string
+          task_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generated_songs: {
         Row: {
           audio_url: string
@@ -1681,6 +1717,213 @@ export type Database = {
           contact?: string
           created_at?: string
           id?: string
+        }
+        Relationships: []
+      }
+      student_exams: {
+        Row: {
+          answers: Json
+          created_at: string
+          difficulty: string
+          duration_seconds: number
+          id: string
+          questions: Json
+          score: number
+          subject: string
+          topic: string | null
+          total_questions: number
+          user_id: string
+          weak_areas: Json
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          difficulty?: string
+          duration_seconds?: number
+          id?: string
+          questions?: Json
+          score?: number
+          subject: string
+          topic?: string | null
+          total_questions?: number
+          user_id: string
+          weak_areas?: Json
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          difficulty?: string
+          duration_seconds?: number
+          id?: string
+          questions?: Json
+          score?: number
+          subject?: string
+          topic?: string | null
+          total_questions?: number
+          user_id?: string
+          weak_areas?: Json
+        }
+        Relationships: []
+      }
+      student_mistakes: {
+        Row: {
+          concept: string
+          created_at: string
+          id: string
+          mistake_count: number
+          mistake_type: string
+          next_review_at: string
+          resolved: boolean
+          review_stage: number
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concept: string
+          created_at?: string
+          id?: string
+          mistake_count?: number
+          mistake_type?: string
+          next_review_at?: string
+          resolved?: boolean
+          review_stage?: number
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concept?: string
+          created_at?: string
+          id?: string
+          mistake_count?: number
+          mistake_type?: string
+          next_review_at?: string
+          resolved?: boolean
+          review_stage?: number
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      student_profiles: {
+        Row: {
+          age: number | null
+          country: string | null
+          created_at: string
+          id: string
+          learning_style: string | null
+          native_language: string | null
+          preferred_study_time: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          learning_style?: string | null
+          native_language?: string | null
+          preferred_study_time?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          learning_style?: string | null
+          native_language?: string | null
+          preferred_study_time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      student_topics: {
+        Row: {
+          created_at: string
+          curriculum_map: Json
+          id: string
+          last_position: string | null
+          last_studied_at: string | null
+          level: string
+          progress: number
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          curriculum_map?: Json
+          id?: string
+          last_position?: string | null
+          last_studied_at?: string | null
+          level?: string
+          progress?: number
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          curriculum_map?: Json
+          id?: string
+          last_position?: string | null
+          last_studied_at?: string | null
+          level?: string
+          progress?: number
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_plans: {
+        Row: {
+          created_at: string
+          exam_date: string | null
+          hours_per_day: number
+          id: string
+          is_active: boolean
+          level: string
+          plan_content: string
+          subjects: string
+          tasks: Json
+          updated_at: string
+          user_id: string
+          weak_areas: string | null
+        }
+        Insert: {
+          created_at?: string
+          exam_date?: string | null
+          hours_per_day?: number
+          id?: string
+          is_active?: boolean
+          level?: string
+          plan_content?: string
+          subjects: string
+          tasks?: Json
+          updated_at?: string
+          user_id: string
+          weak_areas?: string | null
+        }
+        Update: {
+          created_at?: string
+          exam_date?: string | null
+          hours_per_day?: number
+          id?: string
+          is_active?: boolean
+          level?: string
+          plan_content?: string
+          subjects?: string
+          tasks?: Json
+          updated_at?: string
+          user_id?: string
+          weak_areas?: string | null
         }
         Relationships: []
       }
