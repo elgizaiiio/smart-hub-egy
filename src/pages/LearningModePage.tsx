@@ -147,7 +147,7 @@ const LearningModePage = () => {
 
   return (
     <AppLayout>
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNewChat={() => navigate("/")} />
 
       {/* Hidden file inputs */}
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFile(e.target.files, "file")} />
