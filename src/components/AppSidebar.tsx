@@ -48,7 +48,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
     return THEME_PALETTES[Math.floor(Math.random() * THEME_PALETTES.length)];
   }, [open]);
 
-  const showRecent = currentMode === "chat" || currentMode === "files";
+  const showRecent = ["chat", "files", "learning", "shopping", "research"].includes(currentMode);
   const hideStudioAndHistory = ["images", "videos", "code"].includes(currentMode);
 
   useEffect(() => {
@@ -75,7 +75,8 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
   const loadConversations = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const modeFilter = currentMode === "code" ? "code" : currentMode === "images" ? "images" : currentMode === "videos" ? "videos" : currentMode === "files" ? "files" : "chat";
+    const validModes = ["code", "images", "videos", "files", "learning", "shopping", "research"];
+    const modeFilter = validModes.includes(currentMode) ? currentMode : "chat";
     const { data } = await supabase.from("conversations").select("id, title, updated_at, mode, is_pinned").eq("mode", modeFilter).eq("user_id", user.id).order("is_pinned", { ascending: false }).order("updated_at", { ascending: false }).limit(30);
     if (data) setConversations(data);
   };
