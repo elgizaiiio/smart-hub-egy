@@ -74,6 +74,7 @@ const VoiceStudioPage = lazy(() => import("./pages/voice/VoiceStudioPage"));
 const VideoToTextPage = lazy(() => import("./pages/tools/VideoToTextPage"));
 const AIPersonalizationPage = lazy(() => import("./pages/AIPersonalizationPage"));
 const MemoryPage = lazy(() => import("./pages/MemoryPage"));
+const LearningModePage = lazy(() => import("./pages/LearningModePage"));
 const InpaintPage = lazy(() => import("./pages/tools/InpaintPage"));
 const ClothesChangerPage = lazy(() => import("./pages/tools/ClothesChangerPage"));
 const HeadshotPage = lazy(() => import("./pages/tools/HeadshotPage"));
@@ -265,6 +266,7 @@ const App = () => {
                   <Route path="/tools/exam-simulator" element={<ProtectedRoute><ExamSimulatorPage /></ProtectedRoute>} />
                   <Route path="/tools/study-planner" element={<ProtectedRoute><StudyPlannerPage /></ProtectedRoute>} />
                   <Route path="/tools/focus-room" element={<ProtectedRoute><FocusRoomPage /></ProtectedRoute>} />
+                  <Route path="/learning" element={<ProtectedRoute><LearningModePage /></ProtectedRoute>} />
                   <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                   <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

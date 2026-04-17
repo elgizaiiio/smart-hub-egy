@@ -759,7 +759,10 @@ Ask me anything to get started!`;
                 key={mode}
                 whileTap={{ scale: 0.97 }}
                 transition={iosSpring}
-                onClick={() => handleModeChange(mode)}
+                onClick={() => {
+                  if (mode === "learning") { navigate("/learning"); setPlusMenuOpen(false); return; }
+                  handleModeChange(mode);
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ios-menu-item ${chatMode === mode ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}
               >
                 <span className="text-sm">{label}</span>
