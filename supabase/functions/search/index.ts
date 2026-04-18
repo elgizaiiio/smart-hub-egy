@@ -9,11 +9,33 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { query } = await req.json();
+    const { query, type = "web", limit = 8 } = await req.json();
     const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY");
     if (!SERPER_API_KEY) throw new Error("SERPER_API_KEY not configured");
 
-    // Parallel: web search + image search
+    // ── SHOPPING SEARCH ──
+    if (type === "shopping") {
+      const resp = await fetch("https://google.serper.dev/shopping", {
+        method: "POST",
+        headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ q: query, num: limit }),
+      });
+      const data = await resp.json();
+      const products = (data.shopping || []).slice(0, limit).map((p: any) => ({
+        title: p.title,
+        price: p.price || "—",
+        image: p.imageUrl,
+        link: p.link,
+        seller: p.source,
+        rating: p.rating ? `${p.rating}` : null,
+        delivery: p.delivery || null,
+      }));
+      return new Response(JSON.stringify({ products }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── WEB + IMAGE SEARCH (default) ──
     const [searchResp, imageResp] = await Promise.all([
       fetch("https://google.serper.dev/search", {
         method: "POST",
@@ -39,14 +61,12 @@ serve(async (req) => {
       ).join("\n\n");
     }
 
-    // Get images from dedicated image search
     if (imageData.images) {
       imageData.images.slice(0, 4).forEach((img: any) => {
         if (img.imageUrl) images.push(img.imageUrl);
       });
     }
 
-    // Fallback: also check inline images from web search
     if (data.images && images.length < 2) {
       data.images.forEach((img: any) => {
         if (img.imageUrl && !images.includes(img.imageUrl) && images.length < 4) {
@@ -66,7 +86,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("Search error:", e);
-    return new Response(JSON.stringify({ context: "", images: [] }), {
+    return new Response(JSON.stringify({ context: "", images: [], products: [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
