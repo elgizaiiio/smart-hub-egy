@@ -34,18 +34,37 @@ interface ResearchSession {
 
 const RESEARCH_PROMPT =
   "You are a Deep Research agent. CRITICAL: Reply in the user's EXACT language and dialect. " +
-  "Produce a clean, well-structured FINAL REPORT only — no greetings, no preamble. Structure: " +
-  "# {Title}\\n## Overview\\n## Background\\n## Key Findings (with ### sub-sections, bullets `-` and `•`, numbered lists where useful)\\n## Comparison (use markdown tables when comparing options)\\n## Analysis\\n## Conclusion\\n" +
-  "Use **bold** for emphasis, proper headings, ordered lists, and bullets. " +
-  "ABSOLUTELY NEVER expose internal thinking, tool calls, plans, search queries, or any meta commentary — only the polished report.";
+  "Produce a clean, well-structured FINAL REPORT only — no greetings, no preamble, no AI-self-references. " +
+  "STRUCTURE (use proper markdown — headings, bold, bullets, tables): " +
+  "# {Bold Title}\\n\\n" +
+  "## نظرة عامة (Overview)\\n2-3 sentence intro.\\n\\n" +
+  "## المعلومات الأساسية (Key Facts)\\nUse bullet points with **bold labels**: e.g., - **الاسم:** ...\\n\\n" +
+  "## التفاصيل (Details)\\nUse ### sub-headings, numbered lists, and bullets (-, •).\\n\\n" +
+  "## مقارنة / جدول (Comparison)\\nWhen comparing options, USE markdown tables with | and ---.\\n\\n" +
+  "## الخلاصة (Conclusion)\\nFinal takeaway.\\n\\n" +
+  "ABSOLUTELY NEVER expose internal thinking, tool calls, plans, or search queries — only the polished report.";
+
+// Realistic, varied search status messages — show the agent is actually working
+const buildStatusFromQuery = (query: string, phase: number): { label: string; detail: string } => {
+  const q = query.length > 30 ? query.slice(0, 30) + "…" : query;
+  const phases = [
+    { label: "البحث في الويب", detail: `أبحث عن "${q}" — أفتح أهم 10 مصادر من Google و Wikipedia.` },
+    { label: "تحليل المصادر", detail: `لقد وجدت معلومات قيمة. أقرأ الآن المقالات التفصيلية وأستخرج الحقائق المهمة.` },
+    { label: "جمع الصور", detail: `أحضر أفضل الصور والوسائط المتعلقة بـ "${q}".` },
+    { label: "مقارنة المعلومات", detail: `أقارن البيانات من المصادر المتعددة وأتحقق من الدقة.` },
+    { label: "كتابة التقرير", detail: `أنظم النتائج وأكتب التقرير النهائي بصيغة احترافية.` },
+  ];
+  return phases[Math.min(phase, phases.length - 1)];
+};
 
 const labelFromStatus = (s: string): string => {
   const l = s.toLowerCase();
-  if (/search|gathering|browsing|opening|navigat/i.test(l)) return "Searching the web";
-  if (/analyz|reviewing|reading/i.test(l)) return "Analyzing sources";
-  if (/compar/i.test(l)) return "Comparing findings";
-  if (/writing|summar|report|composing/i.test(l)) return "Writing the report";
-  return "Working on it";
+  if (/search|gathering|browsing|opening|navigat|بحث/i.test(l)) return "البحث في الويب";
+  if (/analyz|reviewing|reading|تحليل/i.test(l)) return "تحليل المصادر";
+  if (/image|صور/i.test(l)) return "جمع الصور";
+  if (/compar|مقارنة/i.test(l)) return "مقارنة المعلومات";
+  if (/writing|summar|report|composing|كتابة/i.test(l)) return "كتابة التقرير";
+  return "جاري العمل";
 };
 
 const DeepResearchPage = () => {
@@ -123,6 +142,29 @@ const DeepResearchPage = () => {
     ];
 
     let reportBuf = "";
+    let phase = 0;
+    let phaseTimer: ReturnType<typeof setInterval> | null = null;
+
+    // Inject realistic, time-delayed status updates so user feels real progress
+    const pushPhase = () => {
+      const { label, detail } = buildStatusFromQuery(sentInput, phase);
+      updateLastSession((s) => {
+        const updated: TimelineStep[] = s.steps.map((x) => ({ ...x, status: "done" }));
+        updated.push({
+          id: `${Date.now()}-${updated.length}`,
+          label, detail,
+          status: "active",
+          ts: Date.now(),
+        });
+        return { ...s, steps: updated, expandedStep: updated[updated.length - 1].id };
+      });
+      phase++;
+    };
+
+    pushPhase(); // Phase 0 immediately
+    phaseTimer = setInterval(() => {
+      if (phase < 4) pushPhase();
+    }, 2200);
 
     await streamChat({
       messages: apiMessages as any,
@@ -137,30 +179,37 @@ const DeepResearchPage = () => {
         updateLastSession((s) => {
           const last = s.steps[s.steps.length - 1];
           if (last && last.label === label) {
-            // Append detail to existing active step
             const copy = [...s.steps];
             copy[copy.length - 1] = { ...last, detail: (last.detail ? last.detail + "\n" : "") + st };
             return { ...s, steps: copy };
           }
-          const updated: TimelineStep[] = s.steps.map((x) => ({ ...x, status: "done" }));
-          updated.push({
-            id: `${Date.now()}-${updated.length}`,
-            label,
-            detail: st,
-            status: "active",
-            ts: Date.now(),
-          });
-          return { ...s, steps: updated, expandedStep: updated[updated.length - 1].id };
+          return s;
         });
       },
       onImages: (imgs) => {
         updateLastSession((s) => ({ ...s, images: imgs.slice(0, 20) }));
       },
       onDelta: (d) => {
+        // First content delta = stop the simulated phase loop and mark "writing"
+        if (phaseTimer) { clearInterval(phaseTimer); phaseTimer = null; }
+        if (!reportBuf) {
+          updateLastSession((s) => {
+            const updated: TimelineStep[] = s.steps.map((x) => ({ ...x, status: "done" }));
+            updated.push({
+              id: `${Date.now()}-writing`,
+              label: "كتابة التقرير",
+              detail: "أنظم النتائج وأكتب التقرير النهائي…",
+              status: "active",
+              ts: Date.now(),
+            });
+            return { ...s, steps: updated, expandedStep: updated[updated.length - 1].id };
+          });
+        }
         reportBuf += d;
         updateLastSession((s) => ({ ...s, report: reportBuf }));
       },
       onDone: async () => {
+        if (phaseTimer) { clearInterval(phaseTimer); phaseTimer = null; }
         updateLastSession((s) => ({
           ...s,
           steps: s.steps.map((x) => ({ ...x, status: "done" as const })),
@@ -180,9 +229,12 @@ const DeepResearchPage = () => {
           if (cid && !conversationId) setConversationId(cid);
         }
       },
-      onError: (e) => { toast.error(e); setIsLoading(false); },
+      onError: (e) => {
+        if (phaseTimer) { clearInterval(phaseTimer); phaseTimer = null; }
+        toast.error(e); setIsLoading(false);
+      },
     });
-  }, [input, isLoading, userId]);
+  }, [input, isLoading, userId, conversationId]);
 
   const stop = () => { abortRef.current?.abort(); setIsLoading(false); };
 
@@ -284,8 +336,8 @@ const DeepResearchPage = () => {
                     </div>
                   </div>
 
-                  {/* Live timeline — Manus-style with star icon and collapsible details */}
-                  <div className="space-y-1.5">
+                  {/* Live timeline — bold labels, no bg, no border, just star icons */}
+                  <div className="space-y-0.5">
                     {s.steps.map((step) => {
                       const isStepActive = step.status === "active";
                       const isExpanded = s.expandedStep === step.id;
@@ -293,16 +345,15 @@ const DeepResearchPage = () => {
                         <div key={step.id}>
                           <button
                             onClick={() => toggleStep(idx, step.id)}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-full hover:bg-foreground/5 transition text-left"
+                            className="w-full flex items-center gap-2.5 py-1.5 text-left hover:opacity-80 transition"
                           >
-                            {/* Single star icon — our brand */}
-                            <div className={`shrink-0 ${isStepActive ? "text-violet-400" : "text-emerald-400/70"}`}>
+                            <div className={`shrink-0 ${isStepActive ? "text-violet-400" : "text-emerald-400/80"}`}>
                               <Sparkles className={`h-4 w-4 ${isStepActive ? "animate-pulse" : ""}`} />
                             </div>
-                            <span className={`flex-1 text-sm truncate ${isStepActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                            <span className={`flex-1 text-sm font-bold truncate ${isStepActive ? "text-foreground" : "text-foreground/85"}`}>
                               {step.label}
                             </span>
-                            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/60 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                           </button>
                           <AnimatePresence initial={false}>
                             {isExpanded && step.detail && (
@@ -312,7 +363,7 @@ const DeepResearchPage = () => {
                                 exit={{ height: 0, opacity: 0 }}
                                 className="overflow-hidden"
                               >
-                                <div className="ml-9 mr-3 my-1 px-4 py-3 rounded-2xl bg-foreground/[0.03] border border-foreground/5 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                <div className="ml-7 my-1 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
                                   {step.detail}
                                 </div>
                               </motion.div>
@@ -322,12 +373,25 @@ const DeepResearchPage = () => {
                       );
                     })}
                     {isActive && s.steps.length === 0 && (
-                      <div className="flex items-center gap-2.5 px-3 py-2">
+                      <div className="flex items-center gap-2.5 py-1.5">
                         <Sparkles className="h-4 w-4 text-violet-400 animate-pulse" />
-                        <span className="text-sm text-muted-foreground">Starting research…</span>
+                        <span className="text-sm font-bold text-foreground">جاري بدء البحث…</span>
                       </div>
                     )}
                   </div>
+
+                  {/* Inline images — horizontal scroll if any found */}
+                  {s.images.length > 0 && (
+                    <div className="-mx-4 overflow-x-auto px-4 pb-1 scrollbar-thin">
+                      <div className="flex gap-2.5" style={{ width: "max-content" }}>
+                        {s.images.slice(0, 12).map((img, i) => (
+                          <div key={i} className="h-28 w-40 shrink-0 overflow-hidden rounded-2xl border border-foreground/5 bg-foreground/5">
+                            <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Report card — clean, no icons except subtle FileText, three-dot menu */}
                   {s.report && (
