@@ -160,7 +160,7 @@ const DeepResearchPage = () => {
         reportBuf += d;
         updateLastSession((s) => ({ ...s, report: reportBuf }));
       },
-      onDone: () => {
+      onDone: async () => {
         updateLastSession((s) => ({
           ...s,
           steps: s.steps.map((x) => ({ ...x, status: "done" as const })),
@@ -168,6 +168,17 @@ const DeepResearchPage = () => {
         }));
         setIsLoading(false);
         abortRef.current = null;
+        if (userId && reportBuf) {
+          const cid = await saveConversation({
+            conversationId, userId, mode: "research",
+            title: sentInput.slice(0, 60),
+            messages: [
+              { role: "user", content: sentInput },
+              { role: "assistant", content: reportBuf },
+            ],
+          });
+          if (cid && !conversationId) setConversationId(cid);
+        }
       },
       onError: (e) => { toast.error(e); setIsLoading(false); },
     });
