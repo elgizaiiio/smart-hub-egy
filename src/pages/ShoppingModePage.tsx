@@ -156,7 +156,21 @@ const ShoppingModePage = () => {
           return c;
         });
       },
-      onDone: () => { setIsLoading(false); abortRef.current = null; },
+      onDone: async () => {
+        setIsLoading(false);
+        abortRef.current = null;
+        if (userId) {
+          const cid = await saveConversation({
+            conversationId, userId, mode: "shopping",
+            title: sentInput.slice(0, 60),
+            messages: [
+              { role: "user", content: sentInput },
+              { role: "assistant", content: buf },
+            ],
+          });
+          if (cid && !conversationId) setConversationId(cid);
+        }
+      },
       onError: (e) => { toast.error(e); setIsLoading(false); },
     });
   }, [input, attachedFiles, isLoading, messages, userId]);
