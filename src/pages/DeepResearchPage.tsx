@@ -336,8 +336,8 @@ const DeepResearchPage = () => {
                     </div>
                   </div>
 
-                  {/* Live timeline — Manus-style with star icon and collapsible details */}
-                  <div className="space-y-1.5">
+                  {/* Live timeline — bold labels, no bg, no border, just star icons */}
+                  <div className="space-y-0.5">
                     {s.steps.map((step) => {
                       const isStepActive = step.status === "active";
                       const isExpanded = s.expandedStep === step.id;
@@ -345,16 +345,15 @@ const DeepResearchPage = () => {
                         <div key={step.id}>
                           <button
                             onClick={() => toggleStep(idx, step.id)}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-full hover:bg-foreground/5 transition text-left"
+                            className="w-full flex items-center gap-2.5 py-1.5 text-left hover:opacity-80 transition"
                           >
-                            {/* Single star icon — our brand */}
-                            <div className={`shrink-0 ${isStepActive ? "text-violet-400" : "text-emerald-400/70"}`}>
+                            <div className={`shrink-0 ${isStepActive ? "text-violet-400" : "text-emerald-400/80"}`}>
                               <Sparkles className={`h-4 w-4 ${isStepActive ? "animate-pulse" : ""}`} />
                             </div>
-                            <span className={`flex-1 text-sm truncate ${isStepActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                            <span className={`flex-1 text-sm font-bold truncate ${isStepActive ? "text-foreground" : "text-foreground/85"}`}>
                               {step.label}
                             </span>
-                            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/60 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                           </button>
                           <AnimatePresence initial={false}>
                             {isExpanded && step.detail && (
@@ -364,7 +363,7 @@ const DeepResearchPage = () => {
                                 exit={{ height: 0, opacity: 0 }}
                                 className="overflow-hidden"
                               >
-                                <div className="ml-9 mr-3 my-1 px-4 py-3 rounded-2xl bg-foreground/[0.03] border border-foreground/5 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                <div className="ml-7 my-1 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
                                   {step.detail}
                                 </div>
                               </motion.div>
@@ -374,12 +373,25 @@ const DeepResearchPage = () => {
                       );
                     })}
                     {isActive && s.steps.length === 0 && (
-                      <div className="flex items-center gap-2.5 px-3 py-2">
+                      <div className="flex items-center gap-2.5 py-1.5">
                         <Sparkles className="h-4 w-4 text-violet-400 animate-pulse" />
-                        <span className="text-sm text-muted-foreground">Starting research…</span>
+                        <span className="text-sm font-bold text-foreground">جاري بدء البحث…</span>
                       </div>
                     )}
                   </div>
+
+                  {/* Inline images — horizontal scroll if any found */}
+                  {s.images.length > 0 && (
+                    <div className="-mx-4 overflow-x-auto px-4 pb-1 scrollbar-thin">
+                      <div className="flex gap-2.5" style={{ width: "max-content" }}>
+                        {s.images.slice(0, 12).map((img, i) => (
+                          <div key={i} className="h-28 w-40 shrink-0 overflow-hidden rounded-2xl border border-foreground/5 bg-foreground/5">
+                            <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Report card — clean, no icons except subtle FileText, three-dot menu */}
                   {s.report && (
