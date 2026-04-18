@@ -91,7 +91,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-background/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[70] bg-background/50 backdrop-blur-sm"
             onClick={onClose}
           />
 
@@ -100,7 +100,7 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ type: "spring", damping: 28, stiffness: 350 }}
-            className="fixed left-0 top-0 bottom-0 z-50 w-[280px] flex flex-col overflow-hidden rounded-r-2xl"
+            className="fixed left-0 top-0 bottom-0 z-[80] w-[280px] flex flex-col overflow-hidden rounded-r-2xl"
             style={{ background: palette.bg }}
           >
             <div className="flex flex-col h-full">
