@@ -134,10 +134,28 @@ const LearningModePage = () => {
           return copy;
         });
       },
-      onDone: () => { setIsLoading(false); setIsThinking(false); abortRef.current = null; },
+      onDone: async () => {
+        setIsLoading(false);
+        setIsThinking(false);
+        abortRef.current = null;
+        // Save the user/assistant pair to the sidebar history
+        if (userId && assistantBuf) {
+          const newId = await saveConversation({
+            conversationId,
+            userId,
+            mode: "learning",
+            title: sentInput || "Learning chat",
+            messages: [
+              { role: "user", content: sentInput || "(attached files)", images: userMsg.attachedImages },
+              { role: "assistant", content: assistantBuf },
+            ],
+          });
+          if (newId && !conversationId) setConversationId(newId);
+        }
+      },
       onError: (e) => { toast.error(e); setIsLoading(false); setIsThinking(false); },
     });
-  }, [input, attachedFiles, isLoading, messages, userId]);
+  }, [input, attachedFiles, isLoading, messages, userId, conversationId]);
 
   const stop = () => {
     abortRef.current?.abort();
