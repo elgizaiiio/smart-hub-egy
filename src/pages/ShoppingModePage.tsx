@@ -28,9 +28,12 @@ interface Message {
 
 const SHOPPING_PROMPT =
   "You are a smart shopping assistant. " +
-  "ALWAYS reply in the user's exact language and dialect. " +
-  "RESPONSE LENGTH: keep text answers SHORT — 1-3 sentences max. The product cards do the talking. " +
-  "Search for real products, compare prices, recommend the best value. Do not write essays.";
+  "CRITICAL: ALWAYS reply in the user's EXACT language and dialect. " +
+  "FORMAT: Product cards appear automatically — your TEXT response must be a brief expert summary in this exact structure: " +
+  "1) One sentence saying which product is the best pick and why. " +
+  "2) A short comparison (2-3 bullets) of the top 2-3 options on price, quality, value. " +
+  "3) One closing line with a buying tip. " +
+  "Keep it under 120 words. Never write long essays. Never list every product — the cards already do that.";
 
 const ShoppingModePage = () => {
   const navigate = useNavigate();
@@ -60,9 +63,9 @@ const ShoppingModePage = () => {
 
   const hasResults = messages.length > 0;
 
-  // Live preview as user types (debounced)
+  // Live preview as user types — 300ms debounce, fires on every keystroke
   useEffect(() => {
-    if (!input.trim() || input.trim().length < 3 || hasResults) {
+    if (!input.trim() || input.trim().length < 2 || hasResults) {
       setLivePreview([]);
       return;
     }
@@ -70,13 +73,21 @@ const ShoppingModePage = () => {
     liveDebounce.current = setTimeout(async () => {
       try {
         const { data } = await supabase.functions.invoke("search", {
-          body: { query: input, type: "shopping", limit: 6 },
+          body: { query: input, type: "shopping", limit: 8 },
         });
-        if (data?.products) setLivePreview(data.products.slice(0, 6));
+        if (data?.products) setLivePreview(data.products.slice(0, 8));
       } catch { /* silent */ }
-    }, 600);
+    }, 300);
     return () => { if (liveDebounce.current) clearTimeout(liveDebounce.current); };
   }, [input, hasResults]);
+
+  // Close plus menu on any outside click
+  useEffect(() => {
+    if (!plusOpen) return;
+    const close = () => setPlusOpen(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [plusOpen]);
 
   const handleFile = useCallback((files: FileList | null, kind: "image" | "file") => {
     if (!files) return;
