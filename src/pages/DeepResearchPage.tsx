@@ -142,6 +142,29 @@ const DeepResearchPage = () => {
     ];
 
     let reportBuf = "";
+    let phase = 0;
+    let phaseTimer: ReturnType<typeof setInterval> | null = null;
+
+    // Inject realistic, time-delayed status updates so user feels real progress
+    const pushPhase = () => {
+      const { label, detail } = buildStatusFromQuery(sentInput, phase);
+      updateLastSession((s) => {
+        const updated: TimelineStep[] = s.steps.map((x) => ({ ...x, status: "done" }));
+        updated.push({
+          id: `${Date.now()}-${updated.length}`,
+          label, detail,
+          status: "active",
+          ts: Date.now(),
+        });
+        return { ...s, steps: updated, expandedStep: updated[updated.length - 1].id };
+      });
+      phase++;
+    };
+
+    pushPhase(); // Phase 0 immediately
+    phaseTimer = setInterval(() => {
+      if (phase < 4) pushPhase();
+    }, 2200);
 
     await streamChat({
       messages: apiMessages as any,
@@ -156,30 +179,37 @@ const DeepResearchPage = () => {
         updateLastSession((s) => {
           const last = s.steps[s.steps.length - 1];
           if (last && last.label === label) {
-            // Append detail to existing active step
             const copy = [...s.steps];
             copy[copy.length - 1] = { ...last, detail: (last.detail ? last.detail + "\n" : "") + st };
             return { ...s, steps: copy };
           }
-          const updated: TimelineStep[] = s.steps.map((x) => ({ ...x, status: "done" }));
-          updated.push({
-            id: `${Date.now()}-${updated.length}`,
-            label,
-            detail: st,
-            status: "active",
-            ts: Date.now(),
-          });
-          return { ...s, steps: updated, expandedStep: updated[updated.length - 1].id };
+          return s;
         });
       },
       onImages: (imgs) => {
         updateLastSession((s) => ({ ...s, images: imgs.slice(0, 20) }));
       },
       onDelta: (d) => {
+        // First content delta = stop the simulated phase loop and mark "writing"
+        if (phaseTimer) { clearInterval(phaseTimer); phaseTimer = null; }
+        if (!reportBuf) {
+          updateLastSession((s) => {
+            const updated: TimelineStep[] = s.steps.map((x) => ({ ...x, status: "done" }));
+            updated.push({
+              id: `${Date.now()}-writing`,
+              label: "كتابة التقرير",
+              detail: "أنظم النتائج وأكتب التقرير النهائي…",
+              status: "active",
+              ts: Date.now(),
+            });
+            return { ...s, steps: updated, expandedStep: updated[updated.length - 1].id };
+          });
+        }
         reportBuf += d;
         updateLastSession((s) => ({ ...s, report: reportBuf }));
       },
       onDone: async () => {
+        if (phaseTimer) { clearInterval(phaseTimer); phaseTimer = null; }
         updateLastSession((s) => ({
           ...s,
           steps: s.steps.map((x) => ({ ...x, status: "done" as const })),
@@ -199,9 +229,12 @@ const DeepResearchPage = () => {
           if (cid && !conversationId) setConversationId(cid);
         }
       },
-      onError: (e) => { toast.error(e); setIsLoading(false); },
+      onError: (e) => {
+        if (phaseTimer) { clearInterval(phaseTimer); phaseTimer = null; }
+        toast.error(e); setIsLoading(false);
+      },
     });
-  }, [input, isLoading, userId]);
+  }, [input, isLoading, userId, conversationId]);
 
   const stop = () => { abortRef.current?.abort(); setIsLoading(false); };
 
