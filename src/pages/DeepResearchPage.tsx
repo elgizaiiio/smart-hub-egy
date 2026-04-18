@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import { streamChat } from "@/lib/streamChat";
+import { saveConversation } from "@/lib/conversationPersistence";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -32,9 +33,11 @@ interface ResearchSession {
 }
 
 const RESEARCH_PROMPT =
-  "You are a Deep Research agent. CRITICAL: Reply in the user's exact language and dialect. " +
-  "Produce a clean, well-structured final report with: # Title, ## Introduction, ## Key Findings (with subsections), ## Analysis, ## Conclusion. " +
-  "Use markdown headings, bullets, and tables. NEVER expose internal thinking, plans, tool calls, or reasoning — only the final polished report.";
+  "You are a Deep Research agent. CRITICAL: Reply in the user's EXACT language and dialect. " +
+  "Produce a clean, well-structured FINAL REPORT only — no greetings, no preamble. Structure: " +
+  "# {Title}\\n## Overview\\n## Background\\n## Key Findings (with ### sub-sections, bullets `-` and `•`, numbered lists where useful)\\n## Comparison (use markdown tables when comparing options)\\n## Analysis\\n## Conclusion\\n" +
+  "Use **bold** for emphasis, proper headings, ordered lists, and bullets. " +
+  "ABSOLUTELY NEVER expose internal thinking, tool calls, plans, search queries, or any meta commentary — only the polished report.";
 
 const labelFromStatus = (s: string): string => {
   const l = s.toLowerCase();
@@ -54,6 +57,7 @@ const DeepResearchPage = () => {
   const [plusOpen, setPlusOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -156,7 +160,7 @@ const DeepResearchPage = () => {
         reportBuf += d;
         updateLastSession((s) => ({ ...s, report: reportBuf }));
       },
-      onDone: () => {
+      onDone: async () => {
         updateLastSession((s) => ({
           ...s,
           steps: s.steps.map((x) => ({ ...x, status: "done" as const })),
@@ -164,6 +168,17 @@ const DeepResearchPage = () => {
         }));
         setIsLoading(false);
         abortRef.current = null;
+        if (userId && reportBuf) {
+          const cid = await saveConversation({
+            conversationId, userId, mode: "research",
+            title: sentInput.slice(0, 60),
+            messages: [
+              { role: "user", content: sentInput },
+              { role: "assistant", content: reportBuf },
+            ],
+          });
+          if (cid && !conversationId) setConversationId(cid);
+        }
       },
       onError: (e) => { toast.error(e); setIsLoading(false); },
     });

@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Menu, Plus, X, ShoppingCart, ArrowUp, Square, Image as ImageIcon, FileUp, Camera, Star, ExternalLink } from "lucide-react";
+import { Menu, Plus, X, ShoppingCart, ArrowUp, Square, Image as ImageIcon, FileUp, Camera, Star, MoreHorizontal, Download, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
 import { streamChat } from "@/lib/streamChat";
+import { saveConversation } from "@/lib/conversationPersistence";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Product {
   title: string;
@@ -28,9 +30,12 @@ interface Message {
 
 const SHOPPING_PROMPT =
   "You are a smart shopping assistant. " +
-  "ALWAYS reply in the user's exact language and dialect. " +
-  "RESPONSE LENGTH: keep text answers SHORT — 1-3 sentences max. The product cards do the talking. " +
-  "Search for real products, compare prices, recommend the best value. Do not write essays.";
+  "CRITICAL: ALWAYS reply in the user's EXACT language and dialect. " +
+  "FORMAT: Product cards appear automatically — your TEXT response must be a brief expert summary in this exact structure: " +
+  "1) One sentence saying which product is the best pick and why. " +
+  "2) A short comparison (2-3 bullets) of the top 2-3 options on price, quality, value. " +
+  "3) One closing line with a buying tip. " +
+  "Keep it under 120 words. Never write long essays. Never list every product — the cards already do that.";
 
 const ShoppingModePage = () => {
   const navigate = useNavigate();
@@ -42,6 +47,7 @@ const ShoppingModePage = () => {
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
   const [livePreview, setLivePreview] = useState<Product[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -60,9 +66,9 @@ const ShoppingModePage = () => {
 
   const hasResults = messages.length > 0;
 
-  // Live preview as user types (debounced)
+  // Live preview as user types — 300ms debounce, fires on every keystroke
   useEffect(() => {
-    if (!input.trim() || input.trim().length < 3 || hasResults) {
+    if (!input.trim() || input.trim().length < 2 || hasResults) {
       setLivePreview([]);
       return;
     }
@@ -70,13 +76,21 @@ const ShoppingModePage = () => {
     liveDebounce.current = setTimeout(async () => {
       try {
         const { data } = await supabase.functions.invoke("search", {
-          body: { query: input, type: "shopping", limit: 6 },
+          body: { query: input, type: "shopping", limit: 8 },
         });
-        if (data?.products) setLivePreview(data.products.slice(0, 6));
+        if (data?.products) setLivePreview(data.products.slice(0, 8));
       } catch { /* silent */ }
-    }, 600);
+    }, 300);
     return () => { if (liveDebounce.current) clearTimeout(liveDebounce.current); };
   }, [input, hasResults]);
+
+  // Close plus menu on any outside click
+  useEffect(() => {
+    if (!plusOpen) return;
+    const close = () => setPlusOpen(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [plusOpen]);
 
   const handleFile = useCallback((files: FileList | null, kind: "image" | "file") => {
     if (!files) return;
@@ -142,7 +156,21 @@ const ShoppingModePage = () => {
           return c;
         });
       },
-      onDone: () => { setIsLoading(false); abortRef.current = null; },
+      onDone: async () => {
+        setIsLoading(false);
+        abortRef.current = null;
+        if (userId) {
+          const cid = await saveConversation({
+            conversationId, userId, mode: "shopping",
+            title: sentInput.slice(0, 60),
+            messages: [
+              { role: "user", content: sentInput },
+              { role: "assistant", content: buf },
+            ],
+          });
+          if (cid && !conversationId) setConversationId(cid);
+        }
+      },
       onError: (e) => { toast.error(e); setIsLoading(false); },
     });
   }, [input, attachedFiles, isLoading, messages, userId]);
