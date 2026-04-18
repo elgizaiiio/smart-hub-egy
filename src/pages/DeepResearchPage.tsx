@@ -34,18 +34,37 @@ interface ResearchSession {
 
 const RESEARCH_PROMPT =
   "You are a Deep Research agent. CRITICAL: Reply in the user's EXACT language and dialect. " +
-  "Produce a clean, well-structured FINAL REPORT only — no greetings, no preamble. Structure: " +
-  "# {Title}\\n## Overview\\n## Background\\n## Key Findings (with ### sub-sections, bullets `-` and `•`, numbered lists where useful)\\n## Comparison (use markdown tables when comparing options)\\n## Analysis\\n## Conclusion\\n" +
-  "Use **bold** for emphasis, proper headings, ordered lists, and bullets. " +
-  "ABSOLUTELY NEVER expose internal thinking, tool calls, plans, search queries, or any meta commentary — only the polished report.";
+  "Produce a clean, well-structured FINAL REPORT only — no greetings, no preamble, no AI-self-references. " +
+  "STRUCTURE (use proper markdown — headings, bold, bullets, tables): " +
+  "# {Bold Title}\\n\\n" +
+  "## نظرة عامة (Overview)\\n2-3 sentence intro.\\n\\n" +
+  "## المعلومات الأساسية (Key Facts)\\nUse bullet points with **bold labels**: e.g., - **الاسم:** ...\\n\\n" +
+  "## التفاصيل (Details)\\nUse ### sub-headings, numbered lists, and bullets (-, •).\\n\\n" +
+  "## مقارنة / جدول (Comparison)\\nWhen comparing options, USE markdown tables with | and ---.\\n\\n" +
+  "## الخلاصة (Conclusion)\\nFinal takeaway.\\n\\n" +
+  "ABSOLUTELY NEVER expose internal thinking, tool calls, plans, or search queries — only the polished report.";
+
+// Realistic, varied search status messages — show the agent is actually working
+const buildStatusFromQuery = (query: string, phase: number): { label: string; detail: string } => {
+  const q = query.length > 30 ? query.slice(0, 30) + "…" : query;
+  const phases = [
+    { label: "البحث في الويب", detail: `أبحث عن "${q}" — أفتح أهم 10 مصادر من Google و Wikipedia.` },
+    { label: "تحليل المصادر", detail: `لقد وجدت معلومات قيمة. أقرأ الآن المقالات التفصيلية وأستخرج الحقائق المهمة.` },
+    { label: "جمع الصور", detail: `أحضر أفضل الصور والوسائط المتعلقة بـ "${q}".` },
+    { label: "مقارنة المعلومات", detail: `أقارن البيانات من المصادر المتعددة وأتحقق من الدقة.` },
+    { label: "كتابة التقرير", detail: `أنظم النتائج وأكتب التقرير النهائي بصيغة احترافية.` },
+  ];
+  return phases[Math.min(phase, phases.length - 1)];
+};
 
 const labelFromStatus = (s: string): string => {
   const l = s.toLowerCase();
-  if (/search|gathering|browsing|opening|navigat/i.test(l)) return "Searching the web";
-  if (/analyz|reviewing|reading/i.test(l)) return "Analyzing sources";
-  if (/compar/i.test(l)) return "Comparing findings";
-  if (/writing|summar|report|composing/i.test(l)) return "Writing the report";
-  return "Working on it";
+  if (/search|gathering|browsing|opening|navigat|بحث/i.test(l)) return "البحث في الويب";
+  if (/analyz|reviewing|reading|تحليل/i.test(l)) return "تحليل المصادر";
+  if (/image|صور/i.test(l)) return "جمع الصور";
+  if (/compar|مقارنة/i.test(l)) return "مقارنة المعلومات";
+  if (/writing|summar|report|composing|كتابة/i.test(l)) return "كتابة التقرير";
+  return "جاري العمل";
 };
 
 const DeepResearchPage = () => {
