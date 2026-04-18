@@ -52,45 +52,82 @@ function getIntegrationIcon(app: string): string | null {
   return map[app] ? `${ICON_BASE}/${map[app]}.svg` : null;
 }
 
-// Hero: Metallic M with lines connecting to app icons
+// Hero: Premium orbiting connections with smooth motion
 const HeroConnection = () => {
-  const apps = ["gmail", "slack", "github", "notion", "figma", "discord", "stripe", "shopify"];
-  const iconPositions = apps.map((_, i) => {
-    const angle = (i / apps.length) * 360 - 90;
-    const r = 110;
-    return {
-      x: Math.cos((angle * Math.PI) / 180) * r,
-      y: Math.sin((angle * Math.PI) / 180) * r,
-    };
-  });
+  const apps = ["gmail", "slack", "github", "notion", "figma", "discord", "googledrive", "linear"];
+  const radius = 110;
 
   return (
     <div className="relative w-64 h-64 mx-auto">
+      <motion.div
+        className="absolute inset-0 rounded-full border border-primary/10"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div
+        className="absolute inset-6 rounded-full border border-primary/5"
+        animate={{ rotate: -360 }}
+        transition={{ duration: 80, repeat: Infinity, ease: "linear" }}
+      />
+
       <svg className="absolute inset-0 w-full h-full" viewBox="-140 -140 280 280">
-        {iconPositions.map((pos, i) => (
-          <line key={i} x1="0" y1="0" x2={pos.x} y2={pos.y} stroke="hsl(var(--primary))" strokeWidth="1" opacity="0.2" />
-        ))}
+        {apps.map((_, i) => {
+          const angle = (i / apps.length) * 360 - 90;
+          const x = Math.cos((angle * Math.PI) / 180) * radius;
+          const y = Math.sin((angle * Math.PI) / 180) * radius;
+          return (
+            <motion.line
+              key={i}
+              x1="0" y1="0" x2={x} y2={y}
+              stroke="hsl(var(--primary))"
+              strokeWidth="0.8"
+              strokeDasharray="2 4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.1, 0.3, 0.1] }}
+              transition={{ duration: 3, repeat: Infinity, delay: i * 0.2 }}
+            />
+          );
+        })}
       </svg>
+
       {apps.map((app, i) => {
-        const pos = iconPositions[i];
+        const angle = (i / apps.length) * 360 - 90;
+        const x = Math.cos((angle * Math.PI) / 180) * radius;
+        const y = Math.sin((angle * Math.PI) / 180) * radius;
         const iconUrl = getIntegrationIcon(app);
         return (
-          <div
+          <motion.div
             key={app}
-            className="absolute w-9 h-9 rounded-xl bg-card/80 border border-border/30 flex items-center justify-center"
+            className="absolute w-11 h-11 rounded-2xl liquid-glass flex items-center justify-center"
             style={{
-              left: `calc(50% + ${pos.x}px - 18px)`,
-              top: `calc(50% + ${pos.y}px - 18px)`,
+              left: `calc(50% + ${x}px - 22px)`,
+              top: `calc(50% + ${y}px - 22px)`,
+            }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1, y: [0, -4, 0] }}
+            transition={{
+              scale: { delay: 0.1 + i * 0.05, type: "spring", damping: 12 },
+              opacity: { delay: 0.1 + i * 0.05 },
+              y: { duration: 3 + i * 0.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 },
             }}
           >
-            {iconUrl && <img src={iconUrl} alt="" className="w-4 h-4 invert" loading="lazy" />}
-          </div>
+            {iconUrl && <img src={iconUrl} alt="" className="w-5 h-5 dark:invert" loading="lazy" />}
+          </motion.div>
         );
       })}
-      {/* Center M */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-2xl bg-gradient-to-br from-zinc-300 via-zinc-100 to-zinc-400 dark:from-zinc-600 dark:via-zinc-400 dark:to-zinc-700 flex items-center justify-center shadow-xl border border-white/20">
-        <span className="text-2xl font-black text-zinc-800 dark:text-white select-none" style={{ fontFamily: "system-ui", textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>M</span>
-      </div>
+
+      <motion.div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-3xl bg-gradient-to-br from-zinc-200 via-white to-zinc-300 dark:from-zinc-500 dark:via-zinc-300 dark:to-zinc-600 flex items-center justify-center shadow-2xl border border-white/30"
+        initial={{ scale: 0, rotate: -45 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", damping: 14, delay: 0.3 }}
+      >
+        <div className="absolute inset-0 rounded-3xl bg-primary/20 blur-2xl -z-10" />
+        <span
+          className="text-3xl font-black text-zinc-800 dark:text-zinc-900 select-none"
+          style={{ fontFamily: "system-ui", textShadow: "0 1px 2px rgba(0,0,0,0.15)" }}
+        >M</span>
+      </motion.div>
     </div>
   );
 };
