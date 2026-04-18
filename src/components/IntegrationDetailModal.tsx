@@ -75,7 +75,7 @@ export default function IntegrationDetailModal({ integration, isConnected, isLoa
           exit={{ opacity: 0, y: 40, scale: 0.97 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md bg-card border border-border/50 rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] flex flex-col"
+          className="w-full max-w-md liquid-glass rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[85vh] flex flex-col"
         >
           {/* Header */}
           <div className="relative p-6 pb-4">
