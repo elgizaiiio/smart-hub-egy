@@ -12,6 +12,7 @@ import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
 import ThinkingLoader from "@/components/ThinkingLoader";
 import { streamChat } from "@/lib/streamChat";
+import { saveConversation } from "@/lib/conversationPersistence";
 
 interface Message {
   role: "user" | "assistant";
@@ -23,6 +24,7 @@ interface Message {
 const LEARNING_PROMPT =
   "You are a smart, adaptive learning tutor using the Feynman technique. " +
   "CRITICAL: ALWAYS reply in the EXACT same language AND dialect the user wrote in (Egyptian Arabic stays Egyptian Arabic, French stays French, etc.). " +
+  "NEVER introduce yourself, never say 'I am Megsy', never say 'I am an AI', never explain who you are unless the user explicitly asks. Just answer. " +
   "RESPONSE LENGTH RULES — match length to the question complexity: " +
   "• Greetings / yes-no / small talk → 1 short sentence. " +
   "• Simple factual question → 1-2 sentences. " +
@@ -48,6 +50,7 @@ const LearningModePage = () => {
   const [plusOpen, setPlusOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
