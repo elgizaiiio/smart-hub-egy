@@ -14,29 +14,33 @@ export const INTEGRATION_CATEGORIES = [
   "Communication",
   "Productivity",
   "Development",
-  "CRM & Sales",
-  "Marketing",
-  "Social Media",
   "Storage & Files",
-  "Finance",
   "Design",
-  "Analytics",
+  "CRM & Sales",
   "Project Management",
-  "Customer Support",
-  "HR & Recruiting",
-  "E-commerce",
-  "AI & ML",
-  "Security",
-  "Database",
-  "DevOps",
-  "Education",
-  "Legal",
-  "Video & Media",
-  "Automation",
-  "Other",
 ] as const;
 
+// Curated top 15 essential integrations
 export const integrations: Integration[] = [
+  { id: "gmail", name: "Gmail", description: "Send, read and manage emails", category: "Communication", app: "gmail" },
+  { id: "gcalendar", name: "Google Calendar", description: "Events and scheduling", category: "Productivity", app: "googlecalendar" },
+  { id: "gdrive", name: "Google Drive", description: "Cloud file storage", category: "Storage & Files", app: "googledrive" },
+  { id: "google-sheets", name: "Google Sheets", description: "Online spreadsheets", category: "Productivity", app: "googlesheets" },
+  { id: "slack", name: "Slack", description: "Team messaging and channels", category: "Communication", app: "slack" },
+  { id: "notion", name: "Notion", description: "Notes, docs, and wikis", category: "Productivity", app: "notion" },
+  { id: "github", name: "GitHub", description: "Code hosting and collaboration", category: "Development", app: "github" },
+  { id: "linear", name: "Linear", description: "Issue tracking for teams", category: "Project Management", app: "linear" },
+  { id: "figma", name: "Figma", description: "Collaborative design", category: "Design", app: "figma" },
+  { id: "discord", name: "Discord", description: "Community servers and messaging", category: "Communication", app: "discord" },
+  { id: "trello", name: "Trello", description: "Visual project boards", category: "Project Management", app: "trello" },
+  { id: "asana", name: "Asana", description: "Work management for teams", category: "Project Management", app: "asana" },
+  { id: "dropbox", name: "Dropbox", description: "File sync and sharing", category: "Storage & Files", app: "dropbox" },
+  { id: "hubspot", name: "HubSpot", description: "CRM for sales and marketing", category: "CRM & Sales", app: "hubspot" },
+  { id: "airtable", name: "Airtable", description: "Spreadsheet-database hybrid", category: "Productivity", app: "airtable" },
+];
+
+// Legacy entries kept below are intentionally unused — file truncated above.
+const _legacyUnused: Integration[] = [
   // Communication
   { id: "gmail", name: "Gmail", description: "Send, read and manage emails", category: "Communication", app: "gmail" },
   { id: "outlook", name: "Outlook", description: "Microsoft email and calendar", category: "Communication", app: "outlook" },
