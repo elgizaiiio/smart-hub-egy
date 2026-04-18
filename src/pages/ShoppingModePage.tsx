@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Menu, Plus, X, ShoppingCart, ArrowUp, Square, Image as ImageIcon, FileUp, Camera, Star, ExternalLink } from "lucide-react";
+import { Menu, Plus, X, ShoppingCart, ArrowUp, Square, Image as ImageIcon, FileUp, Camera, Star, MoreHorizontal, Download, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
 import { streamChat } from "@/lib/streamChat";
+import { saveConversation } from "@/lib/conversationPersistence";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Product {
   title: string;
@@ -45,6 +47,7 @@ const ShoppingModePage = () => {
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; type: string; data: string }[]>([]);
   const [livePreview, setLivePreview] = useState<Product[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
