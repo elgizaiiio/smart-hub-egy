@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowUp, FileUp, Image, Upload, Copy, Download, FileText, HelpCircle, Layers, BookOpen, X, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, FileUp, Image as ImageIcon, Camera, Plus, Copy, FileText, HelpCircle, Layers, BookOpen, X, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,11 +28,13 @@ const SmartNotesPage = () => {
   const [messages, setMessages] = useState<NoteMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"summary" | "keypoints" | "qa">("summary");
-  const [attachedFiles, setAttachedFiles] = useState<{ name: string; data: string }[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{ name: string; data: string; isImage: boolean }[]>([]);
+  const [plusOpen, setPlusOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -47,13 +49,22 @@ const SmartNotesPage = () => {
     const files = e.target.files;
     if (!files) return;
     Array.from(files).forEach(file => {
-      if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name} too large`); return; }
+      if (file.size > 20 * 1024 * 1024) { toast.error(`${file.name} too large`); return; }
       const reader = new FileReader();
-      reader.onload = () => setAttachedFiles(prev => [...prev, { name: file.name, data: (reader.result as string).slice(0, 15000) }]);
-      if (file.type.startsWith("image/")) reader.readAsDataURL(file);
+      const isImage = file.type.startsWith("image/");
+      reader.onload = () => {
+        const data = reader.result as string;
+        setAttachedFiles(prev => [...prev, {
+          name: file.name,
+          data: isImage ? data : data.slice(0, 30000),
+          isImage,
+        }]);
+      };
+      if (isImage) reader.readAsDataURL(file);
       else reader.readAsText(file);
     });
     e.target.value = "";
+    setPlusOpen(false);
   };
 
   const handleSend = useCallback(async (actionOverride?: string) => {
@@ -80,8 +91,18 @@ Respond in the same language as the user's content.
 Format your response with clear markdown: headers, bullet points, numbered lists, bold text for emphasis.
 Be thorough and detailed.`;
 
-    let prompt = text;
-    files.forEach(f => { prompt += `\n\n--- File: ${f.name} ---\n${f.data}`; });
+    // Build multimodal user message: text + image_url for images, text for files
+    const imageFiles = files.filter(f => f.isImage);
+    const textFiles = files.filter(f => !f.isImage);
+    let promptText = text;
+    textFiles.forEach(f => { promptText += `\n\n--- File: ${f.name} ---\n${f.data}`; });
+
+    const userContent: any = imageFiles.length > 0
+      ? [
+          { type: "text", text: promptText || "Analyze the attached image(s)" },
+          ...imageFiles.map(f => ({ type: "image_url", image_url: { url: f.data } })),
+        ]
+      : promptText;
 
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
@@ -91,7 +112,7 @@ Be thorough and detailed.`;
           messages: [
             { role: "system", content: systemPrompt },
             ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: "user", content: prompt },
+            { role: "user", content: userContent },
           ],
           model: "google/gemini-2.5-flash-lite-preview-09-2025",
           mode: "chat",
