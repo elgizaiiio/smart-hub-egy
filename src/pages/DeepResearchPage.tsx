@@ -33,9 +33,11 @@ interface ResearchSession {
 }
 
 const RESEARCH_PROMPT =
-  "You are a Deep Research agent. CRITICAL: Reply in the user's exact language and dialect. " +
-  "Produce a clean, well-structured final report with: # Title, ## Introduction, ## Key Findings (with subsections), ## Analysis, ## Conclusion. " +
-  "Use markdown headings, bullets, and tables. NEVER expose internal thinking, plans, tool calls, or reasoning — only the final polished report.";
+  "You are a Deep Research agent. CRITICAL: Reply in the user's EXACT language and dialect. " +
+  "Produce a clean, well-structured FINAL REPORT only — no greetings, no preamble. Structure: " +
+  "# {Title}\\n## Overview\\n## Background\\n## Key Findings (with ### sub-sections, bullets `-` and `•`, numbered lists where useful)\\n## Comparison (use markdown tables when comparing options)\\n## Analysis\\n## Conclusion\\n" +
+  "Use **bold** for emphasis, proper headings, ordered lists, and bullets. " +
+  "ABSOLUTELY NEVER expose internal thinking, tool calls, plans, search queries, or any meta commentary — only the polished report.";
 
 const labelFromStatus = (s: string): string => {
   const l = s.toLowerCase();
