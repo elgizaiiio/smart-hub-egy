@@ -32,7 +32,15 @@ const StudyPlannerPage = () => {
 
     const daysUntilExam = examDate ? Math.max(1, Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000)) : 30;
 
-    const systemPrompt = `You are an expert study planner. Create a detailed, personalized study plan in well-formatted markdown.
+    const systemPrompt = `You are an expert study planner. Create a detailed, personalized study plan in PROPER MARKDOWN with WORKING TABLES.
+
+CRITICAL RULES:
+- Use real GitHub-flavored markdown tables (with | and --- separators) — NOT plain text columns.
+- Headers MUST use ## and ### syntax.
+- Lists MUST use - or 1. syntax.
+- Reply in the SAME language as the user's subjects.
+- DO NOT include any AI introductions or explanations of yourself.
+
 
 Student info:
 - Subjects: ${subjects}
@@ -141,14 +149,14 @@ Respond in the SAME language as the subjects. Use clear markdown — tables MUST
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subjects *</label>
                   <input value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="e.g. Math, Physics, Chemistry" className="w-full h-12 rounded-2xl liquid-glass px-4 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none" />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Exam Date</label>
+                    <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Exam Date</label>
                     <input
                       type="date"
                       value={examDate}
                       onChange={e => setExamDate(e.target.value)}
-                      className="w-full h-10 rounded-xl liquid-glass px-3 text-xs text-foreground outline-none [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                      className="w-full h-9 rounded-lg liquid-glass px-2.5 text-[11px] text-foreground outline-none [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:scale-75"
                     />
                   </div>
                   <div>
