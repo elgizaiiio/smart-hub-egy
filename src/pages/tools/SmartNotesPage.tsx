@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowUp, FileUp, Image, Upload, Copy, Download, FileText, HelpCircle, Layers, BookOpen, X, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, FileUp, Image as ImageIcon, Camera, Plus, Copy, FileText, HelpCircle, Layers, BookOpen, X, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,11 +28,13 @@ const SmartNotesPage = () => {
   const [messages, setMessages] = useState<NoteMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"summary" | "keypoints" | "qa">("summary");
-  const [attachedFiles, setAttachedFiles] = useState<{ name: string; data: string }[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{ name: string; data: string; isImage: boolean }[]>([]);
+  const [plusOpen, setPlusOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -47,21 +49,30 @@ const SmartNotesPage = () => {
     const files = e.target.files;
     if (!files) return;
     Array.from(files).forEach(file => {
-      if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name} too large`); return; }
+      if (file.size > 20 * 1024 * 1024) { toast.error(`${file.name} too large`); return; }
       const reader = new FileReader();
-      reader.onload = () => setAttachedFiles(prev => [...prev, { name: file.name, data: (reader.result as string).slice(0, 15000) }]);
-      if (file.type.startsWith("image/")) reader.readAsDataURL(file);
+      const isImage = file.type.startsWith("image/");
+      reader.onload = () => {
+        const data = reader.result as string;
+        setAttachedFiles(prev => [...prev, {
+          name: file.name,
+          data: isImage ? data : data.slice(0, 30000),
+          isImage,
+        }]);
+      };
+      if (isImage) reader.readAsDataURL(file);
       else reader.readAsText(file);
     });
     e.target.value = "";
+    setPlusOpen(false);
   };
 
   const handleSend = useCallback(async (actionOverride?: string) => {
     const text = input.trim();
     if (!text && attachedFiles.length === 0) return;
 
-    const userContent = text || `[${attachedFiles.length} file(s) attached]`;
-    setMessages(prev => [...prev, { role: "user", content: userContent }]);
+    const userPreview = text || `[${attachedFiles.length} file(s) attached]`;
+    setMessages(prev => [...prev, { role: "user", content: userPreview }]);
     setInput("");
     const files = [...attachedFiles];
     setAttachedFiles([]);
@@ -80,8 +91,18 @@ Respond in the same language as the user's content.
 Format your response with clear markdown: headers, bullet points, numbered lists, bold text for emphasis.
 Be thorough and detailed.`;
 
-    let prompt = text;
-    files.forEach(f => { prompt += `\n\n--- File: ${f.name} ---\n${f.data}`; });
+    // Build multimodal user message: text + image_url for images, text for files
+    const imageFiles = files.filter(f => f.isImage);
+    const textFiles = files.filter(f => !f.isImage);
+    let promptText = text;
+    textFiles.forEach(f => { promptText += `\n\n--- File: ${f.name} ---\n${f.data}`; });
+
+    const userContent: any = imageFiles.length > 0
+      ? [
+          { type: "text", text: promptText || "Analyze the attached image(s)" },
+          ...imageFiles.map(f => ({ type: "image_url", image_url: { url: f.data } })),
+        ]
+      : promptText;
 
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
@@ -91,7 +112,7 @@ Be thorough and detailed.`;
           messages: [
             { role: "system", content: systemPrompt },
             ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: "user", content: prompt },
+            { role: "user", content: userContent },
           ],
           model: "google/gemini-2.5-flash-lite-preview-09-2025",
           mode: "chat",
@@ -176,19 +197,48 @@ Be thorough and detailed.`;
                     <div className="flex gap-2 mt-2 flex-wrap">
                       {attachedFiles.map((f, i) => (
                         <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full liquid-glass-pill text-xs text-foreground">
-                          {f.name}
+                          {f.isImage ? <ImageIcon className="w-3 h-3 text-emerald-400" /> : <FileText className="w-3 h-3 text-emerald-400" />}
+                          {f.name.length > 18 ? f.name.slice(0, 18) + "…" : f.name}
                           <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))}><X className="w-3 h-3" /></button>
                         </span>
                       ))}
                     </div>
                   )}
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/20">
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 px-3 py-2 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground">
-                      <Upload className="w-3.5 h-3.5" /> File
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/20 relative">
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPlusOpen(v => !v)} className={`flex items-center justify-center w-9 h-9 rounded-full liquid-glass-button text-muted-foreground hover:text-foreground transition ${plusOpen ? "rotate-45" : ""}`}>
+                      <Plus className="w-4 h-4" />
                     </motion.button>
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => imageInputRef.current?.click()} className="flex items-center gap-1.5 px-3 py-2 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground">
-                      <Image className="w-3.5 h-3.5" /> Image
-                    </motion.button>
+                    <AnimatePresence>
+                      {plusOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setPlusOpen(false)} />
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.92 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.92 }}
+                            transition={{ type: "spring", damping: 22, stiffness: 350 }}
+                            className="absolute bottom-full left-0 mb-2 z-50 w-60 rounded-3xl border border-border/30 bg-background/85 p-2.5 backdrop-blur-2xl shadow-2xl"
+                          >
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {[
+                                { ref: cameraInputRef, icon: Camera, label: "Camera" },
+                                { ref: imageInputRef, icon: ImageIcon, label: "Photos" },
+                                { ref: fileInputRef, icon: FileUp, label: "Files" },
+                              ].map(({ ref, icon: Icon, label }) => (
+                                <button
+                                  key={label}
+                                  onClick={() => { ref.current?.click(); setPlusOpen(false); }}
+                                  className="flex flex-col items-center gap-1 py-2.5 rounded-2xl hover:bg-foreground/5 transition"
+                                >
+                                  <Icon className="w-4 h-4 text-emerald-400" />
+                                  <span className="text-[10px] text-foreground/80">{label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                     <div className="flex-1" />
                   </div>
                 </div>
@@ -242,10 +292,52 @@ Be thorough and detailed.`;
         {hasMessages && (
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
             <div className="max-w-2xl mx-auto liquid-glass rounded-3xl">
-              <div className="flex items-end gap-2 px-3 py-2">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground">
-                  <FileUp className="w-4 h-4" />
+              {attachedFiles.length > 0 && (
+                <div className="flex gap-2 px-3 pt-2 flex-wrap">
+                  {attachedFiles.map((f, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full liquid-glass-pill text-xs text-foreground">
+                      {f.isImage ? <ImageIcon className="w-3 h-3 text-emerald-400" /> : <FileText className="w-3 h-3 text-emerald-400" />}
+                      {f.name.length > 16 ? f.name.slice(0, 16) + "…" : f.name}
+                      <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))}><X className="w-3 h-3" /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-end gap-2 px-3 py-2 relative">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPlusOpen(v => !v)} className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition ${plusOpen ? "rotate-45" : ""}`}>
+                  <Plus className="w-4 h-4" />
                 </motion.button>
+                <AnimatePresence>
+                  {plusOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setPlusOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.92 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.92 }}
+                        transition={{ type: "spring", damping: 22, stiffness: 350 }}
+                        className="absolute bottom-full left-2 mb-2 z-50 w-60 rounded-3xl border border-border/30 bg-background/85 p-2.5 backdrop-blur-2xl shadow-2xl"
+                      >
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { ref: cameraInputRef, icon: Camera, label: "Camera" },
+                            { ref: imageInputRef, icon: ImageIcon, label: "Photos" },
+                            { ref: fileInputRef, icon: FileUp, label: "Files" },
+                          ].map(({ ref, icon: Icon, label }) => (
+                            <button
+                              key={label}
+                              onClick={() => { ref.current?.click(); setPlusOpen(false); }}
+                              className="flex flex-col items-center gap-1 py-2.5 rounded-2xl hover:bg-foreground/5 transition"
+                            >
+                              <Icon className="w-4 h-4 text-emerald-400" />
+                              <span className="text-[10px] text-foreground/80">{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
                 <textarea
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -264,6 +356,7 @@ Be thorough and detailed.`;
 
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileAttach} accept=".txt,.pdf,.doc,.docx,.csv,.json,.md,.xlsx" multiple />
         <input ref={imageInputRef} type="file" className="hidden" onChange={handleFileAttach} accept="image/*" multiple />
+        <input ref={cameraInputRef} type="file" className="hidden" onChange={handleFileAttach} accept="image/*" capture="environment" />
       </div>
     </AppLayout>
   );

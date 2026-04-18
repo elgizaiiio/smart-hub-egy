@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Clock, ChevronRight, ChevronLeft, Flag, Check, X, RotateCcw, Target, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -103,8 +103,8 @@ Respond in the same language as the subject.`;
     setIsGenerating(false);
   }, [subject, topic, difficulty, questionCount, duration]);
 
-  // Timer
-  useState(() => {
+  // Timer (proper useEffect — useState was a typo causing the timer to never run)
+  useEffect(() => {
     if (state !== "exam") return;
     const interval = setInterval(() => {
       setTimeLeft(prev => {
@@ -113,7 +113,7 @@ Respond in the same language as the subject.`;
       });
     }, 1000);
     return () => clearInterval(interval);
-  });
+  }, [state]);
 
   const selectAnswer = (idx: number) => {
     setAnswers(prev => { const n = [...prev]; n[currentQ] = idx; return n; });

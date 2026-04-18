@@ -32,7 +32,7 @@ const StudyPlannerPage = () => {
 
     const daysUntilExam = examDate ? Math.max(1, Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000)) : 30;
 
-    const systemPrompt = `You are an expert study planner. Create a detailed, personalized study plan.
+    const systemPrompt = `You are an expert study planner. Create a detailed, personalized study plan in well-formatted markdown.
 
 Student info:
 - Subjects: ${subjects}
@@ -41,16 +41,34 @@ Student info:
 - Level: ${level}
 ${weakAreas ? `- Weak areas: ${weakAreas}` : ""}
 
-Create a structured plan with:
-1. Overview of the strategy
-2. Day-by-day schedule (at least first 7 days in detail)
-3. Each day should have: Lessons (new content), Quizzes (practice), Reviews (revision)
-4. Balance between new learning, practice, and revision
-5. Extra focus on weak areas
-6. Tips for effective studying
+REQUIRED FORMAT (use markdown headers, tables, and bullets):
 
-Use markdown formatting with headers, bullet points, and bold text.
-Respond in the same language as the subjects.`;
+## 📋 Strategy Overview
+Brief 2-3 sentence summary of approach.
+
+## 📊 Weekly Schedule Table
+A markdown table with columns: Day | Subject | Lessons | Quizzes | Review | Total Time
+
+| Day | Subject | Lessons | Quizzes | Review | Total |
+|-----|---------|---------|---------|--------|-------|
+| 1   | ...     | ...     | ...     | ...    | ${hoursPerDay}h |
+
+(Include at least 7 rows.)
+
+## 📚 Day-by-Day Breakdown
+For each of the first 7 days:
+### Day N — [Subject focus]
+- ⏰ **Morning (Xh):** Lesson topic
+- 📝 **Afternoon (Xh):** Practice quizzes
+- 🔁 **Evening (Xh):** Review
+
+## 🎯 Focus on Weak Areas
+Specific strategies for the listed weak areas.
+
+## 💡 Study Tips
+3-5 actionable tips.
+
+Respond in the SAME language as the subjects. Use clear markdown — tables MUST be valid GFM tables.`;
 
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
@@ -126,7 +144,12 @@ Respond in the same language as the subjects.`;
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Exam Date</label>
-                    <input type="date" value={examDate} onChange={e => setExamDate(e.target.value)} className="w-full h-12 rounded-2xl liquid-glass px-4 text-sm text-foreground outline-none" />
+                    <input
+                      type="date"
+                      value={examDate}
+                      onChange={e => setExamDate(e.target.value)}
+                      className="w-full h-10 rounded-xl liquid-glass px-3 text-xs text-foreground outline-none [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-2 block">Hours per Day</label>
