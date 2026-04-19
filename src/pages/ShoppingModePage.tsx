@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Menu, ShoppingCart, Sparkles, ShieldCheck, TrendingUp, Star } from "lucide-react";
+import { Menu, ShoppingCart, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
-import ThinkingLoader from "@/components/ThinkingLoader";
 import MilkInputBar from "@/components/chat/MilkInputBar";
 import { streamChat } from "@/lib/streamChat";
 import { saveConversation } from "@/lib/conversationPersistence";
@@ -30,23 +29,13 @@ interface Message {
 const SHOPPING_PROMPT =
   "You are a smart shopping assistant. " +
   "CRITICAL: ALWAYS reply in the user's EXACT language and dialect. " +
-  "FORMAT: Product cards appear automatically — your TEXT response must be a brief expert summary in this exact structure: " +
+  "FORMAT: Product cards appear automatically — your TEXT must be a brief expert summary in this exact structure: " +
   "1) One sentence saying which product is the best pick and why. " +
   "2) A short comparison (2-3 bullets) of the top 2-3 options on price, quality, value. " +
   "3) One closing line with a buying tip. " +
-  "Keep it under 120 words. Never write long essays. Never list every product — the cards already do that.";
+  "Keep it under 120 words. Never list every product — the cards already do that.";
 
 const QUICK_STARTS = ["iPhone 17 Pro 256GB", "أفضل لابتوب للدراسة", "سماعات عزل ضوضاء", "تكييف 1.5 حصان إنفرتر"];
-
-const fallbackSummary = (query: string, products: Product[]) => {
-  if (!products.length) return `وجدت نتائج أولية حول ${query}، لكن أحتاج إعادة المحاولة لالتقاط أفضل العروض بدقة.`;
-  const [first, second, third] = products;
-  const bullets = [second, third]
-    .filter(Boolean)
-    .map((product) => `- ${product?.title} — ${product?.price}${product?.seller ? ` • ${product.seller}` : ""}`)
-    .join("\n");
-  return [`أفضل ترشيح الآن هو ${first.title} لأنه يبدو الأكثر توازنًا من حيث السعر والقيمة المتاحة.`, bullets, "نصيحة شراء: افتح أكثر من متجر وتحقق من الضمان وسياسة الاسترجاع قبل الدفع."].filter(Boolean).join("\n");
-};
 
 const ShoppingModePage = () => {
   const navigate = useNavigate();
@@ -55,6 +44,7 @@ const ShoppingModePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [livePreview, setLivePreview] = useState<Product[]>([]);
+  const [livePreviewLoading, setLivePreviewLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
@@ -88,21 +78,26 @@ const ShoppingModePage = () => {
     return (data?.products || []) as Product[];
   }, []);
 
+  // Realtime preview: as user types, fetch products with debounce
   useEffect(() => {
-    if (!input.trim() || input.trim().length < 2) {
+    const trimmed = input.trim();
+    if (trimmed.length < 2) {
       setLivePreview([]);
+      setLivePreviewLoading(false);
       return;
     }
-
     if (liveDebounce.current) clearTimeout(liveDebounce.current);
+    setLivePreviewLoading(true);
     liveDebounce.current = setTimeout(async () => {
       try {
-        const products = await fetchProducts(input);
+        const products = await fetchProducts(trimmed);
         setLivePreview(products.slice(0, 8));
       } catch {
         setLivePreview([]);
+      } finally {
+        setLivePreviewLoading(false);
       }
-    }, 300);
+    }, 320);
 
     return () => {
       if (liveDebounce.current) clearTimeout(liveDebounce.current);
@@ -125,7 +120,7 @@ const ShoppingModePage = () => {
 
     const apiMessages = [
       { role: "assistant" as const, content: SHOPPING_PROMPT },
-      ...messages.map((message) => ({ role: message.role, content: message.content })),
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
       { role: "user" as const, content: query },
     ];
 
@@ -155,11 +150,9 @@ const ShoppingModePage = () => {
         updateAssistant(assistantBuffer, productsBuffer);
       },
       onDone: async () => {
-        const finalText = assistantBuffer.trim() || fallbackSummary(query, productsBuffer);
-        updateAssistant(finalText, productsBuffer);
         setIsLoading(false);
         abortRef.current = null;
-        if (userId) {
+        if (userId && assistantBuffer.trim()) {
           const id = await saveConversation({
             conversationId,
             userId,
@@ -167,20 +160,14 @@ const ShoppingModePage = () => {
             title: query.slice(0, 60),
             messages: [
               { role: "user", content: query },
-              { role: "assistant", content: finalText },
+              { role: "assistant", content: assistantBuffer.trim() },
             ],
           });
           if (id && !conversationId) setConversationId(id);
         }
       },
-      onError: async (error) => {
-        const finalText = productsBuffer.length ? fallbackSummary(query, productsBuffer) : "";
-        if (finalText) {
-          updateAssistant(finalText, productsBuffer);
-        } else {
-          toast.error(error);
-          setMessages((prev) => prev.slice(0, -1));
-        }
+      onError: (error) => {
+        toast.error(error);
         setIsLoading(false);
       },
     });
@@ -196,28 +183,27 @@ const ShoppingModePage = () => {
       href={product.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="block overflow-hidden rounded-[26px] border border-border/60 bg-card/95 shadow-[0_14px_40px_hsl(0_0%_0%_/_.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_hsl(0_0%_0%_/_.08)]"
+      className="group block overflow-hidden rounded-[24px] border border-black/5 bg-white shadow-[0_8px_22px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(0,0,0,0.08)]"
     >
-      <div className="relative aspect-square w-full overflow-hidden bg-secondary/60">
+      <div className="relative aspect-square w-full overflow-hidden bg-black/5">
         {product.image ? (
-          <img src={product.image} alt={product.title} className="h-full w-full object-cover" loading="lazy" />
+          <img src={product.image} alt={product.title} className="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
         ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
+          <div className="flex h-full items-center justify-center text-black/40">
             <ShoppingCart className="h-8 w-8" />
           </div>
         )}
       </div>
-
-      <div className="flex min-h-[128px] flex-col gap-1 p-3">
-        {product.seller ? <span className="text-[11px] font-semibold text-muted-foreground">{product.seller}</span> : null}
-        <h3 className="line-clamp-2 text-sm font-bold leading-5 text-foreground">{product.title}</h3>
+      <div className="flex min-h-[120px] flex-col gap-1 p-3">
+        {product.seller ? <span className="text-[11px] font-semibold text-black/45">{product.seller}</span> : null}
+        <h3 className="line-clamp-2 text-sm font-bold leading-5 text-black">{product.title}</h3>
         {product.rating ? (
-          <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-primary">
+          <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-600">
             <Star className="h-3.5 w-3.5 fill-current" />
             <span>{product.rating}</span>
           </div>
         ) : null}
-        <div className="mt-auto pt-2 text-base font-bold text-foreground">{product.price}</div>
+        <div className="mt-auto pt-2 text-base font-bold text-black">{product.price}</div>
       </div>
     </a>
   );
@@ -235,42 +221,14 @@ const ShoppingModePage = () => {
           {messages.length === 0 ? (
             <div className="flex min-h-[calc(100dvh-220px)] flex-col items-center justify-center text-center">
               <span className="milk-lite-pill">Shopping</span>
-              <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground md:text-6xl">تسوّق بفهم.</h1>
-              <p className="mt-3 max-w-lg text-sm font-medium text-muted-foreground">
-                اكتب اسم المنتج أو المواصفات، شاهد النتائج تتجدد فورًا، ثم أرسل ليختار لك ميغسي أفضل ترشيح مع مقارنة قصيرة وواضحة.
-              </p>
+              <h1 className="mt-5 text-4xl font-bold tracking-tight text-black md:text-6xl">تسوّق بفهم.</h1>
 
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 {QUICK_STARTS.map((item) => (
                   <button key={item} onClick={() => setInput(item)} className="milk-example-chip">
-                    <Sparkles className="h-4 w-4 text-primary" />
                     <span>{item}</span>
                   </button>
                 ))}
-              </div>
-
-              <div className="mt-8 grid w-full max-w-2xl gap-3 md:grid-cols-3">
-                <div className="milk-report-card p-4 text-right">
-                  <div className="mb-3 flex items-center justify-between">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-bold text-foreground">بحث فوري</span>
-                  </div>
-                  <p className="text-sm font-medium leading-6 text-muted-foreground">النتائج تتجدد تلقائيًا مع كل حرف بعد 300ms.</p>
-                </div>
-                <div className="milk-report-card p-4 text-right">
-                  <div className="mb-3 flex items-center justify-between">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-bold text-foreground">أفضل اختيار</span>
-                  </div>
-                  <p className="text-sm font-medium leading-6 text-muted-foreground">بعد الإرسال تحصل على ترشيح واحد واضح ثم مقارنة قصيرة بين الخيارات.</p>
-                </div>
-                <div className="milk-report-card p-4 text-right">
-                  <div className="mb-3 flex items-center justify-between">
-                    <ShoppingCart className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-bold text-foreground">روابط مباشرة</span>
-                  </div>
-                  <p className="text-sm font-medium leading-6 text-muted-foreground">افتح المتاجر مباشرة من البطاقات بدون خطوات معقدة.</p>
-                </div>
               </div>
             </div>
           ) : (
@@ -298,7 +256,10 @@ const ShoppingModePage = () => {
                             <ChatMessage role="assistant" content={message.content} />
                           </div>
                         ) : isLoading && isLastAssistant ? (
-                          <ThinkingLoader searchStatus="أراجع أفضل العروض الآن…" />
+                          <div className="flex items-center gap-2 px-1 text-sm font-bold text-black/60">
+                            <span className="milk-thinking-dot" />
+                            <span>ميغسي يحلّل أفضل العروض…</span>
+                          </div>
                         ) : null}
                       </>
                     )}
@@ -310,18 +271,29 @@ const ShoppingModePage = () => {
           )}
         </div>
 
-        {input.trim().length >= 2 && livePreview.length > 0 && (
-          <div className="pointer-events-none fixed inset-x-0 bottom-[116px] z-30 px-3">
-            <div className="pointer-events-auto mx-auto max-w-5xl rounded-[30px] border border-border/60 bg-card/95 p-3 shadow-[0_20px_60px_hsl(0_0%_0%_/_.08)] backdrop-blur-xl">
+        {/* Realtime preview floating panel */}
+        {input.trim().length >= 2 && (livePreview.length > 0 || livePreviewLoading) && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-[120px] z-30 px-3">
+            <div className="pointer-events-auto mx-auto max-w-5xl rounded-[28px] border border-black/5 bg-white/95 p-3 shadow-[0_18px_44px_rgba(0,0,0,0.1)] backdrop-blur-xl">
               <div className="mb-3 flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-foreground">نتائج لحظية</span>
-                <span className="text-xs font-semibold text-muted-foreground">تتجدد مع كل حرف</span>
+                <span className="text-sm font-bold text-black">نتائج لحظية</span>
+                <span className="text-xs font-semibold text-black/45">
+                  {livePreviewLoading ? "جارٍ البحث…" : "تتجدد مع كل حرف"}
+                </span>
               </div>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {livePreview.map((product, index) => (
-                  <ProductCard key={`${product.title}-${index}`} product={product} />
-                ))}
-              </div>
+              {livePreview.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {livePreview.map((product, index) => (
+                    <ProductCard key={`${product.title}-${index}`} product={product} />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="aspect-square rounded-[24px] bg-black/5 animate-pulse" />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
