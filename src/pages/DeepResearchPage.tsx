@@ -159,8 +159,8 @@ const DeepResearchPage = () => {
     const pushPhase = () => {
       const { label, detail } = buildStatusFromQuery(sentInput, phase);
       updateLastSession((session) => {
-        const updatedSteps = session.steps.map((step) => ({ ...step, status: "done" as const }));
-        updatedSteps.push({ id: `${Date.now()}-${updatedSteps.length}`, label, detail, status: "active" as const, ts: Date.now() } as TimelineStep);
+        const updatedSteps: TimelineStep[] = session.steps.map((step) => ({ ...step, status: "done" as const }));
+        updatedSteps.push({ id: `${Date.now()}-${updatedSteps.length}`, label, detail, status: "active", ts: Date.now() });
         return { ...session, steps: updatedSteps, expandedStep: updatedSteps[updatedSteps.length - 1].id };
       });
       phase += 1;
@@ -202,14 +202,14 @@ const DeepResearchPage = () => {
         }
         if (!reportBuffer) {
           updateLastSession((session) => {
-            const updatedSteps = session.steps.map((step) => ({ ...step, status: "done" as const }));
+            const updatedSteps: TimelineStep[] = session.steps.map((step) => ({ ...step, status: "done" as const }));
             updatedSteps.push({
               id: `${Date.now()}-writing`,
               label: "كتابة التقرير النهائي",
               detail: "أنظم الآن النتائج الأخيرة داخل تقرير أنيق ومرتب…",
-              status: "active" as const,
+              status: "active",
               ts: Date.now(),
-            } as TimelineStep);
+            });
             return { ...session, steps: updatedSteps, expandedStep: updatedSteps[updatedSteps.length - 1].id };
           });
         }
