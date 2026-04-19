@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import AppLayout from "@/layouts/AppLayout";
 import ChatMessage from "@/components/ChatMessage";
+import ThinkingLoader from "@/components/ThinkingLoader";
 import MilkInputBar from "@/components/chat/MilkInputBar";
 import { streamChat } from "@/lib/streamChat";
 import { saveConversation } from "@/lib/conversationPersistence";
@@ -183,27 +184,27 @@ const ShoppingModePage = () => {
       href={product.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block overflow-hidden rounded-[24px] border border-black/5 bg-white shadow-[0_8px_22px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(0,0,0,0.08)]"
+      className="group block overflow-hidden rounded-[24px] border border-border/60 bg-card shadow-[0_8px_22px_hsl(0_0%_0%_/_.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_32px_hsl(0_0%_0%_/_.08)]"
     >
-      <div className="relative aspect-square w-full overflow-hidden bg-black/5">
+      <div className="relative aspect-square w-full overflow-hidden bg-secondary/60">
         {product.image ? (
           <img src={product.image} alt={product.title} className="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
         ) : (
-          <div className="flex h-full items-center justify-center text-black/40">
+            <div className="flex h-full items-center justify-center text-muted-foreground">
             <ShoppingCart className="h-8 w-8" />
           </div>
         )}
       </div>
       <div className="flex min-h-[120px] flex-col gap-1 p-3">
-        {product.seller ? <span className="text-[11px] font-semibold text-black/45">{product.seller}</span> : null}
-        <h3 className="line-clamp-2 text-sm font-bold leading-5 text-black">{product.title}</h3>
+        {product.seller ? <span className="text-[11px] font-semibold text-muted-foreground">{product.seller}</span> : null}
+        <h3 className="line-clamp-2 text-sm font-bold leading-5 text-foreground">{product.title}</h3>
         {product.rating ? (
-          <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-600">
+          <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-primary">
             <Star className="h-3.5 w-3.5 fill-current" />
             <span>{product.rating}</span>
           </div>
         ) : null}
-        <div className="mt-auto pt-2 text-base font-bold text-black">{product.price}</div>
+        <div className="mt-auto pt-2 text-base font-bold text-foreground">{product.price}</div>
       </div>
     </a>
   );
