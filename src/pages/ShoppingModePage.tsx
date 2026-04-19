@@ -251,15 +251,12 @@ const ShoppingModePage = () => {
                           </div>
                         ) : null}
 
-                        {message.content ? (
+                         {message.content ? (
                           <div className="milk-report-card p-4">
                             <ChatMessage role="assistant" content={message.content} />
                           </div>
                         ) : isLoading && isLastAssistant ? (
-                          <div className="flex items-center gap-2 px-1 text-sm font-bold text-black/60">
-                            <span className="milk-thinking-dot" />
-                            <span>ميغسي يحلّل أفضل العروض…</span>
-                          </div>
+                           <ThinkingLoader searchStatus="ميغسي تحلّل أفضل الخيارات الآن…" />
                         ) : null}
                       </>
                     )}
