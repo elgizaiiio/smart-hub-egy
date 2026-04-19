@@ -221,9 +221,9 @@ const ShoppingModePage = () => {
           {messages.length === 0 ? (
             <div className="flex min-h-[calc(100dvh-220px)] flex-col items-center justify-center text-center">
               <span className="milk-lite-pill">Shopping</span>
-              <h1 className="mt-5 text-4xl font-bold tracking-tight text-black md:text-6xl">تسوّق بفهم.</h1>
+              <h1 className="mt-5 max-w-xl text-4xl font-bold tracking-tight text-foreground md:text-6xl">اكتب ما تريد شراءه وسأرتب لك أفضل الخيارات فورًا.</h1>
 
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <div className="mt-7 flex flex-wrap justify-center gap-2">
                 {QUICK_STARTS.map((item) => (
                   <button key={item} onClick={() => setInput(item)} className="milk-example-chip">
                     <span>{item}</span>

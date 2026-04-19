@@ -1144,6 +1144,9 @@ input, textarea, select {
 }
 .milk-circle-button:hover { background: rgba(0, 0, 0, 0.07); }
 .milk-circle-button:active { transform: scale(0.93); }
+.milk-circle-button span {
+  transform: translateY(-1px);
+}
 
 /* Send button */
 .milk-send-button {
@@ -1163,7 +1166,7 @@ input, textarea, select {
 
 /* Plus sheet (attachment menu) — iOS 26 style */
 .milk-plus-sheet {
-  background: rgba(244, 244, 246, 0.96);
+  background: rgba(248, 248, 249, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 28px;
   -webkit-backdrop-filter: blur(40px) saturate(1.8);
@@ -1187,6 +1190,10 @@ input, textarea, select {
 }
 .milk-plus-tile:hover { transform: translateY(-2px); }
 .milk-plus-tile:active { transform: scale(0.96); }
+.milk-plus-tile svg,
+.milk-plus-list-button svg {
+  stroke-width: 2.1;
+}
 
 .milk-plus-placeholder {
   height: 92px;

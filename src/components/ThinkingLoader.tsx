@@ -41,7 +41,7 @@ const ThinkingLoader = ({ searchStatus }: ThinkingLoaderProps) => {
           </motion.div>
         </div>
 
-        <span className="text-xs font-semibold text-muted-foreground">{displayText}</span>
+        <span className="text-sm font-bold text-foreground/75">{displayText}</span>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue } from "react";
-import { Plus, ArrowUp, Square, X } from "lucide-react";
+import { ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MentionDropdown from "./MentionDropdown";
 import ModelPickerDropdown from "./ModelPickerDropdown";
@@ -344,7 +344,7 @@ const AnimatedInput = ({
 
         <div className="relative flex items-end gap-3 px-3 py-3">
           <button onClick={onPlusClick} className="milk-circle-button shrink-0" aria-label="Open attachments">
-            <Plus className="h-6 w-6" />
+            <span className="text-[1.9rem] font-light leading-none">+</span>
           </button>
 
           <div className="min-w-0 flex-1">
