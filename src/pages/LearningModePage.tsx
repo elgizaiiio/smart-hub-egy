@@ -199,12 +199,9 @@ const LearningModePage = () => {
           {messages.length === 0 ? (
             <div className="flex min-h-[calc(100dvh-220px)] flex-col items-center justify-center text-center">
               <span className="milk-lite-pill">Learning</span>
-              <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground md:text-6xl">تعلّم بوضوح.</h1>
-              <p className="mt-3 max-w-md text-sm font-medium text-muted-foreground">
-                شرح مباشر، صور، ملفات، وأدوات دراسة في مساحة هادئة ونظيفة.
-              </p>
+              <h1 className="mt-5 max-w-xl text-4xl font-bold tracking-tight text-foreground md:text-6xl">تعلّم بهدوء وتركيز.</h1>
 
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <div className="mt-7 flex flex-wrap justify-center gap-2">
                 {STUDY_TOOLS.map(({ id, label, icon: Icon, route }) => (
                   <button key={id} onClick={() => navigate(route)} className="milk-example-chip">
                     <Icon className="h-4 w-4 text-primary" />

@@ -318,11 +318,8 @@ ${session.report}`], { type: "text/markdown" });
           {sessions.length === 0 ? (
             <div className="flex min-h-[calc(100dvh-220px)] flex-col items-center justify-center text-center">
               <span className="milk-lite-pill">Deep Research</span>
-              <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground md:text-6xl">بحث عميق. مرتب. واضح.</h1>
-              <p className="mt-3 max-w-lg text-sm font-medium leading-7 text-muted-foreground">
-                اكتب الموضوع فقط، وسيبدأ ميغسي جمع المحاور، تحليل المصادر، ترتيب الصور، ثم تسليم تقرير أنيق سهل القراءة.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <h1 className="mt-5 max-w-2xl text-4xl font-bold tracking-tight text-foreground md:text-6xl">ابحث بعمق واحصل على تقرير نظيف ومرتب.</h1>
+              <div className="mt-7 flex flex-wrap justify-center gap-2">
                 {EXAMPLES.map((item) => (
                   <button key={item} onClick={() => setInput(item)} className="milk-example-chip">
                     <span>{item}</span>
@@ -383,7 +380,7 @@ ${session.report}`], { type: "text/markdown" });
                         })}
                       </div>
 
-                      {isActive && !session.report ? <ThinkingLoader searchStatus="أجمع المعلومات وأبني التقرير الآن…" /> : null}
+                      {isActive && !session.report ? <ThinkingLoader searchStatus="ميغسي تبني التقرير الآن…" /> : null}
 
                       {session.images.length > 0 ? (
                         <div className="-mx-1 overflow-x-auto px-1 pb-1">
