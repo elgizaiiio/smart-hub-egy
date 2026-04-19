@@ -44,10 +44,8 @@ const fallbackSummary = (query: string, products: Product[]) => {
   const bullets = [second, third]
     .filter(Boolean)
     .map((product) => `- ${product?.title} — ${product?.price}${product?.seller ? ` • ${product.seller}` : ""}`)
-    .join("
-");
-  return [`أفضل ترشيح الآن هو ${first.title} لأنه يبدو الأكثر توازنًا من حيث السعر والقيمة المتاحة.`, bullets, "نصيحة شراء: افتح أكثر من متجر وتحقق من الضمان وسياسة الاسترجاع قبل الدفع."].filter(Boolean).join("
-");
+    .join("\n");
+  return [`أفضل ترشيح الآن هو ${first.title} لأنه يبدو الأكثر توازنًا من حيث السعر والقيمة المتاحة.`, bullets, "نصيحة شراء: افتح أكثر من متجر وتحقق من الضمان وسياسة الاسترجاع قبل الدفع."].filter(Boolean).join("\n");
 };
 
 const ShoppingModePage = () => {
