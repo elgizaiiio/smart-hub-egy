@@ -710,44 +710,104 @@ Ask me anything to get started!`;
   <>
       <div className="fixed inset-0 z-[45]" onClick={() => setPlusMenuOpen(false)} />
       <motion.div
-        initial={{ opacity: 0, y: 18, scale: 0.96 }}
+        initial={{ opacity: 0, y: 12, scale: 0.92 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 18, scale: 0.96 }}
+        exit={{ opacity: 0, y: 12, scale: 0.92 }}
         transition={iosSpring}
-        className="milk-plus-sheet absolute bottom-full left-0 z-[56] mb-3 w-[min(100%,22rem)] overflow-hidden"
+        className="absolute bottom-full mb-2 left-0 z-[46] rounded-3xl liquid-glass-milk p-3 w-72"
       >
-        <div className="flex items-center justify-between px-5 pt-5 text-sm font-bold text-foreground">
-          <span>المكتبة</span>
-          <button className="text-primary transition hover:opacity-80">السماح بالوصول إلى الصور</button>
-        </div>
-
-        <div className="mt-4 flex gap-3 overflow-x-auto px-5 pb-4">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={`placeholder-${index}`} className="milk-plus-placeholder" />
-          ))}
+        <div className="grid grid-cols-3 gap-2 mb-3">
           {[
-            { ref: imageInputRef, icon: Image, label: "الصور" },
-            { ref: cameraInputRef, icon: Camera, label: "الكاميرا" },
-          ].map(({ ref, icon: Icon, label }) => (
-            <button key={label} onClick={() => { ref.current?.click(); setPlusMenuOpen(false); }} className="milk-plus-tile shrink-0">
-              <Icon className="h-7 w-7 text-foreground" />
-              <span className="text-sm font-semibold text-foreground">{label}</span>
-            </button>
+            { ref: cameraInputRef, icon: Camera, label: "Camera" },
+            { ref: imageInputRef, icon: Image, label: "Photos" },
+            { ref: fileInputRef, icon: FileUp, label: "Files" },
+          ].map(({ ref, icon: Icon, label }, i) => (
+            <motion.button
+              key={label}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...iosSpring, delay: i * 0.03 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => { ref.current?.click(); setPlusMenuOpen(false); }}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl liquid-glass-hover transition-colors ios-menu-item"
+            >
+              <Icon className="w-5 h-5 text-muted-foreground" />
+              <span className="text-[11px] text-foreground/80">{label}</span>
+            </motion.button>
           ))}
         </div>
-
-        <div className="border-t border-border/60 px-5 py-4">
-          <div className="space-y-2">
+        <div className="border-t border-border/15 pt-2 space-y-1">
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            transition={iosSpring}
+            onClick={handleSearchToggle}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl liquid-glass-hover transition-colors ios-menu-item"
+          >
+            <span className="text-sm text-foreground/80">Web search</span>
+            <div className={`w-9 h-5 rounded-full transition-colors flex items-center ${searchEnabled ? "bg-primary justify-end" : "bg-muted justify-start"}`}>
+              <motion.div layout transition={iosSpring} className="w-4 h-4 rounded-full bg-foreground mx-0.5" />
+            </div>
+          </motion.button>
+          <div className="border-t border-border/15 mt-1 pt-1">
+            <p className="text-[10px] text-muted-foreground/50 uppercase px-3 py-1.5">Modes</p>
             {[
-              { label: "إضافة ملفات", icon: FileUp, onClick: () => { fileInputRef.current?.click(); setPlusMenuOpen(false); } },
-              { label: searchEnabled ? "إيقاف البحث" : "تشغيل البحث", icon: Globe, onClick: handleSearchToggle },
-              { label: "التكاملات", icon: FolderPlus, onClick: () => { navigate("/settings/integrations"); setPlusMenuOpen(false); } },
-            ].map(({ label, icon: Icon, onClick }) => (
-              <button key={label} onClick={onClick} className="milk-plus-list-button">
-                <span className="text-base font-semibold text-foreground">{label}</span>
-                <Icon className="h-6 w-6 text-foreground" />
-              </button>
+              { mode: "learning" as ChatMode, label: "Learning Mode" },
+              { mode: "shopping" as ChatMode, label: "Shopping Mode" },
+              { mode: "deep-research" as ChatMode, label: "Deep Research" },
+            ].map(({ mode, label }) => (
+              <motion.button
+                key={mode}
+                whileTap={{ scale: 0.97 }}
+                transition={iosSpring}
+                onClick={() => {
+                  if (mode === "learning") { navigate("/learning"); setPlusMenuOpen(false); return; }
+                  if (mode === "shopping") { navigate("/shopping"); setPlusMenuOpen(false); return; }
+                  if (mode === "deep-research") { navigate("/research"); setPlusMenuOpen(false); return; }
+                  handleModeChange(mode);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ios-menu-item ${chatMode === mode ? "bg-primary/15 text-primary" : "liquid-glass-hover text-foreground/70"}`}
+              >
+                <span className="text-sm">{label}</span>
+                {chatMode === mode && <span className="ml-auto text-xs text-primary">On</span>}
+              </motion.button>
             ))}
+          </div>
+          {chatMode === "learning" && (
+            <div className="border-t border-border/15 mt-1 pt-1">
+              <p className="text-[10px] text-muted-foreground/50 uppercase px-3 py-1.5">Study tools</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { path: "/tools/smart-notes", icon: NotebookPen, label: "Smart Notes" },
+                  { path: "/tools/exam-simulator", icon: ClipboardList, label: "Exam Simulator" },
+                  { path: "/tools/study-planner", icon: CalendarDays, label: "Study Planner" },
+                  { path: "/tools/focus-room", icon: Timer, label: "Focus Room" },
+                ].map(({ path, icon: Icon, label }, i) => (
+                  <motion.button
+                    key={path}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...iosSpring, delay: i * 0.03 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => { navigate(path); setPlusMenuOpen(false); }}
+                    className="flex items-center gap-2 px-2.5 py-2.5 rounded-xl liquid-glass-hover transition-colors ios-menu-item"
+                  >
+                    <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-[11px] text-foreground/85 leading-tight">{label}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="border-t border-border/15 mt-1 pt-1">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              transition={iosSpring}
+              onClick={() => {navigate("/settings/integrations");setPlusMenuOpen(false);}}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left liquid-glass-hover transition-colors ios-menu-item"
+            >
+              <span className="text-sm text-foreground/70">Integrations</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">PRO</span>
+            </motion.button>
           </div>
         </div>
       </motion.div>
@@ -779,7 +839,7 @@ Ask me anything to get started!`;
       onNewChat={handleNewChat}
       activeConversationId={conversationId}>
       
-      <div className="h-[100dvh] flex flex-col milk-page-canvas overflow-hidden">
+      <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -790,12 +850,16 @@ Ask me anything to get started!`;
 
         {/* Header */}
         <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 min-h-[48px] bg-transparent">
-          <button onClick={() => setSidebarOpen(true)} className="milk-top-button">
+          <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
             <Menu className="w-5 h-5" />
           </button>
 
           {!hasConversation && (
-            <div className="flex-1" />
+            <div className="flex-1 flex justify-center">
+              <FancyButton onClick={() => navigate("/pricing")}>
+                Unlock Pro
+              </FancyButton>
+            </div>
           )}
 
           <div className="flex items-center gap-1">
@@ -803,7 +867,7 @@ Ask me anything to get started!`;
             {hasConversation && conversationId ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="milk-top-button">
+                  <button className="w-9 h-9 flex items-center justify-center bg-transparent border-0 text-muted-foreground hover:text-foreground transition-colors">
                     <MoreVertical className="w-5 h-5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -840,12 +904,14 @@ Ask me anything to get started!`;
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full px-4 text-center">
+            <div className="flex flex-col items-center justify-center h-full px-4">
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="text-center max-w-xl w-full">
-                <span className="milk-lite-pill">Chat</span>
-                <h1 className="mt-5 text-4xl md:text-6xl font-bold tracking-tight text-foreground">اسأل مباشرة.</h1>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <PegtopIcon className="text-primary" />
+                  <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Ask Megsy ?</h2>
+                </div>
 
-                <div className="flex items-center justify-center gap-2 mt-7 flex-wrap">
+                <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
                   <button onClick={() => navigate("/images")} className="px-3 py-1.5 rounded-full liquid-glass-button text-xs text-muted-foreground hover:text-foreground transition-colors">
                     Photos
                   </button>

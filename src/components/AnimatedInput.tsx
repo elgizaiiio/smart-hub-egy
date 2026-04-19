@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue } from "react";
-import { ArrowUp, Square, X } from "lucide-react";
+import { Plus, ArrowUp, Square, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MentionDropdown from "./MentionDropdown";
 import ModelPickerDropdown from "./ModelPickerDropdown";
@@ -33,28 +33,15 @@ interface AnimatedInputProps {
   onModelRemove?: () => void;
 }
 
-const DEFAULT_PLACEHOLDERS = ["اسأل ميغسي…", "اكتب طلبك هنا…", "ابدأ من أي فكرة…"];
+const DEFAULT_PLACEHOLDERS = [
+  "Ask Megsy ?",
+  "What's on your mind?",
+  "Ask anything...",
+];
 
-const AnimatedInput = ({
-  value,
-  onChange,
-  onSend,
-  onCancel,
-  onPlusClick,
-  disabled,
-  isLoading,
-  placeholders,
-  pendingQuestions,
-  onQuestionAnswer,
-  onQuestionSkip,
-  activeAgent,
-  onAgentSelect,
-  mentionCategories,
-  selectedModel,
-  onModelSelect,
-}: AnimatedInputProps) => {
-  useDeferredValue(value);
-  const items = useMemo(() => (placeholders && placeholders.length > 0 ? placeholders : DEFAULT_PLACEHOLDERS), [placeholders]);
+const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip, activeAgent, onAgentSelect, onAgentRemove, mentionCategories, selectedModel, onModelSelect, onModelRemove }: AnimatedInputProps) => {
+  const deferredValue = useDeferredValue(value);
+  const items = useMemo(() => placeholders && placeholders.length > 0 ? placeholders : DEFAULT_PLACEHOLDERS, [placeholders]);
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -77,6 +64,7 @@ const AnimatedInput = ({
   const safeQuestionIndex = hasQuestions ? Math.min(questionIndex, pendingQuestions!.length - 1) : 0;
   const currentQuestion = hasQuestions ? pendingQuestions![safeQuestionIndex] : null;
 
+  // Get models for active agent OR last selected agent
   const activeAgentModels = useMemo(() => {
     if (lastSelectedAgent?.models?.length) return lastSelectedAgent.models;
     if (!activeAgent) return [];
@@ -84,6 +72,7 @@ const AnimatedInput = ({
     return agent?.models || [];
   }, [activeAgent, lastSelectedAgent]);
 
+  // Placeholder typing animation
   useEffect(() => {
     if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
     if (placeholderTimeoutRef.current) clearTimeout(placeholderTimeoutRef.current);
@@ -110,9 +99,9 @@ const AnimatedInput = ({
         if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
         placeholderTimeoutRef.current = setTimeout(() => {
           setPlaceholderIndex((prev) => (prev + 1) % items.length);
-        }, 2400);
+        }, 2500);
       }
-    }, 45);
+    }, 50);
 
     return () => {
       if (placeholderIntervalRef.current) clearInterval(placeholderIntervalRef.current);
@@ -130,38 +119,15 @@ const AnimatedInput = ({
     }
   }, [value, items]);
 
-  const autoResize = useCallback(() => {
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      const maxH = typeof window !== "undefined" && window.innerWidth < 768 ? 138 : 164;
-      el.style.height = `${Math.min(el.scrollHeight, maxH)}px`;
-    }
-  }, []);
-
-  useEffect(() => {
-    autoResize();
-  }, [value, autoResize]);
-
-  useEffect(() => {
-    setQuestionIndex(0);
-    setQuestionInput("");
-  }, [pendingQuestions]);
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Escape" && (mentionOpen || modelPickerOpen)) {
       setMentionOpen(false);
       setModelPickerOpen(false);
       return;
     }
-
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (mentionOpen || modelPickerOpen) {
-        setMentionOpen(false);
-        setModelPickerOpen(false);
-        return;
-      }
+      if (mentionOpen || modelPickerOpen) { setMentionOpen(false); setModelPickerOpen(false); return; }
       if (value.trim() && !disabled && !isLoading) onSend();
     }
   };
@@ -169,10 +135,11 @@ const AnimatedInput = ({
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newVal = e.target.value;
     onChange(newVal);
-
+    
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = newVal.slice(0, cursorPos);
 
+    // Check for # model picker (when agent with models is selected)
     if ((activeAgent || lastSelectedAgent) && activeAgentModels.length > 0) {
       const hashMatch = textBeforeCursor.match(/#(\w*)$/);
       if (hashMatch) {
@@ -183,6 +150,7 @@ const AnimatedInput = ({
       }
     }
 
+    // Check for @ mention
     const atMatch = textBeforeCursor.match(/@(\w*)$/);
     if (atMatch) {
       setMentionOpen(true);
@@ -203,6 +171,7 @@ const AnimatedInput = ({
     const textBeforeCursor = value.slice(0, cursorPos);
     const cleanedBefore = textBeforeCursor.replace(/@\w*$/, "");
     const textAfter = value.slice(cursorPos);
+    // Keep @agent visible in input
     const agentTag = `@${agent.label} `;
     const newVal = cleanedBefore + agentTag + textAfter;
     onChange(newVal);
@@ -211,10 +180,11 @@ const AnimatedInput = ({
     setLastSelectedAgent(agent);
     onAgentSelect?.(agent);
 
+    // Auto-open model picker if agent has models
     if (agent.models && agent.models.length > 0) {
       setTimeout(() => {
+        // Insert # and open model picker
         const pos = (cleanedBefore + agentTag).length;
-        void pos;
         onChange(cleanedBefore + agentTag + "#" + textAfter);
         setModelPickerOpen(true);
         setModelQuery("");
@@ -223,6 +193,7 @@ const AnimatedInput = ({
   };
 
   const handleModelSelect = (model: AgentModel) => {
+    // Replace #query with #model-label and keep it visible
     const cursorPos = textareaRef.current?.selectionStart || value.length;
     const textBeforeCursor = value.slice(0, cursorPos);
     const cleanedBefore = textBeforeCursor.replace(/#\w*$/, "");
@@ -233,6 +204,24 @@ const AnimatedInput = ({
     setModelQuery("");
     onModelSelect?.(model);
   };
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      const maxH = typeof window !== "undefined" && window.innerWidth < 768 ? 120 : 160;
+      el.style.height = Math.min(el.scrollHeight, maxH) + "px";
+    }
+  }, []);
+
+  useEffect(() => {
+    autoResize();
+  }, [value, autoResize]);
+
+  useEffect(() => {
+    setQuestionIndex(0);
+    setQuestionInput("");
+  }, [pendingQuestions]);
 
   const moveToNextQuestion = () => {
     if (!pendingQuestions?.length) return;
@@ -276,41 +265,38 @@ const AnimatedInput = ({
           />
         )}
       </AnimatePresence>
-
-      <div className="milk-input-shell overflow-hidden">
+      <div className="rounded-2xl liquid-glass overflow-hidden">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="border-b border-border/60 bg-secondary/30"
+              className="border-b border-border/30 bg-secondary/15"
             >
-              <div className="p-4">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-sm font-bold text-foreground">{currentQuestion.title}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground">{safeQuestionIndex + 1}/{pendingQuestions!.length}</span>
-                    <button onClick={onQuestionSkip} className="milk-circle-button h-8 w-8" aria-label="Skip smart question">
-                      <X className="h-3.5 w-3.5" />
+              <div className="p-3.5">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <p className="text-sm font-medium text-foreground">{currentQuestion.title}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] text-muted-foreground">{safeQuestionIndex + 1}/{pendingQuestions!.length}</span>
+                    <button onClick={onQuestionSkip} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors" aria-label="Skip smart question">
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {currentQuestion.options.map((opt, index) => (
+                <div className="flex flex-wrap gap-1.5">
+                  {currentQuestion.options.map((opt, i) => (
                     <button
-                      key={`${opt}-${index}`}
+                      key={`${opt}-${i}`}
                       onClick={() => handleQuestionSelect(opt)}
-                      className="rounded-full border border-border/60 bg-card px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-secondary"
+                      className="px-3 py-1.5 rounded-full border border-border/40 bg-background/60 text-xs text-foreground hover:bg-accent/40 hover:border-primary/30 transition-colors"
                     >
                       {opt}
                     </button>
                   ))}
                 </div>
-
                 {currentQuestion.allowText && (
-                  <div className="mt-3 flex items-center gap-2 rounded-full border border-border/60 bg-card px-3 py-2">
+                  <div className="flex items-center gap-2 mt-2">
                     <input
                       type="text"
                       autoComplete="off"
@@ -319,21 +305,18 @@ const AnimatedInput = ({
                       onChange={(e) => setQuestionInput(e.target.value)}
                       onKeyDown={(e) => {
                         e.stopPropagation();
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleQuestionTextSend();
-                        }
+                        if (e.key === "Enter") { e.preventDefault(); handleQuestionTextSend(); }
                       }}
-                      placeholder="اكتب إجابتك…"
-                      className="flex-1 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/55"
+                      placeholder="Type your answer..."
+                      className="flex-1 bg-transparent border-none px-1 py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
                     />
                     <button
                       onClick={handleQuestionTextSend}
                       disabled={!questionInput.trim()}
-                      className="milk-send-button h-9 w-9 disabled:cursor-not-allowed disabled:opacity-30"
+                      className="w-6 h-6 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
                       aria-label="Send question answer"
                     >
-                      <ArrowUp className="h-4 w-4" />
+                      <ArrowUp className="w-3 h-3" />
                     </button>
                   </div>
                 )}
@@ -342,35 +325,46 @@ const AnimatedInput = ({
           )}
         </AnimatePresence>
 
-        <div className="relative flex items-end gap-3 px-3 py-3">
-          <button onClick={onPlusClick} className="milk-circle-button shrink-0" aria-label="Open attachments">
-            <span className="text-[1.9rem] font-light leading-none">+</span>
+        <div className="relative flex items-end gap-2 px-3 py-3">
+          <button
+            onClick={onPlusClick}
+            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Open attachments"
+          >
+            <Plus className="w-5 h-5" />
           </button>
 
-          <div className="min-w-0 flex-1">
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              placeholder={displayedPlaceholder || "اكتب رسالتك…"}
-              rows={1}
-              className="min-h-[52px] w-full resize-none bg-transparent px-1 py-3 text-[1.02rem] font-medium text-foreground outline-none placeholder:text-muted-foreground/65"
-            />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center min-h-[44px]">
+              <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                placeholder={displayedPlaceholder || " "}
+                rows={1}
+                className="flex-1 w-full min-w-0 bg-transparent border-none outline-none resize-none text-[0.95rem] text-foreground placeholder:text-muted-foreground/50 py-2 px-1"
+                style={{ minHeight: "44px" }}
+              />
+            </div>
           </div>
 
           {isLoading ? (
-            <button onClick={onCancel} className="milk-send-button shrink-0" aria-label="Stop generation">
-              <Square className="h-4 w-4 fill-current" />
+            <button
+              onClick={onCancel}
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all animate-pulse-slow"
+              aria-label="Stop generation"
+            >
+              <Square className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button
               onClick={onSend}
               disabled={!value.trim() || disabled}
-              className="milk-send-button shrink-0 disabled:cursor-not-allowed disabled:opacity-30"
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted-foreground/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
               aria-label="Send message"
             >
-              <ArrowUp className="h-5 w-5" />
+              <ArrowUp className="w-4 h-4" />
             </button>
           )}
         </div>
