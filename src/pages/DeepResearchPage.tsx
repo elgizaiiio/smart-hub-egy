@@ -16,7 +16,7 @@ interface TimelineStep {
   id: string;
   label: string;
   detail: string;
-  status: "active" | "done";
+  status: "active" | "done" | "pending";
   ts: number;
 }
 
