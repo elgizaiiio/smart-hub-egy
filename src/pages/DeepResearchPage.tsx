@@ -16,7 +16,7 @@ interface TimelineStep {
   id: string;
   label: string;
   detail: string;
-  status: "active" | "done";
+  status: "active" | "done" | "pending";
   ts: number;
 }
 
@@ -159,7 +159,7 @@ const DeepResearchPage = () => {
     const pushPhase = () => {
       const { label, detail } = buildStatusFromQuery(sentInput, phase);
       updateLastSession((session) => {
-        const updatedSteps = session.steps.map((step) => ({ ...step, status: "done" as const }));
+        const updatedSteps: TimelineStep[] = session.steps.map((step) => ({ ...step, status: "done" as const }));
         updatedSteps.push({ id: `${Date.now()}-${updatedSteps.length}`, label, detail, status: "active", ts: Date.now() });
         return { ...session, steps: updatedSteps, expandedStep: updatedSteps[updatedSteps.length - 1].id };
       });
@@ -202,7 +202,7 @@ const DeepResearchPage = () => {
         }
         if (!reportBuffer) {
           updateLastSession((session) => {
-            const updatedSteps = session.steps.map((step) => ({ ...step, status: "done" as const }));
+            const updatedSteps: TimelineStep[] = session.steps.map((step) => ({ ...step, status: "done" as const }));
             updatedSteps.push({
               id: `${Date.now()}-writing`,
               label: "كتابة التقرير النهائي",
