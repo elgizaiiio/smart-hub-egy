@@ -990,3 +990,250 @@ input, textarea, select {
   background: hsl(0 0% 100% / 0.1);
   transform: scale(0.97);
 }
+
+/* ─────────────────────────────────────────────
+   iOS 26 "Milk" Design System
+   Used by: Chat, Learning, Shopping, Deep Research
+   ───────────────────────────────────────────── */
+
+/* Pure-white canvas with soft tint for the modes */
+.milk-page-canvas {
+  background:
+    radial-gradient(120% 80% at 50% -10%, hsl(262 60% 96% / 0.5), transparent 60%),
+    radial-gradient(80% 60% at 100% 100%, hsl(220 80% 96% / 0.4), transparent 60%),
+    #ffffff;
+  color: hsl(0 0% 12%);
+}
+
+/* Top circular icon button (sidebar/menu) */
+.milk-top-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: hsl(0 0% 12%);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: 0 6px 20px hsl(0 0% 0% / 0.05);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.milk-top-button:hover { background: #fff; transform: translateY(-1px); }
+.milk-top-button:active { transform: scale(0.95); }
+
+/* Lite badge pill */
+.milk-lite-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: hsl(0 0% 25%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Suggestion chips */
+.milk-example-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  color: hsl(0 0% 18%);
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px hsl(0 0% 0% / 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.milk-example-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px hsl(0 0% 0% / 0.07);
+}
+.milk-example-chip:active { transform: scale(0.97); }
+
+/* User query bubble */
+.milk-query-bubble {
+  display: inline-block;
+  max-width: 85%;
+  padding: 10px 16px;
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.05);
+  color: hsl(0 0% 12%);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* Card surface (reports / containers) */
+.milk-report-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 28px;
+  -webkit-backdrop-filter: blur(30px) saturate(1.8);
+  backdrop-filter: blur(30px) saturate(1.8);
+  box-shadow: 0 12px 40px hsl(0 0% 0% / 0.04);
+}
+
+/* Step chip in plan card */
+.milk-step-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid transparent;
+  text-align: right;
+  transition: background 0.15s ease;
+}
+.milk-step-chip:hover { background: rgba(0, 0, 0, 0.05); }
+
+.milk-step-detail {
+  margin-top: 6px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.025);
+  color: hsl(0 0% 35%);
+  font-size: 0.86rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+/* Input bar shell — iOS 26 milk glass */
+.milk-input-shell {
+  position: relative;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 32px;
+  -webkit-backdrop-filter: blur(40px) saturate(2);
+  backdrop-filter: blur(40px) saturate(2);
+  box-shadow:
+    inset 0 0.5px 0 0 rgba(255, 255, 255, 0.6),
+    0 12px 40px hsl(0 0% 0% / 0.08);
+  transition: box-shadow 0.2s ease;
+}
+.milk-input-shell:focus-within {
+  box-shadow:
+    inset 0 0.5px 0 0 rgba(255, 255, 255, 0.6),
+    0 18px 50px hsl(0 0% 0% / 0.12);
+}
+
+/* Circle button (plus) */
+.milk-circle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  width: 42px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.04);
+  color: hsl(0 0% 18%);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.milk-circle-button:hover { background: rgba(0, 0, 0, 0.07); }
+.milk-circle-button:active { transform: scale(0.93); }
+
+/* Send button */
+.milk-send-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  width: 42px;
+  border-radius: 9999px;
+  background: hsl(0 0% 8%);
+  color: #fff;
+  transition: transform 0.15s ease, background 0.15s ease;
+  box-shadow: 0 6px 16px hsl(0 0% 0% / 0.18);
+}
+.milk-send-button:hover:not(:disabled) { background: hsl(0 0% 0%); }
+.milk-send-button:active:not(:disabled) { transform: scale(0.93); }
+
+/* Plus sheet (attachment menu) — iOS 26 style */
+.milk-plus-sheet {
+  background: rgba(244, 244, 246, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 28px;
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  backdrop-filter: blur(40px) saturate(1.8);
+  box-shadow: 0 24px 60px hsl(0 0% 0% / 0.18);
+}
+
+.milk-plus-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 92px;
+  width: 92px;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: hsl(0 0% 15%);
+  transition: transform 0.15s ease;
+}
+.milk-plus-tile:hover { transform: translateY(-2px); }
+.milk-plus-tile:active { transform: scale(0.96); }
+
+.milk-plus-placeholder {
+  height: 92px;
+  width: 92px;
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.milk-plus-list-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  text-align: right;
+  transition: background 0.15s ease;
+}
+.milk-plus-list-button:hover { background: rgba(0, 0, 0, 0.025); }
+.milk-plus-list-button:active { transform: scale(0.99); }
+
+/* Attachment chip above input */
+.milk-attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 14px hsl(0 0% 0% / 0.05);
+}
+
+/* Megsy star pulse — used for "thinking" indicator dot */
+@keyframes milk-star-pulse {
+  0%, 100% { transform: scale(0.8); opacity: 0.4; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+.milk-thinking-dot {
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+  border-radius: 9999px;
+  background: hsl(262 80% 60%);
+  box-shadow: 0 0 12px hsl(262 80% 60% / 0.5);
+  animation: milk-star-pulse 1.2s ease-in-out infinite;
+}
