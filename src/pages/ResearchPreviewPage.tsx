@@ -32,9 +32,7 @@ const ResearchPreviewPage = () => {
   const cleanReport = useMemo(() => {
     if (!data) return "";
     return data.report
-      .replace(/^\s*>\s*(thinking|reasoning|internal)[\s\S]*?(?=
-##|
-#|$)/gim, "")
+      .replace(/^\s*>\s*(thinking|reasoning|internal)[\s\S]*?(?=\n##|\n#|$)/gim, "")
       .replace(/<thinking>[\s\S]*?<\/thinking>/gi, "")
       .trim();
   }, [data]);
