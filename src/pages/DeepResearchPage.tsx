@@ -363,8 +363,8 @@ const DeepResearchPage = () => {
                     })}
                     {isActive && s.steps.length === 0 && (
                       <div className="flex items-center gap-2.5 py-1.5">
-                        <Sparkles className="h-4 w-4 text-violet-400 animate-pulse" />
-                        <span className="text-sm font-bold text-foreground">جاري بدء البحث…</span>
+                        <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                        <span className="text-sm font-bold text-foreground">Starting research…</span>
                       </div>
                     )}
                   </div>
