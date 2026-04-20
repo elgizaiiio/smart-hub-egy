@@ -51,17 +51,17 @@ const LiquidWorkspaceInput = ({
   }, [value, textareaRef]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
-      <div className="mx-auto max-w-3xl pointer-events-auto">
+    <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+      <div className="pointer-events-auto">
         {attachments.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2 px-2">
+          <div className="mx-auto mb-2 flex max-w-3xl flex-wrap gap-2 px-4">
             {attachments.map((file, index) => (
-              <div key={`${file.name}-${index}`} className="group relative overflow-hidden rounded-[1.35rem] ios26-surface-card px-2.5 py-2">
+              <div key={`${file.name}-${index}`} className="group relative overflow-hidden rounded-2xl border border-border bg-background px-2.5 py-2">
                 {file.type === "image" ? (
-                  <img src={file.data} alt={file.name} className="h-14 w-14 rounded-[1rem] object-cover" />
+                  <img src={file.data} alt={file.name} className="h-14 w-14 rounded-xl object-cover" />
                 ) : (
                   <div className="flex h-14 items-center gap-2 pr-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full ios26-circle-button">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border">
                       <FileUp className="h-4 w-4 text-foreground/70" />
                     </div>
                     <span className="max-w-[138px] truncate text-xs font-medium text-foreground/72">{file.name}</span>
@@ -80,17 +80,23 @@ const LiquidWorkspaceInput = ({
           </div>
         )}
 
-        <div className="relative mx-auto w-full max-w-3xl">
-          <AnimatePresence>{plusOpen && plusMenu}</AnimatePresence>
+        <div className="relative">
+          <AnimatePresence>
+            {plusOpen && plusMenu && (
+              <div className="absolute bottom-full left-0 right-0 mx-auto max-w-3xl px-4 pb-2">
+                {plusMenu}
+              </div>
+            )}
+          </AnimatePresence>
 
-          <motion.div layout transition={spring} className="ios26-input-shell px-3 py-3">
-            <div className="relative z-[1] flex items-end gap-2">
+          <motion.div layout transition={spring} className="ios26-input-shell">
+            <div className="mx-auto flex max-w-3xl items-end gap-2 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
               {!hidePlus && (
                 <button
                   onClick={onPlusToggle}
-                  className={`ios26-circle-button flex h-11 w-11 shrink-0 items-center justify-center text-foreground/80 transition duration-200 ${plusOpen ? "rotate-45" : "rotate-0"}`}
+                  className={`ios26-circle-button flex h-10 w-10 shrink-0 items-center justify-center text-foreground/70 transition duration-200 ${plusOpen ? "rotate-45" : "rotate-0"}`}
                 >
-                  <Plus className="h-5 w-5" />
+                  <Plus className="h-5 w-5" strokeWidth={1.75} />
                 </button>
               )}
 
@@ -107,22 +113,21 @@ const LiquidWorkspaceInput = ({
                 placeholder={placeholder}
                 rows={1}
                 dir="auto"
-                className="max-h-[140px] min-h-[44px] flex-1 resize-none bg-transparent px-2 py-2.5 text-[15px] font-medium text-foreground outline-none placeholder:text-foreground/45"
+                className="max-h-[140px] min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-[15px] font-normal text-foreground outline-none placeholder:text-foreground/40"
               />
 
               {isLoading ? (
-                <button onClick={onStop} className="ios26-send-button flex h-11 w-11 shrink-0 items-center justify-center">
-                  <Square className="h-4 w-4 fill-current" />
+                <button onClick={onStop} className="ios26-send-button flex h-10 w-10 shrink-0 items-center justify-center">
+                  <Square className="h-3.5 w-3.5 fill-current" />
                 </button>
-              ) : (
+              ) : canSend ? (
                 <button
                   onClick={onSend}
-                  disabled={!canSend}
-                  className="ios26-send-button flex h-11 w-11 shrink-0 items-center justify-center transition-transform duration-200 hover:scale-[1.03] disabled:opacity-35 disabled:hover:scale-100"
+                  className="ios26-send-button flex h-10 w-10 shrink-0 items-center justify-center transition-transform duration-200 hover:scale-[1.03]"
                 >
                   <ArrowUp className="h-5 w-5" />
                 </button>
-              )}
+              ) : null}
             </div>
           </motion.div>
         </div>
