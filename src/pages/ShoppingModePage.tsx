@@ -284,9 +284,9 @@ const ShoppingModePage = () => {
 
         {isLoading && !hasResults && (
           <div className="pointer-events-none fixed inset-x-0 bottom-40 z-20 flex justify-center">
-            <div className="flex items-center gap-2 rounded-full ios26-surface-card px-4 py-2 text-sm font-semibold text-foreground/75">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground/75">
               <Sparkles className="h-4 w-4 animate-pulse" />
-              جاري تجهيز أفضل النتائج
+              Finding the best results
             </div>
           </div>
         )}
@@ -297,7 +297,7 @@ const ShoppingModePage = () => {
           onSend={send}
           onStop={stop}
           isLoading={isLoading}
-          placeholder="اكتب اسم المنتج أو ما الذي تريد شراءه"
+          placeholder="Search any product"
           canSend={Boolean(input.trim() || attachedFiles.length > 0)}
           hidePlus
           attachments={attachedFiles}
