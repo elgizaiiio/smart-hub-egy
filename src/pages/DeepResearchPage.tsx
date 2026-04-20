@@ -438,7 +438,7 @@ const DeepResearchPage = () => {
           onSend={send}
           onStop={stop}
           isLoading={isLoading}
-          placeholder="ابحث بعمق عن أي موضوع"
+          placeholder="Research any topic in depth"
           canSend={Boolean(input.trim())}
           plusOpen={plusOpen}
           onPlusToggle={() => setPlusOpen((v) => !v)}
@@ -446,39 +446,36 @@ const DeepResearchPage = () => {
           onRemoveAttachment={(index) => setAttachedFiles((prev) => prev.filter((_, i) => i !== index))}
           textareaRef={textareaRef}
           plusMenu={plusOpen ? (
-            <>
-              <div className="fixed inset-0 z-[45]" onClick={() => setPlusOpen(false)} />
-              <motion.div
-                initial={{ opacity: 0, y: 12, scale: 0.92 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 12, scale: 0.92 }}
-                transition={{ type: "spring", damping: 22, stiffness: 350 }}
-                className="ios26-plus-sheet absolute bottom-full mb-2 left-0 z-[46] w-[20rem] p-3"
-              >
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { ref: cameraInputRef, icon: Camera, label: "Camera" },
-                    { ref: imageInputRef, icon: ImageIcon, label: "Photos" },
-                    { ref: fileInputRef, icon: FileUp, label: "Files" },
-                  ].map(({ ref, icon: Icon, label }, i) => (
-                    <motion.button
-                      key={label}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      whileTap={{ scale: 0.94 }}
-                      onClick={() => { ref.current?.click(); setPlusOpen(false); }}
-                      className="ios-menu-item flex flex-col items-center gap-2 rounded-[1.35rem] px-3 py-3 text-foreground/80"
-                    >
-                      <div className="ios26-circle-button flex h-11 w-11 items-center justify-center">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <span className="text-[11px] font-medium">{label}</span>
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
-            </>
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.96 }}
+              transition={{ type: "spring", damping: 22, stiffness: 350 }}
+              className="ios26-plus-sheet w-full max-w-[20rem] p-3"
+            >
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { ref: cameraInputRef, icon: Camera, label: "Camera" },
+                  { ref: imageInputRef, icon: ImageIcon, label: "Photos" },
+                  { ref: fileInputRef, icon: FileUp, label: "Files" },
+                ].map(({ ref, icon: Icon, label }, i) => (
+                  <motion.button
+                    key={label}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => { ref.current?.click(); setPlusOpen(false); }}
+                    className="flex flex-col items-center gap-2 rounded-2xl px-3 py-3 text-foreground/80 hover:bg-foreground/5"
+                  >
+                    <div className="ios26-circle-button flex h-11 w-11 items-center justify-center">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-[11px] font-medium">{label}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
           ) : null}
         />
       </div>
