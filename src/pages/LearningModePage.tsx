@@ -195,22 +195,13 @@ const LearningModePage = () => {
         {messages.length === 0 ? (
           <div className="relative z-10 mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center px-6 py-24 text-center">
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="font-display text-[11vw] leading-[0.95] tracking-tight text-foreground md:text-[4.5rem]"
-            >
-              تعلم بوضوح.
-            </motion.h1>
-
-            <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="ios26-clean-copy mt-4 max-w-sm text-sm font-medium md:text-base"
+              transition={{ duration: 0.5 }}
+              className="font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl"
             >
-              شرح مختصر، هادئ، وخطوات ذكية من أول سؤال.
-            </motion.p>
+              Learn with clarity.
+            </motion.h1>
           </div>
         ) : (
           <div className="relative z-10 mx-auto max-w-3xl px-4 pb-48 pt-20">
