@@ -218,27 +218,18 @@ const ShoppingModePage = () => {
         {!hasResults ? (
           <div className="relative z-10 mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center px-5 py-24 text-center">
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="font-display text-[11vw] leading-[0.95] tracking-tight text-foreground md:text-[4.4rem]"
-            >
-              تسوق بذكاء.
-            </motion.h1>
-
-            <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="ios26-clean-copy mt-4 max-w-sm text-sm font-medium md:text-base"
+              transition={{ duration: 0.5 }}
+              className="font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl"
             >
-              اكتب اسم المنتج فقط، وسأعرض أفضل الخيارات فورًا مع مقارنة مختصرة.
-            </motion.p>
+              Shop smarter.
+            </motion.h1>
 
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
+              transition={{ delay: 0.2 }}
               className="mt-8 flex flex-wrap items-center justify-center gap-2"
             >
               {[
@@ -250,7 +241,7 @@ const ShoppingModePage = () => {
                 <button
                   key={item}
                   onClick={() => setInput(item)}
-                  className="rounded-full ios26-surface-card px-4 py-2 text-sm font-semibold text-foreground/78"
+                  className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground/80 hover:bg-foreground/5"
                 >
                   {item}
                 </button>
@@ -293,9 +284,9 @@ const ShoppingModePage = () => {
 
         {isLoading && !hasResults && (
           <div className="pointer-events-none fixed inset-x-0 bottom-40 z-20 flex justify-center">
-            <div className="flex items-center gap-2 rounded-full ios26-surface-card px-4 py-2 text-sm font-semibold text-foreground/75">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground/75">
               <Sparkles className="h-4 w-4 animate-pulse" />
-              جاري تجهيز أفضل النتائج
+              Finding the best results
             </div>
           </div>
         )}
@@ -306,7 +297,7 @@ const ShoppingModePage = () => {
           onSend={send}
           onStop={stop}
           isLoading={isLoading}
-          placeholder="اكتب اسم المنتج أو ما الذي تريد شراءه"
+          placeholder="Search any product"
           canSend={Boolean(input.trim() || attachedFiles.length > 0)}
           hidePlus
           attachments={attachedFiles}

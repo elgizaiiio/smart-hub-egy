@@ -265,7 +265,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           />
         )}
       </AnimatePresence>
-      <div className="rounded-[2rem] ios26-input-shell overflow-hidden">
+      <div className="ios26-input-shell overflow-hidden">
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
             <motion.div
